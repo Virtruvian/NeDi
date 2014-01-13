@@ -28,8 +28,8 @@ $ld = isset($_GET['ld']) ? $_GET['ld'] : "";
 $dd = isset($_GET['dd']) ? $_GET['dd'] : "";
 $cm = isset($_GET['cm']) ? $_GET['cm'] : "";
 
-$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 100;
-$lid = isset($_GET['lid']) ? preg_replace('/\D+/','',$_GET['lid']) : 10;
+$lic = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
+$lid = isset($_GET['lid']) ? preg_replace('/\D+/','',$_GET['lid']) : 20;
 
 $cfgup = array();
 
@@ -43,17 +43,18 @@ $cols = array(	"device"=>"Device",
 		"time"=>"$updlbl",
 		);
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-$query	= GenQuery('configs','s','device,time,icon','device','',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
-$res	= @DbQuery($query,$link);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$query	= GenQuery('configs','s','device,time,type,icon','device','',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
+$res	= DbQuery($query,$link);
 if($res){
-	while( ($c = @DbFetchRow($res)) ){
+	while( ($c = DbFetchRow($res)) ){
 		$cfgup[$c[0]] = $c[1];
-		$devic[$c[0]] = $c[2];
+		$devty[$c[0]] = $c[2];
+		$devic[$c[0]] = $c[3];
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 ?>
 <h1>Devices <?= $cfglbl ?></h1>
@@ -69,10 +70,10 @@ if($res){
 
 <?= $lstlbl ?><p>
 <select size="1" name="shl">
-<option value="n"><?= substr($cfglbl,0,6) ?> regexp
-<option value="i" <?= ($shl == "i")?" selected":"" ?>><?= substr($cfglbl,0,6) ?> !regexp
-<option value="c" <?= ($shl == "c")?" selected":"" ?>><?=  substr($chglbl,0,6) ?> regexp
-<option value="t" <?= ($shl == "t")?" selected":"" ?>><?= $typlbl ?> regexp
+<option value="n"><?= substr($cfglbl,0,6) ?> ~
+<option value="i" <?= ($shl == "i")?" selected":"" ?>><?= substr($cfglbl,0,6) ?> !~
+<option value="c" <?= ($shl == "c")?" selected":"" ?>><?=  substr($chglbl,0,6) ?> ~
+<option value="t" <?= ($shl == "t")?" selected":"" ?>><?= $typlbl ?> ~
 <option value="d" <?= ($shl == "d")?" selected":"" ?>>device =
 </select>
 
@@ -112,7 +113,7 @@ foreach (array_keys($cfgup) as $d){
 
 <?= $limlbl ?><p>
 <select size="1" name="lim" title="<?= $cfglbl ?>/<?= $chglbl ?>">
-<?php selectbox("limit",$lim) ?>
+<?php selectbox("limit",$lic) ?>
 </select>
 
 <select size="1" name="lid" title="Devices">
@@ -131,7 +132,7 @@ foreach (array_keys($cfgup) as $d){
 if ($dch){
 	if($isadmin){
 		$query	= GenQuery('configs','u','device','=',$dch,array('changes'),array(),array('') );
-		if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> $dch $dellbl $chglbl $lstlbl OK</h5>";}
+		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> $dch $dellbl $chglbl $lstlbl OK</h5>";}
 	}else{
 		echo $nokmsg;
 	}
@@ -140,7 +141,7 @@ if ($dch){
 if ($dco){
 	if($isadmin){
 		$query	= GenQuery('configs','d','','','',array('device'),array('='),array($dco) );
-		if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> $dco $dellbl $cfglbl OK</h5>";}
+		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> $dco $dellbl $cfglbl OK</h5>";}
 ?><script language="JavaScript"><!--
 setTimeout("history.go(-2)",2000);
 //--></script><?		
@@ -153,11 +154,11 @@ setTimeout("history.go(-2)",2000);
 if ($gen){
 	if(($dd or $cm)){
 		$query	= GenQuery('configs','s','configs.*','','',array('device'),array('='),array($ld),array(),'LEFT JOIN devices USING (device)');
-		$res	= @DbQuery($query,$link);
-		$srcok	= @DbNumRows($res);
+		$res	= DbQuery($query,$link);
+		$srcok	= DbNumRows($res);
 		if ($srcok == 1) {
-			$rdvc = @DbFetchRow($res);
-			@DbFreeResult($res);
+			$rdvc = DbFetchRow($res);
+			DbFreeResult($res);
 		}else{
 			echo "<h4>$srcok $vallbl</h4>";
 			die;
@@ -191,11 +192,11 @@ if ($gen){
 				echo "</div></td></tr></table><p>";
 			}else{
 				$query	= GenQuery('configs','s','configs.*','','',array('device'),array('='),array($ddv),'LEFT JOIN devices USING (device)');
-				$res	= @DbQuery($query,$link);
-				$cfgok	= @DbNumRows($res);
+				$res	= DbQuery($query,$link);
+				$cfgok	= DbNumRows($res);
 				if ($cfgok == 1) {
-					$ddvc = @DbFetchRow($res);
-					@DbFreeResult($res);
+					$ddvc = DbFetchRow($res);
+					DbFreeResult($res);
 					echo PHPDiff( Opdiff($rdvc[1],$cm), Opdiff($ddvc[1],$cm),($cm == 'v')?1:0 );		
 					echo "</div></td></tr></table><p>";
 				}else{
@@ -205,9 +206,9 @@ if ($gen){
 		}
 	}else{
 		$ina	='config';
-		$opa	= 'regexp';
+		$opa	= '~';
 		if($shl == 'i'){
-			$opa	= 'not regexp';
+			$opa	= '!~';
 		}elseif($shl == 'c'){
 			$ina	='changes';
 		}elseif($shl == 't'){
@@ -216,34 +217,34 @@ if ($gen){
 			$opa	= '=';
 			$ina	='device';
 		}
-		ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+		echo "<h3>$cols[$ina] $opa '$sta'</h3>";
 		TblHead("$modgroup[$self]2",2);
 
-		$query	= GenQuery('configs','s','configs.*,length(config),length(changes),inet_ntoa(devip),type,devos,icon,cliport',$ord,$lid,array($ina),array($opa),array($sta),array(),'LEFT JOIN devices USING (device)');
+		$query	= GenQuery('configs','s','configs.*,length(config) as cfgl,length(changes) as chgl,inet_ntoa(devip),type,devos,icon,cliport',$ord,$lid,array($ina),array($opa),array($sta),array(),'LEFT JOIN devices USING (device)');
 
-		$res	= @DbQuery($query,$link);
+		$res	= DbQuery($query,$link);
 		if($res){
 			$row = 0;
-			if (!$lim){$lim = 1000000;}						# Yepp, not really oo...
-			while( ($con = @DbFetchRow($res)) ){
+			if (!$lic){$lic = 1000000;}						# Yepp, not really oo...
+			while( ($con = DbFetchRow($res)) ){
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
 				$ud  = rawurlencode($con[0]);
 				TblRow($bg);
-				TblCell($con[0],"","class=\"$bi\" width=\"50px\"","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/$con[9].png\" title=\"$$con[7]\"></a><br>","th-img");
+				TblCell($con[0],"","class=\"$bi\" width=\"50px\"","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/$con[9].png\" title=\"$con[7]\"></a><br>","th-img");
 				TblCell( Devcli($con[6],$con[10]) );
 				TblCell($con[8]);
-				TblCell( substr(implode("\n",preg_grep("/$sta/i",explode("\n",$con[1]) ) ),0,$lim),"?shc=$ud","class=\"code\"" );
+				TblCell( substr(implode("\n",preg_grep("/$sta/i",explode("\n",$con[1]) ) ),0,$lic),"?shc=$ud","class=\"code\"" );
 				TblCell($con[4]);
-				TblCell( substr(implode("\n",preg_grep("/$sta/i",explode("\n",$con[2]) ) ),0,$lim),"","class=\"code\"" );
+				TblCell( substr(implode("\n",preg_grep("/$sta/i",explode("\n",$con[2]) ) ),0,$lic),"","class=\"code\"" );
 				TblCell($con[5]);
 				list($u1c,$u2c) = Agecol($con[3],$con[3],$row % 2);
 				TblCell( date($_SESSION['date'],$con[3]),"","bgcolor=\"#$u1c\" nowrap" );
 				echo "</tr>\n";
 			}
-			@DbFreeResult($res);
+			DbFreeResult($res);
 		}else{
-			print @DbError($link);
+			print DbError($link);
 		}
 	?>
 </table>
@@ -257,11 +258,11 @@ if ($gen){
 	echo "<h2>$shc</h2>\n";
 
 	$query	= GenQuery('configs','s','configs.*,inet_ntoa(devip),cliport','','',array('device'),array('='),array($shc),array(),'LEFT JOIN devices USING (device)');
-	$res	= @DbQuery($query,$link);
-	$cfgok	= @DbNumRows($res);
+	$res	= DbQuery($query,$link);
+	$cfgok	= DbNumRows($res);
 	if ($cfgok == 1) {
-		$cfg = @DbFetchRow($res);
-		@DbFreeResult($res);
+		$cfg = DbFetchRow($res);
+		DbFreeResult($res);
 	}else{
 		echo "<h4>$shc: $cfgok $vallbl</h4>";
 		die;
@@ -278,7 +279,7 @@ if ($gen){
 <tr class="txta"><td valign="top">
 <a href="?shc=<?= $ucfg ?>&sln=<?=!$sln ?>&smo=<?= $smo ?>"><img src="img/16/form.png" title="Line #"></a>
 <a href="?shc=<?= $ucfg ?>&sln=<?= $sln ?>&smo=<?=!$smo ?>"><img src="img/16/say.png" title="motd"></a>
-<a href="System-Export.php?action=export&exptbl=configs&query=SELECT+config+FROM+configs+where+DEVICE%3D%22<?= $ucfg ?>%22&type=plain"><img src="img/16/flop.png" title="<?= (($verb1)?"$explbl $cfglbl":"$cfglbl $explbl") ?>"></a>
+<a href="System-Export.php?act=c&exptbl=configs&query=SELECT+config+FROM+configs+where+DEVICE%3D%22<?= $ucfg ?>%22&type=plain"><img src="img/16/flop.png" title="<?= (($verb1)?"$explbl $cfglbl":"$cfglbl $explbl") ?>"></a>
 <a href="Devices-Status.php?dev=<?= $ucfg ?>"><img src="img/16/sys.png" title="Device-Status"></a>
 <a href="Devices-Doctor.php?dev=<?= $ucfg ?>"><img src="img/16/cinf.png" title="<?= $cfglbl ?> <?= $sumlbl ?>"></a>
 <?= (Devcli($cfg[4],$cfg[5],2)) ?>
@@ -318,25 +319,21 @@ if (is_dir("$nedipath/conf/$shc")){
 <?php
 }else{
 
-	echo "<p><br><h2><a href=\"Monitoring-Events.php?ina=class&opa==&sta=cfge\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>
+	echo "<p><br><h2><a href=\"Monitoring-Events.php?in[]=class&op[]==&st[]=cfge\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>
 $buplbl $errlbl</h2>";
-	Events($_SESSION['lim'],array('class'),array('='),array('cfge'),'');
+	Events($_SESSION['lim'],array('class'),array('='),array('cfge'),array());
 
-	echo "<p><br><h2><a href=\"Monitoring-Events.php?ina=class&opa==&sta=cfgc\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>".(($verb1)?"$laslbl $chglbl":"$chglbl $laslbl")."</h2>";
-	Events($_SESSION['lim'],array('class'),array('='),array('cfgc'),'');
+	echo "<p><br><h2><a href=\"Monitoring-Events.php?in[]=class&op[]==&st[]=cfgc\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>".(($verb1)?"$laslbl $chglbl":"$chglbl $laslbl")."</h2>";
+	Events($_SESSION['lim'],array('class'),array('='),array('cfgc'),array());
 
-	echo "<p><br><h2><a href=\"Monitoring-Events.php?ina=class&opa==&sta=cfgn\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>".(($verb1)?"$newlbl $cfglbl":"$cfglbl $newlbl")."</h2>";
-	Events($_SESSION['lim'],array('class'),array('='),array('cfgn'),'');
+	echo "<p><br><h2><a href=\"Monitoring-Events.php?in[]=class&op[]==&st[]=cfgn\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>".(($verb1)?"$newlbl $cfglbl":"$cfglbl $newlbl")."</h2>";
+	Events($_SESSION['lim'],array('class'),array('='),array('cfgn'),array());
 }
 
 include_once ("inc/footer.php");
 
-// Optimize configuration before comparison
-// Sidebyside added by Remo 1.2011
 function Opdiff($cfg,$mo){
 	
-	global $lim;
-
 	$config = "";
 	foreach ( explode("\n",$cfg) as $l ){
 		$row++;
@@ -349,7 +346,6 @@ function Opdiff($cfg,$mo){
 		}else{
 			$config .= "$l\n";
 		}
-		#if($row == $lim){$config .= "---\n";break;} TODO remove or make useful...
 	}
 	return $config;
 }
@@ -446,7 +442,8 @@ function PHPDiff($old,$new,$sbs)
   $op = 0;
   $x0=$x1=0; $y0=$y1=0;
   $out = array();
-  if($sbs){# Sidebyside by Remo
+  if($sbs){									# Sidebyside added by Remo 1.2011
+
 	$out[] = "<table class='full'>";
 	foreach($actions as $act) {
 		if ($act==1) { $op|=$act; $x1++; continue; }

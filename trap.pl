@@ -44,15 +44,21 @@ Visit http://www.nedi.ch for more information.
 
 use strict;
 
-use vars qw($p $now %mon %srcna);
+use vars qw($p $now $info %mon %srcna %opt);
 $now = time;
+
+$opt{'d'} = 1;
+$opt{'v'} = 1;
 
 $p = $0;
 $p =~ s/(.*)\/(.*)/$1/;
 if($0 eq $p){$p = "."};
+
+$misc::dbname = $misc::dbhost = $misc::dbuser = $misc::dbpass = '';
+
 require "$p/inc/libmisc.pm";										# Use the miscellaneous nedi library
 &misc::ReadConf();
-require "$p/inc/libdb-" . lc($misc::backend) . ".pm" || die "Backend error ($misc::backend)!";
+require "$p/inc/libdb.pm";										# Use the DB function library
 require "$p/inc/libmon.pm";										# Use the SNMP function library
 my $now = time;
 
@@ -63,21 +69,23 @@ my $ip = <STDIN>;
 chomp($ip);
 $ip =~ s/UDP:\s?\[([0-9.]+)\]:.*/$1/;
 
-my $info = <STDIN>;
-$info .= ", ".<STDIN>;
-$info .= ", ".<STDIN>;
-$info .= ", ".<STDIN>;
+while(<STDIN>) {
+	chomp;
+	$info .= ', '.$_;
+}
 $info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=',.:<>? \E]//g;							# Remove unwanted characters
 $info =~ s/.*snmpTrapOID.0//;										# Cut before TrapOID
 
 my $level = 10;
+&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass,1);
 &db::ReadMon( &misc::Ip2Dec($ip) );
-&db::ReadUser("groups & 8 AND (phone != \"\" OR email != \"\")");
+&db::ReadUser("groups & 8 = 8 AND (phone != '' OR email != '')");
 
-if(exists $srcna{$ip}){										# Source IP lookup (%srcna created by db::readmon)
+if(exists $srcna{$ip}){											# Source IP lookup (%srcna created by db::readmon)
 	my $tgt = $srcna{$ip};
 	$level = 50;
 
+# TODO remove this legacy and put meaningful actions?
 	if($info =~ s/IF-MIB::ifIndex/Ifchange/){
 		$level = 150;
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.45.1.6.4.3.5.1.0/Baystack Auth/){
@@ -93,8 +101,9 @@ if(exists $srcna{$ip}){										# Source IP lookup (%srcna created by db::readm
 		$level = 100;
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.9.9.46/Cisco VTP/){
 	}
-	&mon::Event(1,$level,'trap',$tgt,$tgt,"$info","$info");
+	my $mq = &mon::Event(1,$level,'trap',$tgt,$tgt,"$info","$info");
 	&mon::AlertFlush("NeDi Trap Forward for $tgt",$mq);
 }else{
-	&db::Insert('events','level,time,source,info,class',"\"$level\",\"$now\",\"$ip\",\"$info\",\"trap\"");
+	&db::Insert('events','level,time,source,info,class',"$level,$now,'$ip','".substr($info,2)."','trap'");
 }
+&db::Disconnect();

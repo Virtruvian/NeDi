@@ -1,5 +1,5 @@
-# Definition for 1.3.6.1.4.1.9.1.563 created by Defgen 1.8 on 14.Feb 2013 (admin)
-
+# Definition for 1.3.6.1.4.1.9.1.563 created by Defgen 1.8 on 27.Jul 2013 (admin)
+ 
 # General
 SNMPv	2HC
 Type	WS-C3560-24PS
@@ -13,12 +13,12 @@ ArpND	oldphy
 Dispro	CDP
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.1001
 Bimage	1.3.6.1.4.1.9.2.1.73.0
-
-# Vlan Specific
+CfgChg	1.3.6.1.4.1.9.9.43.1.1.1.0
+CfgWrt	1.3.6.1.4.1.9.9.43.1.1.3.0
 VLnams	1.3.6.1.4.1.9.9.46.1.3.1.1.4.1
 VLnamx	
-Group	
-Mode	
+Group	1.3.6.1.4.1.9.9.46.1.2.1.1.2.1
+Mode	1.3.6.1.4.1.9.9.46.1.2.1.1.3.1
 
 # Interfaces
 StartX	
@@ -51,7 +51,7 @@ Modser	1.3.6.1.2.1.47.1.1.1.1.11
 Momodl	1.3.6.1.2.1.47.1.1.1.1.13
 
 # RRD Graphing
-CPUutl	1.3.6.1.4.1.9.9.109.1.1.1.1.8.1
+CPUutl	1.3.6.1.4.1.9.9.109.1.1.1.1.8.1	
 Temp	1.3.6.1.4.1.9.9.13.1.3.1.3.1004	
 MemCPU	1.3.6.1.4.1.9.9.48.1.1.1.6.1	
 Custom		

@@ -25,7 +25,7 @@ $mysrv['Radius']['cmd'] = "/usr/local/sbin/radiusd";
 $mysrv['Radius']['ico'] = "key";
 
 $mysrv['Iperf']['cmd'] = "/usr/local/bin/iperf -s -D";
-$mysrv['Iperf']['ico'] = "flas";
+$mysrv['Iperf']['ico'] = "tap";
 
 #$mysrv['Dhcpd']['cmd'] = "/usr/sbin/dhcpd -p1067";
 #$mysrv['Dhcpd']['ico'] = "glob";
@@ -35,7 +35,7 @@ $stop = (isset($_GET['stop']) and in_array($_GET['stop'],array_keys($mysrv) ) ) 
 $start = (isset($_GET['start']) and in_array($_GET['start'],array_keys($mysrv) ) ) ? $_GET['start'] : "";
 $clear = (isset($_GET['clear']))? $_GET['clear'] : "";
 
-function GetPID ($srv){
+function GetPID($srv){
 
 	global $procs;
 
@@ -50,10 +50,9 @@ function GetPID ($srv){
 
 if(preg_match("/OpenBSD|Linux/",PHP_OS) ){
 	$pscmd = "ps -axo pid,command";
-#}elseif(preg_match("/^win/",PHP_OS) ){
 }
 $procs = shell_exec($pscmd);							# Get PIDs first
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 if($start and $isadmin){
 	if( $pid = GetPID($mysrv[$start]['cmd']) ){
@@ -79,9 +78,9 @@ if($start and $isadmin){
 	}
 }elseif($clear and $isadmin){
 	$query	= GenQuery('system','u','name','=','threads',array('value'),array(),array('0') );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl threads OK</h5>";}
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl threads OK</h5>";}
 	$query	= GenQuery('system','u','name','=','nodlock',array('value'),array(),array('0') );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$reslbl nodlock OK</h5>";}
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$reslbl nodlock OK</h5>";}
 
 	if( $pid = GetPID('nedi.pl') ){
 		posix_kill ($pid, 9);
@@ -98,11 +97,11 @@ if($start and $isadmin){
 }
 
 $query	= GenQuery('system','s');
-$res	= @DbQuery($query,$link);
-while( $s = @DbFetchRow($res) ){
+$res	= DbQuery($query,$link);
+while( $s = DbFetchRow($res) ){
 	$sys[$s[0]] = $s[1];
 }
-@DbFreeResult($res);
+DbFreeResult($res);
 
 ob_end_flush();
 ?>
@@ -145,7 +144,7 @@ if ($sys['threads'] and $isadmin){
 <div class="textpad code txta">
 <?php
 	if(PHP_OS == "OpenBSD"){
-		system("/usr/bin/top -d1");
+		system("/usr/bin/top -n -1");
 	}elseif(PHP_OS == "Linux"){
 		system("/usr/bin/top -bn1");
 	}elseif( strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ){

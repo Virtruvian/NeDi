@@ -10,7 +10,7 @@ function ReadConf($group=''){
 	global $locsep,$lang,$redbuild,$modgroup,$disc,$fahrtmp;
 	global $comms,$mod,$backend,$dbhost,$dbname,$dbuser,$dbpass,$retire;
 	global $timeout,$ignoredvlans,$useivl,$cpua,$mema,$tmpa,$trfa,$trfw;
-	global $poew,$pause,$latw,$rrdcmd,$nedipath,$rrdstep;
+	global $mapip,$poew,$pause,$latw,$rrdcmd,$nedipath,$rrdstep;
 	global $cacticli,$cactiuser,$cactipass,$cactidb,$cactihost,$cactiurl;
 	global $guiauth,$radsrv, $ldapsrv, $ldapmap;
 
@@ -25,6 +25,7 @@ function ReadConf($group=''){
 		die;
 	}
 
+	$mapip  = array();
 	$locsep	= " ";
 	foreach ($conf as $cl) {
 		if ( !preg_match("/^#|^$/",$cl) ){
@@ -43,6 +44,7 @@ function ReadConf($group=''){
 				$comms[$v[1]]['pprot'] = (isset($v[5]))?$v[4]:"";
 				$comms[$v[1]]['ppass'] = (isset($v[5]))?$v[5]:"";
 			}
+			elseif ($v[0] == "mapna")	{$mapip[$v[1]]['na'] = $v[2];}
 			elseif ($v[0] == "backend")	{$backend = $v[1];}
 			elseif ($v[0] == "dbhost")	{$dbhost  = $v[1];}
 			elseif ($v[0] == "dbname")	{$dbname  = isset($_SESSION['snap'])?$_SESSION['snap']:$v[1];}
@@ -52,7 +54,7 @@ function ReadConf($group=''){
 			elseif ($v[0] == "cpu-alert")	{$cpua = $v[1];}
 			elseif ($v[0] == "mem-alert")	{$mema = $v[1];}
 			elseif ($v[0] == "temp-alert")	{$tmpa = $v[1];}
-			elseif ($v[0] == "poe-warn"){	$poew  = $v[1];}
+			elseif ($v[0] == "poe-warn")	{$poew = $v[1];}
 			elseif ($v[0] == "traf-alert")	{$trfa = $v[1];}
 			elseif ($v[0] == "traf-warn")	{$trfw = $v[1];}
 
@@ -95,7 +97,7 @@ function sanitize( $arr ){
 	if ( is_array($arr) ){
 		return array_map( 'sanitize', $arr );
 	}
-	return preg_replace( "/\.\.\/|<(\/)?script>|javascript/i","", $arr );
+	return preg_replace( "/\.\.\/|<\/?(java)?script>/i","", $arr );
 }
 
 //===================================================================
@@ -170,11 +172,11 @@ function Masker($in){
 function DecFix($n){
 
 	if($n >= 1000000000){
-		return round($n/1000000000,1)."G";
+		return round($n/1000000000)."G";
 	}elseif($n >= 1000000){
-		return round($n/1000000,1)."M";
+		return round($n/1000000)."M";
 	}elseif($n >= 1000){
-		return round($n/1000,1)."K";
+		return round($n/1000)."k";
 	}else{
 		return $n;
 	}
@@ -207,16 +209,42 @@ function Agecol($fs, $ls,$row){
         return array("$g$f$d","$l$g$d");
 }
 
+#===================================================================
+# Returns color based on type, order and offset for RRDs and Charts
+# Type can traffic, error etc. or a numeric rgb pattern like 125,
+# whereas any digit + offset must not be higher than 6!
+# Parameters:	type, count, offset(0-3)
+# Global:	-
+# Return:	color
+#===================================================================
+function GetCol($typ,$cnt,$off=0){
+
+	if($typ == 'trf'){
+		return sprintf("#%x%x%x",$cnt%3*5+$off,$cnt%4*2+6+$off,$cnt%5*3+$off);
+	}elseif($typ == 'err'){
+		return sprintf("#%x%x%x",$cnt%4*2+6+$off,$cnt%5*3+$off,$cnt%3*5+$off);
+	}elseif($typ == 'dsc'){
+		return sprintf("#%x%x%x",$cnt%4*2+6+$off,$cnt%3*5+$off,$cnt%5*3+$off);
+	}elseif($typ == 'brc'){
+		return sprintf("#%x%x%x",$cnt%5*3+$off,$cnt%9+$off,13-$cnt%13+$off);
+	}else{
+		$r = substr($typ,0,1)+$cnt%10+$off;
+		$g = substr($typ,1,1)+$cnt%10+$off;
+		$b = substr($typ,2,1)+$cnt%10+$off;
+		return sprintf("#%x%x%x",$r,$g,$b);
+	}
+}
+
 //===================================================================
 // Generate html select box
-function selectbox($type,$sel=""){
+function selectbox($type,$sel){
 
 	global $cndlbl;
 	
 	if($type == "oper"){
-		$options = array("regexp"=>"regexp","not regexp"=>"!regexp","like"=>"like",">"=>">","="=>"=","!="=>"!=",">="=>">=","<"=>"<","&"=>"and","|"=>"or");
+		$options = array("~"=>"~","!~"=>"!~","like"=>"like",">"=>">","="=>"=","!="=>"!=",">="=>">=","<"=>"<","&"=>"and","|"=>"or");
 	}elseif($type == "comop"){
-		$options = array(""=>"$cndlbl A","AND"=>"A and B","OR"=>"A or B",">"=>"colA > colB","="=>"colA = colB","!="=>"colA != colB","<"=>"colA < colB");
+		$options = array(""=>"-","AND"=>"and","OR"=>"or",">"=>"Col > Col","="=>"Col = Col","!="=>"Col != Col","<"=>"Col < Col");
 	}elseif($type == "limit"){
 		$options = array("5"=>"5","10"=>"10","20"=>"20","50"=>"50","100"=>"100","200"=>"200","500"=>"500","1000"=>"1000","2000"=>"2000","0"=>"none!");
 	}
@@ -228,83 +256,196 @@ function selectbox($type,$sel=""){
 }
 
 //===================================================================
-// Generate filter controls TODO implement!
-function FltCtrl($in,$op,$st,$co){
+// Generate html filter elements
+function Filters($num=4){
 
-	global $self, $selfi, $modgroup, $cndlbl, $cmblbl, $calendar, $cols, $col;
+	global $cols,$in,$op,$st,$co;
+	global $collbl,$cndlbl,$vallbl;
 ?>
-<form method="get" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th valign="top"><?= $cndlbl ?> A<p>
-<select size="1" name="ina">
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select><p>
-<?PHP if($calendar){echo "<a href=\"javascript:show_calendar('list.stb');\"><img src=\"img/16/date.png\"></a>\n";} ?>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
-</th>
-<th valign="top"><?= $cmblbl ?><p>
-<select size="1" name="cop">
-<?php selectbox("comop",$cop) ?>
-</select>
-</th>
-<th valign="top"><?= $cndlbl ?> B<p>
-<select size="1" name="inb">
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-<select size="1" name="opb">
-<?php selectbox("oper",$opb) ?>
-</select><p>
-<?PHP if($calendar){echo "<a href=\"javascript:show_calendar('list.stb');\"><img src=\"img/16/date.png\"></a>\n";} ?>
-<input type="text" name="stb" value="<?= $stb ?>" size="20">
-</th>
-<th valign="top"><?= $collbl ?><p>
-<select multiple name="col[]" size="4">
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".((in_array($k,$col))?"selected":"").">$v\n";
-}
-?>
+<script type="text/javascript" src="inc/datepickr.js"></script>
+<link rel="stylesheet" type="text/css" href="inc/datepickr.css" />
 
+<div style="margin: 2px 8px;padding: 2px 8px;">
+<select name="in[]" title="<?= $collbl ?> 1">
+<?php foreach ($cols as $k => $v){
+	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
+		echo "<option value=\"$k\"".( ($in[0] == $k)?" selected":"").">$v\n";
+	}
+}?>
 </select>
-</th>
+<select name="op[]" id="oa1"><?php selectbox("oper",$op[0]) ?></select>
+<?php	if( $num == 1 ) echo '<br>'; ?>
+<input  name="st[]" id="sa1" type="text" value="<?= $st[0] ?>" placeholder="<?= $cndlbl ?> 1" onfocus="select();" size="20">
+<script>new datepickr('sa1', {'dateFormat': 'm/d/y'});</script>
+<?php	if( $num == 1 ){ echo '</div>';return;} ?>
+<select name="co[]" onchange="convis('1',this.value);">
+<option value="">
+<option value="AND"<?= ($co[0] == 'AND')?'selected':'' ?>>and
+<option value="OR"<?=  ($co[0] == 'OR' )?'selected':'' ?>>or
+<option value=">"<?=   ($co[0] == '>'  )?'selected':'' ?>>1 > 2
+<option value="="<?=   ($co[0] == '='  )?'selected':'' ?>>1 = 2
+<option value="!="<?=  ($co[0] == '!=' )?'selected':'' ?>>1 != 2
+<option value="<"<?=   ($co[0] == '<'  )?'selected':'' ?>>1 < 2
+</select>
+<br>
+<select name="in[]" id="ib1" title="<?= $collbl ?> 2">
+<?php foreach ($cols as $k => $v){
+	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
+		echo "<option value=\"$k\"".( ($in[1] == $k)?" selected":"").">$v\n";
+	}
+}?>
+</select>
+<select name="op[]" id="ob1"><?php selectbox("oper",$op[1]) ?></select>
+<input  name="st[]" id="sb1" type="text" value="<?= $st[1] ?>" placeholder="<?= $cndlbl ?> 2" onfocus="select();" size="20">
+<select name="co[]" id="cb1" onchange="fltvis(this.value);">
+<option value="">
+<option value="AND"<?= ($co[1] == 'AND')?' selected':'' ?>>and
+<option value="OR"<?= ($co[1] == 'OR')?'selected':'' ?>>or
+</select>
+</div>
+<div id="flt2" style="margin: 2px 8px;padding: 2px 8px;visibility: hidden">
+<select name="in[]" id="ia2" title="<?= $collbl ?> 3">
+<?php foreach ($cols as $k => $v){
+	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
+		echo "<option value=\"$k\"".( ($in[2] == $k)?" selected":"").">$v\n";
+	}
+}?>
+</select>
+<select name="op[]" id="oa2" ><?php selectbox("oper",$op[2]) ?></select>
+<input  name="st[]" id="sa2"  type="text" value="<?= $st[2] ?>" placeholder="<?= $cndlbl ?> 3" onfocus="select();" size="20">
+<select name="co[]" id="ca2"  onchange="convis('2',this.value);">
+<option value="">
+<option value="AND"<?= ($co[2] == 'AND')?' selected':'' ?>>and
+<option value="OR"<?=  ($co[2] == 'OR' )?'selected':'' ?>>or
+<option value=">"<?=   ($co[2] == '>'  )?'selected':'' ?>>3 > 4
+<option value="="<?=   ($co[2] == '='  )?'selected':'' ?>>3 = 4
+<option value="!="<?=  ($co[2] == '!=' )?'selected':'' ?>>3 != 4
+<option value="<"<?=   ($co[2] == '<'  )?'selected':'' ?>>3 < 4
+</select>
+<br>
+<select name="in[]" id="ib2" title="<?= $collbl ?> 4">
+<?php foreach ($cols as $k => $v){
+	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
+		echo "<option value=\"$k\"".( ($in[3] == $k)?" selected":"").">$v\n";
+	}
+}?>
+</select>
+<select name="op[]" id="ob2" style="visibility: hidden"><?php selectbox("oper",$op[3]) ?></select>
+<input  name="st[]" id="sb2" type="text" value="<?= $st[3] ?>" placeholder="<?= $cndlbl ?> 4" onfocus="select();" size="20">
+</div>
+
+<script>
+function fltvis(val){
+
+	if(val){
+		document.getElementById('flt2').style.visibility="inherit";
+	}else{
+		document.getElementById('ca2').selectedIndex=0;
+		window.onload = convis('2','');
+		document.getElementById('flt2').style.visibility="hidden";
+	}
+}
+
+function convis(sq,op){
+
+	if( op.match(/[<>=]/) ){
+		document.getElementById('oa'+sq).style.visibility="hidden";
+		document.getElementById('sa'+sq).style.visibility="hidden";
+		document.getElementById('ib'+sq).style.visibility="inherit";
+		document.getElementById('ob'+sq).style.visibility="hidden";
+		document.getElementById('sb'+sq).style.visibility="hidden";
+		if( sq == '1' ){
+			document.getElementById('cb'+sq).style.visibility="inherit";
+		}
+	}else if(op == 'AND' || op == 'OR'){
+		document.getElementById('oa'+sq).style.visibility="inherit";
+		document.getElementById('sa'+sq).style.visibility="inherit";
+		document.getElementById('ib'+sq).style.visibility="inherit";
+		document.getElementById('ob'+sq).style.visibility="inherit";
+		document.getElementById('sb'+sq).style.visibility="inherit";
+		if( sq == '1' ){
+			document.getElementById('cb'+sq).style.visibility  = "inherit";
+		}
+	}else{
+		document.getElementById('oa'+sq).style.visibility="inherit";
+		document.getElementById('sa'+sq).style.visibility="inherit";
+		document.getElementById('ib'+sq).style.visibility="hidden";
+		document.getElementById('ob'+sq).style.visibility="hidden";
+		document.getElementById('sb'+sq).style.visibility="hidden";
+		if( sq == '1' ){
+			document.getElementById('cb'+sq).style.visibility="hidden";
+			document.getElementById('cb'+sq).selectedIndex=0;
+			document.getElementById('flt2').style.visibility = "hidden";
+		}
+	}
+}
+
+window.onload = convis('1','<?= $co[0] ?>');
+window.onload = convis('2','<?= $co[2] ?>');
+window.onload = fltvis('<?= $co[1] ?>');
+
+new datepickr('sb1', {'dateFormat': 'm/d/y'});
+new datepickr('sa2', {'dateFormat': 'm/d/y'});
+new datepickr('sb2', {'dateFormat': 'm/d/y'});
+
+</script>
 <?PHP
 }
 
 //===================================================================
-// Generate condition header
-function ConHead($ina, $opa, $sta, $cop="", $inb="", $opb="", $stb=""){
+// Generate condition header or SQL if mod=2
+function Condition($in,$op,$st,$co,$mod=0){
 
-	global $fltlbl;
+	global $cols;
 
-	if($sta == ""){
-	#	echo "<h3>$fltlbl: $nonlbl</h3>";
-	}else{
-		if($cop == ""){ 
-			echo "<h3>$fltlbl: $ina $opa \"$sta\"</h3>\n";
-		}elseif($cop =="AND" or $cop =="OR"){ 
-			echo "<h3>$fltlbl: $ina $opa \"$sta\" $cop $inb $opb \"$stb\"</h3>\n";
-		}else{
-			echo "<h3>$fltlbl: $ina $cop $inb</h3>\n";
+	$h = '';
+	$w = '';
+
+	$comok = 0;
+	if( !count($in) ) return '';
+
+	if( preg_match('/[<>=]/',$co[0]) ){								# subconditions 1 and 2 compare columns
+		$w .= $in[0]." $co[0] ".$in[1];
+		$h .= $cols[$in[0]]." $co[0] ".$cols[$in[1]];
+		$comok = 1;
+	}elseif( $op[0] and !( preg_match('/~|LIKE$/i',$op[0]) and $st[0] === '') ){			# process normally unless empty regexp/like in 1
+		$w .= AdOpVal($in[0],$op[0],$st[0]);
+		$h .= $cols[$in[0]]." $op[0] '".$st[0]."'";
+		if($co[0] and $op[1] and !( preg_match('/~|LIKE$/i',$op[1]) and $st[1] === '') ){	# subcondition 2 unless empty regexp/like
+			$w .= " $co[0] ".AdOpVal($in[1],$op[1],$st[1]);
+			$h .= " $co[0] ".$cols[$in[1]]." $op[1] '".$st[1]."'";
+			$comok = 1;
 		}
+	}
+	if($comok and $co[1] ){										# Combining subconditions
+		if( preg_match('/[<>=]/',$co[2]) ){							# subconditions 3 and 4 compares columns
+			$w .= " $co[1] ".$in[2]." $co[2] ".$in[3];
+			$h .= " $co[1] ".$cols[$in[2]]." $co[2] ".$cols[$in[3]];
+		}elseif($op[2] and !( preg_match('/~|LIKE$/i',$op[2]) and $st[2] === '') ){		# process normally unless empty regexp/like in 3
+			$w2 = AdOpVal($in[2],$op[2],$st[2]);
+			$h2 = $cols[$in[2]]." $op[2] '".$st[2]."'";
+			if($co[2] and $op[2] and !( preg_match('/~|LIKE$/i',$op[3]) and $st[3] === '') ){# subcondition 4 unless empty regexp/like
+				$w2 .= " $co[2] ".AdOpVal($in[3],$op[3],$st[3]);
+				$h2 .= " $co[2] ".$cols[$in[3]]." $op[3] '".$st[3]."'";
+			}
+			$w = "($w) $co[1] ($w2)";
+			$h = "($h) $co[1] ($h2)";
+		}
+	}
+
+	if($mod == 2){
+		 return ($w)?"WHERE $w":'';
+	}elseif($mod){
+		 return $h;
+	}else{
+		if($h) echo "<h3>$h</h3>";
 	}
 }
 
 //===================================================================
 // Generate table header
 // Opt	Bgcolor, column mode: 2 or 3=use all, 0 or 3=no sorting (1 shows selected columns with sorting arrow)
-// Keys BL=blank, IG=ignored, NS=no-sort
+// Keys BL=blank, IG=ignored, NS=no-sort, NF=no-filter
 function TblHead($bkg,$mode = 0){
 
 	global $ord,$cols,$col,$altlbl,$srtlbl;
@@ -329,20 +470,21 @@ function TblHead($bkg,$mode = 0){
 			}elseif( !array_key_exists($n,$cols) ){
 				echo "<th class=\"$bkg\">$n</th>";
 			}else{
+				$nclr = preg_replace('/NF$/','',$n);
 				if( !$ord ){
-					echo "<th nowrap class=\"$bkg\">$cols[$n]<a href=\"?$_SERVER[QUERY_STRING]&ord=$n+desc\"><img src=img/dwn.png title=\"Sort by $n\"></a></th>\n";
-				}elseif($ord == $n){
+					echo "<th nowrap class=\"$bkg\">$cols[$n]<a href=\"?$_SERVER[QUERY_STRING]&ord=$nclr+desc\"><img src=img/dwn.png title=\"Sort by $nclr\"></a></th>\n";
+				}elseif($ord == $nclr){
 					echo "<th nowrap class=\"$bkg mrn\">$cols[$n] <a href=\"?";
-					echo preg_replace('/&ord=(.*)/',"",$_SERVER['QUERY_STRING']);
-					echo "&ord=$n+desc\"><img src=\"img/up.png\" title=\"$srtlbl\"></a></th>\n";
-				}elseif($ord == "$n desc"){
+					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
+					echo "&ord=$nclr+desc\"><img src=\"img/up.png\" title=\"$srtlbl\"></a></th>\n";
+				}elseif($ord == "$nclr desc"){
 					echo "<th nowrap class=\"$bkg mrn\">$cols[$n] <a href=\"?";
-					echo preg_replace('/&ord=(.*)/',"",$_SERVER['QUERY_STRING']);
-					echo "&ord=$n\"><img src=\"img/dwn.png\" title=\"$altlbl $srtlbl\"></a></th>\n";
+					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
+					echo "&ord=$nclr\"><img src=\"img/dwn.png\" title=\"$altlbl $srtlbl\"></a></th>\n";
 				}else{
 					echo "<th nowrap class=\"$bkg\">$cols[$n] <a href=\"?";
-					echo preg_replace('/&ord=(.*)/',"",$_SERVER['QUERY_STRING']);
-					echo "&ord=$n+desc\"><img src=\"img/dwn.png\" title=\"$srtlbl $n\"></a></th>\n";
+					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
+					echo "&ord=$nclr+desc\"><img src=\"img/dwn.png\" title=\"$srtlbl $nclr\"></a></th>\n";
 				}
 			}
 		}
@@ -360,7 +502,7 @@ function TblRow($bg,$static=0){
 	}elseif($static){
 		echo "<tr class=\"$bg\">";
 	}elseif(isset($_GET['print']) ){
-		echo "<tr class=\"$bg\" onclick=\"this.className='noti'\" ondblclick=\"this.className='$bg'\">";
+		echo "<tr class=\"$bg\" onclick=\"this.className='warn'\" ondblclick=\"this.className='$bg'\">";
 	}else{
 		echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">";
 	}
@@ -369,102 +511,105 @@ function TblRow($bg,$static=0){
 //===================================================================
 // Generate table cell
 function TblCell($val="",$href="",$fmt="",$img="",$typ=""){
-#TODO clean code!
-	$cval = ( !isset($_GET['print']) and !isset($_GET['xls']) and $href )?"<a href=\"$href\">$val</a>":$val;
-	$cimg = ( !(isset($_GET['print']) and !strstr($typ,"-img") ) and !isset($_GET['xls']) and $img )?$img:"";
+
+	$cval = '';
+	$cfmt = '';
+	$cimg = '';
+	if( isset($_GET['xls']) ){
+		$cval = $val;
+	}else{
+		if( isset($_GET['print']) ){
+			if( !strstr($typ,"-imx") ) $cval = $val;
+			if( $img and preg_match('/-im[gx]$/',$typ) ) $cimg = $img;
+		}else{
+			if( !strstr($typ,"-imx") ) $cval = ( $href )?"<a href=\"$href\">$val</a>":$val;
+			if( $img ) $cimg = $img;
+		}
+		$cfmt = ($fmt)?" $fmt":'';
+	}
 
 	if( strstr($typ,"th") ){
-		echo "<th $fmt>$cimg$cval</th>";
+		echo "<th$cfmt>$cimg$cval</th>";
 	}else{
-		echo "<td $fmt>$cimg$cval</td>";
+		echo "<td$cfmt>$cimg$cval</td>";
 	}
 }
 
 //===================================================================
 // Generate coloured bar graph element
 // mode determines color (used as threshold, if numeric)
-// style si=small icon, mi=medium icon, ms=medium shape, li=large icon (default)
-function Bar($val=1,$mode=0,$style="",$title=""){
+// style si=small icon, mi=medium icon, ms=medium shape, ls=large shape (mode=bgcol), li=large icon (default)
+function Bar($val=1,$mode='',$style='',$tit=''){
 
-	$tit   = $val;
-	$tresh = ($mode)?$mode:"";							# 0 yields wrong results
-	if($tresh == "lvl250"){
+	if($mode === "lvl250"){										# === doesn't fail if $mode is 0
 			$img = "red";
-			$bg = "crit";
-	}elseif( preg_match('/lvl(200|cfge|trfe|usrd)/',$tresh) ){
+			$bg = "#f08c8c";
+	}elseif( $mode === "lvl200" ){
 			$img = "org";
-			$bg = "alrm";
-	}elseif($tresh == "lvl150"){
+			$bg = "#f0b464";
+	}elseif( $mode === "lvl150" ){
 			$img = "yel";
-			$bg = "warn";
-	}elseif($tresh == "lvl100"){
+			$bg = "#f0f08c";
+	}elseif( $mode === "lvl100" ){
 			$img = "blu";
-			$bg = "noti";
-	}elseif( preg_match('/lvl(50|cfgn)/',$tresh) ){
+			$bg = "#8c8cf0";
+	}elseif( $mode === "lvl50" ){
 			$img = "grn";
-			$bg = "good";
-	}elseif($tresh == "lvl10"){
+			$bg = "#8cf08c";
+	}elseif( $mode === 0 or preg_match('/^lvl/',$mode) ){
 			$img = "gry";
-			$bg = "imgb";
-	}elseif($tresh > 0){
-		if($val < $tresh){
+			$bg = "#b4b4b4";
+	}elseif($mode > 0){
+		if($val < $mode){
 			$img = "grn";
-			$bg = "good";
-		}elseif($val < 2 * $tresh){
+			$bg = "#8cf08c";
+		}elseif($val < 2 * $mode){
 			$img = "org";
-			$bg = "alrm";
+			$bg = "#f0b464";
 		}else{
 			$img = "red";
-			$bg = "crit";
+			$bg = "#f08c8c";
 		}
-	}elseif($tresh < 0){
-		if($val < -$tresh/2){
+	}elseif($mode < 0){
+		if($val < -$mode/2){
 			$img = "red";
-			$bg = "crit";
-		}elseif($val < -$tresh){
+			$bg = "#f08c8c";
+		}elseif($val < -$mode){
 			$img = "org";
-			$bg = "alrm";
+			$bg = "#f0b464";
 		}else{
 			$img = "grn";
-			$bg = "good";
+			$bg = "#8cf08c";
 		}
 	}else{
 		$img = "gry";
-		$bg  = "imga";
-		$tit = $title;
+		$bg  = $mode;
 	}
-	if($style == "ms"){
-		$length = round(log($val)*10+2);
-		return "<div style=\"float:left;padding:1px;width:${length}px;height:14px;border:1px solid #000\" class=\"$bg\">$tit</div>";
+	if($style == "ls"){
+		$bar = "<div style=\"float:left;margin: 0 4px;padding-right: 4px;width:".round(log(round($val)+1)*20)."px;height:16px;border:1px solid #000;background-color: $bg\">$tit</div>";
+	}elseif($style == "ms"){
+		$bar = "<div style=\"float:left;margin: 0 2px;padding-right: 2px;width:".round(log(round($val)+1)*10)."px;height:14px;border:1px solid #000;background-color: $bg\">$tit</div>";
 	}elseif($style == "mi"){
-		$length = round(log($val)*10+2);
-		return "<img src=img/$img.png width=$length class=\"smallbar\" title=\"$val\">";
+		$bar = "<img src=img/$img.png width=".round(log(round($val)+1)*10)." class=\"smallbar\" title=\"$tit\">";
 	}elseif($style == "si"){
-		$length = round(log($val)*4+1);
-		return "<img src=img/$img.png width=$length class=\"smallbar\" title=\"$val\">";
-	}
-	if($val > 100000){
-		$length = round($val / 10000 - 10);	
-		return "<img src=\"img/$img.png\" width=\"400\" class=\"bigbar\" title=\">100000\"><img src=\"img/$img.png\" width=\"$length\" class=\"bigbar\" title=\"$val\">";
-	}elseif($val > 10000){
-		$length = round($val / 1000 - 10);	
-		return "<img src=\"img/$img.png\" width=\"300\" class=\"bigbar\" title=\">10000\"><img src=\"img/$img.png\" width=\"$length\" class=\"bigbar\" title=\"$val\">";
-	}elseif($val > 1000){
-		$length = round($val / 100 - 10);	
-		return "<img src=\"img/$img.png\" width=\"200\" class=\"bigbar\" title=\">1000\"><img src=\"img/$img.png\" width=\"$length\" class=\"bigbar\" title=\"$val\">";
-	}elseif($val > 100){
-		$length = round($val / 10 - 10);		
-		return "<img src=\"img/$img.png\" width=\"100\" class=\"bigbar\" title=\">100\" ><img src=\"img/$img.png\" width=\"$length\" class=\"bigbar\" title=\"$val\">";
+		$bar = "<img src=img/$img.png width=".round(log(round($val)+1)*4)." class=\"smallbar\" title=\"$tit\">";
 	}else{
-		$length = round($val) + 3;
-		return "<img src=\"img/$img.png\" width=\"$length\" class=\"bigbar\" title=\"$val\">";
+		if($val > 1000){
+			$wdh = round(160+sqrt($val));
+		}elseif($val > 100){
+			$wdh = round(100+$val/6);
+		}else{
+			$wdh = round($val);
+		}
+		$bar = "<img src=img/$img.png width=\"$wdh\" class=\"bigbar\" title=\"$tit\">";
 	}
+	return $bar;
 }
 
 //===================================================================
 // Return network type
 function Nettype($ip,$ip6=""){
-echo $ipv6;
+
 	#if ($ip == "0.0.0.0"){$img = "netr";$tit="Default";
 	if (preg_match("/^127\.0\.0/",$ip) or preg_match("/^::1/",$ip6) ){$img = "netr";$tit="LocalLoopback";
 	}elseif (preg_match("/^192\.168/",$ip)){$img = "nety";$tit="Private 192.168/16";
@@ -520,19 +665,17 @@ function SkewTime($istr,$var,$days){
 	global $sta, $end;
 
 	$s = $days * 86400;
-		
-	if( !preg_match('/&sho=/',$istr) ){$istr .= '&sho=1';}
 	if($var == "all"){
 		$repl = "sta=".urlencode(date("m/d/Y H:i", ($sta + $s)))."&";
 		$ostr = preg_replace("/sta=[0-9a-z%\+]+&/i",$repl,$istr);
 		$repl = "end=".urlencode(date("m/d/Y H:i",($end + $s)))."&";
 		$ostr = preg_replace("/end=[0-9a-z%\+]+(&|$)/i",$repl,$ostr);
 	}else{
-		$repl = "$var=".urlencode(date("m/d/Y H:i",($$var + $s)))."&";
+		$repl = "$var=".urlencode(date("m/d/Y H:i",(${$var} + $s)))."&";
 		$ostr = preg_replace("/$var=[0-9a-z%\+]+(&|$)/i",$repl,$istr);
 	}
 
-	return $ostr;
+	return $ostr.(strpos($ostr,'sho')?'':'sho=1');
 }
 
 //===================================================================
@@ -540,6 +683,43 @@ function SkewTime($istr,$var,$days){
 // echo IP6('fe80::3ee5:a6ff:feca:ea41');
 function IP6($addr) {
 	return bin2hex( inet_pton($addr) );
+}
+
+//===================================================================
+// Return fileicon
+function FileImg($f) {
+	
+	global $hislbl,$fillbl,$imglbl,$cfglbl,$cmdlbl,$mlvl;
+
+	$l  = "";
+	$ed = 0;
+	if(preg_match("/\.(zip|tgz|tbz|tar|gz|7z|bz2|rar)$/i",$f))	{$i = "pkg"; $t = "Archive";}
+	elseif(stristr($f,".csv"))				{$i = "list";$t = "CSV $fillbl";$l = $f;}
+	elseif(stristr($f,".def"))				{$i = "geom";$t = "Device Definition";$l = "Other-Defgen.php?so=".urlencode(basename($f,".def"));}
+	elseif(stristr($f,".log"))				{$i = "note";$t = "$hislbl";$l = $f;}
+	elseif(stristr($f,".js"))				{$i = "dbmb";$t = "Javascript";$l = $f;}
+	elseif(stristr($f,".pdf"))				{$i = "pdf"; $t = "PDF $fillbl";$l = $f;}
+	elseif(stristr($f,".php"))				{$i = "php"; $t = "PHP Script";}
+	elseif(stristr($f,".patch"))				{$i = "hlth";$t = "System Patch";}
+	elseif(stristr($f,".reg"))				{$i = "nwin";$t = "Registry $fillbl";}
+	elseif(stristr($f,".xml"))				{$i = "dcub";$t = "XML $fillbl";$l = $f;$ed = 1;}
+	elseif(preg_match("/\.(bmp|gif|jpg|png|svg)$/i",$f))	{$i = "img";$t = "$imglbl";$l = "javascript:pop('$f','$imglbl')";}
+	elseif(preg_match("/\.(txt|text)$/i",$f))		{$i = "abc"; $t = "TXT $fillbl";$l = $f;$ed = 1;}
+	elseif(preg_match("/[.-](cfg|conf|config)$/i",$f))	{$i = "conf";$t = "$cfglbl";$ed = 1;}
+	elseif(preg_match("/\.(exe)$/i",$f))			{$i = "cog";$t = "$cmdlbl";}
+	elseif(preg_match("/\.(htm|html)$/i",$f))		{$i = "dif";$t = "HTML $fillbl";$l = $f;}
+	elseif(preg_match("/\.(pcm|raw)$/i",$f))		{$i = "bell";$t = "Ringtone";}
+	elseif(preg_match("/\.(msq|psq|sql)$/i",$f))		{$i = "db";$t = "DB Dump";}
+	elseif(preg_match("/\.(btm|loads)$/i",$f))		{$i = "nhdd"; $t = "Boot Image";}
+	elseif(preg_match("/\.(app|bin|img|sbn|swi|ipe|xos)$/i",$f)){$i = "cbox"; $t = "Binary Image";}
+	elseif(preg_match("/\.(cer|crt|crl|spc|stl)$/i",$f)){$i = "lock"; $t = "Cert & Co";}
+	else							{$i = "bbox";$t = "$mlvl[10]";}
+
+	if($l){
+		return array("<a href=\"$l\"><img src=\"img/16/$i.png\" title=\"$f - $t\"></a>",$ed);
+	}else{
+		return array("<img src=\"img/16/$i.png\" title=\"$f - $t\">",$ed);
+	}
 }
 
 ?>

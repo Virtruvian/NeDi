@@ -151,10 +151,19 @@ table.full{
 /* Font Properties */
 .code{
 	overflow: auto;
+	text-align: left;
 	padding: 10px;
 	font-family: monospace;
 	font: 11px Courier New, monospace;
 	white-space: pre;
+}
+
+/* Scrollable list container */
+.scroller{
+	background-color: #aaaaaa;
+	height:150px;
+	width:100%;
+	overflow: auto;
 }
 
 .red {color: red }

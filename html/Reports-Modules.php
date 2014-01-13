@@ -2,9 +2,6 @@
 # Program: Reports-Modules.php
 # Programmer: Remo Rickli (and contributors) 
 
-error_reporting(E_ALL ^ E_NOTICE);
-
-$calendar  = 1;
 $printable = 1;
 
 include_once ("inc/header.php");
@@ -12,13 +9,14 @@ include_once ("inc/libdev.php");
 include_once ("inc/librep.php");
 
 $_GET = sanitize($_GET);
-$ina = isset($_GET['ina']) ? $_GET['ina'] : "";
-$opa = isset($_GET['opa']) ? $_GET['opa'] : "";
-$sta = (isset($_GET['sta']) && $ina != "") ? $_GET['sta'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
 
 $rep = isset($_GET['rep']) ? $_GET['rep'] : array();
 
-$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 10;
+$lim = isset($_GET['lir']) ? preg_replace('/\D+/','',$_GET['lir']) : 10;
 
 $map = isset($_GET['map']) ? "checked" : "";
 $ord = isset($_GET['ord']) ? "checked" : "";
@@ -34,7 +32,8 @@ $cols = array(	"device"=>"Device $namlbl",
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
-		"group"=>$grplbl,
+		"devgroup"=>$grplbl,
+		"devmode"=>$modlbl,
 		"snmpversion"=>"SNMP $verlbl",
 		"model"=>"Module $typlbl",
 		"moddesc"=>"Module $deslbl",
@@ -50,26 +49,21 @@ if( !isset($_GET['print']) ){
 <form method="get" name="report" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<td valign="top">
+
+<?PHP Filters(1); ?>
+
+</td>
 <th>
 
-<select size="1" name="ina">
-<option value=""><?= $fltlbl ?>->
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p>
-<a href="javascript:show_calendar('report.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
+<a href="?in[]=snmpversion&op[]=>&st[]=0"><img src="img/16/dev.png" title="SNMP Devices"></a>
+<a href="?in[]=devmode&op[]==&st[]=8"><img src="img/16/wlan.png" title="Controlled APs"></a>
+<a href="?in[]=lastdis&op[]=<&st[]=<?= time()-2*$rrdstep ?>&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/date.png" title="<?= $undlbl ?> Devices"></a>
+<a href="?in[]=lastdis&op[]=>&st[]=<?= time()-86400 ?>&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/clock.png" title="<?= $dsclbl ?> <?= $tim['t'] ?>"></a>
 
 </th>
 <th>
+
 <select multiple name="rep[]" size="4">
 <option value="sum" <?= (in_array("sum",$rep))?" selected":"" ?> ><?= $dislbl ?>
 <option value="inv" <?= (in_array("inv",$rep))?" selected":"" ?> ><?= $invlbl ?>
@@ -88,7 +82,7 @@ if( DbFetchRow($res) ){								# Show item only, if cisco_contracts table exists
 <th>
 
 <img src="img/16/form.png" title="<?= $limlbl ?>"> 
-<select size="1" name="lim">
+<select size="1" name="lir">
 <?php selectbox("limit",$lim) ?>
 </select>
 
@@ -112,23 +106,23 @@ if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")
 }
 
 if($rep){
-	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+	Condition($in,$op,$st,$co);
 
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	if ( in_array("sum",$rep) ){
-		ModDist($ina,$opa,$sta,$lim,$ord);
+		ModDist($in[0],$op[0],$st[0],$lim,$ord);
 	}
 
 	if ( in_array("inv",$rep) ){
-		ModInventory($ina,$opa,$sta,$lim,$ord);
+		ModInventory($in[0],$op[0],$st[0],$lim,$ord);
 	}
 
 	if ( in_array("prt",$rep) ){
-		ModPrint($ina,$opa,$sta,$lim,$ord);
+		ModPrint($in[0],$op[0],$st[0],$lim,$ord);
 	}
 
 	if ( in_array("vms",$rep) ){
-		ModVM($ina,$opa,$sta,$lim,$ord);
+		ModVM($in[0],$op[0],$st[0],$lim,$ord);
 	}
 }
 
@@ -150,14 +144,14 @@ if ( in_array("ves",$rep) ){
 		$sort = "name";
 	}
 	$query	= GenQuery('devices','s','name,type,serial,devos,bootimage',$sort,'',array($ina),array($opa),array($sta) );
-	$res	= @DbQuery($query,$link);
+	$res	= DbQuery($query,$link);
 
-	$link_ccc = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	$link_ccc = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 	if($res){
 		$dev = 0;
 		$row = 0;
-		while( $d = @DbFetchRow($res) ){
+		while( $d = DbFetchRow($res) ){
 			$dev++;
 			$ud = rawurlencode($d[0]);
 			echo "<tr class=\"imgb\" class=\"blu\"><th>\n";
@@ -165,8 +159,8 @@ if ( in_array("ves",$rep) ){
 
 	//$query_ccc = GenQuery('cisco_contracts','s','service_level,contract_number,end_date,DATEDIFF(STR_TO_DATE(end_date, '%d-%b-%Y'),CURDATE())','','',array('serial'),array('='),array($d[2]));
 	$query_ccc = "SELECT service_level,contract_number,end_date,DATEDIFF(STR_TO_DATE(end_date, '%d-%b-%Y'),CURDATE()) FROM cisco_contracts WHERE serial_number=\"$d[2]\"";
-	$res_ccc = @DbQuery($query_ccc,$link_ccc);
-	$ccc = @DbFetchRow($res_ccc);
+	$res_ccc = DbQuery($query_ccc,$link_ccc);
+	$ccc = DbFetchRow($res_ccc);
 	if ($ccc[3] > 30) {
 		$color = "green";
 		$ccc_message = "$ccc[0]<br>Contract #$ccc[1] valid till $ccc[2]";
@@ -184,15 +178,15 @@ if ( in_array("ves",$rep) ){
 			echo "<td align=right>-</td><td><b>$d[1]</b></td><td>$d[2]</td><td><font color=$color>$ccc_message</font></td></tr>\n";
 
 			$mquery	= GenQuery('modules','s','*','slot','',array('device'),array('='),array($d[0]));
-			$mres	= @DbQuery($mquery,$link);
+			$mres	= DbQuery($mquery,$link);
 			if($mres){
-				while( ($m = @DbFetchRow($mres)) ){
+				while( ($m = DbFetchRow($mres)) ){
 					if ($row % 2){$bg = "txta";}else{$bg = "txtb";}
 					$row++;
 					echo "<tr class=\"$bg\"><th>\n";
 					$query_ccc = "SELECT service_level,contract_number,end_date,DATEDIFF(STR_TO_DATE(end_date, '%d-%b-%Y'),CURDATE()) FROM cisco_contracts WHERE serial_number=\"$m[4]\"";
-					$res_ccc = @DbQuery($query_ccc,$link_ccc);
-					$ccc = @DbFetchRow($res_ccc);
+					$res_ccc = DbQuery($query_ccc,$link_ccc);
+					$ccc = DbFetchRow($res_ccc);
 					if ($ccc[3] > 30) {
 						$color = "green";
 						$ccc_message = "$ccc[0]<br>Contract #$ccc[1] valid till $ccc[2]";
@@ -209,15 +203,15 @@ if ( in_array("ves",$rep) ){
 					}
 					echo "<td align=right>$m[1]</td><td><b>$m[2]</b> $m[3]</td><td>$m[4]</td><td><font color=$color>$ccc_message</font></td></tr>\n";
 				}
-				@DbFreeResult($mres);
+				DbFreeResult($mres);
 			}else{
-				print @DbError($link);
+				print DbError($link);
 				die;
 			}
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
-		print @DbError($link);
+		print DbError($link);
 		die;
 	}
 	?>

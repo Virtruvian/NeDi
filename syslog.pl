@@ -5,12 +5,12 @@
 
 Simple syslog daemon, which stores events directly in DB. Only monitored
 targets receive classification of their events. They are forwarded
-via SMS/mail or ignored completely depending on the settings in
+via mail or ignored completely depending on the settings in
 Monitoring-Setup.
 
 =head1 SYNOPSIS
 
-syslog.pl [-D -v -p<port>]
+syslog.pl [-D -v -p<port> -U<config>]
 
 =head2 DESCRIPTION
 
@@ -62,7 +62,7 @@ use Getopt::Std;
 use vars qw($p $warn $now %opt %mon %srcna %usr);
 $misc::pause = "";											# Avoid 'used only once:' warning without breaking evals (like LWP in libweb)
 
-getopts('Dvp:',\%opt)  || &HELP_MESSAGE;
+getopts('Dvp:U:',\%opt)  || &HELP_MESSAGE;
 
 select(STDOUT); $| = 1;											# Disable buffering
 
@@ -70,10 +70,14 @@ $now = time;
 $p   = $0;
 $p   =~ s/(.*)\/(.*)/$1/;
 if($0 eq $p){$p = "."};
+
+$misc::dbname = $misc::dbhost = $misc::dbuser = $misc::dbpass = '';
+
 require "$p/inc/libmisc.pm";										# Use the miscellaneous nedi library
-&misc::ReadConf();
 require "$p/inc/libmon.pm";										# Use the SNMP function library
-require "$p/inc/libdb-" . lc($misc::backend) . ".pm" || die "Backend error ($misc::backend)!";
+require "$p/inc/libdb.pm";										# Use the DB function library
+
+&misc::ReadConf();
 
 if ($opt{'D'}) {
 	&misc::Daemonize;
@@ -81,6 +85,8 @@ if ($opt{'D'}) {
 my $maxlen	= 512;
 my $port	= ($opt{'p'})?$opt{'p'}:514;
 my $desup	= time;
+
+&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass,1);
 my $ntgt	= &mon::InitMon();
 
 my $sock = IO::Socket::INET->new(LocalPort => $port, Proto => 'udp') or die "socket: $@";
@@ -90,7 +96,7 @@ while($sock->recv(my $info, $maxlen)) {
 	my($client_port, $client_ip) = sockaddr_in($sock->peername);
 	my $ip = inet_ntoa($client_ip);
 
-# TODO put some aggregation here -> while(1) then recv with timeout instead and put Alertflush here and call every 10s or so...
+# TODO put some aggregation here -> while(1) then recv with timeout instead and put Event?, Alertflush here and call every 10s or so...
 	&Process($ip,$info);
 
 	if($now - $misc::pause > $desup){								# update targets if older than a monitoring cycle, after processing current event
@@ -98,6 +104,7 @@ while($sock->recv(my $info, $maxlen)) {
 		my $ntgt = &mon::InitMon();
 	}
 }
+&db::Disconnect();
 die "recv: $!";
 
 =head2 FUNCTION Process()
@@ -119,7 +126,8 @@ sub Process {
 	my $level = 10;
 
 	$info =~ s/<(\d+)>(.*)/$2/;
-	$info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=',.:<>? \E]//g;
+	$info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=",.:<>? \E]//g;
+	$info = substr($info,0,255);
 
 	if(exists $srcna{$src}){									# Source IP is monitored
 		$src = $srcna{$src};
@@ -139,7 +147,7 @@ sub Process {
 		&mon::AlertFlush("NeDi Syslog Forward for $src",$mq);
 	}else{
 		&misc::Prt("PROC:$src ($_[0])\tL:$level ($pri)\nMESG:$info\n");
-		&db::Insert('events','level,time,source,info,class',"\"$level\",\"$now\",\"$src\",\"$info\",\"-\"");
+		&db::Insert('events','level,time,source,info,class',"$level,$now,'$src','$info','ip'");
 	}
 }
 
@@ -163,6 +171,7 @@ sub HELP_MESSAGE {
 	print "-D		daemonize moni.pl\n";
 	print "-v		verbose output\n";
 	print "-p x		listen on port x (default 514)\n\n";
+	print "-U file	Use specified configuration\n";
 	print "syslog (C) 2001-2013 Remo Rickli (and contributors)\n\n";
 	die;
 }

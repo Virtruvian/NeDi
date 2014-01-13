@@ -18,43 +18,57 @@
 #============================================================================
 # Visit http://www.nedi.ch/ for more information.
 #============================================================================
-#error_reporting(E_ALL);
+
+$nedipath  = preg_replace( "/^(\/.+)\/ht\w+\/.+.php/","$1",$_SERVER['SCRIPT_FILENAME']);		# Guess NeDi path for nedi.conf
 
 require_once ("inc/libmisc.php");
 ReadConf('usr');
 require_once ("inc/libdb-" . strtolower($backend) . ".php");
 include_once ("inc/timezones.php");
 
-$_POST = sanitize($_POST);
 $_GET  = sanitize($_GET);
-$goto  = preg_match('/^\w+-\w+\.php/',$_GET['goto']) ? $_GET['goto'] : "User-Profile.php";		# Only allow links to NeDi modules
+$_POST = sanitize($_POST);
+if( isset($_GET['goto']) and preg_match('/^\w+-\w+\.php/',$_GET['goto']) ){				# Only allow links to NeDi modules
+	$goto = $_GET['goto'];
+}elseif( date('z') > 330 ){										# Let the X-mas spirits inspire users...
+	$goto = 'Other-Invoice.php';
+}else{
+	$goto = 'User-Profile.php';
+}
+$user  = isset($_GET['user'])  ? $_GET['user'] : '';
+$user  = isset($_POST['user']) ? $_POST['user'] : $user;
 
-if ($guiauth == 'sso' and isset($_SERVER['HTTP_AUTH_USER'])) {
-	$_POST['user'] = $_SERVER['HTTP_AUTH_USER'];
+if( $guiauth == 'sso' and isset($_SERVER['HTTP_AUTH_USER']) ){
+	$user = $_SERVER['HTTP_AUTH_USER'];
 	$_POST['pass'] = 'NO_PASSWD';
-} elseif ($guiauth == 'sso' and isset($_SERVER['PHP_AUTH_USER'])) {
-	$_POST['user'] = $_SERVER['PHP_AUTH_USER'];
+}elseif( $guiauth == 'sso' and isset($_SERVER['PHP_AUTH_USER']) ){
+	$user = $_SERVER['PHP_AUTH_USER'];
 	$_POST['pass'] = 'NO_PASSWD';
 }
 
 $raderr = "";
 
-if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid SQL injection
-	$form_user = $_POST['user'];									# SSO Code for HTTPAUTH PassTrough by Juergen Vigna
+# if username starts with "/C=" (Certificate), then use $_SERVER['SSL_CLIENT_S_DN_CN'] as suggested by Daniel
+if(isset( $user) and preg_match('/^\/C=/',$user) and isset($_SERVER['SSL_CLIENT_S_DN_CN'])) {
+	$user = $_SERVER['SSL_CLIENT_S_DN_CN'];
+}
+
+if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL injection as suggested by Daniel
+	$form_user = $user;									# SSO Code for HTTPAUTH PassTrough by Juergen Vigna
 	$form_pass = $_POST['pass'];
 
-	$pass = hash("sha256","NeDi".$_POST['user'].$_POST['pass']);					# Salt & pw
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	$pass = hash("sha256","NeDi".$user.$_POST['pass']);					# Salt & pw
+	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	if($guiauth == 'none'){
 		$uok	= 1;
-		$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST[user]) );
-		$res    = @DbQuery($query,$link);
-	}elseif( strstr($guiauth,'pam') && $_POST['user'] != "admin" ){					# PAM code by Owen Brotherhood & Bruberg
-		if (!extension_loaded ('pam_auth')){dl("pam_auth.so");}
-		$uok	= pam_auth($_POST['user'],$_POST['pass']);
-		$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST[user]) );
-		$res    = @DbQuery($query,$link);
-	}elseif( strstr($guiauth,'radius') && $_POST['user'] != "admin" ){				# Radius code by Till Elsner
+		$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($user) );
+		$res    = DbQuery($query,$link);
+	}elseif( strstr($guiauth,'pam') && $user != "admin" ){					# PAM code by Owen Brotherhood & Bruberg
+		if (!extension_loaded ('pam_auth')){dl('pam_auth.so');}					# dl removed in PHP5.3?
+		$uok	= pam_auth($user,$_POST['pass']);
+		$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($user) );
+		$res    = DbQuery($query,$link);
+	}elseif( strstr($guiauth,'radius') && $user != "admin" ){				# Radius code by Till Elsner
 		$radres = radius_auth_open();
 		if (!$radres) {
 			$raderr = "Error while preparing RADIUS authentication: ".radius_strerror($radres);
@@ -67,7 +81,7 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 		if (!radius_create_request($radres, RADIUS_ACCESS_REQUEST)) {
 			$raderr = "RADIUS create: ".radius_strerror($radres);
 		}
-		if (!(	radius_put_string($radres, RADIUS_USER_NAME, $_POST['user'])
+		if (!(	radius_put_string($radres, RADIUS_USER_NAME, $user)
 			&& radius_put_string($radres, RADIUS_USER_PASSWORD, $_POST['pass'])
 			&& radius_put_string($radres, RADIUS_CALLING_STATION_ID, $_SERVER['REMOTE_ADDR'])# dstrezov's suggestion for ACS compliance
 			&& radius_put_addr($radres, RADIUS_NAS_IP_ADDRESS, $_SERVER['SERVER_ADDR']) )){
@@ -79,9 +93,9 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 		}else{
 			switch ($radauth){
 				case RADIUS_ACCESS_ACCEPT:
-					$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST['user']) );
-					$res    = @DbQuery($query,$link);
-					$uok	= mysql_num_rows($res);
+					$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($user) );
+					$res    = DbQuery($query,$link);
+					$uok	= DbNumRows($res);
 					break;
 				case RADIUS_ACCESS_REJECT:
 					$raderr = "Incorrect RADIUS login!";
@@ -93,12 +107,11 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 					$raderr = "Unknown RADIUS error!";
 			}
 		}
-	}elseif( strstr($guiauth,'ldap') && $_POST['user'] != "admin" ){				# Ldap code by Stephane Garret & vtur
+	}elseif( strstr($guiauth,'ldap') && $user != "admin" ){				# Ldap code by Stephane Garret & vtur
 		require_once ("inc/libldap.php");
-		if (user_from_ldap_servers($_POST['user'],$_POST['pass'], false)){
-		
-			$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST['user']) );
-			$res    = @DbQuery($query,$link);
+		if (user_from_ldap_servers($user,$_POST['pass'], false)){
+			$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($user) );
+			$res    = DbQuery($query,$link);
 			$uok = 1;
 			$ldaperr = "<h4>Authentication LDAP OK</h4>";
 		}else {
@@ -106,32 +119,33 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 			$ldaperr = "<h4>Authentication LDAP Failed </h4>";
 		}
 	}elseif( strstr($guiauth,'sso') and $_POST['pass'] == 'NO_PASSWD') {				# SSO Code for HTTPAUTH PassTrough by Juergen Vigna
-			$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST['user']) );
-			$res    = @DbQuery($query,$link);
-			$uok = @DbNumRows($res);
+			$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($user) );
+			$res    = DbQuery($query,$link);
+			$uok = DbNumRows($res);
 			if ($uok != 1) {
-				$_POST['user'] = $form_user;
+				$user = $form_user;
 				$_POST['pass'] = $form_pass;
-				$pass   = hash("sha256","NeDi".$_POST['user'].$_POST['pass']);		# Salt & pw
-				$query	= GenQuery('users','s','*','','',array('user','password'),array('=','='),array($_POST['user'],$pass),array('AND') );
-				$res    = @DbQuery($query,$link);
-				$uok    = @DbNumRows($res);
+				$pass   = hash("sha256","NeDi".$user.$_POST['pass']);		# Salt & pw
+				$query	= GenQuery('users','s','*','','',array('usrname','password'),array('=','='),array($user,$pass),array('AND') );
+				$res    = DbQuery($query,$link);
+				$uok    = DbNumRows($res);
 			}
 	}else{
-	        $pass = hash("sha256","NeDi".$_POST['user'].$_POST['pass']);				# Salt & pw
-		$query	= GenQuery('users','s','*','','',array('user','password'),array('=','='),array($_POST['user'],$pass),array('AND') );
-		$res    = @DbQuery($query,$link);
-		$uok    = @DbNumRows($res);
+	        $pass = hash("sha256","NeDi".$user.$_POST['pass']);				# Salt & pw
+		$query	= GenQuery('users','s','*','','',array('usrname','password'),array('=','='),array($user,$pass),array('AND') );
+		$res    = DbQuery($query,$link);
+		$uok    = DbNumRows($res);
 	}
 
 	if($uok == 1) {
-		$usr = @DbFetchRow($res);
+		$usr = DbFetchRow($res);
 		session_start(); 
-		$_SESSION['user']  = $_POST['user'];
+		$_SESSION['user']  = $user;
 		$_SESSION['group'] = "usr,";
-		$_SESSION['view'] = $usr[15];
+		$_SESSION['view']  = $usr[15];
 		$_SESSION['bread'] = array();
-		if(strstr($guiauth,'ldap') && $_POST['user'] != "admin"){
+		$_SESSION['ver']   = "1.0.9-010";
+		if( strstr($guiauth,'ldap') and $user != "admin" and is_array($ldapmap) ){
 			if (($ldapmap[0]) and in_array($ldapmap[0],$ldapusersgrp)){
 				$_SESSION['group']   .= "adm,";
 			}
@@ -150,7 +164,7 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 			if (($ldapmap[5]) and in_array($ldapmap[5],$ldapusersgrp)){
 				$_SESSION['group']   .= "oth,";
 			}
-			if(@DbNumRows($res)>0){
+			if(DbNumRows($res)>0){
 				$_SESSION['lang'] = $usr[8];
 				$_SESSION['theme']= $usr[9];
 				$_SESSION['vol']  = ($usr[10] & 3)*33;
@@ -169,14 +183,13 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 			}else{
 				$_SESSION['lang'] = 'english';
 				$_SESSION['theme']= 'default';
-				$_SESSION['vol']  = 10;
-				$_SESSION['col']  = 5;
+				$_SESSION['vol']  = 33;
+				$_SESSION['lsiz'] = 12;
+				$_SESSION['col']  = 6;
 				$_SESSION['lim']  = 5;
 				$_SESSION['gsiz'] = 2;
-				$_SESSION['lsiz'] = 10;
 				$_SESSION['date'] = 'j.M y G:i';
 			}
-			$_SESSION['ver'] = "1.0.8-116";
 		}else{
 			if ($usr[2] &  1) {$_SESSION['group']	.= "adm,";}
 			if ($usr[2] &  2) {$_SESSION['group']	.= "net,";}
@@ -200,12 +213,11 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 			$_SESSION['nip']  = $usr[13] & 256;
 			$_SESSION['date'] = ($usr[14])?substr($usr[14],0,-3):'j.M y G:i';
 			$_SESSION['tz']   = $tzone[substr($usr[14],-3)];
-			$_SESSION['ver']  = "1.0.8-116";
-			$query	= GenQuery('users','u','user','=',$_POST['user'],array('lastlogin'),array(),array(time()) );
-			@DbQuery($query,$link);
+			$query	= GenQuery('users','u','usrname','=',$user,array('lastlogin'),array(),array(time()) );
+			DbQuery($query,$link);
 		}
 	}else{
-	    print @DbError($link);
+	    print DbError($link);
 	}
 	if( isset($_SESSION['group']) ){
 		echo "<body style=\"background-color: #666666;\"><script>document.location.href='$goto';</script></body>\n";
@@ -219,8 +231,9 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 ?>
 <html>
 <head>
-<title>NeDi 1.0.8-116</title>
-<meta name="generator" content="NeDi 1.0.8-116">
+<title>NeDi 1.0.9-010</title>
+<meta name="generator" content="NeDi 1.0.9-010">
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
 <link href="themes/default.css" type="text/css" rel="stylesheet">
 <link rel="shortcut icon" href="img/favicon.ico">
 </head>
@@ -231,15 +244,15 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){					# Avoid 
 <tr class="loginbg"><th colspan="3">
 <?= ( file_exists('themes/custom.png') )?'<img src="themes/custom.png"><br>':'<a href="http://www.nedi.ch"><img src="img/nedib.png"></a>'; ?>
 </th></tr>
-<tr class="txta">
-<th align="center" colspan="3">
-<img src="img/nedie<?= rand(1,7) ?>.jpg">
+<tr>
+<th class="txta" align="center" colspan="3">
+<img src="img/nedie<?= rand(1,8) ?>.jpg">
 <p><hr>
 <?= $disc ?>
 </th></tr>
 <tr class="loginbg">
-<th>User <input type="text" name="user" size="12"></th>
-<th>Pass <input type="password" name="pass" size="12"></th>
+<th>User <input type="text" name="user" size="15"></th>
+<th>Pass <input type="password" name="pass" size="15"></th>
 <th><input type="submit" value="Login">
 </th>
 </tr>

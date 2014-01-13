@@ -40,11 +40,11 @@ $iso = isset($_GET['iso']) ? $_GET['iso'] : "";
 <select size="1" name="dev" onchange="this.form.submit();">
 <option value=""><?= $sellbl ?> ->
 <?php
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('devices','s','device,devip,cliport,login','','',array('devos','cliport'),array('=','>'),array('ESX','0'), array('AND') );
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
-	while( $d = @DbFetchRow($res) ){
+	while( $d = DbFetchRow($res) ){
 		if($dev == $d[0]){
 			$sel = "selected";
 			$dip = long2ip($d[1]);
@@ -55,9 +55,9 @@ if($res){
 		}
 		echo "<option value=\"$d[0]\" $sel>$d[0]\n";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 	die ( mysql_error() );
 }
 ?>
@@ -69,9 +69,9 @@ if($res){
 <?php
 if($dev){
 	$query	= GenQuery('modules','s','*','','',array('device'),array('='),array($dev) );
-	$res	= @DbQuery($query,$link);
+	$res	= DbQuery($query,$link);
 	if($res){
-		while( $m = @DbFetchRow($res) ){
+		while( $m = DbFetchRow($res) ){
 			if($svm == $m[8]){
 				$sel = "selected";
 				$sna = $m[1];
@@ -84,9 +84,9 @@ if($dev){
 			}
 			echo "<option value=\"$m[8]\" $sel>$m[1]\n";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
-		print @DbError($link);
+		print DbError($link);
 		die ( mysql_error() );
 	}
 }
@@ -152,8 +152,9 @@ if($dev and $sna){
 	array_pop($parr);
 	$vmpath = implode('/',$parr)."/".$nvm;
 
-	$cmds  = "mkdir $vmpath\n";
+	$cmds  = "<PHP? exit; ?>\n";
 
+	$cmds .= "mkdir $vmpath\n";
 	$cmds .= "vmkfstools -c ${hdd}g -d thin $vmpath/$nvm.vmdk\n";
 
 	$cmds .= "echo config.version = \\\"8\\\" > $vmpath/$nvm.vmx\n";
@@ -201,17 +202,18 @@ if($dev and $sna){
 
 	$cmds .= "vim-cmd solo/registervm $vmpath/$nvm.vmx $nvm\n";
 
-	echo "<h2>$cmdlbl $dev</h2><div class=\"textpad warn code\">\n";
+	echo "<h3>$dev ".DevCli($dip,$dpo,1)."</h3>\n";
 
 	$cred = ( strstr($guiauth,'-pass') )?"$_SESSION[user] $pwd":"$dlg dummy";
 	$cred = addcslashes($cred,';$!');
 	if($_GET['add']){
-		$fd =  @fopen("log/cmd_$_SESSION[user]","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user]");
+		$fd =  @fopen("log/cmd_$_SESSION[user].php","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user]");
 		fwrite($fd, $cmds);
 		fclose($fd);
 
-		$out  = system("perl inc/devwrite.pl $nedipath $dip $dpo $cred ESX log/cmd_$_SESSION[user]", $err);
-		echo " <a href=\"log/cmd_$_SESSION[user]-$dip.log\" target=window><img src=\"img/16/note.png\" title='view output'></a><br>";
+		$out  = system("perl $nedipath/inc/devwrite.pl $nedipath $dip $dpo $cred ESX log/cmd_$_SESSION[user]", $err);
+		echo "<iframe style=\"display:block;\" class=\"textpad warn code\" src=\"log/cmd_$_SESSION[user]-$dip.log\"></iframe>";
+
 		$cstr = preg_replace('/\n|"|\'/',' ',$cmds);
 		if( strlen($cstr) > 40 ){$cstr = substr( $cstr,0,40)."...";}
 		$msg  = "User $_SESSION[user] wrote $cstr";
@@ -224,14 +226,13 @@ if($dev and $sna){
 			
 			echo "<p>$dev $stalbl: <a href=\"Devices-Status.php?dev=$dev\"><img src=\"img/16/dev.png\" title=\"Devices-Status\"></a>";
 		}
-		$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),'',array($lvl,time(),$dev,$msg,'usrd',$dev) );
-		if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}
+		$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),array(),array($lvl,time(),$dev,$msg,'usrd',$dev) );
+		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}
 	}elseif($_GET['sho']){
-		echo $cmds;
+		echo "<div class=\"textpad txtb code good\">$cmds</div>\n";
 	}else{
-		echo "$tim[n] $sellbl: $sholbl||$addlbl";
+		echo "<div class=\"textpad txtb\">$tim[n] $sellbl: $sholbl||$addlbl</div>";
 	}
-	echo "</div>\n";
 }else{
 	echo "<div class=\"textpad alrm drd\">This is work in progress and intended for my ESXi! It may not work properly in other environments yet...</div>\n";
 }

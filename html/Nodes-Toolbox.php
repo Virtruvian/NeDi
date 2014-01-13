@@ -8,11 +8,11 @@ $exportxls = 1;
 
 include_once ("inc/header.php");
 
-$_GET		= str_replace(";","", sanitize($_GET) );
-$dest		= isset($_GET['Dest']) ? $_GET['Dest'] : $_SERVER['REMOTE_ADDR'];
-$ping_count	= isset($_GET['Count']) ? $_GET['Count'] : 3;
-$ping_size	= isset($_GET['Size']) ? $_GET['Size'] : 32;
-$do		= isset($_GET['Do']) ? $_GET['Do'] : "";
+$_GET		= sanitize($_GET);
+$dest		= isset($_GET['Dest']) ? preg_replace('/[^\w+\.-]/','',$_GET['Dest']) : $_SERVER['REMOTE_ADDR'];
+$ping_count	= isset($_GET['Count']) ? preg_replace('/[^\d+]/','',$_GET['Count']) : 3;
+$ping_size	= isset($_GET['Size']) ? preg_replace('/[^\d+]/','',$_GET['Size']) : 32;
+$do		= isset($_GET['Do']) ? $_GET['Do'] : '';
 
 ?>
 <h1><?= $netlbl ?> Tool Box</h1>
@@ -24,11 +24,11 @@ $do		= isset($_GET['Do']) ? $_GET['Do'] : "";
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
 <a href="log/kitty.exe"><img src="img/16/kons.png" title="Kitty"></a>
-<a href="log/iperf.exe"><img src="img/16/flas.png" title="Iperf"></a>
+<a href="log/iperf.exe"><img src="img/16/tap.png" title="Iperf"></a>
 </th><th>
 <?= $dstlbl ?> <input type="text" name="Dest" value="<?= $dest ?>" size="15" />
-<?= $numlbl ?> <input type="text" name="Count" value="<?= $ping_count ?>" size="2" />
-<?= $sizlbl ?> <input type="text" name="Size" value="<?= $ping_size ?>" size="4" />
+<?= $qtylbl ?> <input type="number" name="Count" value="<?= $ping_count ?>" size="2" />
+<?= $sizlbl ?> <input type="number" name="Size" value="<?= $ping_size ?>" size="4" />
 <input type="submit" value="Lookup" name="Do"/>
 <input type="submit" value="Ping" name="Do"/>
 <input type="submit" value="Ping Range" name="Do"/>

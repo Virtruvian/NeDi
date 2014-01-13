@@ -9,14 +9,14 @@ include_once ("inc/header.php");
 
 $_GET = sanitize($_GET);
 $_POST = sanitize($_POST);
-$del = isset($_GET['del']) ? $_GET['del'] : "";
-$sel = isset($_GET['sel']) ? $_GET['sel'] : "";
+$del = isset($_GET['del']) ? preg_replace('/[^\w+\.-]/','',$_GET['del']) : '';
+$sel = isset($_GET['sel']) ? preg_replace('/[^\w+\.-]/','',$_GET['sel']) : '';
 
-$add = isset($_POST['add']) ? $_POST['add'] : "";
-$usr = isset($_POST['usr']) ? $_POST['usr'] : "";
-$psw = isset($_POST['psw']) ? $_POST['psw'] : "";
+$add = isset($_POST['add']) ? preg_replace('/[^\w+\.-]/','',$_POST['add']) : '';
+$usr = isset($_POST['usr']) ? preg_replace('/[^\w+\.-]/','',$_POST['usr']) : '';
+$psw = isset($_POST['psw']) ? preg_replace('/[\s+]/','',$_POST['psw']) : '';
 
-$dbn = split("_",$dbname);
+$dbn = explode("_",$dbname);
 
 ?>
 
@@ -51,18 +51,38 @@ $dbn = split("_",$dbname);
 if($isadmin and $del){
 	$link = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 	DbQuery(GenQuery($del,"p"), $link);
-	@DbClose($link);
+	DbClose($link);
 }elseif($isadmin and $add){
-	$usa  = ($usr)?"-u$usr":"";
-	$pwa  = ($psw)?"-p$psw":"";
-	$dbpw = ($dbpass)?"IDENTIFIED BY '$dbpass'":"";
 	echo "<div class=\"textpad code txta\">";
-	echo "<h3>$coplbl DB $dbname -> ${dbname}_$add</h3>";
+	echo "<h3>$coplbl DB $dbname -> $dbn[0]_$add</h3>";
 	ob_end_flush();
-	system("mysqladmin create ${dbname}_$add $usa $pwa 2>&1 && mysqldump $usa $pwa $dbname | mysql $usa $pwa ${dbname}_$add");
-	echo "<h3>".(($verb1)?"$addlbl $acslbl":"$acslbl $addlbl")." $dbuser@$dbhost</h3>";
-	ob_end_flush();
-	system("echo \"GRANT ALL PRIVILEGES ON ${dbname}_$add.* TO '$dbuser'@'$dbhost' $dbpw\" | mysql $usa $pwa 2>&1");
+
+	$nedihost = $dbhost;#TODO add support for non localhost!
+	if( $backend == 'mysql'){#TODO fix/finish....move to native PHP?
+		$usa  = ($usr)?"-u$usr":"";
+		$pwa  = ($psw)?"-p$psw":"";
+		system("mysqladmin create $dbn[0]_$add -h $dbhost $usa $pwa 2>&1 && mysqldump -h $dbhost $usa $pwa $dbname | mysql -h $dbhost $usa $pwa $dbn[0]_$add", $stat);
+	}elseif( $backend == 'Pg'){
+		$usa  = ($usr)?"-U$usr":"";
+		$pwa  = ($psw)?"export PGPASSWORD=$psw;":"";
+		system("$pwa createdb -O $dbuser -T $dbname $dbn[0]_$add -h $dbhost $usa 2>&1", $stat);
+	}
+	if($stat){
+		echo "<h4>$errlbl $coplbl</h4>\n";
+		if( $backend == 'Pg') echo "Syslog & Monitoring $stco[100]?";
+	}else{
+		echo "<h5>$coplbl OK</h5>\n";
+		ob_end_flush();
+		if( $backend == 'mysql'){
+			$dbpw = ($dbpass)?"IDENTIFIED BY '$dbpass'":'';
+			system("echo \"GRANT ALL PRIVILEGES ON $dbn[0]_$add.* TO '$dbuser'@'$nedihost' $dbpw\" | mysql $usa $pwa 2>&1", $stat);
+		}
+		if($stat){
+			echo "<h4>$errlbl $acslbl</h4>\n";
+		}else{
+			echo "<h5>$acslbl OK</h5>\n";
+		}
+	}
 	echo "</div>";
 }elseif($sel){
 	if( strpos($sel,"_") ){
@@ -71,14 +91,14 @@ if($isadmin and $del){
 		$_SESSION['vol']  = 0;
 	}else{
 		$link = DbConnect($dbhost, $dbuser, $dbpass, $sel);
-		$qry = GenQuery('users','s','*','','',array('user'),array('='),array($_SESSION['user']) );
-		$res = @DbQuery($qry,$link);
-		$usr = @DbFetchRow($res);
+		$qry = GenQuery('users','s','*','','',array('usrname'),array('='),array($_SESSION['user']) );
+		$res = DbQuery($qry,$link);
+		$usr = DbFetchRow($res);
 		$_SESSION['vol']  = ($usr[10] & 3)*33;
 		$_SESSION['gsiz'] = $usr[13] & 7;
 		unset($_SESSION['snap']);								# Base DB, reset session
-		@DbFreeResult($res);
-		@DbClose($link);
+		DbFreeResult($res);
+		DbClose($link);
 	}
 	$dbname = $sel;	
 }
@@ -107,12 +127,12 @@ while($ss = DbFetchRow($res)){
 	}else{
 		$inactive = 1;
 	}
-	$slnk = @DbConnect($dbhost, $dbuser, $dbpass, $ss[0]);
-	$devs = @DbFetchRow(DbQuery(GenQuery('devices','s','count(*)'), $slnk));
-	$cfgs = @DbFetchRow(DbQuery(GenQuery('configs','s','count(*)'), $slnk));
-	$nods = @DbFetchRow(DbQuery(GenQuery('nodes','s','count(*)'), $slnk));
-	$fdis = @DbFetchRow(DbQuery(GenQuery('system','s','value','','',array('name'),array('='),array('first') ), $slnk));
-	@DbClose($slnk);
+	$slnk = DbConnect($dbhost, $dbuser, $dbpass, $ss[0]);
+	$devs = DbFetchRow(DbQuery(GenQuery('devices','s','count(*)'), $slnk));
+	$cfgs = DbFetchRow(DbQuery(GenQuery('configs','s','count(*)'), $slnk));
+	$nods = DbFetchRow(DbQuery(GenQuery('nodes','s','count(*)'), $slnk));
+	$fdis = DbFetchRow(DbQuery(GenQuery('system','s','value','','',array('name'),array('='),array('first') ), $slnk));
+	DbClose($slnk);
 
 	TblRow($bg);
 	echo "<th class=\"$bi\"> ";
@@ -129,8 +149,8 @@ while($ss = DbFetchRow($res)){
 </th>
 <td><b><?= $ss[0] ?></b></td>
 <td><?= Bar($devs[0],'lvl100','mi') ?> <?= $devs[0] ?></td>
-<td><?= Bar($devs[0],'lvl150','mi') ?> <?= $cfgs[0] ?></td>
-<td><?= Bar($devs[0],'lvl50','mi') ?> <?= $nods[0] ?></td>
+<td><?= Bar($cfgs[0],'lvl150','mi') ?> <?= $cfgs[0] ?></td>
+<td><?= Bar($nods[0],'lvl50','mi') ?> <?= $nods[0] ?></td>
 <td><?= date($_SESSION['date'],$fdis[0]) ?></td>
 
 <th width="80">

@@ -44,4 +44,4 @@ Further steps:
 <li>Make a <a href="http://www.nedi.ch/download/" target="window">donation</a> 
 <li>Or just have a <a href="irc://irc.freenode.net/nedi">chat</a>.
 </ul>
-<center>Then edit this message to fit your needs (by clicking the notepad above)</center><br>
+<center>Then edit this message to fit your needs (by clicking the notepad above)</center><br><br>

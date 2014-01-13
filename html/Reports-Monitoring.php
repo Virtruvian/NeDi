@@ -2,9 +2,6 @@
 # Program: Reports-Monitoring.php
 # Programmer: Remo Rickli
 
-error_reporting(E_ALL ^ E_NOTICE);
-
-$calendar  = 1;
 $printable = 1;
 
 include_once ("inc/header.php");
@@ -13,13 +10,14 @@ include_once ("inc/libmon.php");
 include_once ("inc/librep.php");
 
 $_GET = sanitize($_GET);
-$ina = isset($_GET['ina']) ? $_GET['ina'] : "";
-$opa = isset($_GET['opa']) ? $_GET['opa'] : "";
-$sta = (isset($_GET['sta']) && $ina != "") ? $_GET['sta'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
 
 $rep = isset($_GET['rep']) ? $_GET['rep'] : array();
 
-$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 10;
+$lim = isset($_GET['lir']) ? preg_replace('/\D+/','',$_GET['lir']) : 10;
 
 $map = isset($_GET['map']) ? "checked" : "";
 $ord = isset($_GET['ord']) ? "checked" : "";
@@ -36,7 +34,8 @@ $cols = array(	"device"=>"Device",
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
-		"group"=>$grplbl,
+		"devgroup"=>$grplbl,
+		"devmode"=>$modlbl,
 		"snmpversion"=>"SNMP $verlbl",
 		"name"=>"$tgtlbl/$srclbl",
 		"lastok"=>"$laslbl OK",
@@ -52,26 +51,21 @@ $cols = array(	"device"=>"Device",
 <form method="get" name="report" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<td valign="top">
+
+<?PHP Filters(1); ?>
+
+</td>
 <th>
 
-<select size="1" name="ina">
-<option value=""><?= $fltlbl ?>->
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p>
-<a href="javascript:show_calendar('report.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
+<a href="?in[]=snmpversion&op[]=>&st[]=0"><img src="img/16/dev.png" title="SNMP Devices"></a>
+<a href="?in[]=devmode&op[]==&st[]=8"><img src="img/16/wlan.png" title="Controlled APs"></a>
+<a href="?in[]=lastdis&op[]=<&st[]=<?= time()-2*$rrdstep ?>&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/date.png" title="<?= $undlbl ?> Devices"></a>
+<a href="?in[]=lastdis&op[]=>&st[]=<?= time()-86400 ?>&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/clock.png" title="<?= $dsclbl ?> <?= $tim['t'] ?>"></a>
 
 </th>
 <th>
+
 <select multiple name="rep[]" size="4">
 <option value="mav" <?= (in_array("mav",$rep))?" selected":"" ?>><?= $avalbl ?> <?= $dislbl ?>
 <option value="lat" <?= (in_array("lat",$rep))?" selected":"" ?>><?= $latlbl ?> <?= $stslbl ?>
@@ -87,7 +81,7 @@ foreach ($cols as $k => $v){
 <th>
 
 <img src="img/16/form.png" title="<?= $limlbl ?>">  
-<select size="1" name="lim">
+<select size="1" name="lir">
 <?php selectbox("limit",$lim) ?>
 </select>
 </th>
@@ -114,33 +108,33 @@ if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")
 }
 
 if($rep){
-	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+	Condition($in,$op,$st,$co);
 
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	if ( in_array("mav",$rep) ){
-		MonAvail($ina,$opa,$sta,$lim,$ord);
+		MonAvail($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("lat",$rep) ){
-		MonLatency($ina,$opa,$sta,$lim,$ord);
+		MonLatency($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("upt",$rep) ){
-		MonUptime($ina,$opa,$sta,$lim,$ord);
+		MonUptime($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("evt",$rep) ){
-		MonEvent($ina,$opa,$sta,$lim,$ord,$opt);
+		MonEvent($in[0],$op[0],$st[0],$lim,$ord,$opt);
 	}
 
 	if ( in_array("igr",$rep) ){
-		IncGroup($ina,$opa,$sta,$lim,$ord);
+		IncGroup($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("idi",$rep) ){
-		IncDist($ina,$opa,$sta,$lim,$ord);
+		IncDist($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("ack",$rep) ){
-		IncAck($ina,$opa,$sta,$lim,$ord);
+		IncAck($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("his",$rep) ){
-		IncHist($ina,$opa,$sta,$lim,$ord,$opt);
+		IncHist($in[0],$op[0],$st[0],$lim,$ord,$opt);
 	}
 }
 

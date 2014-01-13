@@ -2,9 +2,6 @@
 # Program: Reports-Nodes.php
 # Programmer: Remo Rickli (and contributors) 
 
-error_reporting(E_ALL ^ E_NOTICE);
-
-$calendar  = 1;
 $printable = 1;
 
 include_once ("inc/header.php");
@@ -12,13 +9,14 @@ include_once ("inc/libnod.php");
 include_once ("inc/librep.php");
 
 $_GET = sanitize($_GET);
-$ina = isset($_GET['ina']) ? $_GET['ina'] : "";
-$opa = isset($_GET['opa']) ? $_GET['opa'] : "";
-$sta = (isset($_GET['sta']) && $ina != "") ? $_GET['sta'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
 
 $rep = isset($_GET['rep']) ? $_GET['rep'] : array();
 
-$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 10;
+$lim = isset($_GET['lir']) ? preg_replace('/\D+/','',$_GET['lir']) : 10;
 
 $map = isset($_GET['map']) ? "checked" : "";
 $ord = isset($_GET['ord']) ? "checked" : "";
@@ -34,7 +32,8 @@ $cols = array(	"device"=>"Device $namlbl",
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
-		"group"=>$grplbl,
+		"devgroup"=>$grplbl,
+		"devmode"=>$modlbl,
 		"snmpversion"=>"SNMP $verlbl",
 		"name"=>"Node $namlbl",
 		"nodip"=>"Node IP",
@@ -56,28 +55,24 @@ $cols = array(	"device"=>"Device $namlbl",
 ?>
 <h1>Node Reports</h1>
 
+<script src="inc/Chart.min.js"></script>
+
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" name="report" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<td valign="top">
+
+<?PHP Filters(1); ?>
+
+</td>
 <th>
 
-<select size="1" name="ina">
-<option value=""><?= $fltlbl ?>->
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p>
-<a href="javascript:show_calendar('report.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
+<a href="?in[]=snmpversion&op[]=>&st[]=0"><img src="img/16/dev.png" title="SNMP Devices"></a>
+<a href="?in[]=devmode&op[]==&st[]=8"><img src="img/16/wlan.png" title="Controlled APs"></a>
+<a href="?in[]=lastdis&op[]=<&st[]=<?= time()-2*$rrdstep ?>&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/date.png" title="<?= $undlbl ?> Devices"></a>
+<a href="?in[]=lastdis&op[]=>&st[]=<?= time()-86400 ?>&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/clock.png" title="<?= $dsclbl ?> <?= $tim['t'] ?>"></a>
 
 </th>
 <th>
@@ -96,7 +91,7 @@ foreach ($cols as $k => $v){
 <th>
 
 <img src="img/16/form.png" title="<?= $limlbl ?>"> 
-<select size="1" name="lim">
+<select size="1" name="lir">
 <?php selectbox("limit",$lim) ?>
 </select>
 
@@ -122,29 +117,29 @@ if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")
 }
 
 if($rep){
-	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	Condition($in,$op,$st,$co);
+	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 	if ( in_array("sum",$rep) ){
-		NodSum($ina,$opa,$sta,$lim,$ord);
+		NodSum($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("dup",$rep) ){
-		NodDup($ina,$opa,$sta,$lim,$ord);
+		NodDup($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("dis",$rep) ){
-		NodDist($ina,$opa,$sta,$lim,$ord);
+		NodDist($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("nos",$rep) ){
-		NodOS($ina,$opa,$sta,$lim,$ord);
+		NodOS($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("nom",$rep) ){
-		NodNomad($ina,$opa,$sta,$lim,$ord);
+		NodNomad($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("nhs",$rep) ){
-		NodHistory($ina,$opa,$sta,$lim,$ord);
+		NodHistory($in[0],$op[0],$st[0],$lim,$ord);
 	}
 	if ( in_array("vem",$rep) ){
-		VlanEmpty($ina,$opa,$sta,$lim,$ord);
+		VlanEmpty($in[0],$op[0],$st[0],$lim,$ord);
 	}
 }
 

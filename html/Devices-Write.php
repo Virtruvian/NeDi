@@ -3,23 +3,18 @@
 # Programmer: Remo Rickli
 
 $printable = 1;
-$calendar  = 1;
 $exportxls = 0;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
 $_POST = sanitize($_POST);
-$sta = isset( $_POST['sta']) ? $_POST['sta'] : "";
-$stb = isset( $_POST['stb']) ? $_POST['stb'] : "";
-$ina = isset( $_POST['ina']) ? $_POST['ina'] : "";
-$inb = isset( $_POST['inb']) ? $_POST['inb'] : "";
-$opa = isset( $_POST['opa']) ? $_POST['opa'] : "";
-$opb = isset( $_POST['opb']) ? $_POST['opb'] : "";
-$cop = isset( $_POST['cop']) ? $_POST['cop'] : "";
+$in = isset($_POST['in']) ? $_POST['in'] : array();
+$op = isset($_POST['op']) ? $_POST['op'] : array();
+$st = isset($_POST['st']) ? $_POST['st'] : array();
+$co = isset($_POST['co']) ? $_POST['co'] : array();
 
 $cmd = isset( $_POST['cmd']) ? $_POST['cmd'] : "";
-$sub = isset( $_POST['sub']) ? $_POST['sub'] : "";
 $int = isset( $_POST['int']) ? $_POST['int'] : "";
 $sim = isset( $_POST['sim']) ? $_POST['sim'] : "";
 $scm = isset( $_POST['scm']) ? $_POST['scm'] : "";
@@ -33,7 +28,7 @@ $emod = isset( $_POST['emod']) ? $_POST['emod'] : 0;
 $smod = isset( $_POST['smod']) ? $_POST['smod'] : 0;
 $icfg = isset( $_POST['icfg']) ? $_POST['icfg'] : "";
 
-$cols = array(	"device"=>$namlbl,
+$cols = array(	"device"=>" Device $namlbl",
 		"devip"=>"$manlbl IP",
 		"origip"=>"$orilbl IP",
 		"serial"=>$serlbl,
@@ -51,58 +46,30 @@ $cols = array(	"device"=>$namlbl,
 		"cliport"=>"CLI $porlbl",
 		"login"=>"Login",
 		"firstdis"=>"$fislbl $dsclbl",
-		"lastdis"=>"$laslbl $dsclbl"
+		"lastdis"=>"$laslbl $dsclbl",
+                "cfgstatus"=>"$cfglbl $stalbl"
 		);
 ?>
 <h1>Device Write</h1>
 
 <form method="post" name="list" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50" rowspan="3"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th valign="top"><?= $cndlbl ?> A<p>
-<select size="1" name="ina">
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p><a href="javascript:show_calendar('list.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20" OnFocus="select();">
-</th>
-<th valign="top"><?= $cmblbl ?><p>
-<select size="1" name="cop">
-<?php selectbox("comop",$cop) ?>
-</select>
-</th>
-<th valign="top"><?= $cndlbl ?> B<p>
-<select size="1" name="inb">
-<?php
-foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-<select size="1" name="opb">
-<?php selectbox("oper",$opb) ?>
-</select>
-<p><a href="javascript:show_calendar('list.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?= $stb ?>" size="20" OnFocus="select();">
-<input type="text" name="sub" value="<?= $sub ?>" size="20" OnFocus="select();" title="Substitutes this search string and use result as command argument">
-</th>
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<td colspan="2">
+<?PHP Filters(); ?>
 
-</tr>
+</td></tr>
 <tr class="<?= $modgroup[$self] ?>2">
 
-<th valign="top" colspan=2>
+<td></td>
+<th valign="top">
 <?= $cmdlbl ?> / <?= $cfglbl ?><p>
 <textarea rows="6" name="cmd" cols="60"><?= $cmd ?></textarea>
-</th>
 
-<th valign="top">Interface <?= $cfglbl ?><p>
+</th>
+<th valign="top">
+Interface <?= $cfglbl ?><p>
+
 <select size="1" name="int">
 	<option value=""><?= $sellbl ?> ->
 	<option value="Et" <?php if($int == "Et"){echo "selected";} ?>>Ethernet
@@ -134,7 +101,7 @@ if ( strstr($guiauth,'-pass') ){
 }
 ?>
 <input type="submit" value="<?= $sholbl ?>" name="sim">
-<input type="submit" value="<?= $sndlbl ?>" name="scm">
+<input type="submit" value="<?= $cmdlbl ?>" name="scm">
 <input type="submit" value="<?= $cfglbl ?>" name="con">
 </th></tr>
 </table>
@@ -143,54 +110,60 @@ if ( strstr($guiauth,'-pass') ){
 
 <?php
 
-if($ina){
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-	$query	= GenQuery('devices','s','*','','',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop) );
-	$res	= @DbQuery($query,$link);
+if( count($in) ){
+	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	$query	= GenQuery('devices','s','*','','',$in,$op,$st,$co);
+	$res	= DbQuery($query,$link);
 	if($res){
 		$prevos = "";
-		$oserr = 0;
-		while( ($d = @DbFetchArray($res)) ){
+		$oserr  = 0;
+		$ndev   = 0;
+		while( ($d = DbFetchArray($res)) ){
 			if($d['login'] and $d['cliport']){
 				$devip[$d['device']] = long2ip($d['devip']);
 				if ($prevos and $prevos != $d['devos']){$oserr = 1;}
 				$prevos = $d['devos'];
 				$devos[$d['device']] = $d['devos'];
-				$devsta[$d['device']] = $d[$ina];
-				if($inb){$devstb[$d['device']] = $d[$inb];}
+				$devcfg[$d['device']] = $d['cfgstatus'];
 				$devpo[$d['device']] = $d['cliport'];
 				$devlo[$d['device']] = $d['login'];
+				$ndev++;
 			}else{
 				echo "<h4>No login for $d[device]!</h4>\n";
 			}
 		}
-		$cf = "log/cmd_$_SESSION[user]";
-		if ($oserr){echo "<h4>$mullbl OS!</h4>";die;}
+		if ($oserr){
+			echo "<h4>$mullbl OS!</h4>";
+			include_once ("inc/footer.php");
+			exit;}
 	}else{
-		print @DbError($link);
+		print DbError($link);
 	}
-	if(!isset($devip) ){echo "<h4>0 Devices!</h4>";die;}
+	if(!isset($devip) ){
+		echo "<h4>0 Devices!</h4>";
+		include_once ("inc/footer.php");
+		exit;
+	}
 	$cfgos = ($con or $sim)?$prevos:"";# TODO Change $con to checkbox!
 	if($sim){
-		if(!$sub){
-			echo "<h2>$cmdlbl</h2>\n";
-			echo "<div class=\"textpad code txta\">\n";
-			echo Buildcmd('',$cfgos);
-			echo "</div><br>\n";
-		}
-		echo "<h2>Devices</h2>\n";
+		echo "<h3>$cmdlbl</h3>\n";
+		echo "<div class=\"textpad code txta\">\n";
+		echo Buildcmd('',$cfgos);
+		echo "</div><br>\n";
+		Condition($in,$op,$st,$co);
 		echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\">";
-		echo "<th colspan=2>Device</th><th>$cols[$ina]</th><th>".(($sub)?"Command":"$cols[$inb]</th>");
-		echo "<th>Login</th><th>IP $adrlbl</th><th>Port</th></tr>\n";
+		echo "<th colspan=\"2\">Device</th><th>Device OS</th>";
+		echo "<th>Login</th><th>IP $adrlbl</th><th>$cfglbl $stalbl</th></tr>\n";
 		$row = 0;
 		foreach ($devip as $dv => $ip){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
 			echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
 			echo "$row</th><td><b>$dv</b></td>";
-			echo "<td>$devsta[$dv]</td><td>" . (($sub)?Buildcmd($devstb[$dv]):$devstb[$dv]) . "</td>\n";
+			echo "<td>$devos[$dv]</td>\n";
 			echo "<td>$devlo[$dv]</td><td>". DevCli($ip,$devpo[$dv]);
-			echo "</td><td>$devpo[$dv]</td></tr>\n";
+			echo ":$devpo[$dv]</td><td>". DevCfg($devcfg[$dv]).$devcfg[$dv];
+			echo "</td></tr>\n";
 		}
 	?>
 </table>
@@ -199,25 +172,17 @@ if($ina){
 </table>
 	<?php
 	}elseif($scm or $con){
-		if(!$sub){
-			$fd =  @fopen("log/cmd_$_SESSION[user]","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user]");
-			$cmds = Buildcmd('',$cfgos);
-			fwrite($fd, $cmds);
-			fclose($fd);
-		}
-		echo "<h2>Device $lstlbl</h2></center><div class=\"textpad warn code\">\n";
+		$fd =  @fopen("log/cmd_$_SESSION[user].php","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user].php");
+		fwrite($fd, Buildcmd('',$cfgos,1) );
+		fclose($fd);
+		echo "<h2>$actlbl $lstlbl</h2>\n";
 		foreach ($devip as $dv => $ip){
 			flush();
-			if($sub){
-				$fd =  @fopen("log/cmd_$_SESSION[user]","w") or die ("can't create log/cmd_$_SESSION[user]");
-				fwrite($fd,Buildcmd($devstb[$dv],$cfgos) );
-				fclose($fd);
-			}
-			echo "<b>$dv</b> ".DevCli($ip,$devpo[$dv])." ";
+			echo "<h3>$dv ".DevCli($ip,$devpo[$dv],1)."</h3>";
 			$cred = ( strstr($guiauth,'-pass') )?"$_SESSION[user] $pwd":"$devlo[$dv] dummy";
 			$cred = addcslashes($cred,';$!');
-			$out  = system("perl inc/devwrite.pl $nedipath $ip $devpo[$dv] $cred $devos[$dv] log/cmd_$_SESSION[user]", $err);
-			echo " <a href=\"$cf-$ip.log\" target=window><img src=\"img/16/note.png\" title='view output'></a><br>";
+			$out  = system("perl $nedipath/inc/devwrite.pl $nedipath $ip $devpo[$dv] $cred $devos[$dv] log/cmd_$_SESSION[user]", $err);
+			echo "<iframe style=\"display:block;\" class=\"textpad txta code\" ".(($ndev == 1)?'height="800"':'')." src=\"log/cmd_$_SESSION[user]-$ip.log\"></iframe>";
 			$cstr = preg_replace('/\n|"|\'/',' ',$cmds);
 			if( strlen($cstr) > 40 ){$cstr = substr( $cstr,0,40)."...";}
 			$msg  = "User $_SESSION[user] wrote $cstr";
@@ -229,42 +194,37 @@ if($ina){
 				$msg = "User $_SESSION[user] wrote $cstr successfully";
 			}
 			$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),array(),array($lvl,time(),$dv,$msg,'usrd',$dv) );
-			if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}
+			if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}
 		}
-		echo "</div><br><p>";
 	}
 }
 include_once ("inc/footer.php");
 
-function Buildcmd($arg="",$configureos=""){
+function Buildcmd($arg="",$configureos="",$hdr=0){
 
-	global $sub, $cmd, $stb, $sint, $eint, $smod, $emod, $ssub, $esub, $int, $icfg;
+	global $cmd, $stb, $sint, $eint, $smod, $emod, $ssub, $esub, $int, $icfg;
 
-	$config = "";
+	$config = ($hdr)?"<?php exit; ?>\n":'';
 	if($configureos == "IOS" or $configureos == "ProCurve"){
 		$config .= "conf t\n";
 	}elseif($configureos == "Comware"){
 		$config .= "sys\n";
 	}
 	$config .= $cmd . (preg_match('/\n$/',$cmd)?"":"\n");						# Add return on last line, if missing (tx Tristan)
-	if($sub){
-		$config .= preg_replace("/$stb/",$sub,$arg);
-	}else{
-		if($int){
-			for($m = $smod;$m <= $emod;$m++){
-				for($i = $sint;$i <= $eint;$i++){
-					if($ssub and $esub){
-						for($s = $ssub;$s <= $esub;$s++){
-							$config .= "int $int $m/$i/$s\n";
-							$config .= "$icfg\n";
-						}
-					}elseif($int == "Vl" or $int == "Vi"){
-						$config .= ($int == "Vl")?"Vlan $m\n":"int Vlan $m\n";
-						$config .= "$icfg\n";
-					}else{
-						$config .= "int $int $m/$i\n";
+	if($int){
+		for($m = $smod;$m <= $emod;$m++){
+			for($i = $sint;$i <= $eint;$i++){
+				if($ssub and $esub){
+					for($s = $ssub;$s <= $esub;$s++){
+						$config .= "int $int $m/$i/$s\n";
 						$config .= "$icfg\n";
 					}
+				}elseif($int == "Vl" or $int == "Vi"){
+					$config .= ($int == "Vl")?"Vlan $m\n":"int Vlan $m\n";
+					$config .= "$icfg\n";
+				}else{
+					$config .= "int $int $m/$i\n";
+					$config .= "$icfg\n";
 				}
 			}
 		}
@@ -272,7 +232,7 @@ function Buildcmd($arg="",$configureos=""){
 	if($configureos == "IOS" or $configureos == "ProCurve"){
 		$config .= "end\nwrite mem\n";
 	}elseif($configureos == "Comware"){
-		$config .= "quit\nsave\ny\n\ny\n";
+		$config .= "quit\nsave force\n";
 	}
 	return "$config\n";
 }

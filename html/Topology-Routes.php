@@ -19,23 +19,23 @@ $src = isset($_GET['src']) ? $_GET['src'] : "";
 $trc = isset($_GET['trc']) ? $_GET['trc'] : "";
 $vrf = isset($_GET['vrf']) ? $_GET['vrf'] : "";
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 $query	= GenQuery('networks','s','*','ifip','',array('ifip'),array('!='),array('2130706433'),array(),'LEFT JOIN devices USING (device)');	# exclude 127.0.0.1
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
-	while( ($r = @DbFetchRow($res)) ){
+	while( ($r = DbFetchRow($res)) ){
 		$netif[long2ip($r[2])] = $r[0];
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 
 $query	= GenQuery('devices','s','device,devip,type,services,readcomm,snmpversion,location,contact,cliport,icon','device','',array('services','snmpversion'),array('>','!='),array('3','0'),array('AND') );
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
-	while( ($d = @DbFetchRow($res)) ){
+	while( ($d = DbFetchRow($res)) ){
 		$devip[$d[0]]  = long2ip($d[1]);
 		$devtyp[$d[0]] = $d[2];
 		$devsrv[$d[0]] = Syssrv($d[3]);
@@ -46,9 +46,9 @@ if($res){
 		$devcli[$d[0]] = $d[8];
 		$devimg[$d[0]] = $d[9];
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 
 ?>
@@ -242,15 +242,15 @@ if($trc){
 <th><img src="img/16/clock.png"><br><?= $agelbl ?></th>
 <?php
 	$query	= GenQuery('interfaces','s','*','','',array('device'),array('='),array($rtr) );
-	$res	= @DbQuery($query,$link);
-	while( ($i = @DbFetchRow($res)) ){
+	$res	= DbQuery($query,$link);
+	while( ($i = DbFetchRow($res)) ){
 		$ina[$i[2]] = $i[1];
 		$ity[$i[2]] = $i[4];
 		$ial[$i[2]] = $i[7];
 		$icm[$i[2]] = $i[20];
 		$isp[$i[2]] = $i[9];
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 	$r = DevRoutes($devip[$rtr],$devver[$rtr],$devcom[$rtr],$vrf);
 	$row = 0;
 	foreach (array_keys($r) as $rd){
@@ -267,7 +267,7 @@ if($trc){
 	
 		TblRow($bg);
 		echo "<th class=\"$bi\" width=\"20\"><img src=\"img/$ntimg\" title=$ntit></th>\n";
-		echo "<td><a href=\"Topology-Networks.php?ina=ifip&opa==&sta=$rd%2F$pfix&draw=png\">$rd/$pfix</a></td>\n";
+		echo "<td><a href=\"Topology-Networks.php?in[]=ifip&op[]==&st[]=$rd%2F$pfix&draw=png\">$rd/$pfix</a></td>\n";
 		echo "<td>".$r[$rd]['nho']." <a href=?rtr=$unh&vrf=$uvn>".$netif[$r[$rd]['nho']]."</a></td><td><img src=\"img/$ifimg\" title=$iftit> ";
 		echo "<b>".$ina[$r[$rd]['ifx']]."</b> <i>".$ial[$r[$rd]['ifx']]."</i> ".$icm[$r[$rd]['ifx']]."</td>\n";
 		echo "<td align=right>$spd</td><td align=center>".$r[$rd]['me1']."</td>\n";

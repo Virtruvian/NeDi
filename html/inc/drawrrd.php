@@ -18,7 +18,7 @@ if( !$rrdcmd or !isset($_SESSION['group']) ){
 }
 date_default_timezone_set($_SESSION['tz']);
 
-include_once ("libgraph.php");
+include_once ("librrd.php");
 
 $_GET = sanitize($_GET);
 $typ = isset($_GET['t']) ? $_GET['t'] : "";
@@ -83,13 +83,13 @@ if($typ == 'cpu'){
 	$tit = "$totlbl $acslbl $trflbl";
 	if ($_SESSION['gbit']){
 		$draw .= "DEF:tino=$rrd:tinoct:AVERAGE ";
-		$draw .= "CDEF:tinoct=tino,8,* AREA:tinoct#0088cc:\"In Mbit/s     \" ";
+		$draw .= "CDEF:tinoct=tino,8,* AREA:tinoct#0088cc:\"In Mbit/s \" ";
 		$draw .= "DEF:toto=$rrd:totoct:AVERAGE ";
-		$draw .= "CDEF:totoct=toto,${outdir}8,* $outmod:totoct#000088:\"Out Mbit/s\l\" ";
+		$draw .= "CDEF:totoct=toto,${outdir}8,* $outmod:totoct#000088:\"Out Mbit/s \" ";
 	}else{
-		$draw .= "DEF:tinoct=$rrd:tinoct:AVERAGE AREA:tinoct#0088cc:\"In Mbyte/s    \" ";
+		$draw .= "DEF:tinoct=$rrd:tinoct:AVERAGE AREA:tinoct#0088cc:\"In Mbyte/s \" ";
 		$draw .= "DEF:toto=$rrd:totoct:AVERAGE ";
-		$draw .= "CDEF:totoct=toto,${outdir}1,* $outmod:totoct#000088:\"Out Mbyte/s\l\" ";
+		$draw .= "CDEF:totoct=toto,${outdir}1,* $outmod:totoct#000088:\"Out Mbyte/s\" ";
 	}
 	if(!$_SESSION['gneg']){
 		$draw .= "VDEF:tio95=tinoct,95,PERCENT LINE1:tio95#eeaa44:\"In 95%\" GPRINT:tio95:\"%4.1lf%S\" ";

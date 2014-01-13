@@ -35,7 +35,7 @@ var cmThemeN =
 	// cell spacing for sub menus
 	subSpacing: 0,
 	// auto dispear time for submenus in milli-seconds
-	delay: 100
+	delay: 300
 };
 
 // horizontal split, used only in sub menus

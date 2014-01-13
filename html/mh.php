@@ -53,7 +53,7 @@ $loc = TopoLoc($reg,$cty,$bld);
 <p>
 <?PHP
 
-$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 list($nmon,$lastok,$monal,$deval,$slow) = TopoMon($loc);
 
@@ -72,14 +72,14 @@ StatusSlow($slow);
 StatusIf($loc,'bbup');
 StatusIf($loc,'bbdn');
 
-$query	= GenQuery('interfaces','s','count(*),round(sum(poe)/1000)','','',array('poe','location'),array('>','regexp'),array('0',$loc),array('AND'),'JOIN devices USING (device)');
-$res	= @DbQuery($query,$link);
+$query	= GenQuery('interfaces','s','count(*),round(sum(poe)/1000)','','',array('poe','location'),array('>','like'),array('0',$loc),array('AND'),'JOIN devices USING (device)');
+$res	= DbQuery($query,$link);
 if($res){
-	$m = @DbFetchRow($res);
+	$m = DbFetchRow($res);
 	if($m[0]){echo "<p><b><img src=\"img/32/batt.png\" title=\"$m[0] PoE IF\">$m[1] W</b>\n";}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 ?>
 
@@ -107,7 +107,7 @@ StatusTmp($loc);
 <h2><?= $mlvl[200] ?> & <?= $mlvl[250] ?> <?= $tim['t'] ?></h2>
 <?php
 
-Events($_SESSION['lim'],array('level','time','location'),array('>=','>','regexp'),array(200,$firstmsg,$loc),array('AND','AND'),3);
+Events($_SESSION['lim'],array('level','time','location'),array('>=','>','like'),array(200,$firstmsg,$loc),array('AND','AND'),3);
 
 TopoTable($reg,$cty,$bld);
 

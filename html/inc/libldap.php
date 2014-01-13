@@ -13,11 +13,11 @@ function user_from_ldap_servers($login, $password = '', $import = true){
 	global $dbhost,$dbuser,$dbpass,$dbname;
 
 	// search if user exist in local user DB
-		$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+		$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 		$query	= GenQuery('users','s','*','','',array('user'),array('='),array($login) );
-		$res    = @DbQuery($query,$link);
+		$res    = DbQuery($query,$link);
 	if ($import) {
-		if (@DbNumRows($res)==0){
+		if (DbNumRows($res)==0){
 			$result=ldapFindDn($login);
 			if ($result != false){
 				return $result;

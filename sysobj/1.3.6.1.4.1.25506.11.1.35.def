@@ -13,8 +13,8 @@ ArpND	oldip6
 Dispro	LLDPXN
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.2
 Bimage	1.3.6.1.4.1.25506.2.3.1.4.2.1.2.1966081
-
-# Vlan Specific
+CfgChg	1.3.6.1.4.1.25506.2.4.1.1.1.0
+CfgWrt	1.3.6.1.4.1.25506.2.4.1.1.3.0
 VLnams	1.3.6.1.2.1.17.7.1.4.3.1.1
 VLnamx	
 Group	
@@ -23,13 +23,13 @@ Mode
 # Interfaces
 StartX	
 EndX	
-IFname	1.3.6.1.2.1.2.2.1.2
+IFname	1.3.6.1.2.1.31.1.1.1.1
 IFaddr	oldip6
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
-InBcast	
+InBcast	1.3.6.1.2.1.31.1.1.1.3
 InDisc	1.3.6.1.2.1.2.2.1.13
-OutDisc	
+OutDisc	1.3.6.1.2.1.2.2.1.19
 IFvlan	1.3.6.1.2.1.17.7.1.4.5.1.1
 IFvlix	
 IFpowr	1.3.6.1.4.1.25506.2.14.1.1.5.4	P

@@ -15,7 +15,7 @@ $du = isset($_GET['du']) ? $_GET['du'] : "";
 $lo = isset($_GET['lo']) ? $_GET['lo'] : "";
 $us = isset($_GET['us']) ? $_GET['us'] : "";
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 ?>
 <h1><?= $usrlbl ?> <?= $edilbl ?></h1>
 
@@ -29,14 +29,14 @@ Device <SELECT size="1" name="ip" onchange="this.form.submit();">
 <OPTION VALUE="">------------
 <?php
 $query	= GenQuery('devices','s','device,inet_ntoa(devip)','','',array('devos'),array('='),array('MSM') );
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
-	while( $d = @DbFetchRow($res) ){
+	while( $d = DbFetchRow($res) ){
 		echo "<option value=\"$d[1]\"".( ($ip == $d[1])?" selected":"").">$d[0]\n";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 	die ( mysql_error() );
 }
 ?>

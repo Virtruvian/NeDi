@@ -3,9 +3,12 @@
 // NeDi Header
 //===============================
 
-ini_set("memory_limit","64M");										# Enterprise network support
-
 $listlim   = 200;
+
+error_reporting(E_ALL ^ E_NOTICE);
+
+ini_set("memory_limit","128M");										# Enterprise network support TODO move to modules an adapt?
+
 $self      = preg_replace("/.*\/(.+).php/","$1",$_SERVER['SCRIPT_NAME']);
 #$uripath  = preg_replace("/^(.*\/).+.php/","$1",$_SERVER['SCRIPT_NAME']);				# HTML path on the webserver
 #$guipath  = preg_replace( "/^(\/.+)\/.+.php/","$1",$_SERVER['SCRIPT_FILENAME']);			# Path to PHP scripts
@@ -18,16 +21,16 @@ if( isset($_SESSION['group']) ){
 	ReadConf($_SESSION['group']);
 	$mos     = explode("-", $self);
 	$selfi   = $mod[$mos[0]][$mos[1]];
-	$nipl    = $_SESSION['nip'];										# Disables telnet:// and ssh:// links to allow browser add-ons
+	$nipl    = $_SESSION['nip'];									# Disables telnet:// and ssh:// links to allow browser add-ons
 	$datfmt  = $_SESSION['date'];
 	$now     = date($_SESSION['date']);
 	$isadmin = (preg_match("/adm/",$_SESSION['group']) )?1:0;
 	$debug   = (isset($_GET['debug']) and $isadmin)?1:0;
 }else{
 	echo "<script>document.location.href='index.php?goto=".urlencode(preg_replace('/^.*\/(\w+-\w+\.php.*)/','$1',$_SERVER["REQUEST_URI"]))."';</script>\n";
-	die;
+	exit;
 }
-include_once ("./languages/$_SESSION[lang]/gui.php");							# Don't require, GUI still works if missing
+include_once ("languages/$_SESSION[lang]/gui.php");							# Don't require, GUI still works if missing
 include_once ("libdb-" . strtolower($backend) . ".php");
 
 if( isset($_GET['xls']) ){
@@ -58,7 +61,7 @@ if( isset($_GET['xls']) ){
 <html>
 <head>
 <title>NeDi <?= $self ?></title>
-<meta name="generator" content="NeDi 1.0.8-116">
+<meta name="generator" content="NeDi <?= $_SESSION['ver'] ?>">
 <meta http-equiv="Content-Type" content="text/html;charset=<?= $charset ?>">
 <link href="themes/<?= $_SESSION['theme'] ?>.css" type="text/css" rel="stylesheet">
 <link rel="shortcut icon" href="img/favicon.ico">
@@ -67,13 +70,12 @@ if( isset($_GET['xls']) ){
 <script language="JavaScript" src="inc/menutheme.js"></script>
 
 <?= (isset($nocache))?"<meta http-equiv=\"cache-control\" content=\"no-cache\">\n":"" ?>
-<?= (isset($calendar))?"<script language=\"JavaScript\" src=\"inc/cal.js\"></script>\n":"" ?>
 </head>
 
+<body>
 <?php
 if( isset($refresh) ){
 ?>
-<body onload="countdown()">
 <script language="javascript">
 var interval = "";
 var secs = <?= $refresh-1?>;
@@ -99,20 +101,75 @@ function stop_countdown(id){
 	document.getElementById('counter').setAttribute('class', 'gry');
 }
 
+window.onload = countdown();
+
 </script>
-<?}else{?>
-<body>
 <?}?>
 <table id="header">
 <tr class="<?= $modgroup[$self] ?>1">
 <?php if( isset($_SESSION['snap']) ){?>
-<th width="50" class="warn"><img src="img/32/foto.png" title="Snapshot <?= $stco['100'] ?>: <?= $_SESSION['snap'] ?>"></th>
+<th width="50" class="warn"><a href="System-Snapshot.php"><img src="img/32/foto.png" title="Snapshot <?= $stco['100'] ?>: <?= $_SESSION['snap'] ?>"></a></th>
 <?}else{?>
 <th width="50"><a href="http://www.nedi.ch"><img src="img/n.png"></a></th>
-<?}?>
+<?}
+
+if( preg_match('/Android|Mobile|Touch/',$_SERVER['HTTP_USER_AGENT']) ){
+	echo "<td><table class=\"ThemeNSubMenuTable full\"><tr>";
+	foreach( array_keys($mod) as $m){
+		if($mos[0] == $m){
+			echo "<th class=\"ThemeNMainItemActive\">$m</th>";
+		}else{
+			$s = current( array_keys($mod[$m]) );
+			echo "<td><a href=\"$m-$s.php\">$m</a></td>";
+		}
+	}
+	$col = 0;
+	echo "</tr></table><table class=\"ThemeNSubMenuTable full\"><tr>";
+	foreach($mod[$mos[0]] as $s => $i){
+		$col++;
+		if($mos[1] == $s){
+			echo "<th class=\"ThemeNMainItemActive\">$s</th>";
+		}else{
+			echo "<td><a href=\"$mos[0]-$s.php\"><img src=\"img/16/$i.png\">$s</a></td>";
+		}
+		if($_SESSION['col'] == $col){
+			echo "</tr>\n<tr>";
+			$col = 0;
+		}
+	}
+	echo "</tr></table></td>";
+}else{
+?>
 <td ID="MainMenuID"></td>
+<script language="JavaScript"><!--
+var mainmenu = [
 <?php
+	foreach (array_keys($mod) as $m) {
+		echo "	[null,'$m',null,null,null,\n";
+		foreach ($mod[$m] as $s => $i) {
+			echo "		['<img src=./img/16/$i.png>','$s','$m-$s.php',null,null],\n";
+		}
+		echo "	],\n";
+	}
+?>
+];
+cmDraw ('MainMenuID', mainmenu, 'hbr', cmThemeN, 'ThemeN');
+
+function pop(URL,LBL){
+	win = window.open('','Image','location=no,toolbar=no,titlebar=no,status=no,resizable=1,width=640,height=480');
+	win.document.write('<head><title>'+LBL+'</title></head><body style="margin:0;"><img src="'+URL+'" title="Click to close" width="100%" height="100%" onClick="self.close();"></body>');
+}
+--></script>
+<?php
+}
+
 if($_SESSION['opt']){
+
+	if( isset($_GET['lim']) ){
+		$_SESSION['listlim'] = preg_replace('/\D+/','',$_GET['lim']);
+	}elseif( array_key_exists('listlim',$_SESSION) ){
+		$listlim = $_SESSION['listlim'];
+	}
 
 	echo "<th>";
 	$bc = 0;
@@ -124,9 +181,12 @@ if($_SESSION['opt']){
 			$boc = intval(10 * $bc / $_SESSION['lim']);
 			$bim = "style=\"opacity:0.$boc;filter:alpha(opacity=${boc}0);}\"";
 		}
-		$mdbas = substr($prv,strrpos($prv,'/')+1);
-		$mtitl = explode('-',substr($mdbas,0,strpos($mdbas,'.php')));
-		echo "<a href=\"$prv\"><img $bim src=\"img/16/".$mod[$mtitl[0]][$mtitl[1]].".png\" title=\"$prv\"></a>\n";
+		preg_match("/(\w+)-(\w+).php/i",$prv,$mtitl);
+		if($mod[$mtitl[1]][$mtitl[2]]){
+			echo "<a href=\"$prv\"><img $bim src=\"img/16/".$mod[$mtitl[1]][$mtitl[2]].".png\" title=\"$prv\"></a>\n";
+		}else{
+			echo "<a href=\"$prv\"><img $bim src=\"img/16/bbox.png\" title=\"$prv\"></a>";
+		}
 	}
 	echo "</th>";
 	if( end($_SESSION['bread']) != $_SERVER['REQUEST_URI'] ){
@@ -150,7 +210,7 @@ if($_SESSION['opt']){
 <?}?>
 
 <?php  if($isadmin) { ?>
-<a href="User-Profile.php?eam=<?= urlencode($_SERVER['REQUEST_URI']) ?>"><img src="img/16/note.png" title="Link Admin <?= $msglbl ?>"></a>
+<a href="User-Profile.php?eam=<?= urlencode($_SERVER['REQUEST_URI']) ?>"><img src="img/16/note.png" title="Admin <?= $mlvl[100] ?> <?= $addlbl ?>"></a>
 <?}?>
 
 <th width="80">
@@ -161,26 +221,6 @@ if($isadmin and $_SESSION['user'] == 'admin'){
 	echo "<img src=\"img/16/lokc.png\" title=\"$seclbl $stco[100]\">";
 }?>
 <?= $_SESSION['user'] ?></th></tr></table>
-<script language="JavaScript"><!--
-var mainmenu = [
-<?php
-	foreach (array_keys($mod) as $m) {
-		echo "	[null,'$m',null,null,null,\n";
-		foreach ($mod[$m] as $s => $i) {
-			echo "		['<img src=./img/16/$i.png>','$s','$m-$s.php',null,null],\n";
-		}
-		echo "	],\n";
-	}
-?>
-];
-cmDraw ('MainMenuID', mainmenu, 'hbr', cmThemeN, 'ThemeN');
-
-function pop(URL,LBL){
-	//alert(URL); what if URL has a space?
-	win = window.open('','Image','location=no,toolbar=no,titlebar=no,status=no,resizable=1,width=640,height=480');
-	win.document.write('<head><title>'+LBL+'</title></head><body style="margin:0;"><img src="'+URL+'" title="Click to close" width="100%" height="100%" onClick="self.close();"></body>');
-}
---></script>
 <p>
 <?php
 
@@ -190,6 +230,7 @@ function pop(URL,LBL){
 	}
 
 	if($debug){
+		$start = microtime(1);
 		echo "<div class=\"textpad code good\">Self:	$self\n";
 		echo "Version:	$_SESSION[ver]\n";
 		echo "NeDipath:	$nedipath\n";

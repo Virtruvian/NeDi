@@ -50,18 +50,18 @@ $opt = isset($_GET['opt']) ? "checked" : "";
 </th></tr></table></form><p>
 <?php
 }
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('wlan');
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
 	$nwmac = 0;
-	while( ($w = @DbFetchRow($res)) ){
+	while( ($w = DbFetchRow($res)) ){
 		$nwmac++;
 		$wlap[] = "$w[0]";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 	die;
 }
 
@@ -77,15 +77,15 @@ if($res){
 <?php
 
 $query	= GenQuery('nodes');
-$res	= @DbQuery($query,$link);
-while( ($n = @DbFetchRow($res)) ){
+$res	= DbQuery($query,$link);
+while( ($n = DbFetchRow($res)) ){
 	$macs["$n[6];;$n[7]"]++;
 }
 	$row = 0;
 	$nno = 0;
 	$query	= GenQuery('nodes','s','*',$ord);
-	$res	= @DbQuery($query,$link);
-	while( ($n = @DbFetchRow($res)) ){
+	$res	= DbQuery($query,$link);
+	while( ($n = DbFetchRow($res)) ){
 		if($macs["$n[6];;$n[7]"] > 1 or !$opt){
 			$m = substr($n[2],0,8);
 			if(in_array("$m", $wlap,1) ){
@@ -101,7 +101,7 @@ while( ($n = @DbFetchRow($res)) ){
 				list($fc,$lc)	= Agecol($n[4],$n[5],$row % 2);
 				echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
 				echo "<a href=Nodes-Status.php?mac=$n[2]><img src=\"img/oui/$img.png\" title=\"$n[3] ($n[2])\"></a></th>\n";
-				echo "<td>$name</td><td>$ip</td><td>$m</td><td>$n[6]</td><td><a href=Nodes-List.php?ina=device&opa==&sta=$ud&cop=AND&inb=ifname&opb==&stb=$n[7]&>$n[7]</a></td><td>$pbar".$macs["$n[6];;$n[7]"]."</td>\n";
+				echo "<td>$name</td><td>$ip</td><td>$m</td><td>$n[6]</td><td><a href=Nodes-List.php?in[]=device&op[]==&st[]=$ud&co[]=AND&in[]=ifname&op[]==&st[]=$n[7]&>$n[7]</a></td><td>$pbar".$macs["$n[6];;$n[7]"]."</td>\n";
 				echo "<td bgcolor=#$fc>$fs</td><td bgcolor=#$lc>$ls</td>";
 				echo "</tr>\n";
 			}

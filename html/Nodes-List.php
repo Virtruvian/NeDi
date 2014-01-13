@@ -2,7 +2,6 @@
 # Program: Nodes-List.php
 # Programmer: Remo Rickli
 
-$calendar  = 1;
 $printable = 1;
 $exportxls = 1;
 
@@ -11,14 +10,13 @@ include_once ("inc/libnod.php");
 include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
-$sta = isset($_GET['sta']) ? $_GET['sta'] : "";
-$stb = isset($_GET['stb']) ? $_GET['stb'] : "";
-$ina = isset($_GET['ina']) ? $_GET['ina'] : "";
-$inb = isset($_GET['inb']) ? $_GET['inb'] : "";
-$opa = isset($_GET['opa']) ? $_GET['opa'] : "";
-$opb = isset($_GET['opb']) ? $_GET['opb'] : "";
-$cop = isset($_GET['cop']) ? $_GET['cop'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
+
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
+if($_SESSION['opt'] and !$ord and $in[0]) $ord = $in[0];
 
 $map = isset($_GET['map']) ? "checked" : "";
 $lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
@@ -27,7 +25,7 @@ $mon = isset($_GET['mon']) ? $_GET['mon'] : "";
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
-	if($_SESSION['opt']){$_SESSION['nodcol'] = $col;}
+	if($_SESSION['opt']) $_SESSION['nodcol'] = $col;
 }elseif( isset($_SESSION['nodcol']) ){
 	$col = $_SESSION['nodcol'];
 }else{
@@ -37,7 +35,7 @@ if( isset($_GET['col']) ){
 $cols = array(	"imBL"=>$imglbl,
 		"name"=>$namlbl,
 		"mac"=>"MAC $adrlbl",
-		"oui"=>"OUI $venlbl",
+		"oui"=>"$venlbl",
 		"nodip"=>"IP $adrlbl",
 		"nodip6"=>"IPv6 $adrlbl",
 		"ipupdate"=>"IP $updlbl",
@@ -56,10 +54,15 @@ $cols = array(	"imBL"=>$imglbl,
 		"speed"=>$spdlbl,
 		"duplex"=>"Duplex",
 		"vlanid"=>"Vlan",
+		"pvid"=>"Port Vlan $idxlbl",
 		"ifmetric"=>"IF $metlbl",
 		"ifupdate"=>"IF $updlbl",
 		"ifchanges"=>"IF #$chglbl",
 		"lastchg"=>"IF $stalbl $chglbl",
+		"dinerr"=>"$inblbl $errlbl",
+		"douterr"=>"$oublbl $errlbl",
+		"dindis"=>"$inblbl $dcalbl",
+		"doutdis"=>"$oublbl $dcalbl",
 		"tcpports"=>"TCP $porlbl",
 		"udpports"=>"UDP $porlbl",
 		"nodtype"=>$typlbl,
@@ -73,12 +76,12 @@ $cols = array(	"imBL"=>$imglbl,
 		"gfNS"=>"IF $gralbl"
 		);
 
-$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 if( isset($_GET['del']) ){
 	if($isadmin){
-		$query	= GenQuery('nodes','d','*','','',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop));
-		if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Nodes $dellbl OK</h5>";}
+		$query	= GenQuery('nodes','d','*','','',$in,$op,$st,$co);
+		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Nodes $dellbl OK</h5>";}
 	}else{
 		echo $nokmsg;
 	}
@@ -91,56 +94,24 @@ if( isset($_GET['del']) ){
 
 <form method="get" name="list" action="<?= $self ?>.php">
 <table class="content" ><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<td>
+<?PHP Filters(); ?>
 
-</th>
+</td>
 <th valign="top">
 
-<?= $cndlbl ?> A<p>
-<select size="1" name="ina">
-<?php
-foreach ($cols as $k => $v){
-	if( !preg_match('/(BL|IG|NS)$/',$k) ){
-		echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-	}
-}
-?>
-</select>
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p><a href="javascript:show_calendar('list.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
+<h3><?= $fltlbl ?></h3>
+<a href="?in[]=dinerr&op[]=>&st[]=0&co[]=OR&in[]=douterr&op[]=>&st[]=0"><img src="img/16/brup.png" title="IF <?= $errlbl ?>"></a>
+<a href="?in[]=dindis&op[]=>&st[]=0&co[]=OR&in[]=doutdis&op[]=>&st[]=0"><img src="img/16/bbu2.png" title="IF <?= $dcalbl ?>"></a>
+<br>
+<a href="?in[]=vlanid&op[]=~&st[]=&co[]=!%3D&in[]=pvid&op[]=~&st[]=&co[]=AND&in[]=ifmetric&op[]=>&st[]=200"><img src="img/16/vlan.png" title="PVID != Vlan"></a>
+<a href="?in[]=ifmetric&op[]=<&st[]=256"><img src="img/16/wlan.png" title="Wlan Nodes"></a>
 
 </th>
-<th valign="top">
+<th>
 
-<?= $cmblbl ?><p>
-<select size="1" name="cop">
-<?php selectbox("comop",$cop) ?>
-</select>
-
-</th>
-<th valign="top">
-
-<?= $cndlbl ?> B<p>
-<select size="1" name="inb">
-<?php
-foreach ($cols as $k => $v){
-	if( !preg_match('/(BL|IG|NS)$/',$k) ){
-		echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
-	}
-}
-?>
-</select>
-<select size="1" name="opb">
-<?php selectbox("oper",$opb) ?>
-</select>
-<p><a href="javascript:show_calendar('list.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?= $stb ?>" size="20">
-</th>
-<th valign="top"><?= $collbl ?><p>
-<select multiple name="col[]" size="4">
+<select multiple name="col[]" size="6" title="<?= $collbl ?>">
 <?php
 foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
@@ -149,19 +120,16 @@ foreach ($cols as $k => $v){
 </select>
 
 </th>
-<th valign="top">
+<td>
 
-<?= $optlbl ?><p>
-<div align="left">
 <img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
 <input type="checkbox" name="map" <?= $map ?>><br>
 <img src="img/16/form.png" title="<?= $limlbl ?>"> 
 <select size="1" name="lim">
 <?php selectbox("limit",$lim) ?>
 </select>
-</div>
 
-</th>
+</td>
 <th width="80">
 
 <input type="submit" value="<?= $sholbl ?>">
@@ -176,18 +144,18 @@ foreach ($cols as $k => $v){
 </tr></table></form><p>
 <?php
 }
-if($ina){
+if( count($in) ){
 	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
 		echo "<center><h2>$netlbl Map</h2>\n";
 		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
 	}
-	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+	Condition($in,$op,$st,$co);
 	TblHead("$modgroup[$self]2",1);
-	$query	= GenQuery('nodes','s','nodes.*,type,location,contact,iftype,ifdesc,alias,ifstat,speed,duplex,pvid,lastchg',$ord,$lim,array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device) LEFT JOIN interfaces USING (device,ifname)');
-	$res	= @DbQuery($query,$link);
+	$query	= GenQuery('nodes','s','nodes.*,type,location,contact,iftype,ifdesc,alias,ifstat,speed,duplex,pvid,lastchg,dinerr,douterr,dindis,doutdis',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device) LEFT JOIN interfaces USING (device,ifname)');
+	$res	= DbQuery($query,$link);
 	if($res){
 		$row = 0;
-		while( ($n = @DbFetchRow($res)) ){
+		while( ($n = DbFetchRow($res)) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
 			$most		= '';
@@ -201,7 +169,7 @@ if($ina){
 
 			if($isadmin and $mon and $n[1]){
 				$mona = ($n[0])?$n[0]:$ip;
-				$most = AddRecord('monitoring',"name=\"$mona\"","name,monip,class,test,device,depend","\"$mona\",\"$n[1]\",\"node\",\"ping\",\"$n[6]\",\"$n[6]\"");
+				$most = AddRecord('monitoring',"name='$mona'","name,monip,class,test,device,depend","'$mona','$n[1]','node','ping','$n[6]','$n[6]'");
 			}
 			TblRow($bg);
 			if(in_array("imBL",$col)){
@@ -209,64 +177,65 @@ if($ina){
 			}
 			if(in_array("name",$col)){	TblCell("<b>$n[0]</b> $most");}			
 			if( in_array("mac",$col) ){	TblCell($n[2],"","class=\"mrn code\"",( array_key_exists('Flower', $mod['Other']) )?"<a href=\"Other-Flower.php?fsm=".rtrim(chunk_split($n[2],2,":"),":")."\"><img src=\"img/16/".$mod['Other']['Flower'].".png\"></a>":"");}
-			if(in_array("oui",$col)){	TblCell($n[3],"?ina=oui&opa==&sta=".urlencode($n[3]),"");}
-			if(in_array("nodip",$col)){	TblCell($ip,"?ina=nodip&opa==&sta=$ip","",( array_key_exists('Flower', $mod['Other']) )?"<a href=\"Other-Flower.php?fet=2048&fsi=$ip\"><img src=\"img/16/".$mod['Other']['Flower'].".png\"></a>":"");}
+			if(in_array("oui",$col)){	TblCell($n[3],"?in[]=oui&op[]==&st[]=".urlencode($n[3]),"");}
+			if(in_array("nodip",$col)){	TblCell($ip,"?in[]=nodip&op[]==&st[]=$ip","",( array_key_exists('Flower', $mod['Other']) )?"<a href=\"Other-Flower.php?fet=2048&fsi=$ip\"><img src=\"img/16/".$mod['Other']['Flower'].".png\"></a>":"");}
 			if(in_array("nodip6",$col)){
-				if($n[16]){
-					TblCell( inet_ntop($n[16]),"","class=\"prp code\"" );
-				}else{
-					TblCell();
-				}
+				TblCell( DbIPv6($n[16]),"","class=\"prp code\"" );
 			}
 			if(in_array("ipupdate",$col)){	
 				list($a1c,$a2c) = Agecol($n[12],$n[12],$row % 2);
-				TblCell( date($datfmt,$n[12]),"?ina=ipupdate&opa==&sta=$n[12]","nowrap bgcolor=\"#$a1c\"");
+				TblCell( date($datfmt,$n[12]),"?in[]=ipupdate&op[]==&st[]=$n[12]","nowrap bgcolor=\"#$a1c\"");
 			}
-			if(in_array("ipchanges",$col)){	TblCell($n[13],"?ina=ipchanges&opa==&sta=$n[13]","align=\"right\"");}
-			if(in_array("iplost",$col)){	TblCell($n[14],"?ina=iplost&opa==&sta=$n[14]","align=\"right\"");}
-			if(in_array("arpval",$col)){	TblCell($n[15],"?ina=arpval&opa==&sta=$n[15]","align=\"right\"");}
+			if(in_array("ipchanges",$col)){	TblCell($n[13],"?in[]=ipchanges&op[]==&st[]=$n[13]","align=\"right\"");}
+			if(in_array("iplost",$col)){	TblCell($n[14],"?in[]=iplost&op[]==&st[]=$n[14]","align=\"right\"");}
+			if(in_array("arpval",$col)){	TblCell($n[15],"?in[]=arpval&op[]==&st[]=$n[15]","align=\"right\"");}
 			if(in_array("firstseen",$col)){
-				TblCell(date($datfmt,$n[4]),"?ina=firstseen&opa==&sta=$n[4]","nowrap bgcolor=\"#$fc\"");
+				TblCell(date($datfmt,$n[4]),"?in[]=firstseen&op[]==&st[]=$n[4]","nowrap bgcolor=\"#$fc\"");
 			}
 			if(in_array("lastseen",$col)){
-				TblCell(date($datfmt,$n[5]),"?ina=lastseen&opa==&sta=$n[5]","nowrap bgcolor=\"#$lc\"");			
+				TblCell(date($datfmt,$n[5]),"?in[]=lastseen&op[]==&st[]=$n[5]","nowrap bgcolor=\"#$lc\"");			
 			}
 			if( in_array("device",$col) ){
-				TblCell($n[6],"?ina=device&opa==&sta=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud&pop=on\"><img src=\"img/16/sys.png\"></a>");
+				TblCell($n[6],"?in[]=device&op[]==&st[]=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud&pop=on\"><img src=\"img/16/sys.png\"></a>");
 			}
-			if(in_array("type",$col)){	TblCell( $n[23],"?ina=type&opa==&sta=".urlencode($n[23]) );}
-			if(in_array("location",$col)){	TblCell( $n[24],"?ina=location&opa==&sta=".urlencode($n[24]) );}
-			if(in_array("contact",$col)){	TblCell( $n[25],"?ina=contact&opa==&sta=".urlencode($n[25]) );}
+			if(in_array("type",$col)){	TblCell( $n[23],"?in[]=type&op[]==&st[]=".urlencode($n[23]) );}
+			if(in_array("location",$col)){	TblCell( $n[24],"?in[]=location&op[]==&st[]=".urlencode($n[24]) );}
+			if(in_array("contact",$col)){	TblCell( $n[25],"?in[]=contact&op[]==&st[]=".urlencode($n[25]) );}
 
 			if( in_array("ifname",$col) ){
 				list($ifimg,$iftit) = Iftype($n[26]);
 				list($ifbg,$ifst)   = Ifdbstat($n[29]);
-				TblCell($n[7],"?ina=device&opa==&inb=ifname&opb==&sta=$ud&cop=AND&stb=$ui","class=\"$ifbg\"","<img src=\"img/$ifimg\" title=\"$iftit, $ifst\">","td-img");
+				TblCell($n[7],"?in[]=device&op[]==&in[]=ifname&op[]==&st[]=$ud&co[]=AND&st[]=$ui","class=\"$ifbg\"","<img src=\"img/$ifimg\" title=\"$iftit, $ifst\">",'td-img');
+			}
 			if(in_array("ifdesc",$col)){	TblCell($n[27]);}
 			if(in_array("alias",$col)){	TblCell($n[28]);}
 			if(in_array("speed",$col)){	TblCell( DecFix($n[30]),"","align=\"right\"" );}
 			if(in_array("duplex",$col))	{TblCell($n[31]);}
-			if(in_array("vlanid",$col))	{TblCell("$n[8] ($n[32])","?ina=vlanid&opa==&sta=$n[8]","align=\"right\"");}
-			}
-			if(in_array("ifmetric",$col)){	TblCell( (($n[9] < 255)?Bar($n[9],-30,'mi')." $n[9]db":"$n[9]"),"?ina=ifmetric&opa==&sta=$n[9]","nowrap" );}
+			if(in_array("vlanid",$col))	{TblCell( ($n[9] < 255)?"SSID:$n[8]":$n[8],"?in[]=vlanid&op[]==&st[]=$n[8]","align=\"right\"");}
+			if(in_array("pvid",$col))	{TblCell( ($n[9] < 255)?"CH:$n[32]":$n[32],"?in[]=vlanid&op[]==&st[]=$n[8]","align=\"right\"");}
+			if(in_array("ifmetric",$col)){	TblCell( (($n[9] < 255)?Bar($n[9],-30,'mi')." $n[9]db":"$n[9]"),"?in[]=ifmetric&op[]==&st[]=$n[9]","nowrap" );}
 			if(in_array("ifupdate",$col)){
 				list($i1c,$i2c) = Agecol($n[10],$n[10],$row % 2);
 				TblCell( date($datfmt,$n[10]),"","nowrap bgcolor=\"#$i1c\"");
 			}
-			if(in_array("ifchanges",$col)){	TblCell($n[11],"?ina=ifchanges&opa==&sta=$n[11]");}
+			if(in_array("ifchanges",$col)){	TblCell($n[11],"?in[]=ifchanges&op[]==&st[]=$n[11]");}
 			if(in_array("lastchg",$col)){
 				list($i1l,$i2l) = Agecol($n[33],$n[33],$row % 2);
-				TblCell(date($datfmt,$n[33]),"?ina=lastchg&opa==&sta=$n[33]","nowrap bgcolor=\"#$i1l\"");
+				TblCell(date($datfmt,$n[33]),"?in[]=lastchg&op[]==&st[]=$n[33]","nowrap bgcolor=\"#$i1l\"");
 			}
-			if(in_array("tcpports",$col))	{TblCell($n[16],"?ina=tcpports&opa==&sta=$n[16]");}
-			if(in_array("udpports",$col))	{TblCell($n[17],"?ina=udpports&opa==&sta=$n[17]");}
-			if(in_array("nodtype",$col))	{TblCell($n[18],"?ina=nodtype&opa==&sta=$n[18]");}
-			if(in_array("nodos",$col))	{TblCell($n[19],"?ina=nodos&opa==&sta=$n[19]");}
+			if(in_array("dinerr",$col))	{TblCell($n[34]);}
+			if(in_array("douterr",$col))	{TblCell($n[35]);}
+			if(in_array("dindis",$col))	{TblCell($n[36]);}
+			if(in_array("doutdis",$col))	{TblCell($n[37]);}
+			if(in_array("tcpports",$col))	{TblCell($n[17],"?in[]=tcpports&op[]==&st[]=$n[17]");}
+			if(in_array("udpports",$col))	{TblCell($n[18],"?in[]=udpports&op[]==&st[]=$n[18]");}
+			if(in_array("nodtype",$col))	{TblCell($n[19],"?in[]=nodtype&op[]==&st[]=$n[19]");}
+			if(in_array("nodos",$col))	{TblCell($n[20],"?in[]=nodos&op[]==&st[]=$n[20]");}
 			if(in_array("osupdate",$col)){
-				list($o1c,$o2c) = Agecol($n[20],$n[20],$row % 2);
-				TblCell( date($datfmt,$n[20]),"?ina=osupdate&opa==&sta=$n[20]","nowrap bgcolor=\"#$o1c\"");
+				list($o1c,$o2c) = Agecol($n[21],$n[21],$row % 2);
+				TblCell( date($datfmt,$n[21]),"?in[]=osupdate&op[]==&st[]=$n[21]","nowrap bgcolor=\"#$o1c\"");
 			}
-			if(in_array("noduser",$col))	{TblCell($n[22],"?ina=noduser&opa==&sta=$n[22]");}
+			if(in_array("noduser",$col))	{TblCell($n[22],"?in[]=noduser&op[]==&st[]=$n[22]");}
 
 			if( !isset($_GET['xls']) ){
 				if(in_array("sshNS",$col)){
@@ -293,9 +262,9 @@ if($ina){
 			}
 			echo "</tr>\n";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
-		print @DbError($link);
+		print DbError($link);
 	}
 	?>
 </table>

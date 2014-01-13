@@ -15,6 +15,7 @@ function Nimg($m) {
 	elseif (stristr($m,"Acrosser"))				{return  "acs";}
 	elseif (stristr($m,"ACTIONTEC"))			{return  "atec";}
 	elseif (stristr($m,"ADAPTEC"))				{return  "adt";}
+	elseif (stristr($m,"Adder"))				{return  "addr";}
 	elseif (stristr($m,"ADVANCED DIGITAL INFORMATION"))	{return  "adi";}
 	elseif (stristr($m,"ADVANCED TECHNOLOGY &"))		{return  "adtx";}
 	elseif (stristr($m,"ADVANTECH"))			{return  "adv";}
@@ -25,9 +26,7 @@ function Nimg($m) {
 	elseif (stristr($m,"AMBIT"))				{return  "amb";}
 	elseif (stristr($m,"AMERICAN POWER "))			{return  "apc";}
 	elseif (stristr($m,"Aopen"))				{return  "aop";}
-	elseif (stristr($m,"Apple Computer Inc"))		{return  "appl2";}
-	elseif (stristr($m,"Apple, Inc"))			{return  "appl1";}
-	elseif (stristr($m,"APPLE"))				{return  "appl3";}
+	elseif (stristr($m,"APPLE"))				{return  "aapl";}
 	elseif (stristr($m,"ASTARO"))				{return  "ast";}
 	elseif (stristr($m,"ASUS"))				{return  "asu";}
 	elseif (stristr($m,"AUDIO CODES"))			{return  "aud";}
@@ -37,6 +36,7 @@ function Nimg($m) {
 	elseif (stristr($m,"B. R. Electronics"))		{return  "bre";}
 	elseif (stristr($m,"BECKHOFF"))				{return  "bek";}
 	elseif (stristr($m,"Billion"))				{return  "bil";}
+	elseif (stristr($m,"B-Link"))				{return  "bli";}
 	elseif (stristr($m,"BROADCOM"))				{return  "bcm";}
 	elseif (stristr($m,"BROCADE"))				{return  "brc";}
 	elseif (stristr($m,"BROTHER INDUSTRIES"))		{return  "bro";}
@@ -51,6 +51,7 @@ function Nimg($m) {
 	elseif (stristr($m,"COMPAQ"))				{return  "q";}
 	elseif (stristr($m,"Comtech"))				{return  "cth";}
 	elseif (stristr($m,"CRAY"))				{return  "cra";}
+	elseif (stristr($m,"Data Robotics"))			{return  "dro";}
 	elseif (stristr($m,"D-LINK"))				{return  "dli";}
 	elseif (stristr($m,"DELL"))				{return  "de";}
 	elseif (stristr($m,"DIGITAL EQUIPMENT"))		{return  "dec";}
@@ -61,7 +62,6 @@ function Nimg($m) {
 	elseif (stristr($m,"EGENERA"))				{return  "egn";}
 	elseif (stristr($m,"ELECTRONICS FOR IMAGING"))		{return  "efi";}
 	elseif (stristr($m,"Elitegroup"))			{return  "ecs";}
-	elseif (stristr($m,"Emerson Network"))			{return  "eme";}
 	elseif (stristr($m,"EMULEX"))				{return  "emx";}
 	elseif (stristr($m,"Enterasys"))			{return  "esy";}
 	elseif (stristr($m,"ENTRADA"))				{return  "ent";}
@@ -84,6 +84,7 @@ function Nimg($m) {
 	elseif (stristr($m,"GKB"))				{return	 "gkb";}
 	elseif (stristr($m,"Go Networks"))			{return	 "gns";}
 	elseif (stristr($m,"GOLDSTAR"))				{return	 "gs";}
+	elseif (stristr($m,"Hi-flying"))			{return  "hif";}
 	elseif (stristr($m,"High Tech Computer"))		{return  "htc";}
 	elseif (stristr($m,"Hon Hai Precision"))		{return  "amb";}
 	elseif (stristr($m,"HTC"))				{return	 "hcc";}
@@ -132,6 +133,7 @@ function Nimg($m) {
 	elseif (stristr($m,"Newisys"))				{return	 "nws";}
 	elseif (stristr($m,"Nexcom"))				{return	 "nxm";}
 	elseif (stristr($m,"NEXT"))				{return  "nxt";}
+	elseif (stristr($m,"Nintendo"))				{return  "nin";}
 	elseif (stristr($m,"NOKIA"))				{return  "nok";}
 	elseif (stristr($m,"NUCLEAR"))				{return  "atom";}
 	elseif (stristr($m,"Oracle"))				{return	 "ora";}
@@ -139,6 +141,7 @@ function Nimg($m) {
 	elseif (stristr($m,"PATTON"))				{return	 "pat";}
 	elseif (stristr($m,"PAUL SCHERRER"))			{return  "psi";}
 	elseif (stristr($m,"PayTec AG"))			{return  "pay";}
+	elseif (stristr($m,"PC Partner"))			{return	 "pcpa";}
 	elseif (stristr($m,"PC-PoS"))				{return	 "pcp";}
 	elseif (stristr($m,"PEGATRON"))				{return	 "peg";}
 	elseif (stristr($m,"Peplink"))				{return	 "pep";}
@@ -153,6 +156,7 @@ function Nimg($m) {
 	elseif (stristr($m,"RAD DATA"))				{return  "rad";}
 	elseif (stristr($m,"RADWIN"))				{return	 "rwn";}
 	elseif (stristr($m,"RARITAN"))				{return  "rar";}
+	elseif (stristr($m,"Raspberry Pi"))			{return  "rpi";}
 	elseif (stristr($m,"REALTEK"))				{return  "rtk";}
 	elseif (stristr($m,"RICOH"))				{return  "rco";}
 	elseif (stristr($m,"Riverbed"))				{return	 "riv";}
@@ -165,6 +169,7 @@ function Nimg($m) {
 	elseif (stristr($m,"SERCOM"))				{return  "ser";}
 	elseif (stristr($m,"SHIVA"))				{return  "sva";}
 	elseif (stristr($m,"SHUTTLE"))				{return  "shu";}
+	elseif (stristr($m,"Slim"))				{return  "slim";}
 	elseif (stristr($m,"SIAE"))				{return	 "sia";}
 	elseif (stristr($m,"SIEMENS"))				{return  "si";}
 	elseif (stristr($m,"SILICON GRAPHICS"))			{return  "sgi";}
@@ -180,6 +185,7 @@ function Nimg($m) {
 	elseif (stristr($m,"TECO INFORMATION "))		{return  "tec";}
 	elseif (stristr($m,"TEKTRONIX"))			{return  "tek";}
 	elseif (stristr($m,"Tilgin"))				{return	 "til";}
+	elseif (stristr($m,"TiVo"))				{return  "tiv";}
         elseif (stristr($m,"TOKYO"))                            {return  "tok";}
 	elseif (stristr($m,"TOSHIBA"))				{return  "tsa";}
 	elseif (stristr($m,"TP-LINK"))				{return	 "tpl";}
@@ -187,12 +193,12 @@ function Nimg($m) {
 	elseif (stristr($m,"TYAN"))				{return  "tya";}
 	elseif (stristr($m,"U.S. Robotics"))			{return  "usr";}
 	elseif (stristr($m,"Ubiquiti"))				{return	 "ubi";}
+	elseif (stristr($m,"Universal Devices Inc."))		{return  "udi";}
 	elseif (stristr($m,"Universal Global Scientific"))	{return	 "ugs";}
 	elseif (stristr($m,"USC CORPORATION"))			{return  "usc";}
 	elseif (stristr($m,"USI"))				{return  "usi";}
 	elseif (stristr($m,"UTSTARCOM"))			{return	 "uts";}
 	elseif (stristr($m,"Vanguard"))				{return	 "vgd";}
-	elseif (stristr($m,"VIA TECHNOLOGIES"))			{return  "via";}
 	elseif (stristr($m,"Vivotek"))				{return	 "viv";}
 	elseif (stristr($m,"VMWARE"))				{return  "vm";}
 	elseif (stristr($m,"WESTERN"))				{return  "wdc";}
@@ -212,7 +218,9 @@ function Nimg($m) {
 	elseif (preg_match("/AVAYA|LANNET/i",$m))		{return  "ava";}
 	elseif (preg_match("/BAY|NORTEL|NETICS|XYLOGICS/i",$m))	{return  "nort";}
 	elseif (preg_match("/EMC|CLARIION/i",$m))		{return  "emc";}
+	elseif (stristr($m,"Emerson Network|ROSEMOUNT CONTROLS"))	{return  "eme";}
 	elseif (preg_match("/Floware|ALVARION|Breeze/i",$m))	{return	 "aln";}
+	elseif (preg_match("/^(Funkwerk|Bintec|Artem|Teldat)/i",$m))	{return	 "aln";}
 	elseif (preg_match("/HEWLETT|ProCurve|Colubris|Hangzhou|Palm,|3 par|3\s*COM|MEGAHERTZ|H3C/i",$m))	{return  "hp";}
 	elseif (preg_match("/JUNIPER|PERIBIT|Netscreen/i",$m))  {return  "jun";}
 	elseif (preg_match("/LITE-ON|Liteon/i",$m))		{return	 "lio";}
@@ -220,13 +228,16 @@ function Nimg($m) {
 	elseif (preg_match("/^RIM$|Research In Motion/",$m))	{return  "rim";}
 	elseif (preg_match("/SMC Net|STANDARD MICROSYS/i",$m))	{return  "smc";}
 	elseif (preg_match("/SUPER(\s)?MICRO/i",$m))		{return  "sum";}
+	elseif (preg_match("/VIA( NETWORKING)? TECHNOLOGIES/i",$m))	{return  "via";}
 	elseif (preg_match("/ZYXEL|ZyGate/i",$m))		{return  "zyx";}
-	else							{return  "gen";}
+	else							{return  "genq";}
 }
 
 //===================================================================
 // Emulate good old nbtstat on port 137
 function NbtStat($ip) {
+
+	global $timeout;
 
 	if ($ip == "0.0.0.0") {
 		return "<img src=\"img/16/bcls.png\"> No IP!";
@@ -237,7 +248,7 @@ function NbtStat($ip) {
 			return "ERROR! $errno $errstr";
 		}else {
 			fwrite($fp, "$nbts");
-			stream_set_timeout($fp, 0, 1000000 );
+			stream_set_timeout($fp,$timeout);
 			$data =  fread($fp, 400);
 			fclose($fp);
 
@@ -278,7 +289,7 @@ function NbtStat($ip) {
 // Check for open port and return server information, if possible.
 function CheckTCP ($ip, $p,$d){
 
-	global $debug, $sndlbl;
+	global $debug,$sndlbl,$timeout;
 
 	if ($ip == "0.0.0.0") {
 		return "<img src=\"img/16/bcls.png\"> No IP!";
@@ -292,7 +303,7 @@ function CheckTCP ($ip, $p,$d){
 			return "<img src=\"img/16/bstp.png\"> $errstr";
 		} else {
 			fwrite($fp,$d);
-			stream_set_timeout($fp, 0, 500000 );
+			stream_set_timeout($fp,$timeout);
 			$ans = fread($fp, 255);
 			$ans .= fread($fp, 255);
 			$ans .= fread($fp, 255);

@@ -3,7 +3,6 @@
 # Programmer: Remo Rickli
 
 $printable = 1;
-$calendar  = 1;
 $exportxls = 0;
 
 include_once ("inc/header.php");
@@ -11,15 +10,13 @@ include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
 $str = isset($_GET['str']) ? $_GET['str'] : "";
-$mde = isset($_GET['mde']) ? $_GET['mde'] : "";
+$mde = isset($_GET['mde']) ? $_GET['mde'] : "dev";
 $lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
 
 
-$tabs['dev'] = array(	'devices'	=> array ('device','inet_ntoa(devip)','type','serial','description','devos','bootimage','location','contact','group'),
+$tabs['dev'] = array(	'devices'	=> array ('device','inet_ntoa(devip)','serial','type','description','devos','bootimage','location','contact','devgroup'),
 			'configs'	=> array ('device','config','changes'),
-			'events'	=> array ('source','info'),
 			'interfaces'	=> array ('device','ifname','ifmac','ifdesc','comment'),
-			'iftrack'	=> array ('device','ifname'),
 			'incidents'	=> array ('name','comment'),
 			'links'		=> array ('device','ifname','neighbor','nbrifname','linktype'),
 			'locations'	=> array ('region','city','building','locdesc'),
@@ -29,22 +26,24 @@ $tabs['dev'] = array(	'devices'	=> array ('device','inet_ntoa(devip)','type','se
 			'networks'	=> array ('device','ifname','inet_ntoa(ifip)','vrfname'),
 			'stock'		=> array ('serial','type','user','location','comment','source'),
 			'stolen'	=> array ('name','mac','device','ifname','user'),
-			'vlans'		=> array ('device','vlanname')
+			'vlans'		=> array ('device','vlanname'),
+			'events'	=> array ('source','info')
 			);
 
 $tabs['node'] = array(	'nodes'		=> array ('name','mac','oui','inet_ntoa(nodip)','device','ifname','nodos'),
-			'events'	=> array ('source','info'),
 			'nodetrack'	=> array ('device','ifname','destination','user'),
+			'iftrack'	=> array ('mac','device','ifname'),
 			'iptrack'	=> array ('mac','inet_ntoa(nodip)','name','device'),
-			'monitoring'	=> array ('name','depend','test','eventfwd','eventdel')
+			'monitoring'	=> array ('name','depend','test','eventfwd','eventdel'),
+			'events'	=> array ('source','info')
 			);
 
-$tabs['usr'] = array(	'users'		=> array ('user','email','comment'),
-			'events'	=> array ('source','info'),
+$tabs['usr'] = array(	'users'		=> array ('usrname','email','comment'),
 			'chat'		=> array ('user','message'),
 			'nodetrack'	=> array ('device','ifname','destination','user'),
 			'stock'		=> array ('serial','type','user','location','comment','source'),
-			'stolen'	=> array ('name','mac','device','ifname','user')
+			'stolen'	=> array ('name','mac','device','ifname','user'),
+			'events'	=> array ('source','info')
 			);
 
 $ico = array(	'devices'	=> 'dev',
@@ -69,14 +68,14 @@ $ico = array(	'devices'	=> 'dev',
 	);
 
 $lnk = array(	'device'	=> 'Devices-Status.php?dev=',
-		'source'	=> 'Monitoring-Events.php?ina=source&opa==&sta=',
+		'source'	=> 'Monitoring-Events.php?in[]=source&op[]==&st[]=',
 		'depend'	=> 'Devices-Status.php?dev=',
-		'ifname'	=> 'Devices-Interfaces.php?ina=ifname&opa==&sta=',
+		'ifname'	=> 'Devices-Interfaces.php?in[]=ifname&op[]==&st[]=',
 		'mac'		=> 'Nodes-Status.php?mac=',
 		'neighbor'	=> 'Devices-Status.php?dev=',
-		'nbrifname'	=> 'Devices-Interfaces.php?ina=ifname&opa==&sta=',
-		'type'		=> 'Devices-List.php?ina=type&opa==&sta=',
-		'vlanname'	=> 'Devices-Vlans.php?ina=vlanname&opa==&sta=',
+		'nbrifname'	=> 'Devices-Interfaces.php?in[]=ifname&op[]==&st[]=',
+		'type'		=> 'Devices-List.php?in[]=type&op[]==&st[]=',
+		'vlanname'	=> 'Devices-Vlans.php?in[]=vlanname&op[]==&st[]=',
 	);
 
 
@@ -122,8 +121,8 @@ if ($str){
 	if    ($mde == "dev") {echo "<img src=\"img/16/dev.png\" title=\"Device $tgtlbl\">";}
 	elseif($mde == "node"){echo "<img src=\"img/16/node.png\" title=\"Node $tgtlbl\">";}
 	elseif($mde == "usr") {echo "<img src=\"img/16/user.png\" title=\"$usrlbl $tgtlbl\">";}
-	echo " $cndlbl: $mde regexp \"$str\"</h3>";
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	echo " $cndlbl: $mde ~ \"$str\"</h3>";
+	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 	foreach ($tabs[$mde] as $table => $cols){
 		if($debug){
@@ -133,18 +132,19 @@ if ($str){
 		}
 		$incol  = "CONCAT(".implode(",", $cols).")";
 		$outcol = implode(",", $cols);
-		$query	= GenQuery($table,'s',$outcol,'','',array($incol),array('regexp'),array($str) );
-		$res	= @DbQuery($query,$link);
+		$join   = ($table == 'devices')?'':'LEFT JOIN devices USING (device)';
+		$query	= GenQuery($table,'s',$outcol,'','',array($incol),array('~'),array($str),array(),$join);
+		$res	= DbQuery($query,$link);
 
-		if(@DbNumRows($res)){
+		if(DbNumRows($res)){
 			echo "<h2><img src=img/16/$ico[$table].png> $table</h2><table class=\"content\"><tr class=\"$modgroup[$self]2\">";
-			for ($i = 0; $i < @DbNumFields($res); ++$i) {
-				$id = @DbFieldName($res, $i);
+			for ($i = 0; $i < DbNumFields($res); ++$i) {
+				$id = DbFieldName($res, $i);
 				echo  "<th>$id</th>\n";
 			}
 			echo  "</tr>\n";
 			$row = 0;
-			while($l = @DbFetchArray($res)) {
+			while($l = DbFetchArray($res)) {
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
 				TblRow($bg);

@@ -35,7 +35,7 @@ $bld = isset($_GET['bld']) ? $_GET['bld'] : "";
 <h3><?= $stalbl ?></h3>
 <p>
 <?php
-$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 list($nmon,$lastok,$monal,$deval,$slow) = TopoMon($loc);
 StatusMon($nmon,$lastok,$monal,$deval);
 StatusSlow($slow);
@@ -66,10 +66,10 @@ StatusIncidents($loc,1);
 
 <h3>Devices</h3>
 <?php
-	$query	= GenQuery('events','g','device,readcomm','cnt desc',$_SESSION['lim'],array('time','location'),array('>','regexp'),array($firstmsg,$loc),array('AND'),'LEFT JOIN devices USING (device)');
-	$res	= @DbQuery($query,$link);
+	$query	= GenQuery('events','g','device,readcomm','cnt desc',$_SESSION['lim'],array('time','location'),array('>','~'),array($firstmsg,$loc),array('AND'),'LEFT JOIN devices USING (device)');
+	$res	= DbQuery($query,$link);
 	if($res){
-		$nlev = @DbNumRows($res);
+		$nlev = DbNumRows($res);
 		if($nlev){
 ?>
 <table class="content"><tr class="<?= $modgroup[$self] ?>2">
@@ -78,17 +78,17 @@ StatusIncidents($loc,1);
 <th><img src="img/16/cog.png"><br><?= $cmdlbl ?></th>
 <?php
 			$row = 0;
-			while( ($r = @DbFetchRow($res)) ){
+			while( ($r = DbFetchRow($res)) ){
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
 				$s    = substr($r[0],0,$_SESSION['lsiz']);		# Shorten labels
 				$mbar = Bar($r[2],0,'si');
 				echo "<tr class=\"$bg\"><th class=\"$bi\" nowrap><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\">$s</th>\n";
-				echo "<td nowrap>$mbar <a href=\"$r[1]://".urlencode($r[0])."/Monitoring-Events.php?ina=level&opa=>&sta=150&cop=AND&inb=time&opb=>&stb=$firstmsg\">$r[2]</a></td>\n";
+				echo "<td nowrap>$mbar <a href=\"$r[1]://".urlencode($r[0])."/Monitoring-Events.php?in[]=level&op[]=>&st[]=150&co[]=AND&in[]=time&op[]=>&st[]=$firstmsg\">$r[2]</a></td>\n";
 				echo "<th nowrap>\n";
 				echo "<a href=\"$r[1]://".urlencode($r[0])."/Monitoring-Health.php\"><img src=\"img/16/hlth.png\" title=\"$r[0] Health\"></a>\n";
 				echo "<a href=\"$r[1]://".urlencode($r[0])."/Monitoring-Setup.php\"><img src=\"img/16/bino.png\" title=\"$r[0] $monlbl $cfglbl\"></a>\n";
-				echo "<a href=\"$r[1]://".urlencode($r[0])."/Reports-Combination.php?ina=&opa=regexp&sta=&rep=mon\"><img src=\"img/16/chrt.png\" title=\"$r[0] $inclbl $sumlbl\"></a>\n";
+				echo "<a href=\"$r[1]://".urlencode($r[0])."/Reports-Combination.php?in[]=&op[]=~&st[]=&rep=mon\"><img src=\"img/16/chrt.png\" title=\"$r[0] $inclbl $sumlbl\"></a>\n";
 				echo "<a href=\"$r[1]://".urlencode($r[0])."/Reports-Monitoring.php?rep[]=lat&rep[]=evt\"><img src=\"img/16/dbin.png\" title=\"$r[0] $monlbl $stslbl\"></a>\n";
 				echo "<a href=\"$r[1]://".urlencode($r[0])."/System-Services.php\"><img src=\"img/16/cog.png\" title=\"$r[0] $srvlbl\"></a>\n";
 				echo "</th></tr>\n";
@@ -97,9 +97,9 @@ StatusIncidents($loc,1);
 		}else{
 			echo "<p><h5>$nonlbl</h5>";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
-		print @DbError($link);
+		print DbError($link);
 	}
 ?>
 
@@ -109,7 +109,7 @@ StatusIncidents($loc,1);
 <h3><?= $mlvl[200] ?> & <?= $mlvl[250] ?> <?= $lstlbl ?></h3>
 <?php
 
-Events($_SESSION['lim'],array('level','time','location'),array('>=','>','regexp'),array(200,$firstmsg,$loc),array('AND','AND'),1);
+Events($_SESSION['lim'],array('level','time','location'),array('>=','>','~'),array(200,$firstmsg,$loc),array('AND','AND'),1);
 
 echo "</td></tr></table>";
 if($_SESSION['opt']){

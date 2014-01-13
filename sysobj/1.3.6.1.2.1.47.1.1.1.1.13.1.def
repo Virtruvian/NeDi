@@ -1,25 +1,25 @@
-# Definition for 1.3.6.1.2.1.47.1.1.1.1.13.1 created by Defgen 1.8 on 23.Sep 2012 (admin)
-
+# Definition for 1.3.6.1.2.1.47.1.1.1.1.13.1 created by Defgen 1.8 on 30.Aug 2013 (admin)
+ 
 # General
 SNMPv	2HC
 Type	CSACS-1121-K9
 Typoid	
 Sysdes	
 OS	other
-Icon	lban
+Icon	csbn
 Size	1
 Bridge	
 ArpND	
 Dispro	
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
 Bimage	1.3.6.1.2.1.47.1.1.1.1.10.1
-
-# Vlan Specific
+CfgChg	
+CfgWrt	
 VLnams	
 VLnamx	
 Group	
 Mode	
-
+ 
 # Interfaces
 StartX	
 EndX	
@@ -32,26 +32,26 @@ InDisc
 OutDisc	
 IFvlan	
 IFvlix	
-IFpowr	
+IFpowr		
 IFpwix	
 IFdupl	
 IFduix	
 Halfdp	1
 Fulldp	2
-
+ 
 # Modules
-Modesc	1.3.6.1.2.1.47.1.1.1.1.2
-Moclas	1.3.6.1.2.1.47.1.1.1.1.5
+Modesc	
+Moclas	
 Movalu	
-Moslot	1.3.6.1.2.1.47.1.1.1.1.4
-Modhw	1.3.6.1.2.1.47.1.1.1.1.8
-Modsw	1.3.6.1.2.1.47.1.1.1.1.10
-Modfw	1.3.6.1.2.1.47.1.1.1.1.9
-Modser	1.3.6.1.2.1.47.1.1.1.1.11
+Moslot	
+Modhw	
+Modsw	
+Modfw	
+Modser	
 Momodl	
-
+ 
 # RRD Graphing
-CPUutl	
+CPUutl		
 Temp		
 MemCPU		
 Custom		

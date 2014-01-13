@@ -16,14 +16,14 @@ use warnings;
 
 use RRDs;
 
-use vars qw($netfilter $webdev $nosnmpdev $border $ouidev $descfilter $getfwd $timeout);
-use vars qw($nedipath $backend $dbname $dbuser $dbpass $dbhost $clilib $uselogin $usessh $usepoe);
+use vars qw($netfilter $webdev $nosnmpdev $border $ouidev $descfilter $getfwd $timeout $retry $ncmd);
+use vars qw($nedipath $backend $dbname $dbuser $dbpass $dbhost $uselogin $usessh $usepoe $sms);
 use vars qw($rrdcmd $rrdstep $rrdsize $nmapcmd $nagpipe $snmpwrite $redbuild $guiauth $locsep);
 use vars qw($arpwatch $ignoredvlans $ignoredmacs $useivl $retire $arppoison $macflood $seedlist);
-use vars qw($notify $chka $latw $cpua $mema $tmpa $trfa $trfw $poew $supa $pause $smtpserver $mailfrom $mailfoot);
-use vars qw(%comms %login %map %useif %skipif %doip %seedini %ouineb %sysobj %ifmac %ifip %useip);
-use vars qw(%oui %arp  %arp6 %arpc %arpn %portprop %portnew %portdes %vlid %prif);
-use vars qw(@todo @comms @seeds @users @curcfg);
+use vars qw($notify $norep $latw $cpua $mema $tmpa $trfa $brca $poew $supa $pause $smtpserver $mailfrom $mailfoot);
+use vars qw(%comms %login %map %useif %skippol %doip %seedini %sysobj %ifmac %ifip %useip);
+use vars qw(%oui %arp  %arp6 %arpc %arpn %portprop %portnew %portdes %vlid);
+use vars qw(@todo @comms @seeds @users @curcfg @nam2loc);
 
 our @donenam = @doneid = @doneip = @failid = @failip = ();
 our $ipchg = $ifchg = $mq = 0;
@@ -42,14 +42,14 @@ B<Globals> various misc:: varables
 B<Returns> dies on missing nedi.conf
 
 =cut
-sub ReadConf {
+sub ReadConf{
 
 	my $nconf = "$main::p/nedi.conf";
 
 	$ignoredvlans = $ignoredmacs = $useivl = $border = $nosnmpdev = $descfilter = $usessh = $usepoe = "isch nid gsetzt!";
-	$locsep  = " ";
-	$supa    = 0;
-	$rrdsize = 1000;
+	$locsep   = " ";
+	$rrdsize  = 1000;
+	$macflood = 1000;
 
 	if($main::opt{U}){
 		$nconf = $main::opt{U}
@@ -83,13 +83,20 @@ sub ReadConf {
 			elsif($v[0] eq "uselogin"){$uselogin = $v[1]}
 			elsif($v[0] eq "snmpwrite"){$snmpwrite = $v[1]}
 			elsif($v[0] eq "usessh"){$usessh = $v[1]}
-			elsif($v[0] eq "skipif"){$skipif{$v[1]} = $v[2]}
+			elsif($v[0] eq "skippol"){$skippol{$v[1]} = (defined $v[1])?$v[1]:''}		# Avoid undef...
 			elsif($v[0] eq "usepoe"){$usepoe = $v[1]}
 
 			elsif($v[0] eq "mapip"){$map{$v[1]}{ip} = $v[2]}
 			elsif($v[0] eq "maptp"){$map{$v[1]}{cp} = $v[2]}
+			elsif($v[0] eq "mapsn"){$map{$v[1]}{sn} = $v[2]}
 			elsif($v[0] eq "mapna"){$map{$v[1]}{na} = join ' ', splice @v,2}
 			elsif($v[0] eq "maplo"){$map{$v[1]}{lo} = join ' ', splice @v,2}
+			elsif($v[0] eq "mapco"){$map{$v[1]}{co} = join ' ', splice @v,2}
+			elsif($v[0] eq "nam2loc"){
+				$nam2loc[0] = $v[1];
+				$nam2loc[1] = join ' ', splice @v,2;
+			}
+
 			elsif($v[0] eq "nosnmpdev"){$nosnmpdev = $v[1]}
 			elsif($v[0] eq "webdev"){$webdev = $v[1]}
 			elsif($v[0] eq "netfilter"){$netfilter = $v[1]}
@@ -100,17 +107,15 @@ sub ReadConf {
 			elsif($v[0] eq "backend"){$backend = $v[1]}
 			elsif($v[0] eq "dbname"){$dbname = $v[1]}
 			elsif($v[0] eq "dbuser"){$dbuser = $v[1]}
-			elsif($v[0] eq "dbpass"){$dbpass = (defined $v[1])?$v[1]:""}			# based on dirtyal's suggestion
+			elsif($v[0] eq "dbpass"){$dbpass = (defined $v[1])?$v[1]:''}			# based on dirtyal's suggestion
 			elsif($v[0] eq "dbhost"){$dbhost = $v[1]}
-
-			elsif($v[0] eq "clilib"){$clilib = $v[1]}
 
 			elsif($v[0] eq "ignoredvlans"){$ignoredvlans = $v[1]}
 			elsif($v[0] eq "ignoredmacs"){$ignoredmacs = $v[1]}
 			elsif($v[0] eq "useivl"){$useivl = $v[1]}
 			elsif($v[0] eq "getfwd"){$getfwd = $v[1]}
 			elsif($v[0] eq "retire"){$retire = $main::now - $v[1] * 86400;}
-			elsif($v[0] eq "timeout"){$timeout = $v[1]}
+			elsif($v[0] eq "timeout"){$timeout = $v[1];$retry = (defined $v[2])?$v[2]:1}
 			elsif($v[0] eq "arpwatch"){$arpwatch = $v[1]}
 			elsif($v[0] eq "arppoison"){$arppoison = $v[1]}
 			elsif($v[0] eq "macflood"){$macflood = $v[1]}
@@ -121,13 +126,13 @@ sub ReadConf {
 			elsif($v[0] eq "nagpipe"){$nagpipe = $v[1]}
 
 			elsif($v[0] eq "notify"){$notify = $v[1]}
-			elsif($v[0] eq "check-alert"){$chka = $v[1]}
+			elsif($v[0] eq "noreply"){$norep = $v[1]}
 			elsif($v[0] eq "latency-warn"){$latw = $v[1]}
 			elsif($v[0] eq "cpu-alert"){$cpua = $v[1]}
 			elsif($v[0] eq "mem-alert"){$mema = $v[1]}
 			elsif($v[0] eq "temp-alert"){$tmpa = $v[1]}
 			elsif($v[0] eq "traf-alert"){$trfa = $v[1]}
-			elsif($v[0] eq "traf-warn"){$trfw = $v[1]}
+			elsif($v[0] eq "bcast-alert"){$brca = $v[1]}
 			elsif($v[0] eq "poe-warn"){$poew = $v[1]}
 			elsif($v[0] eq "supply-alert"){$supa = $v[1]}
 
@@ -135,17 +140,18 @@ sub ReadConf {
 			elsif($v[0] eq "smtpserver"){$smtpserver = $v[1]}
 			elsif($v[0] eq "mailfrom"){$mailfrom = $v[1]}
 			elsif($v[0] eq "mailfooter"){$mailfoot = join ' ', splice @v,1}
+			elsif($v[0] eq "sms"){$sms{$v[1]} = $v[2]}
 			elsif($v[0] eq "guiauth"){$guiauth = $v[1]}
 			elsif($v[0] eq "locsep"){$locsep = $v[1]}
 			elsif($v[0] eq "redbuild"){$redbuild = $v[1]}
 
 			elsif($v[0] eq "nedipath"){
 				$nedipath = $v[1];
-				if($main::p eq "."){
+				if($main::p !~ /^\//){
 					&Prt("Started with relative path!\n");
 					$nedipath = $main::p;
 				}else{
-					if($v[1] ne $main::p){die "Please configure nedipath!\n";}
+					if($nedipath ne $main::p){die "Please configure nedipath!\n";}
 				}
 			}
 		}
@@ -164,7 +170,7 @@ B<Globals> misc::sysobj
 B<Returns> -
 
 =cut
-sub ReadSysobj {
+sub ReadSysobj{
 
 	my ($so) = @_;
 
@@ -177,15 +183,18 @@ sub ReadSysobj {
 			&Prt("SOBJ:$so.def not found, using other.def\n");
 		}
 		my @def = <DEF>;
+		chomp @def;
 		close("DEF");
 		$sysobj{$so}{ty} = $so;
 		$sysobj{$so}{hc} = $sysobj{$so}{mv} = $sysobj{$so}{ib} = 0;
 		$sysobj{$so}{pm} = '-';
+		$sysobj{$so}{st} = '';
+		$sysobj{$so}{en} = '';
 		$sysobj{$so}{cul}= '-;;';
 
 		foreach my $l (@def){
 			if($l !~ /^[#;]|^\s*$/){
-				$l =~ s/[\r\n]//g;			# Chomp doesn't remove \r
+				$l =~ s/[\r\n]|\s+$//g;			# Chomp doesn't remove \r and trailing spaces
 				my @v  = split(/\t+/,$l);
 				if(!defined $v[1]){$v[1] = ""}
 				if($v[0] eq "Type")		{$sysobj{$so}{ty} = $v[1]}
@@ -206,14 +215,16 @@ sub ReadSysobj {
 				elsif($v[0] eq "Bimage")	{$sysobj{$so}{bi} = $v[1]}
 				elsif($v[0] eq "Sysdes")	{$sysobj{$so}{de} = $v[1]}
 				elsif($v[0] eq "Bridge")	{$sysobj{$so}{bf} = $v[1]}
-				elsif($v[0] eq "ArpND")	{$sysobj{$so}{ar} = $v[1]}
+				elsif($v[0] eq "ArpND")		{$sysobj{$so}{ar} = $v[1]}
 				elsif($v[0] eq "Dispro")	{$sysobj{$so}{dp} = $v[1]}
 				elsif($v[0] eq "Typoid")	{$sysobj{$so}{to} = $v[1]}		# tx vtur
 
 				elsif($v[0] eq "VLnams")	{$sysobj{$so}{vn} = $v[1]}
 				elsif($v[0] eq "VLnamx")	{$sysobj{$so}{vl} = $v[1]}
-				elsif($v[0] eq "Group")	{$sysobj{$so}{dg} = $v[1]}
+				elsif($v[0] eq "Group")		{$sysobj{$so}{dg} = $v[1]}
 				elsif($v[0] eq "Mode")		{$sysobj{$so}{dm} = $v[1]}
+				elsif($v[0] eq "CfgChg")	{$sysobj{$so}{cc} = $v[1]}
+				elsif($v[0] eq "CfgWrt")	{$sysobj{$so}{cw} = $v[1]}
 
 				elsif($v[0] eq "StartX")	{$sysobj{$so}{st} = $v[1]}
 				elsif($v[0] eq "EndX")		{$sysobj{$so}{en} = $v[1]}
@@ -248,7 +259,10 @@ sub ReadSysobj {
 				elsif($v[0] eq "Momodl")	{$sysobj{$so}{mm} = $v[1]}
 
 
-				elsif($v[0] eq "CPUutl")	{$sysobj{$so}{cpu} = $v[1]}
+				elsif($v[0] eq "CPUutl")	{
+					$sysobj{$so}{cpu} = $v[1];
+					$sysobj{$so}{cmu} = ($v[2])?$v[2]:1;
+				}
 				elsif($v[0] eq "MemCPU")	{
 					$sysobj{$so}{mem} = $v[1];
 					$sysobj{$so}{mmu} = ($v[2])?$v[2]:1;
@@ -278,7 +292,7 @@ B<Globals> misc::oui
 B<Returns> -
 
 =cut
-sub ReadOUIs {
+sub ReadOUIs{
 
 	open  ("OUI", "$main::p/inc/oui.txt" ) or die "no oui.txt in $main::p/inc!";			# Read OUI's first
 	my @ouitxt = <OUI>;
@@ -286,7 +300,7 @@ sub ReadOUIs {
 
 	my @nics = grep /(base 16)/,@ouitxt;
 	foreach my $l (@nics){
-		$l =~ s/^\s+|[\r\n]$//g;
+		$l =~ s/^\s*|[\r\n]$//g;
 		my @m = split(/\s\s+/,$l);
 		if(defined $m[2]){
 			$oui{lc($m[0])} = substr($m[2],0,32);
@@ -298,7 +312,7 @@ sub ReadOUIs {
 
 	@nics = grep /(base 16)/,@iabtxt;
 	foreach my $l (@nics){
-		$l =~ s/^\s+|[\r\n]$//g;
+		$l =~ s/^\s*|[\r\n]$//g;
 		my @m = split(/\t+/,$l);
 		if(defined $m[2]){
 			$m[0] = "0050C2".substr($m[0],0,3);
@@ -321,7 +335,7 @@ B<Globals> -
 B<Returns> vendor
 
 =cut
-sub GetOui {
+sub GetOui{
 
 	my $coui =  "?";
 
@@ -347,7 +361,7 @@ B<Globals> misc::oui
 B<Returns> cleaned string
 
 =cut
-sub Strip {
+sub Strip{
 
 	my ($str,$ret) = @_;
 
@@ -375,12 +389,12 @@ B<Globals> -
 B<Returns> shortened IF name
 
 =cut
-sub Shif {
+sub Shif{
 
 	my ($n) = @_;
 
 	if($n){
-		$n =~ s/tengigabitethernet/Te/i;
+		$n =~ s/ten(-)?gigabitethernet/Te/i;
 		$n =~ s/gigabit[\s]{0,1}ethernet/Gi/i;
 		$n =~ s/fast[\s]{0,1}ethernet/Fa/i;
 		$n =~ s/^eth(ernet)?/Et/i;								# NXOS uses Eth in CLI, but Ethernet in SNMP...tx sk95, Matthias
@@ -401,7 +415,68 @@ sub Shif {
 	}
 }
 
+=head2 FUNCTION AvailIF()
 
+Warn on less than supply-alert available access ports if device has more than 8 ethernet ports
+
+B<Options> Device
+
+B<Globals> -
+
+B<Returns> -
+
+=cut
+sub AvAccess{
+
+	my ($dv) = @_;
+	my $avif = my $ethif = 0;
+
+	foreach my $i ( keys %{$main::int{$dv}} ){
+		if($main::int{$dv}{$i}{typ} =~ /^(6|7|117)$/){
+			$avif++	if $main::int{$dv}{$i}{sta} < 3 and $main::int{$dv}{$i}{chg} < $retire;
+			$ethif++;
+		}
+	}
+
+	my $supa = (exists $main::mon{$dv})?$main::mon{$dv}{sa}:$supa;
+	if($ethif > 10 and $avif < $supa ){
+		$mq += &mon::Event('D',150,'nedi',$dv,$dv,"$avif available access port".(($avif==1)?' is':'s are')." below threshold of $supa");
+	}
+}
+
+
+=head2 FUNCTION ProCount()
+
+Process counter with respect to overflow and delta 
+
+B<Options> Device, IF index, abs index, delta index, status, value
+
+B<Globals> Interface abs and delta value
+
+B<Returns> -
+
+=cut
+sub ProCount{
+
+	my ($dv,$i,$abs,$dlt,$stat,$val) = @_;
+
+	if($stat){
+		$main::int{$dv}{$i}{$abs} = 0 unless $main::int{$dv}{$i}{$abs};
+		$main::int{$dv}{$i}{$dlt} = 0 unless $main::int{$dv}{$i}{$dlt};
+	}else{
+		if($main::int{$dv}{$i}{old}){
+			my $dval = $val - $main::int{$dv}{$i}{$abs};
+			if($dval == abs $dval){
+				$main::int{$dv}{$i}{$dlt} = $dval;
+			}else{
+				&misc::Prt("ERR :$abs overflow, not updating\n",'');				
+			}
+		}else{
+			$main::int{$dv}{$i}{$dlt} = 0;
+		}
+		$main::int{$dv}{$i}{$abs} = $val;
+	}
+}
 
 =head2 FUNCTION CheckIf()
 
@@ -414,47 +489,49 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub CheckIf {
+sub CheckIF{
 
 	my ($dv,$i,$skip) = @_;
 	
-	return unless $main::int{$dv}{$i}{old} and exists $main::mon{$dv};
+	return unless $main::int{$dv}{$i}{old};
 
-	my $iftxt = "$main::int{$dv}{$i}{ina} ";
-	$iftxt .= " - $main::int{$dv}{$i}{ali} " if $main::int{$dv}{$i}{ali};
 	my $ele = 0;
 	my $lvl = 100;
 	my $cla = "nedi";
+	my $iftxt = $main::int{$dv}{$i}{ina};
+	$iftxt .= " ($main::int{$dv}{$i}{ali})" if $main::int{$dv}{$i}{ali};
 	if($main::int{$dv}{$i}{lty}){
-		$iftxt .= ($main::int{$dv}{$i}{com})?"(is $main::int{$dv}{$i}{com})":"(is $main::int{$dv}{$i}{lty})";
+		$iftxt .= ' '.($main::int{$dv}{$i}{com})?substr($main::int{$dv}{$i}{com},0,20):$main::int{$dv}{$i}{lty};
 		$lvl = 150;
 		$cla = "nedl";
-		$ele = &mon::Elevate('L',0);
+		$ele = &mon::Elevate('L',0,$dv);
 	}elsif($main::int{$dv}{$i}{plt}){
-		$iftxt .= ($main::int{$dv}{$i}{pco})?"(was $main::int{$dv}{$i}{pco})":"(was $main::int{$dv}{$i}{plt})";
+		$iftxt .= ' '.($main::int{$dv}{$i}{pco})?substr($main::int{$dv}{$i}{pco},0,20):$main::int{$dv}{$i}{plt};
 		$lvl = 150;
 		$cla = "nedl";
-		$ele = &mon::Elevate('L',0);
+		$ele = &mon::Elevate('L',0,$dv);
 	}
-	if($main::dev{$dv}{pl} > $main::lasdis){							# Avoid > 100% events due to offline dev being rediscovered
-		my $trfele = &mon::Elevate('T',$ele);
-		my $errele = &mon::Elevate('E',$ele);
-		if($trfele and $main::int{$dv}{$i}{spd} and $skip !~ /t/){
-			my $rioct = int( $main::int{$dv}{$i}{dio} * 800 / ($rrdstep * $main::int{$dv}{$i}{spd}) );
-			my $rooct = int( $main::int{$dv}{$i}{doo} * 800 / ($rrdstep * $main::int{$dv}{$i}{spd}) );
 
-			if($rioct > $trfa){
-				$mq += &mon::Event($trfele,200,$cla,$dv,$dv,"$iftxt having $rioct% inbound traffic exeeds alert threshold of ${trfa}% for ${rrdstep}s!");
-			}elsif($rioct > $trfw){								# No alerts on warnings, thus only elevate to 1
-				$mq += &mon::Event( ($trfele > 1)?1:0,$lvl,$cla,$dv,$dv,"$iftxt having $rioct% inbound traffic exeeds warning threshold of ${trfw}% for ${rrdstep}s");
+	if($main::dev{$dv}{pls} > $main::lasdis){							# Avoid > 100% events due to offline dev being rediscovered
+		my $trfele = &mon::Elevate('T',$ele,$dv);
+		my $errele = &mon::Elevate('E',$ele,$dv);
+		my $dicele = &mon::Elevate('G',$ele,$dv);
+		if($trfele and $main::int{$dv}{$i}{spd} and $skip !~ /t/){
+			my $rioct = int( $main::int{$dv}{$i}{dio} / $main::int{$dv}{$i}{spd} / $rrdstep * 800 );
+			my $rooct = int( $main::int{$dv}{$i}{doo} / $main::int{$dv}{$i}{spd} / $rrdstep * 800 );
+			my $tral = ($main::int{$dv}{$i}{tra})?$main::int{$dv}{$i}{tra}:$trfa;
+			if($rioct > $tral){
+				$mq += &mon::Event($trfele,200,$cla,$dv,$dv,"$iftxt (".DecFix($main::int{$dv}{$i}{spd}).") having $rioct% inbound traffic for ${rrdstep}s, exceeds alert threshold of ${tral}%!");
 			}
-			if($rooct > $trfa){
-				$mq += &mon::Event($trfele,200,$cla,$dv,$dv,"$iftxt having $rooct% outbound traffic exeeds alert threshold of ${trfa}% for ${rrdstep}s!");
-			}elsif($rooct > $trfw){
-				$mq += &mon::Event( ($trfele > 1)?1:0,$lvl,$cla,$dv,$dv,"$iftxt having $rooct% outbound traffic exeeds warning threshold of ${trfw}% for ${rrdstep}s");
+			if($rooct > $tral){
+				$mq += &mon::Event($trfele,200,$cla,$dv,$dv,"$iftxt (".DecFix($main::int{$dv}{$i}{spd}).") having $rooct% outbound traffic for ${rrdstep}s, exceeds alert threshold of ${tral}%!");
+			}
+			my $bcps = int($main::int{$dv}{$i}{dib}/$rrdstep);
+			my $bral = ($main::int{$dv}{$i}{bra})?$main::int{$dv}{$i}{bra}:$brca;
+			if($bral and $bcps > $bral){
+				$mq += &mon::Event($trfele,200,$cla,$dv,$dv,"$iftxt having $bcps inbound broadcasts/s, exceeds alert threshold of ${bral}/s!");
 			}
 		}
-
 		if($errele and $main::int{$dv}{$i}{typ} != 71 and $skip !~ /e/){			# Ignore Wlan IF
 			if($main::int{$dv}{$i}{die} > $rrdstep){
 				$mq += &mon::Event($errele,$lvl,$cla,$dv,$dv,"$iftxt having $main::int{$dv}{$i}{die} inbound errors for ${rrdstep}s!");
@@ -467,24 +544,31 @@ sub CheckIf {
 				$mq += &mon::Event( ($errele > 1)?1:0,$lvl,$cla,$dv,$dv,"$iftxt having $main::int{$dv}{$i}{doe} outbound errors for ${rrdstep}s");
 			}
 		}
+
+		if($dicele and $main::int{$dv}{$i}{typ} != 71 and $skip !~ /d/){			# Ignore Wlan IF
+			if($main::int{$dv}{$i}{did} > $rrdstep * 1000){
+				$mq += &mon::Event($errele,$lvl,$cla,$dv,$dv,"$iftxt having $main::int{$dv}{$i}{did} inbound discards for ${rrdstep}s!");
+			}
+			if($main::int{$dv}{$i}{dod} > $rrdstep * 1000){
+				$mq += &mon::Event($errele,$lvl,$cla,$dv,$dv,"$iftxt having $main::int{$dv}{$i}{dod} outbound discards for ${rrdstep}s!");
+			}
+		}
 	}
 
 	if($main::int{$dv}{$i}{sta} == 0 and $main::int{$dv}{$i}{pst} != 0 and $skip !~ /A/){
-		$mq += &mon::Event( &mon::Elevate('A',$ele),$lvl,$cla,$dv,$dv,"$iftxt went down, previous status change on ".localtime($main::int{$dv}{$i}{pcg}) );
+		$mq += &mon::Event( &mon::Elevate('A',$ele,$dv),$lvl,$cla,$dv,$dv,"$iftxt went down, previous status change on ".localtime($main::int{$dv}{$i}{pcg}) );
 	}elsif($main::int{$dv}{$i}{sta} == 1 and $main::int{$dv}{$i}{pst} > 1 and $skip !~ /O/){
-		$mq += &mon::Event( &mon::Elevate('O',$ele),$lvl,$cla,$dv,$dv,"$iftxt went down, previous status change on ".localtime($main::int{$dv}{$i}{pcg}) );
+		$mq += &mon::Event( &mon::Elevate('O',$ele,$dv),$lvl,$cla,$dv,$dv,"$iftxt went down, previous status change on ".localtime($main::int{$dv}{$i}{pcg}) );
 	}
 
-	if($main::int{$dv}{$i}{lty} or $main::int{$dv}{$i}{plt}){
+	if($main::int{$dv}{$i}{lty} or $main::int{$dv}{$i}{plt} and $skip !~ /p/){
 		my $typc = ($main::int{$dv}{$i}{lty} ne $main::int{$dv}{$i}{plt})?" type ".(($main::int{$dv}{$i}{plt})?" from $main::int{$dv}{$i}{plt}":"").(($main::int{$dv}{$i}{lty})?" to $main::int{$dv}{$i}{lty}":""):"";
 		my $spdc = ($main::int{$dv}{$i}{spd} ne $main::int{$dv}{$i}{spd})?" speed from ".&DecFix($main::int{$dv}{$i}{psp})." to ".&DecFix($main::int{$dv}{$i}{spd}):"";
 		my $dupc = ($main::int{$dv}{$i}{dpx} ne $main::int{$dv}{$i}{pdp})?" duplex from $main::int{$dv}{$i}{pdp} to $main::int{$dv}{$i}{dpx}":"";
 		my $ndio = (!$main::int{$dv}{$i}{dio} and $main::int{$dv}{$i}{sta} & 3)?" did not receive any traffic":"";
 		my $ndoo = (!$main::int{$dv}{$i}{doo} and $main::int{$dv}{$i}{sta} & 3)?" did not send any traffic":"";
-		my $didi = ($main::int{$dv}{$i}{did} > $rrdstep)?" has $main::int{$dv}{$i}{idi} in-discards":"";
-		my $dodi = ($main::int{$dv}{$i}{dod} > $rrdstep)?" has $main::int{$dv}{$i}{odi} out-discards":"";
-		if($typc or $spdc or $dupc or $ndio or $ndoo or $didi or $dodi){
-			my $msg  = "$iftxt ".(($typc or $spdc or $dupc)?"changed":"")."$typc$spdc$dupc$ndio$ndoo$didi$dodi";
+		if( $typc or $spdc or $dupc or $ndio or $ndoo ){
+			my $msg  = "$iftxt ".(($typc or $spdc or $dupc)?"changed":"")."$typc$spdc$dupc$ndio$ndoo";
 			$mq += &mon::Event($ele,$lvl,$cla,$dv,$dv,$msg);
 		}
 	}
@@ -492,22 +576,50 @@ sub CheckIf {
 
 =head2 FUNCTION MapIp()
 
-Map IP address, if specified in config.
+Map values based on IP address if set in %misc::map.
 
-B<Options> IP address
+The mapped value is returned with status=1 if a mapping exists, the given value along status=0 if not.
+If typ is 'ip', it'll always return the IP address (value is ignored).
+If typ is 'na' and nedi is called with -f (use IPs instead of names) the IP is returned as well.
+
+B<Options> IP address, mode, value
 
 B<Globals> -
 
-B<Returns> mapped IP address
+B<Returns> mapped value
 
 =cut
-sub MapIp {
-	my $ip = $_[0];
-	if($map{$_[0]}{ip}){
-		$ip = $map{$_[0]}{ip};
-		&Prt("MAPI:IP $_[0] to $ip\n");
+sub MapIp{
+	my ($ip,$typ,$val) = @_;
+
+	if($typ eq 'na' and $main::opt{'f'}){
+		return ($ip,1);
+        }elsif($typ eq 'lo' and @nam2loc){
+                my $loc = $val;
+                $loc =~ s/$nam2loc[0]/"$nam2loc[1]"/ee;
+		&Prt("MAP :Mapped name to location $loc\n");
+                return ($loc,1);
+	}elsif( exists $map{$ip} and exists $map{$ip}{$typ} ){
+		if($typ eq 'na' and $map{$ip}{$typ} eq 'map2DNS'){
+			my $na = gethostbyaddr(inet_aton($ip), AF_INET);
+			if($na){
+				&Prt("MAP :Mapped name to DNS $na\n");
+				return ($na,1);
+			}else{
+				&Prt("MAP :Error mapping name to DNS, mapped to IP $ip instead\n");
+				return ($ip,1);
+			}
+		}elsif($typ eq 'na' and $map{$ip}{$typ} eq 'map2IP'){
+			&Prt("MAP :Mapped name to IP $ip\n");
+			return ($ip,1);
+		}else{
+			&Prt("MAP :Mapped $typ to $map{$ip}{$typ}\n");
+			return ($map{$ip}{$typ},1);
+		}
+	}else{
+		$val = $ip if $typ eq 'ip';
+		return ($val,0);
 	}
-	return $ip;
 }
 
 =head2 FUNCTION MSM2I()
@@ -521,7 +633,7 @@ B<Globals> -
 B<Returns> IEEE type
 
 =cut
-sub MSM2I {
+sub MSM2I{
 
 	my ($t) = @_;
 
@@ -549,7 +661,7 @@ B<Globals> -
 B<Returns> dec IP
 
 =cut
-sub Ip2Dec {
+sub Ip2Dec{
 	if(!$_[0]){$_[0] = 0}
 	return unpack N => pack CCCC => split /\./ => shift;
 }
@@ -566,7 +678,7 @@ B<Globals> -
 B<Returns> IP address
 
 =cut
-sub Dec2Ip {
+sub Dec2Ip{
 	if(!$_[0]){$_[0] = 0}
 	return join '.' => map { ($_[0] >> 8*(3-$_)) % 256 } 0 .. 3;
 }
@@ -582,7 +694,7 @@ B<Globals> -
 B<Returns> bitcount
 
 =cut
-sub Mask2Bit {
+sub Mask2Bit{
 	$_[0] = 0 if !$_[0];
 	my $bit = sprintf("%b", unpack N => pack CCCC => split /\./ => shift);
 	$bit =~ s/0//g;
@@ -601,14 +713,14 @@ B<Globals> -
 B<Returns> readable number
 
 =cut
-sub DecFix(){
+sub DecFix{
 
 	if($_[0] >= 1000000000){
 		return int($_[0]/1000000000)."G";
 	}elsif($_[0] >= 1000000){
 		return int($_[0]/1000000)."M";
 	}elsif($_[0] >= 1000){
-		return int($_[0]/1000)."K";
+		return int($_[0]/1000)."k";
 	}else{
 		return $_[0];
 	}
@@ -625,7 +737,7 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub NagPipe {
+sub NagPipe{
 
 	my $nag_event_service = 'Events';
 
@@ -661,7 +773,7 @@ B<Globals> -
 B<Returns> differences as string
 
 =cut
-sub GetChanges {
+sub CfgChanges{
 
 	use Algorithm::Diff qw(diff);
 
@@ -692,7 +804,7 @@ B<Globals> -
 B<Returns> default gw IP
 
 =cut
-sub GetGw {
+sub GetGw{
 
 	my @routes = `netstat -rn`;
 	my @l = grep(/^\s*(0\.0\.0\.0|default)/,@routes);
@@ -719,7 +831,7 @@ B<Globals> misc::todo
 B<Returns> # of seeds queued
 
 =cut
-sub InitSeeds {
+sub InitSeeds{
 
 	my $s = 0;
 
@@ -761,7 +873,7 @@ sub InitSeeds {
 		foreach my $dv (keys %main::dev){
 			if($main::dev{$dv}{rv}){
 				push(@todo,$dv);
-				$doip{$dv}		 = $main::dev{$dv}{ip};
+				$doip{$dv} = $main::dev{$dv}{ip};
 				print "$dv, $main::dev{$dv}{ip} added for discovery\n" if $main::opt{'v'};
 				$s++;
 			}
@@ -778,8 +890,8 @@ sub InitSeeds {
 				my $hip = gethostbyname($f[0]);
 				if(defined $hip){
 					my $ip = join('.',unpack('C4',$hip) );
-					$seedini{$ip}{rc} = ($f[1])?$f[1]:"";
-					$seedini{$ip}{rv} = ($f[2])?$f[2]:"";
+					$seedini{$ip}{rc} = $f[1] if $f[1];
+					$seedini{$ip}{rv} = $f[2] if $f[2];
 					$seedini{$ip}{lo} = ($f[3])?$f[3]:"";
 					$seedini{$ip}{co} = ($f[4])?$f[4]:"";
 					push(@todo,"$id$s");
@@ -816,7 +928,7 @@ B<Globals> misc::curcfg
 B<Returns> -
 
 =cut
-sub Discover {
+sub Discover{
 
 	my ($id)	= @_;
 	my $start	= time;
@@ -824,11 +936,10 @@ sub Discover {
 	my $dv		= "";
 	my $skip	= $main::opt{'S'};
 
-	&Prt("\nDiscover     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n",sprintf("%-15.15s ",$doip{$id}) );
 	if($main::opt{'A'} and $skip =~ /s/){
 		my $latency = &mon::PingService($main::dev{$id}{ip},'',0,0.5);
 		if($latency ne -1){
-			&Prt("","UP:${latency}ms ");
+			&Prt("","$main::dev{$id}{ip} $id UP:${latency}ms ");
 			&ReadSysobj($main::dev{$id}{so});
 			$dv = $id;
 		}
@@ -837,34 +948,35 @@ sub Discover {
 	}
 	if($dv){
 		my $skip = $main::opt{'S'};
-		if(exists $skipif{$main::dev{$dv}{ty}}){
-			$skip .= $skipif{$main::dev{$dv}{ty}};
-			&Prt("DISC:skipif policy for $main::dev{$dv}{ty}=$skipif{$main::dev{$dv}{ty}}\n");
-		}elsif(exists $skipif{'default'}){
-			$skip .= $skipif{'default'};
-			&Prt("DISC:default skipif policy=$skipif{'default'}\n");
-		}else{
-			&Prt("DISC:no skipif policy using -S ($main::opt{S})\n");
+		if(exists $skippol{$main::dev{$dv}{ty}}){
+			$skip .= $skippol{$main::dev{$dv}{ty}};
+			&Prt("DISC:skippol policy for $main::dev{$dv}{ty}=$skippol{$main::dev{$dv}{ty}}\n");
+		}elsif(exists $skippol{'default'}){
+			$skip .= &Strip($skippol{'default'});
+			&Prt("DISC:default skip policy=$skip\n");
+		}elsif($skip){
+			&Prt("DISC:no skip policy using -S $skip\n");
 		}
 		my $noentrinf = &snmp::Enterprise($dv,$skip);						# Get enterprise info
-		my $noifwrite = &snmp::Interfaces($dv,$skip);						# Get interface info
+		my $iferr = &snmp::Interfaces($dv,$skip);						# Get interface info
 		&snmp::IfAddresses($dv) if $sysobj{$main::dev{$dv}{so}}{ia} and $skip !~ /j/;		# Get IP addresses
-		if($main::dev{$dv}{pi} and $main::dev{$dv}{pi} ne $main::dev{$dv}{ip}){			# Previous IP was different...
-			$mq += &mon::Event('I',150,'nedi',$dv,$dv,"IP changed from $main::dev{$dv}{pi} to $main::dev{$dv}{ip} (update monitoring)");
+		if($main::dev{$dv}{pip} and $main::dev{$dv}{pip} ne $main::dev{$dv}{ip}){			# Previous IP was different...
+			$mq += &mon::Event('I',150,'nedi',$dv,$dv,"IP changed from $main::dev{$dv}{pip} to $main::dev{$dv}{ip} (update monitoring)");
 		}
 		if($sysobj{$main::dev{$dv}{so}}{dp} and $skip !~ /p/){
 			&snmp::DisProtocol($dv,$id,$sysobj{$main::dev{$dv}{so}}{dp});			# Get neighbours via LLDP, CDP or FDP
 		}
+		my $moderr = 0;
 		if($sysobj{$main::dev{$dv}{so}}{mt}){
 			my $pstk = (defined $main::dev{$dv}{stk})?$main::dev{$dv}{stk}:0;
 			if($skip =~ /m/){
-				&Prt("","  ");
+				&Prt(""," ");
 			}else{
-				&snmp::Modules($dv);
+				$moderr = &snmp::Modules($dv);
 			}
 		}else{
 			$main::dev{$dv}{stk} = 0;
-			&Prt("","  ");
+			&Prt(""," ");
 		}
 		&KeyScan($main::dev{$dv}{ip}) if $main::opt{'k'} or $main::opt{'K'};
 
@@ -883,52 +995,65 @@ sub Discover {
 				&Prt(""," ");
 			}
 		}else{
-			&Prt(""," ");									# Spacer instead of L3 info.
+			&Prt("","      ");								# Spacer instead of L3 info.
 		}
-		if($getfwd and $skip !~ /f/){
-			if($sysobj{$main::dev{$dv}{so}}{bf} eq "Aruba"){# Redesign getfwd and skip-f!!!
-				&snmp::ArubaFwd($dv);
-			}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "MSM"){
-				&snmp::MSMFwd($dv);
-			}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "WLC"){
-				&snmp::WLCFwd($dv);
-			}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "CAP"){
-				&snmp::CAPFwd($dv);
-			}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "WRT"){
-				&snmp::WRTFwd($dv);
-			}elsif($sysobj{$main::dev{$dv}{so}}{bf}){					# Get mac address table, if  bridging is set in .def
-				if($getfwd =~ /dyn|sec/){						# Using CLI to fetch forwarding table is configured?
-					$clistat = &cli::PrepDev($dv,"fwd");				# Prepare device for cli access
-					if($clistat =~ /^OK/){
-						$clistat = &cli::BridgeFwd($dv);
-					}
-					&Prt("DISC:Cli bridge fwd = $clistat\n");
+
+		if($sysobj{$main::dev{$dv}{so}}{bf} eq "Aruba"){					# Discover Wlan devices
+			&snmp::ArubaFwd($dv,$skip);
+		}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "MSM"){
+			&snmp::MSMFwd($dv,$skip);
+		}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "WLC"){
+			&snmp::WLCFwd($dv,$skip);
+		}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "CAP" and  $skip !~ /f/){
+			&snmp::CAPFwd($dv);
+		}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "WRT" and  $skip !~ /f/){
+			&snmp::WRTFwd($dv);
+		}elsif($sysobj{$main::dev{$dv}{so}}{bf} and  $skip !~ /f/){				# Get mac address table, if  bridging is set in .def
+			&AvAccess($dv);
+			if($getfwd =~ /dyn|sec/){							# Using CLI to fetch forwarding table is configured?
+				$clistat = &cli::PrepDev($dv,"fwd");					# Prepare device for cli access
+				if($clistat =~ /^OK/){
+					$clistat = &cli::BridgeFwd($dv);
 				}
-				if($clistat ne "OK-Bridge"){
-					if($sysobj{$main::dev{$dv}{so}}{bf} =~ /^V(LX|XP)$/ and  $skip =~ /s/){
-						&Prt("ERR :Cannot get Vlan indexed forwarding entries with skipping s!\n");
-					}else{
-						&snmp::BridgeFwd($dv);					# Do SNMP if telnet fails or CLI not configured
-					}
-				}
-				&FloodFind($dv) if $notify =~ /n/i;
+				&Prt("DISC:Cli bridge fwd = $clistat\n");
 			}
+			if($clistat ne "OK-Bridge"){
+				$mq += &mon::Event('D',150,'nede',$dv,$dv,"CLI Bridge Fwd error: $clistat") unless $clistat eq 'not implemented';
+				if($sysobj{$main::dev{$dv}{so}}{bf} =~ /^V(LX|XP)$/ and  $skip =~ /v/){
+					&Prt("ERR :Cannot get Vlan indexed forwarding entries with skipping v!\n");
+				}else{
+					&snmp::BridgeFwd($dv);						# Do SNMP if telnet fails or CLI not configured
+				}
+			}
+			&FloodFind($dv) if $notify =~ /n/i;
 		}
 
 		if($main::opt{'b'} or defined $main::opt{'B'}){						# Backup configurations
-			if($clistat eq "OK-Bridge" or $clistat eq "OK-Arp"){				# Wait if we just got BridgeFWD or ARP via CLI to avoid hang
-				select(undef, undef, undef, $cli::clipause);
-			}else{
-				$clistat = &cli::PrepDev($dv,"cfg");
-			}
-			&Prt("DISC:Cli config = $clistat\n");
-			if($clistat =~ /^OK/){
-				@curcfg = ();								# Empty config (global due to efficiency)
-				$clistat = &cli::Config($dv);
-				&db::BackupCfg($dv) if $clistat =~ /^OK/;
-			}
-			if($clistat !~ /^(OK|not implemented)/){					# If not ok, but supported...
+			&Prt("\nConfigbackup   ----------------------------------------------------------------\n");
+			if($skip =~ /s/ or !$main::dev{$dv}{pls} or $main::dev{$dv}{bup} ne 'A'){	# Skip sysinfo or new devs force backup (or non-active are updated)
+				if($clistat eq "OK-Bridge" or $clistat eq "OK-Arp"){			# Wait if we just got BridgeFWD or ARP via CLI to avoid hang
+					select(undef, undef, undef, $cli::clipause);
+				}else{
+					$clistat = &cli::PrepDev($dv,"cfg");
+				}
+				&Prt("DISC:Cli config = $clistat\n");
+				if($clistat =~ /^OK/){
+					@curcfg = ();							# Empty config (global due to efficiency)
+					$clistat = &cli::Config($dv);
+					&db::BackupCfg($dv) if $clistat =~ /^OK/;
+					if( $main::dev{$dv}{cfc} ){
+						$main::dev{$dv}{bup} = 'A';
+					}else{
+						$main::dev{$dv}{bup} = 'U';
+					}
+				}elsif($clistat =~ /^not implemented/){
+					$main::dev{$dv}{bup} = '-';
+				}else{
 					$mq += &mon::Event('B',150,'cfge',$dv,$dv,"Config backup error: $clistat");
+					$main::dev{$dv}{bup} = 'E';
+				}
+			}else{
+				&Prt("DISC:Config hasn't been changed. Not backing up.\n");
 			}
 		}
 
@@ -940,19 +1065,23 @@ sub Discover {
 			&Prt("\nWriting Dev  ------------------------------------------------------------------\n");
 			&db::UnStock($dv);
 			&db::WriteDev($dv);
-			&db::WriteInt($dv,$skip) unless $noifwrite;
-			&db::WriteMod($dv)  if $skip !~ /m/;
-			&db::WriteVlan($dv) if $skip !~ /s/;
-			&db::WriteNet($dv)  if $skip !~ /j/;
-			&db::WriteLink($dv) if $skip !~ /p/;						# TODO review after writeint rewrite!
+			&db::WriteInt($dv,$skip)	unless $iferr;
+			&db::WriteMod($dv)		unless $skip =~ /m/ or $moderr;
+			&db::WriteVlan($dv) 		unless $skip =~ /v/;
+			&db::WriteNet($dv)  		unless $skip =~ /j/;
 		}
-#		%main::int  = ();									# Not needed anymore, preserve space! TODO uncomment, if really true!
+		delete $main::mod{$dv};
+		delete $main::vlan{$dv};
+		delete $main::int{$dv};
+#		delete $main::net{$dv};									# Needed to find duplicate IPs!
 	}else{
 		push (@failid,$id);
 		push (@failip,$doip{$id});
 	}
+	my @t = localtime;
 	my $s = sprintf ("%4d/%d-%ds",scalar(@todo),scalar(@donenam),(time - $start) );
-	&Prt("DISC:ToDo/Done-Time\t\t\t\t\t\t\t$s\n"," $s\n");
+	$s .= sprintf ("\t%02d:%02d:%02d",$t[2],$t[1],$t[0] ) if $notify =~ /x/;
+	&Prt("DISC:ToDo/Done-Time\t\t\t\t\t$s\n"," $s\n");
 }
 
 
@@ -967,9 +1096,9 @@ B<Globals> misc::arp, misc::arpn, misc::arpc
 B<Returns> -
 
 =cut
-sub BuildArp {
+sub BuildArp{
 
-	return unless defined $misc::arpwatch;
+	return unless defined $arpwatch;
  
 	my $nad = 0;
 	my @awf = glob($arpwatch);
@@ -1051,10 +1180,10 @@ B<Options> MAC address (with vlid if useivl is configured), mode
 
 B<Globals> -
 
-B<Returns> -, $newdv, $newif if mode is 2 (finding MAC links)
+B<Returns> -, $newdv, $newif if mode is 2 (find MAC links)
 
 =cut
-sub UpNodIF {
+sub UpNodIF{
 
 	my $newdv = "";
 	my $newif = "";
@@ -1070,7 +1199,7 @@ sub UpNodIF {
 			$newmet = $main::nod{$_[0]}{im};						# Use old if value if available
 		}
 	}
-	&Prt("UPIF:DB$newmet ");
+	&Prt("\nUPIF:M$newmet ");
 	foreach my $dv ( keys %{$portnew{$_[0]}} ){							# Cycle thru ports and use new IF, if metric is equal or better than the old one
 		my $if = $portnew{$_[0]}{$dv}{po};
 
@@ -1112,7 +1241,7 @@ sub UpNodIF {
 			return ($newdv,$newif);
 		}elsif($_[1] and ($main::nod{$_[0]}{dv} ne $newdv or $main::nod{$_[0]}{if} ne $newif) ){
 			$main::nod{$_[0]}{ic}++;
-			&db::Insert('iftrack','mac,ifupdate,device,ifname,vlanid,ifmetric',"\"$mc\",\"$main::nod{$_[0]}{iu}\",\"$main::nod{$_[0]}{dv}\",\"$main::nod{$_[0]}{if}\",\"$main::nod{$_[0]}{vl}\",\"$main::nod{$_[0]}{im}\"") unless $main::opt{'t'};
+			&db::Insert('iftrack','mac,ifupdate,device,ifname,vlanid,ifmetric',"'$mc',$main::nod{$_[0]}{iu},'$main::nod{$_[0]}{dv}','$main::nod{$_[0]}{if}',$main::nod{$_[0]}{vl},$main::nod{$_[0]}{im}") unless $main::opt{'t'};
 			$ifchg++;
 		}
 		$main::nod{$_[0]}{im} = $newmet;
@@ -1121,7 +1250,7 @@ sub UpNodIF {
 		$main::nod{$_[0]}{us} = $newus;
 		$main::nod{$_[0]}{vl} = ($vlan =~ /^\d+$/)?$vlan:0;
 		$main::nod{$_[0]}{iu} = $main::now;
-		&Prt("UPIF:$newdv,$newif vl$main::nod{$_[0]}{vl} M$main::nod{$_[0]}{im}\n");
+		&Prt("UPIF:$mc on $newdv,$newif vl$main::nod{$_[0]}{vl} M$main::nod{$_[0]}{im}\n");
 	}else{
 		&Prt("UPIF:Old IF kept $main::nod{$_[0]}{dv},$main::nod{$_[0]}{if} M$main::nod{$_[0]}{im}\n");
 	}
@@ -1139,7 +1268,7 @@ B<Globals> main::nod
 B<Returns> -
 
 =cut
-sub UpNodip {
+sub UpNodip{
 
 	use Socket;
 
@@ -1149,7 +1278,6 @@ sub UpNodip {
 	my $hasip = 0;
 
 	if($_[1]){
-		&Prt("\nUPIP:$mc EXISTING");
 		if(exists $arp{$_[0]}){
 			$hasip = 1;
 			if($main::nod{$_[0]}{ip} ne $arp{$_[0]} ){
@@ -1158,26 +1286,29 @@ sub UpNodip {
 				my $dip = &Ip2Dec($main::nod{$_[0]}{ip});
 				if($dip){
 					$vl = ($vl =~ /^\d+$/)?$vl:0;
-					$misc::mq += &mon::Event('J',100,'secj',$main::nod{$_[0]}{dv},$main::nod{$_[0]}{dv},"IP address on $_[0] changed from $main::nod{$_[0]}{ip} to $arp{$_[0]}");
-					&db::Insert('iptrack','mac,ipupdate,name,nodip,vlanid,device',"\"$mc\",\"$main::now\",\"$main::nod{$_[0]}{na}\",\"$dip\",\"$vl\",\"$main::nod{$_[0]}{dv}\"");
+					$mq += &mon::Event('J',100,'secj',$main::nod{$_[0]}{dv},$main::nod{$_[0]}{dv},"IP address on $_[0] changed from $main::nod{$_[0]}{ip} to $arp{$_[0]}");
+					&db::Insert('iptrack','mac,ipupdate,name,nodip,vlanid,device',"'$mc',$main::now,'$main::nod{$_[0]}{na}',$dip,$vl,'$main::nod{$_[0]}{dv}'");
 					$ipchg++;
 				}else{
-					$misc::mq += &mon::Event('J',100,'secj',$main::nod{$_[0]}{dv},$main::nod{$_[0]}{dv},"New IP address $arp{$_[0]} found for $_[0]");
+					$mq += &mon::Event('J',100,'secj',$main::nod{$_[0]}{dv},$main::nod{$_[0]}{dv},"New IP address $arp{$_[0]} found for $_[0]");
 				}
 			}elsif($main::nod{$_[0]}{au} < $retire){					# Same IP forever, force update
 				$upip = 1;
+			}else{
+				&Prt("UPIP:Exists, no update ","o");
 			}
 		}else{
+			&Prt("UPIP:Exists, quiet ","q");
 			$main::nod{$_[0]}{al}++ if $main::nod{$_[0]}{ip} ne '0.0.0.0';			# IP lost (aged out of router's arp table) if node got one before
 		}
 	}else{
-		&Prt("\nUPIP:$mc NEW");
+		&Prt("UPIP:New ");
 		if(exists $arp{$_[0]}){
 			$hasip = 1;
 			$upip  = 1;
 		}else{
 			$main::nod{$_[0]}{ip} = '0.0.0.0';
-			&Prt(" no IP","n");
+			&Prt("no IP ","n");
 		}
 	}
 	if($upip){
@@ -1186,21 +1317,19 @@ sub UpNodip {
 		$main::nod{$_[0]}{av} = $arpc{$_[0]};
 		if(exists $arpn{$_[0]} and $arpn{$_[0]}){						# ARPwatch got a name, ...
 			$main::nod{$_[0]}{na} = $arpn{$_[0]};
-			&Prt(" Arpwatch name ","a");
+			&Prt("Arpwatch name ","a");
 		}elsif(!$main::opt{n}){
 			my $dnsna = gethostbyaddr(inet_aton($arp{$_[0]}), AF_INET);
 			if($dnsna){
 				$main::nod{$_[0]}{na} = $dnsna;						# Only use if we got something!
-				&Prt(" DNS","d");
+				&Prt("DNS ","d");
 			}else{
 				$main::nod{$_[0]}{na} = "";
-				&Prt(" no DNS","i");
+				&Prt("no DNS ","i");
 			}
 		}
-	}else{
-		&Prt(" no update","o");
 	}
-	&Prt(" $main::nod{$_[0]}{ip} = $main::nod{$_[0]}{na}\n");
+	&Prt("$main::nod{$_[0]}{ip} $main::nod{$_[0]}{na}\n");
 
 	if( exists $arp6{$_[0]} ){
 		if($main::nod{$_[0]}{i6}){
@@ -1232,32 +1361,32 @@ B<Globals> main::nod
 B<Returns> -
 
 =cut
-sub BuildNod {
+sub BuildNod{
 
-	my $nip = my $nnip = 0;
+	my $nip = my $nnip = $tmac = 0;
 
 	&Prt("\nBuildNod     ------------------------------------------------------------------\n");
 	my $stolen = &db::Select('stolen','mac');
 	foreach my $mcvl ( keys %portnew ){
 		my $mc = substr($mcvl,0,12);
-		my $isdev = "";
+		my $isdev = 0;
 
 		for (@doneid){										# Allegedly more efficient than grepping
-			if($_ eq $mc){$isdev = $mc;last;}
+			if($_ eq $mc){$isdev = 1;last;}
 		}
 
-		if(exists $arp{$mcvl}){
-			$isdev = $arp{$mcvl} if exists $ifip{$arp{$mcvl}};
-			for (@doneip){
-				if($_ eq $arp{$mcvl}){$isdev = $arp{$mcvl};last;}
+		if( exists $arp{$mcvl} ){
+			$isdev = 1 if exists $ifip{$arp{$mcvl}};
+			for( @doneip ){
+				if( $_ eq $arp{$mcvl} ){ $isdev = 1;last; }
 			}
 		}
 
-		if(exists $ifmac{$mc}){
-			$isdev = join(", ",keys %{$ifmac{$mc}});
+		if( exists $ifmac{$mc} ){
+			$isdev = 1;
 		}
 
-		if(!$isdev or $main::opt{'N'}){								# Don't add devices to nodes unless desired
+		if( !$isdev or $main::opt{'N'} ){							# Don't add devices to nodes unless desired
 			my $nodex = 0;
 			if(exists $main::nod{$mcvl}){
 				$nodex = 1;
@@ -1287,49 +1416,102 @@ sub BuildNod {
 			}
 			$mq += &mon::Event('F',100,'secn',$main::nod{$mcvl}{dv},$main::nod{$mcvl}{dv},"Node $mc appeared on $main::nod{$mcvl}{if} Vl$main::nod{$mcvl}{vl} as $main::nod{$mcvl}{na} with IP $main::nod{$mcvl}{ip}") unless($nodex);
 		}else{
-			&Prt("\nBNOD:$mc DEVICE $isdev ");
-			if(exists $ifmac{$mc}){
-				&Prt("with IFmac");
-				my @md = keys %{$ifmac{$mc}};
-				if(scalar @md == 1){
-					my $nolnk = (exists $main::link{$md[0]})?"":"unlinked";
-					my $activ = ($main::dev{$md[0]}{ls} == $main::now)?"active":"";
-					&Prt("-unique $nolnk $activ \n");
-					if($nolnk and $activ){
-						my ($nb, $ni) = &UpNodIF($mcvl,2);
-						my $mi = $main::int{$md[0]}{$ifmac{$mc}{$md[0]}}{ina};
-						if($nb and $mi and 0){# Disabled until really usable
-							&Prt("BNOD:Linking device $md[0],$mi to $nb,$ni\n");
-							$main::link{$md[0]}{$mi}{$nb}{$ni}{bw} = $misc::portprop{$nb}{$ni}{spd};
-							$main::link{$md[0]}{$mi}{$nb}{$ni}{ty} = "MAC";
-							$main::link{$md[0]}{$mi}{$nb}{$ni}{de} = "Discovered ".localtime($main::now);
-							$main::link{$md[0]}{$mi}{$nb}{$ni}{du} = $misc::portprop{$nb}{$ni}{dpx};
-							$main::link{$md[0]}{$mi}{$nb}{$ni}{vl} = $misc::portprop{$nb}{$ni}{vid};
-							&db::WriteLink($md[0]);
+			&Prt('','D');
+		}
+		
+		if( $isdev ){
+			my $ldv = my $lmc = my $lip = my $lif = my $lty = '';
+			my ($nb, $ni) = &UpNodIF($mcvl,2);
+			if( $nb ){
+				if( exists $ifmac{$mc} ){
+					my @md = keys %{$ifmac{$mc}};
+					if( scalar @md == 1 ){
+						$ldv = $md[0];
+						if( scalar @{$ifmac{$mc}{$ldv}} == 1 ){
+							$lmc = ${$ifmac{$mc}{$ldv}}[0];
+							&Prt("BNOD:Device MAC $mc belongs to ---> $ldv $lmc <---\n");
+						}else{
+							&Prt("BNOD:Multiple interfaces on $ldv with MAC address $mc\n");
+						}
+					}else{
+						&Prt("BNOD:Multiple devices with this MAC\n");
+					}
+				}else{
+					&Prt("BNOD:Interface MAC or neighbor not found\n");
+				}
+				if( !$lmc and exists $arp{$mcvl} ){					# Interface MAC failed, try IP (todo remove ARP dependency? Reconsider ifip array?)
+					my $ii = $arp{$mcvl};
+					if( exists $ifip{$ii} ){
+						my @id = keys %{$ifip{$ii}};
+						if( scalar @id == 1 ){
+							$ldv = $id[0];
+							$lip = ${$ifip{$ii}{$ldv}}[0];			# IP is unique on a device...
+							&Prt("BNOD:Device IP $ii belongs to ---> $ldv $lip <---\n");
+						}else{
+							&Prt("BNOD:Multiple devices with IP address $ii\n");
+						}
+					}else{
+						&Prt("BNOD:Interface IP not found\n");
+					}
+				}
+
+				if( $ldv ){
+					if( &db::Select('links','','count(device)',"device = '$ldv'") ){
+						&Prt("BNOD:$ldv is already linked\n");
+					}else{
+						my $regex = ($backend eq 'Pg')?'~':'regexp';
+						my $li = &db::Select('interfaces','','ifname,speed,duplex,pvid',"device = '$ldv' and comment $regex 'MAC:$nb' limit 1");
+						if( $li ){
+							$lif = $li->[0][0];
+							$lty = 'FWD';
+						}elsif( $lmc ){
+							$li = &db::Select('interfaces','','ifname,speed,duplex,pvid',"device = '$ldv' and ifname = '$lmc' limit 1");
+							$lif = $lmc;
+							$lty = 'MAC';
+						}elsif( $lip ){
+							$li = &db::Select('interfaces','','ifname,speed,duplex,pvid',"device = '$ldv' and ifname = '$lip' limit 1");
+							$lif = $lip;
+							$lty = 'IFIP';
+						}
+
+						if( $lif ){
+							&Prt("BNOD:$lty link from $ldv,$lif to $nb,$ni\n");
+							$main::link{$ldv}{$lif}{$nb}{$ni}{bw} = $portprop{$nb}{$ni}{spd};
+							$main::link{$ldv}{$lif}{$nb}{$ni}{de} = "Calculated using MAC address $mc";
+							$main::link{$ldv}{$lif}{$nb}{$ni}{du} = $portprop{$nb}{$ni}{dpx};
+							$main::link{$ldv}{$lif}{$nb}{$ni}{vl} = $portprop{$nb}{$ni}{vid};
+							$main::link{$ldv}{$lif}{$nb}{$ni}{ty} = $lty;
+							&db::WriteLink($ldv,$lif,$nb,$ni) unless $main::opt{'t'} or $main::opt{'D'};
 							unless(exists $main::link{$nb}{$ni}){
-								$main::link{$nb}{$ni}{$md[0]}{$mi}{bw} = $misc::portprop{$md[0]}{$mi}{spd};
-								$main::link{$nb}{$ni}{$md[0]}{$mi}{ty} = "MAC";
-								$main::link{$nb}{$ni}{$md[0]}{$mi}{de} = "Discovered ".localtime($main::now);
-								$main::link{$nb}{$ni}{$md[0]}{$mi}{du} = $misc::portprop{$md[0]}{$mi}{dpx};
-								$main::link{$nb}{$ni}{$md[0]}{$mi}{vl} = $misc::portprop{$md[0]}{$mi}{vid};
-								&db::WriteLink($nb); #TODO improve write link to write single links (and update linktype on IF?)
+								$main::link{$nb}{$ni}{$ldv}{$lif}{bw} = $li->[0][1];
+								$main::link{$nb}{$ni}{$ldv}{$lif}{de} = "Calculated using MAC address $mc";
+								$main::link{$nb}{$ni}{$ldv}{$lif}{du} = $li->[0][2];
+								$main::link{$nb}{$ni}{$ldv}{$lif}{vl} = $li->[0][3];
+								$main::link{$nb}{$ni}{$ldv}{$lif}{ty} = $lty;
+								&db::WriteLink($nb,$ni,$ldv,$lif) unless $main::opt{'t'} or $main::opt{'D'};
 							}
+						}else{
+							&Prt("BNOD:Device $ldv no interface found, why?\n");
 						}
 					}
 				}else{
-					&Prt("(ambiguous)\n");
+					&Prt("BNOD:Device MAC $mc not found, not discovered now?\n");
 				}
 			}else{
-				&Prt("without IFmac\n");
+				&Prt("BNOD:No neighbor found for Device MAC $mc\n");
 			}
 		}
 
 		if(exists $stolen->{$mc}){
 			$mq += &mon::Event('N',150,'secs',$main::nod{$mcvl}{dv},$main::nod{$mcvl}{dv},"Node $mc reappeared on $main::nod{$mcvl}{if} as $main::nod{$mcvl}{na} with IP $main::nod{$mcvl}{ip}");
 		}
-		&Prt('',"\n") unless ($nip + $nnip) % 80;
+
+		$tmac++;
+		&Prt('',"\n") unless $tmac % 80;
 	}
-	&Prt("BNOD:FINISHED $nip IP and $nnip non-IP nodes processed\n");
+	&Prt("\nBNOD:FINISHED $nip IP and $nnip non-IP nodes processed\n");
+	
+	return ($nip + $nnip);
 }
 
 
@@ -1344,25 +1526,26 @@ B<Globals> -
 B<Returns> - (generates events)
 
 =cut
-sub FloodFind {
+sub FloodFind{
 
 	my ($dv) = @_;
 	my $nfld = 0;
 
 	&Prt("\nFloodFind    ------------------------------------------------------------------\n");
 	foreach my $if( keys %{$portprop{$dv}} ){
+		my $mf = ($main::int{$dv}{$portprop{$dv}{$if}{idx}}{mcf})?$main::int{$dv}{$portprop{$dv}{$if}{idx}}{mcf}:$macflood;
 		if(	$portprop{$dv}{$if}{pop} and
 			!$portprop{$dv}{$if}{rtr} and
 			!$portprop{$dv}{$if}{lnk} and
 			!$portprop{$dv}{$if}{chn} and
 			!$portprop{$dv}{$if}{nsd} and
-			$portprop{$dv}{$if}{pop} > $macflood){
+			$portprop{$dv}{$if}{pop} > $mf and $mf){
 
-			$mq += &mon::Event('N',150,'secf',$dv,$dv,"$portprop{$dv}{$if}{pop} MAC entries exceed threshold of $macflood on $dv,$if");
+			$mq += &mon::Event('N',150,'secf',$dv,$dv,"$portprop{$dv}{$if}{pop} MAC entries exceed threshold of $mf on $dv,$if");
 			$nfld++;
 		}
 	}
-	&Prt("FLOD:$nfld IFs learned more than $macflood MACs\n");
+	&Prt("FLOD:$nfld IFs triggered a MACflood alert\n");
 }
 
 =head2 FUNCTION DevRRD()
@@ -1376,9 +1559,9 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub DevRRD {
+sub DevRRD{
 
-	my ($na,$skip)= @_;
+	my ($na,$skip) = @_;
 	my $err = 0;
 	my $dok = 1;
 	my $dv  = $na;
@@ -1417,7 +1600,7 @@ sub DevRRD {
 		}
 		&Prt("DRRD:CPU=$main::dev{$na}{cpu} MEM=$main::dev{$na}{mcp} TEMP=$main::dev{$na}{tmp} CUS=$main::dev{$na}{cuv}\n");
 
-		return if $skip =~ /t/ and $skip =~ /e/ and $skip =~ /b/ and $skip =~ /d/;
+		return if $skip =~ /t/ and $skip =~ /e/ and $skip =~ /d/ and $skip =~ /b/ and $skip =~ /A/ and $skip =~ /O/;
 		$err = 0;
 
 		&Prt("DRRD:IFName   Inoct    Outoct   Inerr  Outerr Indis  Outdis Inbcst Stat\n");
@@ -1452,7 +1635,7 @@ sub DevRRD {
 						}
 					}
 				}
-				&Prt(sprintf ("DRRD:%-8.8s %8.8s %8.8s %6.6s %6.6s %6.6s %6.6s %6.6s %4.4s\n", $irf,$main::int{$na}{$i}{ioc},$main::int{$na}{$i}{ooc},$main::int{$na}{$i}{ier},$main::int{$na}{$i}{oer},$main::int{$na}{$i}{idi},$main::int{$na}{$i}{odi},$main::int{$na}{$i}{ibr},$main::int{$na}{$i}{sta} & 3) );
+				&Prt(sprintf ("DRRD:%-8.8s %8.8s %8.8s %6.6s %6.6s %6.6s %6.6s %6.6s %4.4s\n", $irf,$main::int{$na}{$i}{ioc},$main::int{$na}{$i}{ooc},$main::int{$na}{$i}{ier},$main::int{$na}{$i}{oer},$main::int{$na}{$i}{idi},$main::int{$na}{$i}{odi},$main::int{$na}{$i}{ibr},$main::int{$na}{$i}{sta}) );
 			}else{
 				&Prt("DRRD:No IF name for IF-index $i\n","Rn($i)");
 			}
@@ -1473,7 +1656,7 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub TopRRD {
+sub TopRRD{
 
 	my (%ec, %ifs);
 	my $err = "";
@@ -1481,11 +1664,11 @@ sub TopRRD {
 	$ec{'50'} = $ec{'100'} = $ec{'150'} = $ec{'200'} = $ec{'250'} = 0;
 	$ifs{'0'} = $ifs{'1'} = $ifs{'3'} = 0;
 	&Prt("\nTopRRD       ------------------------------------------------------------------\n");
-	# Access traffic using delta octets to avoid error from missing or rebooted switches. Needs to be divided by rrdstep*1M to get MB/s
-	my $tat = &db::Select('interfaces','',"sum(dinoct)/(1000000*$rrdstep),sum(doutoct)/(1000000*$rrdstep)","iftype != 71 AND lastdis > $main::now - $rrdstep",'devices','device');
+	# Access traffic using delta octets to avoid error from missing or rebooted switches. Needs to be divided by 1M*rrdstep to get MB/s
+	my $tat = &db::Select('interfaces','',"round(sum(dinoct)/(1000000*$rrdstep),3),round(sum(doutoct)/(1000000*$rrdstep),3)","linktype = '' AND lastdis > $main::now - $rrdstep",'devices','device');
 
 	# Wired interface (type not 71) errors/s
-	my $twe = &db::Select('interfaces','',"sum(dinerr)/$rrdstep,sum(douterr)/$rrdstep,sum(dindis)/$rrdstep,sum(doutdis)/$rrdstep","linktype = \"\" AND lastdis > $main::now - $rrdstep",'devices','device');
+	my $twe = &db::Select('interfaces','',"round(sum(dinerr)/$rrdstep,3),round(sum(douterr)/$rrdstep,3),round(sum(dindis)/$rrdstep,3),round(sum(doutdis)/$rrdstep,3)","iftype != 71 AND lastdis > $main::now - $rrdstep",'devices','device');
 
 	# Total nodes lastseen
 	my $nodl = &db::Select('nodes','',"count(lastseen)","lastseen = $main::now");
@@ -1494,7 +1677,7 @@ sub TopRRD {
 	my $nodf = &db::Select('nodes','',"count(firstseen)","firstseen = $main::now");
 
 	# Total power in Watts
-	my $pwr = &db::Select('interfaces','',"sum(poe)/1000","lastdis > $main::now - $rrdstep",'devices','device');
+	my $pwr = &db::Select('devices','',"sum(totpoe)","lastdis > $main::now - $rrdstep");
 
 	# Count IF ifstat up=3, down=1 and admin down=0
 	my $ifdb = &db::Select('interfaces','ifstat','ifstat,count(ifstat) as c',"lastdis > $main::now - $rrdstep group by ifstat",'devices','device');
@@ -1514,13 +1697,13 @@ sub TopRRD {
 			$mal = &db::Select('monitoring','',"count(status)","test != '' AND status > 0");
 		}else{
 			my $msg = "Last successful check on ".localtime($lastcheck).", is moni running?";
-			&db::Insert('events','level,time,source,info,class',"\"150\",\"$main::now\",\"NeDi\",\"$msg\",\"nedi\"");
+			&db::Insert('events','level,time,source,info,class',"150,$main::now,'NeDi','$msg','mons'");
 			&Prt("TRRD:$msg\n");
 		}
 	}else{
 		my $msg = "No successful check at all, is moni running?";
 		$msg = "Last successful check on ".localtime($lck).", is moni running?" if $lck;
-		&db::Insert('events','level,time,source,info,class',"\"150\",\"$main::now\",\"NeDi\",\"$msg\",\"nedi\"");
+		&db::Insert('events','level,time,source,info,class',"150,$main::now,'NeDi','$msg','mons'");
 		&Prt("TRRD:$msg\n");
 	}
 
@@ -1589,16 +1772,16 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub WriteCfg {
+sub WriteCfg{
 
 	use POSIX qw(strftime);
 
-	my ($dv)= @_;
+	my ($dv) = @_;
 	$dv     =~ s/([^a-zA-Z0-9_.-])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
 	if(-e "$nedipath/conf/$dv"){
 		$ok = 1;
 	}else{
-		&misc::Prt("WCFF:Creating $nedipath/conf/$dv\n");
+		&Prt("WCFF:Creating $nedipath/conf/$dv\n");
 		$ok = mkdir ("$nedipath/conf/$dv", 0755);
 	}
 	my $wcf = "$nedipath/conf/$dv/".strftime ("%Y-%m%d-%H%M.cfg", localtime($main::now) );
@@ -1607,7 +1790,7 @@ sub WriteCfg {
 			print CF "$_\n";
 		}
 		close (CF);
-		&misc::Prt("WCFF:Config written to $wcf\n");
+		&Prt("WCFF:Config written to $wcf\n");
 
 		if($main::opt{'B'}){									# if >0 only keep that many, based on raider82's idea
 			my @cfiles = sort {$b cmp $a} glob("$nedipath/conf/$dv/*.cfg");
@@ -1617,7 +1800,7 @@ sub WriteCfg {
 				if($cur > $main::opt{'B'}){
 					$dres = unlink ("$cf");
 					if($dres){
-						&misc::Prt("WCFF:Deleted $cf\n");
+						&Prt("WCFF:Deleted $cf\n");
 					}else{
 						&Prt("ERR :Deleting config $cf\n","Bd");
 					}
@@ -1641,7 +1824,7 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub Daemonize {
+sub Daemonize{
 
 	use POSIX qw(setsid);
 
@@ -1680,6 +1863,8 @@ sub RetrVar{
 	%arp = %$arp;
 	my $ifmac = retrieve("$main::p/ifmac.db");
 	%ifmac = %$ifmac;
+	my $ifip = retrieve("$main::p/ifip.db");
+	%ifip = %$ifip;
 
 	my $donenam = retrieve("$main::p/donenam.db");
 	@donenam = @$donenam;
@@ -1722,6 +1907,7 @@ sub StorVar{
 	store \%doip, "$main::p/doip.db";
 	store \%arp, "$main::p/arp.db";
 	store \%ifmac, "$main::p/ifmac.db";
+	store \%ifip, "$main::p/ifip.db";
 
 	store \@donenam, "$main::p/donenam.db";
 	store \@doneid, "$main::p/doneid.db";
@@ -1799,17 +1985,33 @@ sub KeyScan{
 
 	&Prt("\nKeyScan       -----------------------------------------------------------------\n");
 
-	if($main::opt{'K'}){										# Delete stored key first, based on raider82's idea
+	if($main::opt{'K'}){										# Delete stored key, based on raider82's idea
 		my $res = `ssh-keygen -R $_[0] -f ~/.ssh/known_hosts`;
-		&misc::Prt("DISC:Cli: key removed for $_[0]\n","Kr");
+		&Prt("DISC:Cli: key removed for $_[0]\n","Kr");
 	}
 
-	my $res = `ssh-keyscan $_[0] 2>&1 >> ~/.ssh/known_hosts`;
-	if(!$res){
-		&Prt("ERR :ssh-keyscan for $_[0] failed\n","Ke");
-	}else{
-		chomp($res);
-		&Prt("KEY :$res added to ~/.ssh/known_hosts\n","Ks");
+	if($main::opt{'k'}){										# Scan key (tx jug)
+		my $res = `ssh-keyscan $_[0] 2>&1 >> ~/.ssh/known_hosts`;
+		if( $res =~ m/^$|no hostkey alg/ ){
+			&Prt("ERR :ssh-keyscan rsa failed, trying dsa\n");
+			$res = `ssh-keyscan -t dsa $_[0] 2>&1 >> ~/.ssh/known_hosts`;
+			if( $res =~ m/^$|no hostkey alg/ ){
+				&Prt("ERR :ssh-keyscan dsa failed, trying rsa1 as last resort\n");
+				$res = `ssh-keyscan -t rsa1 $_[0] 2>&1 >> ~/.ssh/known_hosts`;
+				if( $res =~ m/^$|no hostkey alg/ ){
+					&Prt("ERR :ssh-keyscan for $_[0] failed\n","Ke");
+				} else {
+					chomp($res);
+					&Prt("KEY :$res (RSA1) added to ~/.ssh/known_hosts\n","Ks");
+				}
+			} else {
+				chomp($res);
+				&Prt("KEY :$res (DSA) added to ~/.ssh/known_hosts\n","Ks");
+			}
+		}else{
+			chomp($res);
+			&Prt("KEY :$res (RSA) added to ~/.ssh/known_hosts\n","Ks");
+		}
 	}
 }
 

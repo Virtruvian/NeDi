@@ -14,34 +14,34 @@ $cu = isset($_GET['cu']) ? $_GET['cu'] : "u";
 
 $inr = substr(ip2long($_SERVER['SERVER_ADDR']),-6) + date("z") * date("j");
 
-$lnk = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
+$lnk = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 $qry = GenQuery('devices','s','count(*)','','',array('snmpversion'),array('>'),array('0'));
-$res = @DbQuery($qry,$lnk);
+$res = DbQuery($qry,$lnk);
 if ($res) {
-	$sdv = @DbFetchRow($res);
-	@DbFreeResult($res);
+	$sdv = DbFetchRow($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($lnk);
+	print DbError($lnk);
 	die;
 }
 
 $qry = GenQuery('devices','s','count(*)','','',array('snmpversion'),array('='),array('0'));
-$res = @DbQuery($qry,$lnk);
+$res = DbQuery($qry,$lnk);
 if ($res) {
-	$ndv = @DbFetchRow($res);
-	@DbFreeResult($res);
+	$ndv = DbFetchRow($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($lnk);
+	print DbError($lnk);
 	die;
 }
 
 $qry = GenQuery('nodes','s','count(*)');
-$res = @DbQuery($qry,$lnk);
+$res = DbQuery($qry,$lnk);
 if ($res) {
-	$nod = @DbFetchRow($res);
-	@DbFreeResult($res);
+	$nod = DbFetchRow($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($lnk);
+	print DbError($lnk);
 	die;
 }
 
@@ -109,7 +109,7 @@ Switzerland<br>
 
 </td></tr>
 <tr class="txtb"><td valign="top">
-<b><?= $usrlbl ?></b><br>
+<b><?= $igrp['33'] ?></b><br>
 <?php
 if( isset($_GET['print']) ){
 	echo "<pre class=\"imga\">$to</pre>\n";
@@ -143,8 +143,8 @@ if( isset($_GET['print']) ){
 
 <?PHP
 TblCell($deslbl,'','','','th');
-TblCell('#','','','','th');
-TblCell($levlbl,'','','','th');
+TblCell($qtylbl,'','','','th');
+TblCell($metlbl,'','','','th');
 TblCell($totlbl,'','','','th');
 echo "</tr>\n";
 TblRow('txta');
@@ -152,19 +152,19 @@ TblCell( 'SNMP Devices' );
 TblCell( $sdv[0],"",'align="right"' );
 TblCell( $sdr,"",'align="right"' );
 TblCell( $sda,"",'align="right"' );
-echo "</tr>\n<tr>\n";
+echo "</tr>\n";
 TblRow('txtb');
 TblCell( "$nonlbl-SNMP Devices" );
 TblCell( $ndv[0],"",'align="right"' );
 TblCell( $ndr,"",'align="right"' );
 TblCell( $nda,"",'align="right"' );
-echo "</tr>\n<tr>\n";
+echo "</tr>\n";
 TblRow('txta');
 TblCell( 'Nodes' );
 TblCell( $nod[0],"",'align="right"' );
 TblCell( $nor,"",'align="right"' );
 TblCell( $noa,"",'style="border-bottom:solid 1px #444" align="right"' );
-echo "</tr>\n<tr>\n";
+echo "</tr>\n";
 TblRow('txtb');
 TblCell($totlbl,'','align="right"','','th');
 echo "<td></td><td >";

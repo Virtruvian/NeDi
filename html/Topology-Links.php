@@ -4,27 +4,25 @@
 
 $printable = 1;
 $exportxls = 1;
-$calendar  = 1;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
-$sta = isset($_GET['sta']) ? $_GET['sta'] : "";
-$stb = isset($_GET['stb']) ? $_GET['stb'] : "";
-$ina = isset($_GET['ina']) ? $_GET['ina'] : "";
-$inb = isset($_GET['inb']) ? $_GET['inb'] : "";
-$opa = isset($_GET['opa']) ? $_GET['opa'] : "";
-$opb = isset($_GET['opb']) ? $_GET['opb'] : "";
-$cop = isset($_GET['cop']) ? $_GET['cop'] : "";
+$st = isset($_GET['st']) ? $_GET['st'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : "";
+$op = isset($_GET['op']) ? $_GET['op'] : "";
+$co = isset($_GET['co']) ? $_GET['co'] : "";
+
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
+if($_SESSION['opt'] and !$ord and $in[0]) $ord = $in[0];
 
 $map = isset($_GET['map']) ? "checked" : "";
 $lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
-	if($_SESSION['opt']){$_SESSION['lnkcol'] = $col;}
+	if($_SESSION['opt']) $_SESSION['lnkcol'] = $col;
 }elseif( isset($_SESSION['lnkcol']) ){
 	$col = $_SESSION['lnkcol'];
 }else{
@@ -37,9 +35,9 @@ $cols = array(	"id"=>"ID",
 		"type"=>"Device $typlbl",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
+		"devgroup"=>$grplbl,
 		"firstdis"=>"$fislbl $dsclbl",
 		"lastdis"=>"$laslbl $dsclbl",
-		"devgroup"=>$grplbl,
 		"neighbor"=>"$neblbl",
 		"nbrifname"=>"$neblbl IF",
 		"bandwidth"=>"$bwdlbl",
@@ -50,7 +48,7 @@ $cols = array(	"id"=>"ID",
 		"time"=>$timlbl
 		);
 
-$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
+$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 ?>
 <h1>Link <?= $lstlbl ?></h1>
 
@@ -58,57 +56,22 @@ $link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 
 <form method="get" name="list" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
-</th>
+<td>
+<?PHP Filters(); ?>
+
+</td>
 <th valign="top">
 
-<?= $cndlbl ?> A<p>
-<select size="1" name="ina">
-<?php
-foreach ($cols as $k => $v){
-	echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-}
-?>
-</select>
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p><a href="javascript:show_calendar('list.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
+<h3><?= $fltlbl ?></h3>
+<a href="?in[]=device&op[]=~&st[]=&co[]=%3D&in[]=neighbor"><img src="img/16/brld.png" title="Loops"></a>
+<a href="?in[]=time&op[]=<&st[]=<?= time()-2*$rrdstep ?>&ord=time+desc"><img src="img/16/date.png" title="<?= $stco['160'] ?> <?= $cnclbl ?>"></a>
 
 </th>
-<th valign="top">
+<th>
 
-<?= $cmblbl ?><p>
-<select size="1" name="cop">
-<?php selectbox("comop",$cop) ?>
-</select>
-
-</th>
-<th valign="top">
-
-<?= $cndlbl ?> B<p>
-<select size="1" name="inb">
-<?php
-foreach ($cols as $k => $v){
-	if($k != "imBL"){
-		echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
-	}
-}
-?>
-</select>
-<select size="1" name="opb">
-<?php selectbox("oper",$opb) ?>
-</select>
-<p><a href="javascript:show_calendar('list.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?= $stb ?>" size="20">
-
-</th>
-<th valign="top">
-
-<?= $collbl ?><p>
-<select multiple name="col[]" size=4>
+<select multiple name="col[]" size="6">
 <?php
 foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
@@ -136,18 +99,18 @@ foreach ($cols as $k => $v){
 </tr></table></form><p>
 <?php
 }
-if($ina){
+if( is_array($in) ){
 	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
 		echo "<center><h2>$netlbl Map</h2>\n";
 		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
 	}
-	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+	Condition($in,$op,$st,$co);
 	TblHead("$modgroup[$self]2",1);
-	$query	= GenQuery('links','s','links.*,type,firstdis,lastdis,location,contact',$ord,$lim,array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device)');
-	$res	= @DbQuery($query,$link);
+	$query	= GenQuery('links','s','links.*,type,firstdis,lastdis,location,contact,devgroup',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device)');
+	$res	= DbQuery($query,$link);
 	if($res){
 		$row = 0;
-		while( ($l = @DbFetchRow($res)) ){
+		while( ($l = DbFetchRow($res)) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
 			$ud = urlencode($l[1]);
@@ -160,28 +123,31 @@ if($ina){
 				TblCell($l[0]);
 			}
 			if( in_array("device",$col) ){
-				TblCell($l[1],"?ina=device&opa==&sta=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
+				TblCell($l[1],"?in[]=device&op[]==&st[]=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a><a href=\"Topology-Linked.php?dv=$ud\"><img src=\"img/16/ncfg.png\"></a>");
 			}
 			if(in_array("ifname",$col)){
 				TblCell($l[2]);
 			}
 			if(in_array("type",$col)){
-				TblCell( $l[10],"?ina=type&opa==&sta=".urlencode($l[10]) );
+				TblCell( $l[11],"?in[]=type&op[]==&st[]=".urlencode($l[11]) );
 			}
 			if(in_array("location",$col)){
-				TblCell( $l[13],"?ina=location&opa==&sta=".urlencode($l[13]) );
+				TblCell( $l[14],"?in[]=location&op[]==&st[]=".urlencode($l[14]) );
 			}
 			if(in_array("contact",$col)){
-				TblCell( $l[14],"?ina=contact&opa==&sta=".urlencode($l[14]) );
+				TblCell( $l[15],"?in[]=contact&op[]==&st[]=".urlencode($l[15]) );
+			}
+			if(in_array("devgroup",$col)){
+				TblCell( $l[16],"?in[]=contact&op[]==&st[]=".urlencode($l[16]) );
 			}
 			if( in_array("firstdis",$col) ){
-				TblCell( date($datfmt,$l[12]),"?ina=firstdis&opa==&sta=$l[12]","bgcolor=\"#$fc\"" );
+				TblCell( date($datfmt,$l[12]),"?in[]=firstdis&op[]==&st[]=$l[12]","bgcolor=\"#$fc\"" );
 			}
 			if( in_array("lastdis",$col) ){
-				TblCell( date($datfmt,$l[13]),"?ina=lastdis&opa==&sta=$l[13]","bgcolor=\"#$lc\"" );
+				TblCell( date($datfmt,$l[13]),"?in[]=lastdis&op[]==&st[]=$l[13]","bgcolor=\"#$lc\"" );
 			}
 			if( in_array("neighbor",$col) ){
-				TblCell($l[3],"?ina=device&opa==&sta=$un&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a>");
+				TblCell($l[3],"?in[]=device&op[]==&st[]=$un&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a><a href=\"Topology-Linked.php?dv=$un\"><img src=\"img/16/ncfg.png\"></a>");
 			}
 			if(in_array("nbrifname",$col)){
 				TblCell($l[4]);
@@ -190,7 +156,7 @@ if($ina){
 				TblCell( DecFix($l[5]) );
 			}
 			if(in_array("linktype",$col)){
-				TblCell( $l[6],"?ina=linktype&opa==&sta=$l[6]");
+				TblCell( $l[6],"?in[]=linktype&op[]==&st[]=$l[6]");
 			}
 			if(in_array("linkdesc",$col)){
 				TblCell($l[7]);
@@ -202,13 +168,13 @@ if($ina){
 				TblCell($l[9]);
 			}
 			if(in_array("time",$col)){
-				TblCell( date($datfmt,$l[10]),"?ina=time&opa==&sta=$l[10]","bgcolor=\"#$tc\"" );
+				TblCell( date($datfmt,$l[10]),"?in[]=time&op[]==&st[]=$l[10]","bgcolor=\"#$tc\"" );
 			}
 			echo "</tr>\n";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
-		print @DbError($link);
+		print DbError($link);
 	}
 	?>
 </table>

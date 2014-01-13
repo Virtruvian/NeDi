@@ -34,7 +34,7 @@ if(!$dev){
 	$dev = isset( $_POST['dev']) ? $_POST['dev'] : "";
 }
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 ?>
 <h1>Device Doctor</h1>
 
@@ -59,18 +59,18 @@ Tech file<br>
 <option value=""><?= $sellbl ?> ->
 <?php
 $query	= GenQuery('configs','s','device','device','',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
-	while( ($c = @DbFetchRow($res)) ){
+	while( ($c = DbFetchRow($res)) ){
 		echo "<option value=\"$c[0]\"";
 		if($c[0] == $dev){
 			echo "selected";
 		}
 		echo ">$c[0]\n";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 
 ?>
@@ -85,14 +85,14 @@ if($res){
 }
 if($dev){
 	$query	= GenQuery('configs','s','config,devos','','',array('device'),array('='),array($dev),array(),'LEFT JOIN devices USING (device)');
-	$res	= @DbQuery($query,$link);
-	if (@DbNumRows($res) != 1) {
+	$res	= DbQuery($query,$link);
+	if (DbNumRows($res) != 1) {
 		echo "<h4>$dev: $nonlbl</h4>";
-		@DbFreeResult($res);
+		DbFreeResult($res);
 		die;
 	}
-	$cfg = @DbFetchRow($res);
-	@DbFreeResult($res);
+	$cfg = DbFetchRow($res);
+	DbFreeResult($res);
 	if($debug){	echo "<div class=\"textpad code warn\">$cfg[0]</div>\n";}
 ?>
 <h2>
@@ -115,7 +115,7 @@ if($dev){
 			$ifmod[$i] = preg_replace("/^\s+(switchport mode|port link-type)\s+(.*)$/",'$2',$l);
 		}elseif($i and preg_match("/vrf forwarding|vpn-instance/",$l) ){
 			$l = preg_replace("/.*(vrf forwarding|vpn-instance)\s*(.*)$/",'$2',$l);
-			$ifvpn[$i] = "<a href=\"Topology-Networks.php?ina=vrfname&opa==&sta=".urlencode($l)."\">$l</a>";
+			$ifvpn[$i] = "<a href=\"Topology-Networks.php?in[]=vrfname&op[]==&st[]=".urlencode($l)."\">$l</a>";
 		}
 		
 		if( preg_match("/^logging|info-center loghost/",$l) ){

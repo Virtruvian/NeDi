@@ -39,6 +39,7 @@ Visit http://www.nedi.ch for more information.
 
 use strict;
 use warnings;
+no warnings qw(once);
 
 use Getopt::Std;
 use LWP::UserAgent;
@@ -57,9 +58,10 @@ if($0 eq $p){$p = "."};
 $now = time;
 
 require "$p/inc/libmisc.pm";										# Use the miscellaneous nedi library
-&misc::ReadConf();
 require "$p/inc/libmon.pm";										# Use the Monitoring lib for notifications
-require "$p/inc/libdb-" . lc($misc::backend) . ".pm" || die "Backend error ($misc::backend)!";
+require "$p/inc/libdb.pm";										# Use the DB function library
+
+&misc::ReadConf();
 
 if ($opt{'D'}) {											# Daemonize or...
 	&misc::Daemonize;
@@ -67,6 +69,7 @@ if ($opt{'D'}) {											# Daemonize or...
 while(1){
 	$now = time;
 	&misc::Prt("\nInitializing " . localtime($now) . " --------------\n");
+	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
 	my $ndev = &db::ReadDev();
 	my $nsat = &misc::InitSeeds(1);
 	my $ntgt = &mon::InitMon();
@@ -78,11 +81,11 @@ while(1){
 		if(!$misc::seedini{$ip}{rc}){
 			my $msg = "No user for $ip, add one in agentlist";
 			&misc::Prt("- $msg\n");
-			&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"$na\",\"$msg\",\"mast\"");
+			&db::Insert('events','level,time,source,info,class',"150,$now,'$na','$msg','mstr'");
 		}elsif(!exists $misc::login{$misc::seedini{$ip}{rc}}{pw}){
 			my $msg = "No password for $misc::seedini{$ip}{rc}, add one in nedi.conf";
 			&misc::Prt("- $msg\n");
-			&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"$na\",\"$msg\",\"mast\"");
+			&db::Insert('events','level,time,source,info,class',"150,$now,'$na','$msg','mstr'");
 		}else{
 			$dev{$na}{ip} = $ip;
 			$dev{$na}{sn} = $id;
@@ -115,7 +118,7 @@ while(1){
 					my @l = split(/\n/,$res->content);
 					my @f = split(/;;/,shift @l);
 
-					&db::Insert('events','level,time,source,info,class',"'150',\"$now\",\"$na\",\"Latency ${latency}ms exceeds threshold of ${misc::latw}ms\",\"moni\"") if($latency > $misc::latw) and !$main::opt{'t'};
+					&db::Insert('events','level,time,source,info,class',"150,$now,'$na','Latency ${latency}ms exceeds threshold of ${misc::latw}ms','moni'") if($latency > $misc::latw) and !$main::opt{'t'};
 
 					unless($dev{$na}{fs}){
 						$dev{$na}{fs} = $now;
@@ -124,7 +127,7 @@ while(1){
 						my $msg = $f[0];
 						&misc::Prt("$msg\n");
 						$msg =~ s/^ERR ://;
-						&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"$na\",\"$msg\",\"mast\"");
+						&db::Insert('events','level,time,source,info,class',"150,$now,'$na','$msg','mstr'");
 					}else{
 						$dev{$na}{ls} = $now;
 						$dev{$na}{de} = "Host:$f[1], API:$f[0]";
@@ -150,15 +153,15 @@ while(1){
 						foreach my $ev (@l){
 							my @f = split(/;;/, $ev);
 							$mon{$na}{up} = $f[0] if $f[0] > $mon{$na}{up};
-							&db::Insert('events','level,time,source,info,class,device',"\"$f[1]\",\"$f[2]\",\"$f[3]\",\"$f[4]\",\"$f[5]\",\"$na\"");
+							&db::Insert('events','level,time,source,info,class,device',"$f[1],$f[2],'$f[3]','$f[4]','$f[5]','$na'");
 						}
 						&misc::Prt("ANSR:$dev{$na}{de}, $dev{$na}{bi}, Event#$mon{$na}{up} using $dev{$na}{rc}\n");
-						&db::Update('monitoring',"status=\"0\",lastok=\"$now\",uptime=\"$mon{$na}{up}\",ok=\"$ok\",latency=\"$latency\",latmax=\"$latmax\",latavg=\"$latavg\"","name =\"$na\"");
+						&db::Update('monitoring',"status=0,lastok=$now,uptime=$mon{$na}{up},ok=$ok,latency=$latency,latmax=$latmax,latavg=$latavg","name ='$na'");
 					}
 				}else{
 					my $msg = "Events - ".$res->status_line;
 					&misc::Prt("ERR :$msg\n");
-					&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"$na\",\"$msg\",\"mast\"");
+					&db::Insert('events','level,time,source,info,class',"150,$now,'$na','$msg','mstr'");
 				}
 
 				my $incq = "SELECT * FROM incidents WHERE time = 0";
@@ -177,28 +180,28 @@ while(1){
 						my $msg = $f[0];
 						&misc::Prt("$msg\n");
 						$msg =~ s/^ERR ://;
-						&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"$na\",\"$msg\",\"mast\"");
+						&db::Insert('events','level,time,source,info,class',"150,$now,'$na','$msg','mstr'");
 					}else{
 						my %unack = ();
 						my $ni = my $ui = my $di = 0;
 						foreach my $inc (@l){
 							my @f = split(/;;/, $inc);
 							$unack{"$f[2];;$f[4];;$na"}++;
-							my $dbinc = &db::Select('incidents','','*',"name=\"$f[2]\" AND start=\"$f[4]\" AND device=\"$na\"");
+							my $dbinc = &db::Select('incidents','','*',"name='$f[2]' AND startinc=$f[4] AND device='$na'");
 							if(exists $dbinc->[0]){						# Remote incidents already on master?
 								if($f[5] != $dbinc->[0][5]){				# Acknowledged on agent, but not yet on master?
-									&db::Update('incidents',"end=\"$f[5]\"","id=$dbinc->[0][0]");
+									&db::Update('incidents',"endinc=$f[5]","id=$dbinc->[0][0]");
 									$ui++;
 								}
 							}else{								# Create new incident on master
-								&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$f[1]\",\"$f[2]\",\"$f[3]\",\"$f[4]\",\"$f[5]\",\"$f[6]\",\"0\",\"1\",\"\",\"$na\"");
+								&db::Insert('incidents','level,name,deps,startinc,endinc,usrname,time,grp,comment,device',"$f[1],'$f[2]',$f[3],$f[4],$f[5],'$f[6]',0,1,'','$na'");
 								$ni++;
 							}
 						}
-						my $dbincs = &db::Select('incidents','','*',"device=\"$na\"");		# Check master incidents against remotes...
+						my $dbincs = &db::Select('incidents','','*',"device='$na'");		# Check master incidents against remotes...
 						foreach my $dbi ( @$dbincs ) {
 							if(!exists $unack{"$dbi->[2];;$dbi->[4];;$dbi->[10]"}){		# Incident not unacknowledged on agent anymore
-								my $d = &db::Delete('incidents',"name=\"$dbi->[2]\" AND start=\"$dbi->[4]\" AND device=\"$dbi->[10]\"");
+								my $d = &db::Delete('incidents',"name='$dbi->[2]' AND startinc=$dbi->[4] AND device='$dbi->[10]'");
 								$di += $d;
 							}
 						}
@@ -207,10 +210,10 @@ while(1){
 				}else{
 					my $msg = "Incidents - ".$res->status_line;
 					&misc::Prt("ERR :$msg\n");
-					&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"$na\",\"$msg\",\"mast\"");
+					&db::Insert('events','level,time,source,info,class',"150,$now,'$na','$msg','mstr'");
 					my $st = ++$mon{$na}{st};
 					my $lo = ++$mon{$na}{lo};
-					&db::Update('monitoring',"status=\"$st\",lost=\"$lo\"","name =\"$na\"") unless $main::opt{'t'};
+					&db::Update('monitoring',"status=$st,lost=$lo","name ='$na'") unless $main::opt{'t'};
 				}
 
 			}else{
@@ -228,8 +231,10 @@ while(1){
 		sleep($sl);
 	}else{
 		&misc::Prt("\nTook ${took}s, no time to pause!\n\n");
-		&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"NeDi\",\"Master took ${took}s, increase pause!\",\"mast\"");
+		&db::Insert('events','level,time,source,info,class',"150,$now,'NeDi','Master took ${took}s, increase pause!','mstr'");
 	}
+
+	&db::Disconnect();
 }
 
 =head2 FUNCTION HELP_MESSAGE()

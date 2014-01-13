@@ -19,23 +19,23 @@ $_POST= sanitize($_POST);
 $msg = isset($_POST['msg']) ? $_POST['msg'] : "";
 $eam = isset($_GET['eam'])  ? $_GET['eam']  : "";
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if(isset($_POST['up']) ){
 	if($_POST['curp'] AND $_POST['newp'] AND $_POST['ackp']){
 		if($_POST['newp'] == $_POST['ackp']){
 			$pass = hash("sha256","NeDi".$name.$_POST['newp']);
-			$query	= GenQuery('users','s','*','','',array('user'),array('='),array($name) );
-			$res	= @DbQuery($query,$link);
-			$uok	= @DbNumRows($res);
+			$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($name) );
+			$res	= DbQuery($query,$link);
+			$uok	= DbNumRows($res);
 			if ($uok == 1) {
-				$usr = @DbFetchRow($res);
+				$usr = DbFetchRow($res);
 			}else{
 				echo "<h4>No user $usrlbl!?!! ($uok $vallbl)</h4>";
 				die;
 			}
 			if($usr[1] == hash("sha256","NeDi".$name.$_POST['curp']) ){
-				$query	= GenQuery('users','u','user','=',$name,array('password'),array(),array($pass) );
-				if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Password $updlbl OK</h5>";}
+				$query	= GenQuery('users','u','usrname','=',$name,array('password'),array(),array($pass) );
+				if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Password $updlbl OK</h5>";}
 			}else{
 				echo "<h4>Password: $stco[100] $errlbl!</h4>";
 			}
@@ -45,8 +45,8 @@ if(isset($_POST['up']) ){
 	}
 	$mopts = $_POST['gsiz'] + ($_POST['gbit']?8:0) + ($_POST['far']?16:0) + ($_POST['opt']?32:0) + ($_POST['map']?64:0) + ($_POST['gneg']?128:0) + ($_POST['nip']?256:0);
 	$lsiz  = (($_POST['lsiz'] > 31)?31:$_POST['lsiz']);
-	$query = GenQuery('users','u','user','=',$name,array('email','phone','comment','language','theme','volume','columns','msglimit','miscopts','dateformat'),array(),array($_POST['email'],$_POST['phone'],$_POST['cmt'],$_POST['lang'],$_POST['theme'],$_POST['vol'] +$lsiz*4,$_POST['col'],$_POST['lim'],$mopts,$_POST['date'].$_POST['tz']) );
-	if( !@DbQuery($query,$link) ){
+	$query = GenQuery('users','u','usrname','=',$name,array('email','phone','comment','language','theme','volume','columns','msglimit','miscopts','dateformat'),array(),array($_POST['email'],$_POST['phone'],$_POST['cmt'],$_POST['lang'],$_POST['theme'],$_POST['vol']+$lsiz*4,$_POST['col'],$_POST['lim'],$mopts,$_POST['date'].$_POST['tz']) );
+	if( !DbQuery($query,$link) ){
 		echo "<h4>".DbError($link)."</h4>";
 	}else{
 		echo "<h5>$name $updlbl OK</h5>";
@@ -68,11 +68,11 @@ if(isset($_POST['up']) ){
 	}
 }
 
-$query	= GenQuery('users','s','*','','',array('user'),array('='),array($name) );
-$res	= @DbQuery($query,$link);
-$uok	= @DbNumRows($res);
+$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($name) );
+$res	= DbQuery($query,$link);
+$uok	= DbNumRows($res);
 if ($uok == 1) {
-	$usr = @DbFetchRow($res);
+	$usr = DbFetchRow($res);
 }else{
 	echo "<h4>No user $usrlbl!?!! ($uok $vallbl)</h4>";
 	die;
@@ -85,7 +85,7 @@ if ($uok == 1) {
 <br><?= $name ?></th>
 <td valign="top">
 <h3><?= $stalbl ?> / <?= $paslbl ?></h3>
-<img src="img/16/star.png" title="<?= $usrlbl ?> <?= $addlbl ?>"> <?= date($datfmt,$usr[5]) ?>
+<img src="img/16/add.png" title="<?= $usrlbl ?> <?= $addlbl ?>"> <?= date($datfmt,$usr[5]) ?>
 <p>
 <img src="img/16/loko.png" title="<?= $paslbl ?> <?= $stco['100'] ?>">
 <input type="password" name="curp" size="10"><p>
@@ -124,10 +124,10 @@ if ($uok == 1) {
 <input type="checkbox" name="opt" <?= ($_SESSION['opt'])?"checked":"" ?> title="<?= $lstlbl ?> <?= $optlbl ?> / <?= $hislbl ?>">
 <input type="checkbox" name="nip" <?= ($_SESSION['nip'])?"checked":"" ?> title="<?= $nonlbl ?> IP Link">
 <br>
-<img src="img/16/map.png"  title="<?= (($verb1)?"$sholbl Maps":"Maps $sholbl") ?>">
+<img src="img/16/map.png"  title="Googlemaps">
 <input type="checkbox" name="map" <?= ($_SESSION['map'])?"checked":"" ?>>
 <p>
-<img src="img/16/form.png" title="# <?= $msglbl ?>, Vlans, Modules etc. (0-31)">
+<img src="img/16/form.png" title="# <?= $toplbl ?> <?= $msglbl ?>">
 <input type="number" min="0" max="31" name="lim" size="3" value="<?= $_SESSION['lim'] ?>">
 <br>
 <img src="img/16/icon.png" title="# <?= $collbl ?> (0-31)">
@@ -196,7 +196,7 @@ foreach (glob("themes/*.css") as $f) {
 <p>
 <img src="img/16/grph.png"  title="<?= $gralbl ?>">
 <select size="1" name="gsiz">
-<option value=""><?= $nonlbl ?>
+<option value="0"><?= $nonlbl ?>
 <option value="2"<?= ( ($_SESSION['gsiz'] == "2")?" selected":"") ?>><?= $siz['s'] ?>
 <option value="3"<?= ( ($_SESSION['gsiz'] == "3")?" selected":"") ?>><?= $siz['m'] ?>
 <option value="4"<?= ( ($_SESSION['gsiz'] == "4")?" selected":"") ?>><?= $siz['l'] ?>
@@ -208,6 +208,7 @@ foreach (glob("themes/*.css") as $f) {
 </tr></table></form>
 <p>
 <?php
+$editam = '';
 if($isadmin){
 	if(isset($_POST['cam']) ){
 		unlink($msgfile);
@@ -237,10 +238,10 @@ if($isadmin){
 </th><th>
 <textarea rows="16" name="msg" cols="100">
 <?php
-	if (file_exists($msgfile)) {
-		readfile($msgfile);
-	};
-	if($eam != 1){echo "<br>\n<a href=\"$eam\">EDIT</a>";}
+		if ( file_exists($msgfile) ){
+			readfile($msgfile);
+		}
+		if($eam != 1) echo "<br>\n<a href=\"$eam\">EDIT</a>";
 ?>
 </textarea>
 </th>
@@ -254,8 +255,10 @@ if($isadmin){
 		$editam = "<a href=\"?eam=1\"><img src=\"img/16/note.png\" title=\"$chglbl\"></a>";
 	}
 }
-if (file_exists($msgfile)) {
-	echo "<h2>$editam $msglbl</h2><div class=\"textpad warn\">\n";
+echo "<h2>$editam Admin $mlvl[100]</h2>\n";
+
+if( file_exists($msgfile) ){
+	echo "<div class=\"textpad warn\">\n";
 	include_once ($msgfile);
 	echo "</div><br>";
 }
@@ -263,8 +266,8 @@ if (file_exists($msgfile)) {
 <p>
 <?php
 $query = GenQuery('chat','s','*','time desc',$_SESSION['lim']);
-$res   = @DbQuery($query,$link);
-$nchat= @DbNumRows($res);
+$res   = DbQuery($query,$link);
+$nchat= DbNumRows($res);
 if($nchat){
 ?>
 <p>
@@ -277,7 +280,7 @@ if($nchat){
 <th><img src="img/16/say.png"><br><?= $cmtlbl ?></th>
 </tr>
 <?php
-	while( ($m = @DbFetchRow($res)) ){
+	while( ($m = DbFetchRow($res)) ){
 		if ($_SESSION['user'] == $m[1]){$bg = "txta"; $bi = "imga";$me=1;}else{$bg = "txtb"; $bi = "imgb";$me=0;}
 		list($fc,$lc) = Agecol($m[0],$m[0],$me);
 		$time = date($datfmt,$m[0]);

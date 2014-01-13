@@ -36,17 +36,26 @@ $ocol[7] = "GoldenRod";
 $tftpboot = "/var/tftpboot";
 
 $_GET = sanitize($_GET);
-$del   = isset($_GET['del']) ? $_GET['del'] : "";
+$del  = isset($_GET['del']) ? $_GET['del'] : '';
+$mde  = isset($_GET['mde']) ? $_GET['mde'] : '';
+$sub  = isset($_GET['sub']) ? $_GET['sub'] : 'topo/';
+$tft  = isset($_GET['tft']) ? preg_replace('/[<>\/\\\]/','',$_GET['tft']) : "";
 
-$_POST = sanitize($_POST);
-$mde = isset($_POST['mde']) ? $_POST['mde'] : "";
-$txt = isset($_POST['txt']) ? $_POST['txt'] : "";
-$log = isset($_POST['log']) ? $_POST['log'] : "";
-$cfg = isset($_POST['cfg']) ? $_POST['cfg'] : "";
-$file= isset($_POST['file']) ? $_POST['file'] : "";
-$tftp= isset($_POST['tftp']) ? preg_replace('/[<>\/\\\]/','',$_POST['tftp']) : "";
-$wrt = isset($_POST['wrt']) ? 1 : "";
-$all = isset($_POST['all']) ? "checked" : "";
+$_POST= sanitize($_POST);
+$mde  = isset($_POST['mde']) ? $_POST['mde'] : $mde;
+$txt  = isset($_POST['txt']) ? $_POST['txt'] : "";
+$log  = isset($_POST['log']) ? $_POST['log'] : "";
+$cfg  = isset($_POST['cfg']) ? $_POST['cfg'] : "";
+$sub  = isset($_POST['sub']) ? $_POST['sub'] : $sub;
+$tft  = isset($_POST['tft']) ? preg_replace('/[<>\/\\\]/','',$_POST['tft']) : $tft;
+$file = isset($_POST['file']) ? $_POST['file'] : "";
+$wrt  = isset($_POST['wrt']) ? 1 : "";
+$all  = isset($_POST['all']) ? "checked" : "";
+
+if( $mde == 'o' and !preg_match('/^topo/',$sub) ){							# Only allow topo/
+	$mde = '';
+	$sub = 'topo/';
+}
 
 $editable = 0;
 $delable  = 0;
@@ -63,8 +72,8 @@ if( $isadmin and $file){
 		$file = ( file_exists("$nedipath/conf/$cfg") )? "$nedipath/conf/$cfg":"";
 		$delable  = 1;
 		$tftpable = 1;
-	}elseif($tftp){
-		$file  = "$tftpboot/$tftp";
+	}elseif($tft){
+		$file  = "$tftpboot/$tft";
 		$tftpable = 1;
 		$delable  = 1;
 	}else{
@@ -191,29 +200,36 @@ foreach (glob("/tmp/nedi*") as $f) {
 <option value="b" <?= ($mde == "b")?" selected":""?>><?= (($verb1)?"$updlbl NeDi":"NeDi $updlbl") ?> (<?= (($verb1)?"$buplbl $cfglbl":"$cfglbl $buplbl") ?>)
 <option value="g" <?= ($mde == "g")?" selected":""?>><?= (($verb1)?"$updlbl $imglbl":"$imglbl $updlbl") ?>
 <option value="i" <?= ($mde == "i")?" selected":""?>><?= (($verb1)?"$implbl DB":"DB $implbl") ?>
-<option value="m" <?= ($mde == "m")?" selected":""?>><?= $upllbl ?>-map
-<option value="f" <?= ($mde == "f")?" selected":""?>><?= $upllbl ?>-foto
+<option value="r" <?= ($mde == "r")?" selected":""?>><?= $dellbl ?> <?= $stco['200'] ?> RRDs
 <option value="l" <?= ($mde == "l")?" selected":""?>><?= $upllbl ?>-log
 <option value="t" <?= ($mde == "t")?" selected":""?>><?= $upllbl ?>-tftp
-<option value="r" <?= ($mde == "r")?" selected":""?>><?= $dellbl ?> <?= $stco['200'] ?> RRDs
+<option value="o" <?= ($mde == "o")?" selected":""?>><?= $upllbl ?>-<?= $sub ?>
 </select>
 <p>
-<img src="img/16/clip.png" title="<?= $fillbl ?>"> <input name="tgz" type="file" size="20" accept="archive/tar"> 
+<img src="img/16/clip.png" title="<?= $fillbl ?>"> <input name="tgz" type="file" accept="archive/tar"> 
 
 </th>
 <th>
 
+<input type="hidden" name="sub" value="<?= $sub ?>">
 <input type="submit" name="up" value="<?= $cmdlbl ?>">
-</td>
 
+</td>
 </tr></table>
 </form>
 
 <?php
 
 if($isadmin){
-	if($del){
-		if( unlink ($del) ){
+	if( $del and preg_match("/^(".str_replace('/', '\\/', $tftpboot)."|log|map|topo)/",$del) ){	# Only allow $tftpboot, log/, map/ and topo/
+		if(is_dir($del)){
+			array_map('unlink', glob("$del/*"));
+			if( rmdir($del) ){
+				echo "<h5>$dellbl $del OK</h5>";
+			}else{
+				echo "<h4>$errlbl $dellbl $del</h4>";
+			}
+		}elseif( unlink ($del) ){
 			echo "<h5>$dellbl $del OK</h5>";
 		}else{
 			echo "<h4>$errlbl $dellbl $del</h4>";
@@ -270,7 +286,7 @@ if($file){
 <?php
 			if($tftpable){
 ?>
-<input type="text" name="tftp" value="<?= basename($file) ?>" onfocus="select();" >
+<input type="text" name="tft" value="<?= basename($file) ?>" onfocus="select();" >
 <input type="checkbox" name="all" <?= $all ?> title="<?= $alllbl ?> <?= $wrtlbl ?> <?= $acslbl ?>">
 <input type="submit" name="wrt" value="<?= $wrtlbl ?> TFTP">
 <?php
@@ -305,14 +321,24 @@ if($file){
 <div class="textpad code txta" name="out">
 <?php
 	if(array_key_exists('tgz',$_FILES)){
-		if(file_exists($_FILES['tgz']['tmp_name'])) {
+		if( file_exists($_FILES['tgz']['tmp_name']) ){
 			if($mde == "b"){
 				echo "$realbl ".$_FILES['tgz']['name']."\n\n";
-				if (!copy("log/msg.txt", "/tmp/msg.txt")) {
-					echo "<h4>$errlbl $wrtlbl /tmp/msg.txt</h4>\n";
-					die;
-				}else{
-					echo "$buplbl msg.txt\n";
+				if( file_exists("log/msg.txt") ){
+					if (!copy("log/msg.txt", "/tmp/msg.txt")) {
+						echo "<h4>$errlbl $wrtlbl /tmp/msg.txt</h4>\n";
+						die;
+					}else{
+						echo "$buplbl msg.txt\n";
+					}
+				}
+				if( file_exists("log/devtools.php") ){
+					if (!copy("log/devtools.php", "/tmp/devtools.php")) {
+						echo "<h4>$errlbl $wrtlbl /tmp/devtools.php</h4>\n";
+						die;
+					}else{
+						echo "$buplbl devtools.php\n";
+					}
 				}
 				if (!copy("$nedipath/inc/crontab", "/tmp/crontab")) {
 					echo "<h4>$errlbl $wrtlbl /tmp/crontab</h4>\n";
@@ -340,7 +366,7 @@ if($file){
 				}
 			}
 
-			echo system("tar zxf ".$_FILES['tgz']['tmp_name']." -C $nedipath", $stat);
+			system("tar zxf ".$_FILES['tgz']['tmp_name']." -C $nedipath", $stat);
 			if($stat){
 				echo "<h4>$errlbl $wrtlbl ".$_FILES['tgz']['name']."</h4>\n";
 				die;
@@ -349,10 +375,19 @@ if($file){
 			}
 
 			if($mde == "b"){
-				if (!copy("/tmp/msg.txt", "log/msg.txt")) {
-					echo "<h4>$errlbl $wrtlbl log/msg.txt</h4>\n";
-				}else{
-					echo "$wrtlbl log/msg.txt\n";
+				if( file_exists("/tmp/msg.txt") ){
+					if (!copy("/tmp/msg.txt", "log/msg.txt")) {
+						echo "<h4>$errlbl $wrtlbl log/msg.txt</h4>\n";
+					}else{
+						echo "$wrtlbl log/msg.txt\n";
+					}
+				}
+				if( file_exists("/tmp/devtools.php") ){
+					if (!copy("/tmp/devtools.php", "log/devtools.php")) {
+						echo "<h4>$errlbl $wrtlbl log/devtools.php</h4>\n";
+					}else{
+						echo "$wrtlbl log/devtools.php\n";
+					}
 				}
 				if (!copy("/tmp/crontab", "$nedipath/inc/crontab")) {
 					echo "<h4>$errlbl $wrtlbl $nedipath/inc/crontab</h4>\n";
@@ -376,7 +411,7 @@ if($file){
 				}
 			}
 			echo "<h5>$updlbl OK</h5>";
-			include_once("$nedipath/Readme.txt");
+			include_once("log/Readme.txt");
 		}else{
 			echo "<h4>$errlbl $realbl ".$_FILES['tgz']['name']."</h4>";
 		}
@@ -394,7 +429,11 @@ if($file){
 	if(array_key_exists('tgz',$_FILES)){
 		if(file_exists($_FILES['tgz']['tmp_name'])) {
 			echo "<h5>$realbl ".$_FILES['tgz']['name']."</h5>\n";
-			echo system("zcat ".$_FILES['tgz']['tmp_name']." | mysql $dbname --user=$dbuser ".(($dbpass)?"--password=$dbpass":""), $stat);
+			if( $backend == 'mysql'){
+				system("zcat ".$_FILES['tgz']['tmp_name']." | mysql $dbname --user=$dbuser ".(($dbpass)?"--password=$dbpass":""), $stat);
+			}elseif( $backend == 'Pg'){
+				system("export PGPASSWORD=$dbpass;zcat ".$_FILES['tgz']['tmp_name']." | psql -h $dbhost -U $dbuser $dbname", $stat);
+			}
 			if($stat){
 				echo "<h4>$errlbl $wrtlbl ".$_FILES['tgz']['name']."</h4>\n";
 			}else{
@@ -416,7 +455,7 @@ if($file){
 	if(array_key_exists('tgz',$_FILES)){
 		if(file_exists($_FILES['tgz']['tmp_name'])) {
 			echo "<h5>$realbl ".$_FILES['tgz']['name']."</h5>\n";
-			echo system("tar zxvf ".$_FILES['tgz']['tmp_name']." -C img", $stat);
+			system("tar zxvf ".$_FILES['tgz']['tmp_name']." -C img", $stat);
 			if($stat){
 				echo "<h4>$errlbl $wrtlbl ".$_FILES['tgz']['name']."</h4>\n";
 			}else{
@@ -429,7 +468,7 @@ if($file){
 ?>
 </div><br>
 <?php
-}elseif($mde == "l" or $mde == "t" or $mde == "m" or $mde == "f"){
+}elseif($mde == "l" or $mde == "t" or $mde == "m" or $mde == "o"){
 ?>
 <h2><?= $fillbl ?> <?= $upllbl ?></h2>
 <div class="textpad code txta" name="out">
@@ -438,10 +477,8 @@ if($file){
 	$dir = $tftpboot;
 	if($mde == "l"){
 		$dir = "log";
-	}elseif($mde == "m"){
-		$dir = "map";
-	}elseif($mde == "f"){
-		$dir = "foto";
+	}elseif($mde == "o"){
+		$dir = $sub;
 	}
 	if(array_key_exists('tgz',$_FILES)){
 		if(file_exists($_FILES['tgz']['tmp_name'])) {
@@ -462,6 +499,8 @@ if($file){
 		}else{
 			echo "<h4>$errlbl $realbl \"".$_FILES['tgz']['tmp_name']."\"</h4>";
 		}
+	}else{
+		echo "<h3>$sellbl $fillbl</h3>";
 	}
 ?>
 </div><br>
@@ -488,7 +527,7 @@ if($file){
 ?>
 </div><br>
 <?php
-}else{
+}
 ?>
 
 <h2><?= $fillbl ?> <?= $lstlbl ?></h2>
@@ -496,123 +535,96 @@ if($file){
 <table class="full fixed">
 <tr><td class="helper">
 
-<?FileList('map',"web") ?>
+<?php FileList('log',"web"); ?>
+<br><p>
+<?php FileList('map',"web"); ?>
+<br><p>
+<? FileList($tftpboot,"tftp"); ?>
 
 </td><td class="helper">
 
-<?FileList('foto',"web") ?>
-
-</td></tr>
-<tr><td class="helper">
-
-<?FileList('log',"web") ?>
-
-</td><td class="helper">
-
-<?FileList($tftpboot,"tftp") ?>
+<?php FileList('topo',"web"); ?>
 
 </td></tr>
 </table>
 <?php
-}
-
-//===================================================================
-// Return fileicon
-function Fimg($f) {
-	
-	global $hislbl,$fillbl,$imglbl,$cfglbl,$cmdlbl,$mlvl;
-
-	$l  = "";
-	$ed = 0;
-	if(preg_match("/\.(zip|tgz|tar|gz|7z|bz2|rar)$/i",$f))	{$i = "pkg"; $t = "Archive";}
-	elseif(stristr($f,".csv"))				{$i = "list";$t = "CSV $fillbl";}
-	elseif(stristr($f,".def"))				{$i = "geom";$t = "Device Definition";$l = "Other-Defgen.php?so=".urlencode(basename($f,".def"));}
-	elseif(stristr($f,".log"))				{$i = "note";$t = "$hislbl";}
-	elseif(stristr($f,".js"))				{$i = "dbmb";$t = "Javascript";}
-	elseif(stristr($f,".php"))				{$i = "php"; $t = "PHP Script";}
-	elseif(stristr($f,".patch"))				{$i = "hlth";$t = "System Patch";}
-	elseif(stristr($f,".reg"))				{$i = "nwin";$t = "Registry $fillbl";}
-	elseif(stristr($f,".sql"))				{$i = "db";  $t = "DB $fillbl";}
-	elseif(stristr($f,".xml"))				{$i = "dcub";$t = "XML $fillbl";$ed = 1;}
-	elseif(preg_match("/\.(txt|text)$/i",$f))		{$i = "abc"; $t = "TXT $fillbl";$ed = 1;}
-	elseif(preg_match("/[.-](cfg|conf|config)$/i",$f))	{$i = "conf";$t = "$cfglbl";$ed = 1;}
-	elseif(preg_match("/\.(exe)$/i",$f))			{$i = "cog";$t = "$cmdlbl";}
-	elseif(preg_match("/\.(htm|html)$/i",$f))		{$i = "dif";$t = "HTML $fillbl";}
-	elseif(preg_match("/\.(pcm|raw)$/i",$f))		{$i = "bell";$t = "Ringtone";}
-	elseif(preg_match("/\.(btm|loads)$/i",$f))		{$i = "nhdd"; $t = "Boot Image";}
-	elseif(preg_match("/\.(app|bin|img|sbn|swi|ipe)$/i",$f)){$i = "cbox"; $t = "Binary Image";}
-	elseif(preg_match("/\.(bmp|gif|jpg|png|svg)$/i",$f))	{$i = "img";$t = "$imglbl";}
-	else							{$i = "bbox";$t = "$mlvl[10]";}
-
-	if($l){
-		return array("<a href=\"$l\"><img src=\"img/16/$i.png\" title=\"$t\"></a>",$ed);
-	}else{
-		return array("<img src=\"img/16/$i.png\" title=\"$t\">",$ed);
-	}
-}
 
 function FileList($dir,$opt=""){
 	
-	global $modgroup,$self,$stco,$namlbl,$fillbl,$totlbl,$sizlbl,$updlbl,$dellbl,$edilbl,$cfmmsg,$isadmin;
-
-	echo "<h3>";
-	echo "$dir </h3>\n";
+	global $row,$modgroup,$self,$stco,$namlbl,$fillbl,$totlbl,$sizlbl,$updlbl,$cmdlbl;
 ?>
+<h3>
+<?= ($opt == "tftp")?"<a href=\"?tft=my.txt\"><img src=\"img/16/add.png\" title=\"$stco[10]\"></a>":''; ?>
+<?= $dir ?></h3>
+
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>1"><th colspan="2">
-<?PHP if($opt == "tftp"){ ?>
-<span style="float:left;margin:2px 2px">
-<form method="post" name="edit" action="System-Files.php">
-<input type="hidden" name="tftp" value="my.txt">
-<input type="image" src="img/16/star.png" value="Submit" title="<?= $stco['10'] ?>">
-</form>
-</span>
-<?PHP } ?>
-<?= $namlbl ?></th><th><?= $sizlbl ?></th><th>
-<?= $updlbl ?></th></tr>
+<tr class="<?= $modgroup[$self] ?>1">
+<th colspan="2"><?= $namlbl ?></th>
+<th><?= $sizlbl ?></th>
+<th><?= $updlbl ?></th>
+<th><?= $cmdlbl ?></th>
+</tr>
 <?php
 	$row  = 0;
+	$tsiz = DirList($dir,$opt,0);
+?>
+<tr class="<?= $modgroup[$self] ?>1"><td colspan="5"><?= $row ?> <?= $fillbl ?>, <?= $totlbl ?> <?= DecFix($tsiz) ?></td></tr>
+</table>
+<?php
+}
+
+function DirList($dir,$opt,$lvl){
+	
+	global $row,$sub,$upllbl,$levlbl,$dellbl,$edilbl,$cfmmsg,$isadmin;
+
 	$tsiz = 0;
+	$ed   = '';
 	foreach (glob("$dir/*") as $f){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
 		$plen = strlen($dir);
 		$t = substr($f,$plen+1);
+		TblRow($bg);
+		echo "<td class=\"$bi\" width=\"20\" nowrap>";
+		$i=0;
+		while ($i < $lvl) {
+			echo "<img src=\"img/sub.png\">";
+			$i++;
+		}
+		$i=0;
 		if(is_dir($f)){
-			echo "<tr class=\"$bg\"><th class=\"$bi\" width=\"20\"><img src=\"img/16/fobl.png\" title=\"Folder\"></th><td colspan=\"3\"><b>$t</b></td></tr>\n";
-		}else{
-			list($ico,$ed) = Fimg($f);
-			TblRow($bg);
-			echo "<th class=\"$bi\" width=\"20\">$ico</th><td>";
-			if($opt == "web"){
-				echo "<a href=\"$f\" target=\"window\">$t</a>";
+			if($lvl and $opt == "web"){
+				echo "<a href=\"?sub=$f&mde=o\"><img src=\"img/16/".(($f == $sub)?'foye':'fogy').".png\" title=\"$upllbl $levlbl $lvl\"></a></td>";
 			}else{
-				echo "$t\n";
+				echo "<img src=\"img/16/fogy.png\" title=\"Folder $levlbl $lvl\">";
 			}
-			echo "</td>\n";
-			$siz = round(filesize($f) / 1024,1);
-			$tsiz += $siz;
-			echo "<td align=\"right\">$siz KB</td><td>".date ($_SESSION['date'],filemtime($f));
+			echo "</td><td colspan=\"4\">$t";
 			if($isadmin){
-				echo "<span style=\"float:right\"><a href=\"?del=".urlencode($f)."\"> <img src=\"img/16/bcnl.png\" onclick=\"return confirm('$dellbl $t, $cfmmsg')\" title=\"$dellbl $t!\"></a></span>";
+				echo "<span style=\"float:right\"><a href=\"?del=".urlencode($f)."\"> <img src=\"img/16/bcnl.png\" onclick=\"return confirm('$dellbl, $cfmmsg')\" title=\"$dellbl!\"></a></span>";
+			}
+			echo "</td></tr>\n";
+			$tsiz += DirList("$dir/$t",$opt,$lvl+1);
+		}else{
+			list($ico,$ed) = FileImg($f);
+			echo "$ico</td><td>";
+			if($opt == "web"){
+				echo "<a href=\"$f\" target=\"window\">$t</a></td>";
+			}else{
+				echo "$t</td>";
+			}
+			$siz = filesize($f);
+			$tsiz += $siz;
+			echo "<td align=\"right\">".DecFix($siz)."</td><td align=\"right\">".date ($_SESSION['date'],filemtime($f))."<td align=\"right\">";
+			if($isadmin){
 				if($opt == "tftp" and $ed){
-?>
-<span style="float:right;margin:2px 2px">
-<form method="post" name="edit" action="System-Files.php">
-<input type="hidden" name="tftp" value="<?= $t ?>">
-<input type="image" src="img/16/note.png" value="Submit" title="<?= $edilbl ?>">
-</form>
-</span>
-<?php
+					echo "<a href=\"?tft=".urlencode($t)."\"><img src=\"img/16/note.png\" title=\"$edilbl\"></a>";
 				}
+				echo "<a href=\"?del=".urlencode($f)."\"><img src=\"img/16/bcnl.png\" onclick=\"return confirm('$dellbl, $cfmmsg')\" title=\"$dellbl!\"></a>";
 			}
 			echo "</td></tr>\n";
 		}
 	}
-?>
-<tr class="<?= $modgroup[$self] ?>1"><td colspan="4"><?= $row ?> <?= $fillbl ?>, <?= $totlbl ?> <?= $tsiz ?> KB</td></tr>
-</table>
-<?php
+	return $tsiz;
 }
 
 include_once ("inc/footer.php");

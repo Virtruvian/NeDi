@@ -4,7 +4,6 @@
 
 error_reporting(E_ALL ^ E_NOTICE);
 
-$calendar  = 0;
 $printable = 1;
 $exportxls = 0;
 
@@ -92,33 +91,33 @@ $dcol = array(	"device"=>"Device",
 <p>
 <?php
 }
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if (isset($_GET['add']) and $_GET['usr']){
-	$pass = hash("sha256","NeDi".$_GET['usr'].$_GET['usr']);
-	$query	= GenQuery('users','i','','','',array('user','password','time','language','theme'),'',array($_GET['usr'],$pass,time(),'english','default') );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[usr]: $addlbl OK</h5>";}
+	$pass = hash('sha256','NeDi'.$_GET['usr'].$_GET['usr']);
+	$query	= GenQuery('users','i','','','',array('usrname','password','time','language','theme'),'',array($_GET['usr'],$pass,time(),'english','default') );
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[usr]: $addlbl OK</h5>";}
 }elseif(isset($_GET['ldap']) and $_GET['usr']){
 	$now = time();
 	if ( user_from_ldap_servers($_GET['usr']) ){
-		$query	= GenQuery('users','i','','','',array('user','email','phone','password','time','language','theme'),'',array($fields['ldap_login'] ,$fields['ldap_field_email'],$fields['ldap_field_phone'],'',time(),'english','default') );
-		if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[usr]: $addbtn OK</h5>";}
+		$query	= GenQuery('users','i','','','',array('usrname','email','phone','password','time','language','theme'),'',array($fields['ldap_login'] ,$fields['ldap_field_email'],$fields['ldap_field_phone'],'',time(),'english','default') );
+		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[usr]: $addbtn OK</h5>";}
 	}else{
 		echo "<h4>No $usrlbl $_GET[usr] in LDAP!</h4>";
 	}
 }elseif(isset($_GET['psw']) ){
 	$pass = hash("sha256","NeDi".$_GET['psw'].$_GET['psw']);
-	$query	= GenQuery('users','u','user','=',$_GET[psw],array('password'),array(),array($pass) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[psw]: $reslbl password OK</h5>";}
+	$query	= GenQuery('users','u','usrname','=',$_GET[psw],array('password'),array(),array($pass) );
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[psw]: $reslbl password OK</h5>";}
 }elseif(isset($_GET['gup']) ){
-	$query	= GenQuery('users','u','user','=',$_GET[usr],array('groups'),array(),array($_GET['gup']) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $grplbl $updlbl OK</h5>";}
+	$query	= GenQuery('users','u','usrname','=',$_GET[usr],array('groups'),array(),array($_GET['gup']) );
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $grplbl $updlbl OK</h5>";}
 }elseif($del){
-	$query	= GenQuery('users','d','','','',array('user'),array('='),array($_GET['del']) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[del]: $dellbl OK</h5>";}
+	$query	= GenQuery('users','d','','','',array('usrname'),array('='),array($_GET['del']) );
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[del]: $dellbl OK</h5>";}
 }elseif($stv){
-	$viewdev = ($stv == '-')?"":"$inv $opv \"$stv\"";
-	$query	= GenQuery('users','u','user','=',$_GET[usr],array('viewdev'),array(),array($viewdev) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Device $acslbl $updlbl OK</h5>";}
+	$viewdev = ($stv == '-')?'':"$inv $opv $stv";
+	$query	= GenQuery('users','u','usrname','=',$_GET[usr],array('viewdev'),array(),array($viewdev) );
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Device $acslbl $updlbl OK</h5>";}
 }
 ?>
 <h2><?= $usrlbl ?> <?= $lstlbl ?></h2>
@@ -131,10 +130,10 @@ if ($grp){
 }else{
 	$query	= GenQuery('users','s','*',$ord );
 }
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
 	$row = 0;
-	while( ($usr = @DbFetchRow($res)) ){
+	while( ($usr = DbFetchRow($res)) ){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
 		list($cc,$lc) = Agecol($usr[5],$usr[6],$row % 2);
@@ -154,10 +153,10 @@ if($res){
 <select size="1" name="inv">
 <?php
 
-$vid = explode(" ",str_replace('"','',$usr[15]) );
-$inv = $vid[0];
-$opv = ($vid[3])?"$vid[1] $vid[2]":$vid[1];
-$stv = ($vid[3])?$vid[3]:$vid[2];
+$vid = explode(" ",$usr[15]);
+$inv = array_shift($vid);
+$opv = array_shift($vid);										# Operator has no spaces (not regexp is !~ since 1.0.9)
+$stv = implode(' ',preg_replace('/["\']/','',$vid));							# Now string can contain spaces, pre 1.0.9 had quotes
 foreach ($dcol as $k => $v){
        echo "<option value=\"$k\"".( ($inv == $k)?" selected":"").">$v\n";
 }
@@ -168,7 +167,7 @@ foreach ($dcol as $k => $v){
 <?php selectbox("oper",$opv) ?>
 </select><br>
 <input type="text" name="stv" size="16" value="<?= $stv ?>" onfocus="select();"  onchange="this.form.submit();" title="Device <?= $acslbl ?> <?= $limlbl ?>">
-<?= (($stv)?"<a href=\"Devices-List.php?ina=$inv&opa=$opv&sta=$stv\"><img src=\"img/16/eyes.png\" title=\"Device $lstlbl\"></a>":"") ?>
+<?= (($stv)?"<a href=\"Devices-List.php?in[]=$inv&op[]=$opv&st[]=$stv\"><img src=\"img/16/eyes.png\" title=\"Device $lstlbl\"></a>":"") ?>
 </form> 
 <?}?>
 
@@ -186,15 +185,15 @@ GroupButton($usr[0],$usr[2],32,'ugrp');
 <td><?= $usr[8] ?> <?= $usr[9] ?><br><?= $tzone[substr($usr[14],-3)] ?></td>
 <th>
 <a href="Devices-Stock.php?lst=us&val=<?= $usr[0] ?>"><img src="img/16/pkg.png" title="Stock <?= $lstlbl ?>"></a>
-<a href="Devices-List.php?ina=contact&opa=%3D&sta=<?= $usr[0] ?>"><img src="img/16/dev.png" title="Device <?= $lstlbl ?>"></a>
+<a href="Devices-List.php?in[]=contact&op[]=%3D&st[]=<?= $usr[0] ?>"><img src="img/16/dev.png" title="Device <?= $lstlbl ?>"></a>
 <a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&psw=<?= $usr[0] ?>"><img src="img/16/key.png" title="Password <?= $reslbl ?>" onclick="return confirm('<?= $reslbl ?>, <?= $cfmmsg ?>')"></a>
 <a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&del=<?= $usr[0] ?>"><img src="img/16/bcnl.png" title="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')"></a>
 </th></tr>
 <?php
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 ?>
 </table>

@@ -12,6 +12,6 @@
 
 # Usage example for Cisco-WLC and HP-MSMs to list all controlled APs (using custom value as reference to controller's IP):
 if($os == "ArubaOS" or $os == "IOS-wlc" or $os == "MSM"){
-	echo "<a href=\"Devices-List.php?ina=login&opa=%3D&sta=$ud\"><img src=\"img/16/wlan.png\" title=\"AP $lstlbl\"></a>";
+	echo "<a href=\"Devices-List.php?in[]=login&op[]=%3D&st[]=$ud\"><img src=\"img/16/wlan.png\" title=\"AP $lstlbl\"></a>";
 }
 ?>

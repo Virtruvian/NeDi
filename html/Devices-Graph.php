@@ -1,14 +1,10 @@
 <?php
 # Program: Devices-Graph.php
 # Programmer: Remo Rickli
-#TODO decide on JS framework and add slider widgets -> or wait for HTML5 <input type="range"> (and datetime)!!!!
 
-error_reporting(E_ALL ^ E_NOTICE);
-
+$printable = 1;
 $nocache   = 1;
 $refresh   = 600;
-$calendar  = 1;
-$printable = 1;
 
 include_once ("inc/header.php");
 
@@ -16,13 +12,13 @@ $_GET = sanitize($_GET);
 $dv = isset($_GET['dv']) ? $_GET['dv'] : "";
 $if = isset($_GET['if']) ? $_GET['if'] : array();
 $it = isset($_GET['it']) ? $_GET['it'] : array();
-$sze = isset($_GET['sze']) ? $_GET['sze'] : "5";
 $sho = isset($_GET['sho']) ? 1 : 0;
 $cad = isset($_GET['cad']) ? 1 : 0;
 $tem = isset($_GET['tem']) ? $_GET['tem'] : 2;
+$sze = $_GET['sze'] ? $_GET['sze'] : 5;
 
-$strsta = (isset($_GET['sta']) ) ? $_GET['sta'] : date("m/d/Y H:i", time() - $rrdstep * 800);
-$strend = (isset($_GET['end']) ) ? $_GET['end'] : date("m/d/Y H:i");
+$strsta = isset($_GET['sta']) ? $_GET['sta'] : date("m/d/Y H:i", time() - $rrdstep * 800);
+$strend = isset($_GET['end']) ? $_GET['end'] : date("m/d/Y H:i");
 if(!$sho){# Let graph follow autoupdate
 	$strsta = date("m/d/Y H:i",strtotime($strsta) + $refresh);
 	$strend = date("m/d/Y H:i");
@@ -34,10 +30,11 @@ if($sta > $end){
 	$strsta = date("m/d/Y H:i",$sta);
 }
 $qstr = strpos($_SERVER['QUERY_STRING'], "sta")?$_SERVER['QUERY_STRING']:$_SERVER['QUERY_STRING']."&sta=".urlencode($strsta)."&end=".urlencode($strend);
+
 ?>
 <h1>Device <?= $gralbl ?></h1>
 
-<?php  if( !isset($_GET['print']) ) { ?>
+<?php if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php" name="dynfrm">
 <table class="content">
@@ -46,13 +43,13 @@ $qstr = strpos($_SERVER['QUERY_STRING'], "sta")?$_SERVER['QUERY_STRING']:$_SERVE
 <th>
 <select size="6" name="dv" onchange="this.form.submit();">
 <?php
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('devices','s','device,devip,snmpversion,readcomm,memcpu,temp,cuslabel,cusvalue,devopts','device','',array('snmpversion'),array('!='),array('0') );
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
 	echo "<option value=\"Totals\"".(($dv == "Totals")?" selected":"")."> Network Totals";
 	echo "<option value=\"\" style=\"color: blue\">- Devices -";
-	while( ($d = @DbFetchRow($res)) ){
+	while( ($d = DbFetchRow($res)) ){
 		echo "<option value=\"$d[0]\"";
 		if($dv == $d[0]){
 			echo " selected";
@@ -74,9 +71,9 @@ if($res){
 		}
 		echo " >$d[0]\n";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 ?>
 </select>
@@ -121,14 +118,14 @@ if($ct != "-"){
 <option value="" style="color: blue">- Interfaces -
 <?php
 	$query	= GenQuery('interfaces','s','ifname,alias,comment','ifidx','',array('device'),array('='),array($dv) );
-	$res	= @DbQuery($query,$link);
+	$res	= DbQuery($query,$link);
 	if($res){
-		while( ($i = @DbFetchRow($res)) ){
+		while( ($i = DbFetchRow($res)) ){
 			echo "<option value=\"$i[0]\" ";
 			if(in_array($i[0],$if)){echo "selected";}
 			echo " >$i[0] " . substr("$i[1] $i[2]\n",0,30);
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}
 ?>
 </select>
@@ -146,28 +143,52 @@ if($ct != "-"){
 ?>
 
 </th>
-<th>
+<td align="center">
 
+<table style="border-spacing: 0px">
+<tr class="<?= $modgroup[$self] ?>2"><td>
 <a href="?<?=SkewTime($qstr,"sta", -7) ?>"><img src="img/16/bbl2.png" title="<?= $sttlbl ?> -<?= $tim['w'] ?>"></a>
+</td><td>
 <a href="?<?=SkewTime($qstr,"sta", -1) ?>"><img src="img/16/bblf.png" title="<?= $sttlbl ?> -<?= $tim['d'] ?>"></a>
-<a href="javascript:show_calendar('dynfrm.sta');"><img src="img/16/date.png" title="<?= $sttlbl ?> <?= $strsta ?>"></a>
-<input type="hidden" name="sta" value="<?= $strsta ?>">
+</td><td>
+<input  name="sta" id="start" type="text" value="<?= $strsta ?>" onfocus="select();" size="15" title="<?= $sttlbl ?>">
+</td><td>
 <a href="?<?=SkewTime($qstr,"sta", 1) ?>"><img src="img/16/bbrt.png" title="<?= $sttlbl ?> +<?= $tim['d'] ?>"></a>
+</td><td>
 <a href="?<?=SkewTime($qstr,"sta", 7) ?>"><img src="img/16/bbr2.png" title="<?= $sttlbl ?> +<?= $tim['w'] ?>"></a>
-<p>
+</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td>
 <a href="?<?=SkewTime($qstr,"all", -7) ?>"><img src="img/16/bbl2.png" title="<?= $gralbl ?> -<?= $tim['w'] ?>"></a>
+</td><td>
 <a href="?<?=SkewTime($qstr,"all", -1) ?>"><img src="img/16/bblf.png" title="<?= $gralbl ?> -<?= $tim['d'] ?>"></a>
-<img src="img/16/grph.png" title="<?= $alllbl ?>">
+</td><th>
+<img src="img/16/date.png" title="<?= $sttlbl ?> & <?= $endlbl ?>">
+</th><td>
 <a href="?<?=SkewTime($qstr,"all", 1) ?>"><img src="img/16/bbrt.png" title="<?= $gralbl ?> +<?= $tim['d'] ?>"></a>
+</td><td>
 <a href="?<?=SkewTime($qstr,"all", 7) ?>"><img src="img/16/bbr2.png" title="<?= $gralbl ?> +<?= $tim['w'] ?>"></a>
-<p>
+</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td>
 <a href="?<?=SkewTime($qstr,"end", -7) ?>"><img src="img/16/bbl2.png" title="<?= $endlbl ?> -<?= $tim['w'] ?>"></a>
+</td><td>
 <a href="?<?=SkewTime($qstr,"end", -1) ?>"><img src="img/16/bblf.png" title="<?= $endlbl ?> -<?= $tim['d'] ?>"></a>
-<a href="javascript:show_calendar('dynfrm.end');"><img src="img/16/date.png" title="<?= $endlbl ?> <?= $strend ?>"></a>
-<input type="hidden" name="end" value="<?= $strend ?>">
+</td><td>
+<input  name="end" id="end" type="text" value="<?= $strend ?>" onfocus="select();" size="15" title="<?= $endlbl ?>">
+</td><td>
 <a href="?<?=SkewTime($qstr,"end", 1) ?>"><img src="img/16/bbrt.png" title="<?= $endlbl ?> +<?= $tim['d'] ?>"></a>
+</td><td>
 <a href="?<?=SkewTime($qstr,"end", 7) ?>"><img src="img/16/bbr2.png" title="<?= $endlbl ?> +<?= $tim['w'] ?>"></a>
-</th>
+</table>
+
+<script type="text/javascript" src="inc/datepickr.js"></script>
+<link rel="stylesheet" type="text/css" href="inc/datepickr.css" />
+<script>
+
+new datepickr('start', {'dateFormat': 'm/d/y'});
+new datepickr('end', {'dateFormat': 'm/d/y'});
+</script>
+
+</td>
 <?php  if($cacticli) { ?>
 <td align="center"><h3>Cacti</h3>
 <select size="1" name="tem">
@@ -233,11 +254,11 @@ if($cad){
 	}
 }elseif ($dv == "Totals") {
 	if( in_array("msg",$if) ){
-		echo "<a href=\"Monitoring-Timeline.php?srt=".urlencode($strsta)."&end=".urlencode($strend)."&det=level\">\n";
+		echo "<a href=\"Monitoring-Timeline.php?sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=level\">\n";
 		echo "<img src=\"inc/drawrrd.php?&s=$sze&t=msg&a=$sta&e=$end\" title=\"$sholbl Timeline\"></a>\n";
 	}
 	if( in_array("mon",$if) ){
-		echo "<a href=\"Monitoring-Timeline.php?ina=class&opa==&sta=moni&srt=".urlencode($strsta)."&end=".urlencode($strend)."&det=source\">\n";
+		echo "<a href=\"Monitoring-Timeline.php?in[]=class&op[]==&st[]=moni&sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=source\">\n";
 		echo "<img src=\"inc/drawrrd.php?&s=$sze&t=mon&a=$sta&e=$end\" title=\"$tgtlbl $avalbl\"></a>\n";
 	}
 	if( in_array("nod",$if) ){echo "<img src=\"inc/drawrrd.php?&s=$sze&t=nod&a=$sta&e=$end\" title=\"$totlbl Nodes\">\n";}

@@ -30,31 +30,42 @@ header("Content-type: text/plain");
 
 #$_POST['u'] = "admin";
 #$_POST['p'] = "admin";
+#$_POST['m'] = "json";
 #$_POST['q'] = "select * from incidents";
 
 if( isset($_POST['u']) and isset($_POST['p']) ){
 	$pass = hash("sha256","NeDi".$_POST['u'].$_POST['p']);							# Salt & pw
-	$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-	$query= GenQuery('users','s','*','','',array('user','password'),array('=','='),array($_POST['u'],$pass),array('AND') );
-	$res  = @DbQuery($query,$link);
-	$uok  = @DbNumRows($res);
-	@DbFreeResult($res);
+	$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+	$query= GenQuery('users','s','*','','',array('usrname','password'),array('=','='),array($_POST['u'],$pass),array('AND') );
+	$res  = DbQuery($query,$link);
+	$uok  = DbNumRows($res);
+	DbFreeResult($res);
 
 	if($uok == 1) {
-		$res = @DbQuery($_POST['q'],$link);
-		$una = posix_uname();
-		echo "1.0.8-116;;$una[sysname];;$una[nodename];;$una[release];;$una[version];;\n";
-		if($res){
-			while($l = @DbFetchArray($res)) {
-				foreach($l as $id => $field) {
-					echo "$field;;";
+		$res = DbQuery($_POST['q'],$link);
+		$sys = posix_uname();
+		$sys['nedi'] = "1.0.9-010"; 
+		if($_POST['m']){
+			if($res){
+				while($l = DbFetchArray($res)) {
+					$rows[] = $l;
 				}
-				echo  "\n";
+				array_unshift($rows,$sys);
+				print json_encode($rows);
+			}else{
+				echo "ERR :DB - ".DbError($link);
 			}
 		}else{
-			echo "ERR :DB - ".@DbError($link);
+			echo join(';;',$sys)."\n";
+			if($res){
+				while($l = DbFetchRow($res)) {
+					echo join(';;',$l)."\n";
+				}
+			}else{
+				echo "ERR :DB - ".DbError($link);
+			}
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
 		echo "ERR :Incorrect password!";
 	}

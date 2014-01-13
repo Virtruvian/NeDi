@@ -39,7 +39,7 @@ $del = isset($_GET['del']) ? $_GET['del'] : "";
 $clr = isset($_GET['clr']) ? $_GET['clr'] : "";
 $dv = isset($_GET['dv']) ? $_GET['dv'] : array();
 
-$link  = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 ?>
 <h1>Flower Openflows</h1>
@@ -226,9 +226,9 @@ if($jdv){
 	foreach (array_keys($ofdarr) as $k) {
 		$ifmac = substr(str_replace(":","",$ofdarr[$k]['dpid']),4);
 		$query = GenQuery('interfaces','s','devices.*','','1',array('ifmac'),array('='),array($ifmac),array(),'LEFT JOIN devices USING (device)');
-		$res   = @DbQuery($query,$link);
-		if( @DbNumRows($res) ){
-			$d = @DbFetchRow($res);
+		$res   = DbQuery($query,$link);
+		if( DbNumRows($res) ){
+			$d = DbFetchRow($res);
 			$ofd[$d[0]]['id'] = str_replace("","",$ofdarr[$k]['dpid']);
 			$ofd[$d[0]]['cn'] = $ofdarr[$k]['inetAddress'];
 			$ofd[$d[0]]['ma'] = $ofdarr[$k]['attributes']['DescriptionData']['manufacturerDescription'];
@@ -242,7 +242,7 @@ if($jdv){
 		}else{
 			echo "<h4>$dsclbl ".$ofdarr[$k]['inetAddress']."!</h4>";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}
 }
 ?>

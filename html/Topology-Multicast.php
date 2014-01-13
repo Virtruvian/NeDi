@@ -12,16 +12,16 @@ include_once ("inc/libsnmp.php");
 $_GET = sanitize($_GET);
 $dev = isset($_GET['dev']) ? $_GET['dev'] : "";
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('devices','s','*','device','',array('services','snmpversion'),array('>','!='),array('3','0'),array('AND') );
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
-	while( ($d = @DbFetchRow($res)) ){
+	while( ($d = DbFetchRow($res)) ){
 		$devtyp[$d[0]] = $d[3];
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 
 ?>
@@ -52,27 +52,27 @@ echo "</select>";
 }
 if ($dev) {
 	$query	= GenQuery('devices','s','*','','',array('device'),array('='),array($dev) );
-	$res	= @DbQuery($query,$link);
-	$ndev	= @DbNumRows($res);
+	$res	= DbQuery($query,$link);
+	$ndev	= DbNumRows($res);
 	if ($ndev != 1) {
 		echo "<h4>$dev $mullbl $vallbl</h4>";
-		@DbFreeResult($res);
+		DbFreeResult($res);
 		die;
 	}else{
-		$dev	= @DbFetchRow($res);
+		$dev	= DbFetchRow($res);
 		$ip	= long2ip($dev[1]);
 		$sv	= Syssrv($dev[6]);
 		$ud = rawurlencode($dev[0]);
-		@DbFreeResult($res);
+		DbFreeResult($res);
 
 		$query	= GenQuery('interfaces','s','ifidx,ifname,iftype,alias,comment','','',array('device'),array('='),array($rtr) );
-		$res	= @DbQuery($query,$link);
-		while( ($i = @DbFetchRow($res)) ){
+		$res	= DbQuery($query,$link);
+		while( ($i = DbFetchRow($res)) ){
 			$ifn[$i[0]] = $i[1];
 			$ift[$i[0]] = $i[2];
 			$ifi[$i[0]] = "$i[3] $i[4]";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 
 ?>
 <h2><?= $sumlbl ?></h2>
@@ -189,7 +189,7 @@ if ($dev) {
 				sscanf($last[$mr], "%d:%d:%0d:%0d.%d",$lud,$luh,$lum,$lus,$ticks);
 				$bpsbar = Bar( intval($bps[$mr]/1000),0);
 				echo "<tr class=\"$bg\">\n";
-				echo "<td><a href=Nodes-List.php?ina=nodip&opa==&sta=$ip>$ip</a></td>\n";
+				echo "<td><a href=Nodes-List.php?in[]=nodip&op[]==&st[]=$ip>$ip</a></td>\n";
 				echo "<td><img src=\"img/$ntimg\" title=\"$ntit\">$i[0].$i[1].$i[2].$i[3]</td>\n";
 				echo "<td>$bpsbar".$bps[$mr]."</td>\n";
 				printf("<td>%d D %d:%02d:%02d</td>",$lud,$luh,$lum,$lus);

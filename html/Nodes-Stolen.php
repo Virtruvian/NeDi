@@ -17,14 +17,14 @@ $ifn = isset($_GET['ifn']) ? $_GET['ifn'] : "";
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 $del = isset($_GET['del']) ? $_GET['del'] : "";
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 if ($stl){
 	$query	= GenQuery('stolen','i','','','',array('name','stlip','mac','device','ifname','user','time'),'',array($na,ip2long($ip),$stl,$dev,$ifn,$_SESSION['user'],time()) );
-	if( !@DbQuery($query,$link) ){echo "<h4 align=center>".DbError($link)."</h4>";}else{echo "<h5>$stl $updlbl OK</h5>";}
+	if( !DbQuery($query,$link) ){echo "<h4 align=center>".DbError($link)."</h4>";}else{echo "<h5>$stl $updlbl OK</h5>";}
 }elseif ($del){
 	$query	= GenQuery('stolen','d','','','',array('mac'),array('='),array($del) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl $del ok</h5>";}
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl $del ok</h5>";}
 }
 ?>
 <h1>Stolen Nodes</h1>
@@ -62,7 +62,7 @@ IF <input type="text" name="ifn" value="<?= $ifn ?>" size="8">
 <?php
 }
 $query	= GenQuery('stolen','s','stolen.*',$ord,'',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
 ?>
 <h2>Stolen Nodes <?= $lstlbl ?></h2>
@@ -74,15 +74,15 @@ if($res){
 
 <?php
 	$row = 0;
-	while( ($s = @DbFetchRow($res)) ){
+	while( ($s = DbFetchRow($res)) ){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
 		$nquery	= GenQuery('nodes','s','*','','',array('mac'),array('='),array($s[2]));
-		$nres	= @DbQuery($nquery,$link);
-		$nnod	= @DbNumRows($nres);
+		$nres	= DbQuery($nquery,$link);
+		$nnod	= DbNumRows($nres);
 		if ($nnod == 1) {
-			$n	= @DbFetchRow($nres);
-			@DbFreeResult($nres);
+			$n	= DbFetchRow($nres);
+			DbFreeResult($nres);
 		}else{
 			$n = array($s[0],$s[1],$s[2],'-',0,0,'Not in nodes','-');
 		}
@@ -106,9 +106,9 @@ if($res){
 		echo "";
 		echo "</tr>\n";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 	?>
 </table>

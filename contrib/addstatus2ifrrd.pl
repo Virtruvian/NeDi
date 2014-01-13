@@ -29,7 +29,7 @@ for my $dv (@devs){
 		print "$dv -----------\n";
 		my @rrdfls = <$dv/*.rrd>;
 		for my $rrdfl (@rrdfls) {
-			unless( $rrd eq 'system.rrd' ){
+			unless( $rrdfl eq 'system.rrd' ){
 				print "Processing $rrdfl...";
 				$rrd->add_source($rrdfl, 'status' => 'GAUGE');
 				print "ok.\n";

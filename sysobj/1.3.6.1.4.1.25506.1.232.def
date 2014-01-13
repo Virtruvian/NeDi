@@ -1,5 +1,5 @@
-# Definition for 1.3.6.1.4.1.25506.1.232 created by Defgen 1.8 on 15.Mar 2013 (admin)
-
+# Definition for 1.3.6.1.4.1.25506.1.232 created by Defgen 1.8 on 26.Jul 2013 (admin)
+ 
 # General
 SNMPv	2HC
 Type	HPMSR20-11
@@ -13,9 +13,9 @@ ArpND	oldip6
 Dispro	LLDPXN
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
 Bimage	1.3.6.1.4.1.25506.2.3.1.4.2.1.2.196609
-
-# Vlan Specific
-VLnams	
+CfgChg	1.3.6.1.4.1.25506.2.4.1.1.1.0
+CfgWrt	1.3.6.1.4.1.25506.2.4.1.1.3.0
+VLnams	1.3.6.1.2.1.17.7.1.4.3.1.1
 VLnamx	
 Group	
 Mode	
@@ -51,7 +51,7 @@ Modser	1.3.6.1.2.1.47.1.1.1.1.11
 Momodl	1.3.6.1.2.1.47.1.1.1.1.13
 
 # RRD Graphing
-CPUutl	1.3.6.1.4.1.25506.2.6.1.1.1.1.6.3
+CPUutl	1.3.6.1.4.1.25506.2.6.1.1.1.1.6.3	
 Temp		
 MemCPU	1.3.6.1.4.1.25506.2.6.1.1.1.1.8.3	-%
 Custom		

@@ -5,6 +5,10 @@
 
 A simple statistics generator for NeDi.
 
+=head1 SYNOPSIS
+
+stati.pl [-v] [-U<config>]
+
 =head2 DESCRIPTION
 
 Run this by cron as you like...
@@ -34,15 +38,17 @@ Visit http://www.nedi.ch for more information.
 
 use strict;
 use warnings;
+no warnings qw(once);
 
 use Getopt::Std;
 use Net::SNMP qw(ticks_to_time);
+use Data::Dumper;
 
 use vars qw(%opt $p $now $days $from);
 
 $days = 7;
 
-getopts('v',\%opt) || &HELP_MESSAGE;
+getopts('dvU:',\%opt) || &HELP_MESSAGE;
 
 $now = time;
 $from = $now - 86400 * $days;
@@ -51,25 +57,35 @@ $p   = $0;
 $p   =~ s/(.*)\/(.*)/$1/;
 if($0 eq $p){$p = "."};
 
+$misc::dbname = $misc::dbhost = $misc::dbuser = $misc::dbpass = '';
+
 require "$p/inc/libmisc.pm";										# Use the miscellaneous nedi library
+require "$p/inc/libdb.pm";										# Use the DB function library
 
 &misc::ReadConf();
-require "$p/inc/libdb-" . lc($misc::backend) . ".pm" || die "Backend error ($misc::backend)!";
 
+&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass,1);
 my $cfg = &db::Select('configs','','count(device)',"time > $from");
 my $cfe = &db::Select('events','','count(id)',"time > $from and class = 'cfge'");
-&db::Insert('chat','time,user,message',"\"$now\",\"statc\",\"$cfg configs got updated, generating $cfe error events.\"");
+my $msg = "$cfg configs got updated, generating $cfe error events.";
+&misc::Prt("CONF:$msg\n");
+&db::Insert('chat','time,usrname,message',"$now,'statc','$msg'");
 sleep 1;												# With that sorting works in Chat...
 
-my $upif = &db::Select('interfaces','','count(lastchg)',"lastchg > $from and iftype regexp '^(6|7|117)\$' and ifstat = 3");
-my $dnif = &db::Select('interfaces','','count(lastchg)',"lastchg > $from and iftype regexp '^(6|7|117)\$' and ifstat = 1");
-my $shif = &db::Select('interfaces','','count(lastchg)',"lastchg > $from and iftype regexp '^(6|7|117)\$' and ifstat = 0");
-&db::Insert('chat','time,user,message',"\"$now\",\"stati\",\"$upif ethernet ports came up, $dnif went down and $shif got disabled.\"");
+my $regex = ($misc::backend eq 'Pg')?'cast(iftype as char) ~':'iftype regexp';
+my $upif = &db::Select('interfaces','','count(lastchg)',"lastchg > $from and $regex '^(6|7|117)\$' and ifstat = 3");
+my $dnif = &db::Select('interfaces','','count(lastchg)',"lastchg > $from and $regex '^(6|7|117)\$' and ifstat = 1");
+my $shif = &db::Select('interfaces','','count(lastchg)',"lastchg > $from and $regex '^(6|7|117)\$' and ifstat = 0");
+$msg = "$upif ethernet ports came up, $dnif went down and $shif got disabled.";
+&misc::Prt("IF  :$msg\n");
+&db::Insert('chat','time,usrname,message',"$now,'stati','$msg'");
 sleep 1;
 
 my $liw = &db::Select('events','','count(id)',"time > $from and class = 'nedl'");
 my $ifw = &db::Select('events','','count(id)',"time > $from and class = 'nedi'");
-&db::Insert('chat','time,user,message',"\"$now\",\"state\",\"$liw link warnings and $ifw interface warnings occured.\"");
+$msg = "$liw link warnings and $ifw interface warnings occured.";
+&misc::Prt("EVNT:$msg\n");
+&db::Insert('chat','time,usrname,message',"$now,'state','$msg'");
 sleep 1;
 
 my $ndev = &db::Select('devices','','count(firstdis)',"firstdis > $from");
@@ -77,8 +93,10 @@ my $nnod = &db::Select('nodes','','count(firstseen)',"firstseen > $from");
 
 my $took = time - $now;
 my $dbwarn = ($took > 60)?"(Those stats took ${took}s, you should consider optimizing the DB)":"";
-&db::Insert('chat','time,user,message',"\"$now\",\"statd\",\"During the last $days days, $nnod new nodes and $ndev new devices were found. $dbwarn\"");
-
+$msg = "During the last $days days, $nnod new nodes and $ndev new devices were found. $dbwarn";
+&misc::Prt("IF  :$msg\n");
+&db::Insert('chat','time,usrname,message',"$now,'statd','$msg'");
+&db::Disconnect();
 
 =head2 FUNCTION HELP_MESSAGE()
 
@@ -96,7 +114,9 @@ sub HELP_MESSAGE{
 	print "usage: stati.pl <Option(s)>\n\n";
 	print "---------------------------------------------------------------------------\n";
 	print "Options:\n";
+	print "-d	debug output\n";
 	print "-v	verbose output\n";
+	print "-U file	Use specified configuration\n";
 	print "(C) 2013 Remo Rickli (and contributors)\n\n";
 	exit;
 }

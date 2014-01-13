@@ -53,7 +53,7 @@ if($mde == "i"){
 	if($arg){$arg = "-" . $arg;}
 
 	if($bup){$arg .= " -".$bup;}
-	if($quk){$arg .= " -SafsgmijtedbpowAO ";}
+	if($quk){$arg .= " -SOAPjedibatflow ";}
 
 	$cmd .= " -l100 $arg".(($sed)?" -$sed $opt":"");
 }elseif($mde == "h"){
@@ -93,7 +93,7 @@ function UpCmd(){
 		if(arg != ""){arg = "-" + arg}
 
 		if(document.nedi.bup.selectedIndex){arg += " -" + document.nedi.bup.options[document.nedi.bup.selectedIndex].value}
-		if(document.nedi.quk.checked){arg += " -SafsgmijtedbpowAO"}
+		if(document.nedi.quk.checked){arg += " -SOAPjedibatflow"}
 		if(document.nedi.sed.selectedIndex){arg += " -" + document.nedi.sed.options[document.nedi.sed.selectedIndex].value + document.nedi.opt.value}
 	}else if(document.nedi.mde[1].checked){
 		if(document.nedi.vrb.checked){arg = "-v"}

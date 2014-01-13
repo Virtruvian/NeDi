@@ -10,8 +10,8 @@ ArpND	old
 Dispro	
 Serial	
 Bimage	1.3.6.1.2.1.1.1.0
-
-# Vlan Specific
+CfgChg	1.3.6.1.4.1.9.9.43.1.1.1.0
+CfgWrt	1.3.6.1.4.1.9.9.43.1.1.3.0
 VLnams	
 Group	
 Mode	

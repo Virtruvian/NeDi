@@ -2,7 +2,6 @@
 # Program: Devices-Modules.php
 # Programmer: Remo Rickli
 
-$calendar  = 1;
 $printable = 1;
 $exportxls = 1;
 
@@ -10,21 +9,20 @@ include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
-$sta = isset($_GET['sta']) ? $_GET['sta'] : "";
-$stb = isset($_GET['stb']) ? $_GET['stb'] : "";
-$ina = isset($_GET['ina']) ? $_GET['ina'] : "";
-$inb = isset($_GET['inb']) ? $_GET['inb'] : "";
-$opa = isset($_GET['opa']) ? $_GET['opa'] : "";
-$opb = isset($_GET['opb']) ? $_GET['opb'] : "";
-$cop = isset($_GET['cop']) ? $_GET['cop'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
+
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
+if($_SESSION['opt'] and !$ord and $in[0]) $ord = $in[0];
 
 $map = isset($_GET['map']) ? "checked" : "";
 $lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
-	if($_SESSION['opt']){$_SESSION['modcol'] = $_GET['col'];}
+	if($_SESSION['opt']) $_SESSION['modcol'] = $_GET['col'];
 }elseif( isset($_SESSION['modcol']) ){
 	$col = $_SESSION['modcol'];
 }else{
@@ -35,13 +33,14 @@ $cols = array(	"imBL"=>$imglbl,
 		"modclass"=>$clalbl,
 		"device"=>"Device $namlbl",
 		"type"=>"Device $typlbl",
+		"description"=>"Device $deslbl",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
 		"firstdis"=>"$fislbl $dsclbl",
 		"lastdis"=>"$laslbl $dsclbl",
 		"slot"=>"Slot",
 		"model"=>$mdllbl,
-		"moddesc"=>$deslbl,
+		"moddesc"=>"Module $deslbl",
 		"modules.serial"=>$serlbl,
 		"hw"=>"Hardware",
 		"fw"=>"Firmware",
@@ -51,7 +50,7 @@ $cols = array(	"imBL"=>$imglbl,
 		"modloc"=>"Module $loclbl"
 		);
 
-$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
+$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 ?>
 <h1>Module <?= $lstlbl ?></h1>
 
@@ -60,45 +59,14 @@ $link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 <form method="get" name="list" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th valign="top"><?= $cndlbl ?> A<p>
-<select size="1" name="ina">
-<?php
-foreach ($cols as $k => $v){
-	if( !preg_match('/(BL|IG|NS)$/',$k) ){
-		echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-	}
-}
-?>
-</select>
-<select size=1 name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p><a href="javascript:show_calendar('list.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
-</th>
-<th valign="top"><?= $cmblbl ?><p>
-<select size="1" name="cop">
-<?php selectbox("comop",$cop) ?>
-</select>
-</th>
-<th valign="top"><?= $cndlbl ?> B<p>
-<select size="1" name="inb">
-<?php
-foreach ($cols as $k => $v){
-	if( !preg_match('/(BL|IG|NS)$/',$k) ){
-		echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
-	}
-}
-?>
-</select>
-<select size="1" name="opb">
-<?php selectbox("oper",$opb) ?>
-</select>
-<p><a href="javascript:show_calendar('list.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?= $stb ?>" size="20">
-</th>
-<th valign="top"><?= $collbl ?><p>
-<select multiple name="col[]" size=4>
+<td>
+
+<?PHP Filters(); ?>
+
+</td>
+<th>
+
+<select multiple name="col[]" size="6" title="<?= $collbl ?>">
 <?php
 foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
@@ -127,19 +95,19 @@ foreach ($cols as $k => $v){
 </tr></table></form><p>
 <?php
 }
-if($ina){
+if( count($in) ){
 	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
 		echo "<center><h2>$netlbl Map</h2>\n";
 		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
 	}
-	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+	Condition($in,$op,$st,$co);
 	TblHead("$modgroup[$self]2",1);
 
-	$query	= GenQuery('modules','s','modules.*,type,firstdis,lastdis,location,contact',$ord,$lim,array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device)');
-	$res	= @DbQuery($query,$link);
+	$query	= GenQuery('modules','s','modules.*,type,firstdis,lastdis,description,location,contact',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device)');
+	$res	= DbQuery($query,$link);
 	if($res){
 		$row = 0;
-		while( ($m = @DbFetchRow($res)) ){
+		while( ($m = DbFetchRow($res)) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
 			$ud = urlencode($m[0]);
@@ -148,65 +116,68 @@ if($ina){
 
 			TblRow($bg);
 			if(in_array("imBL",$col)){
-				TblCell("","","class=\"$bi\" width=\"50\"","<img src=\"img/16/$img.png\" title=\"$m[9]\">","th-img");
+				TblCell($m[9],'',"class=\"$bi\" width=\"50\"","<img src=\"img/16/$img.png\" title=\"$mcl ($m[9])\">","th-imx");
 			}
 			if(in_array("modclass",$col)){
-				TblCell( "$mcl","?ina=modclass&opa==&sta=$m[9]","nowrap");
+				TblCell( "$mcl","?in[]=modclass&op[]==&st[]=$m[9]","nowrap");
 			}
 			if(in_array("device",$col)){
-				TblCell($m[0],"?ina=device&opa==&sta=$ud","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
+				TblCell($m[0],"?in[]=device&op[]==&st[]=$ud","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
 			}
 			if(in_array("type",$col)){
-				TblCell( $m[12],"?ina=type&opa==&sta=".urlencode($m[12]) );
+				TblCell( $m[12],"?in[]=type&op[]==&st[]=".urlencode($m[12]) );
+			}
+			if(in_array("description",$col)){
+				TblCell( $m[15],"?in[]=type&op[]==&st[]=".urlencode($m[15]) );
 			}
 			if(in_array("location",$col)){
-				TblCell( $m[15],"?ina=location&opa==&sta=".urlencode($m[15]) );
+				TblCell( $m[16],"?in[]=location&op[]==&st[]=".urlencode($m[16]) );
 			}
 			if(in_array("contact",$col)){
-				TblCell( $m[16],"?ina=contact&opa==&sta=".urlencode($m[16]) );
+				TblCell( $m[17],"?in[]=contact&op[]==&st[]=".urlencode($m[17]) );
 			}
 			if( in_array("firstdis",$col) ){
-				TblCell( date($datfmt,$m[13]),"?ina=firstdis&opa==&sta=$m[10]","bgcolor=\"#$fc\"" );
+				TblCell( date($datfmt,$m[13]),"?in[]=firstdis&op[]==&st[]=$m[13]","bgcolor=\"#$fc\"" );
 			}
 			if( in_array("lastdis",$col) ){
-				TblCell( date($datfmt,$m[14]),"?ina=lastdis&opa==&sta=$m[11]","bgcolor=\"#$lc\"" );
+				TblCell( date($datfmt,$m[14]),"?in[]=lastdis&op[]==&st[]=$m[14]","bgcolor=\"#$lc\"" );
 			}
 			if(in_array("slot",$col)){
-				TblCell( $m[1],"?ina=slot&opa==&sta=".urlencode($m[1]));
+				TblCell( $m[1],"?in[]=slot&op[]==&st[]=".urlencode($m[1]));
 			}
 			if(in_array("model",$col)){
-				TblCell( $m[2],"?ina=model&opa==&sta=".urlencode($m[2]) );
+				TblCell( $m[2],"?in[]=model&op[]==&st[]=".urlencode($m[2]) );
 			}
 			if(in_array("moddesc",$col)){
 				$vmac = "000c29".substr($m[5],-6);
 				TblCell($m[3],"","nowrap",($m[9] == "vmwESX")?"<a href=\"Nodes-Status.php?mac=$vmac\" title=\"Nodes-Status $vmac\"><img src=\"img/16/node.png\" align=\"right\"></a>":"");
 			}
 			if(in_array("modules.serial",$col)){
-				TblCell( $m[4],"?ina=modules.serial&opa==&sta=".urlencode($m[4]),"align=\"left\"" );
+				TblCell( $m[4],"?in[]=modules.serial&op[]==&st[]=".urlencode($m[4]),"align=\"left\"" );
 			}
 			if(in_array("hw",$col)){
-				TblCell( $m[5],"?ina=hw&opa==&sta=".urlencode($m[5]) );
+				TblCell( $m[5],"?in[]=hw&op[]==&st[]=".urlencode($m[5]) );
 			}
 			if(in_array("fw",$col)){
-				TblCell( $m[6],"?ina=fw&opa==&sta=".urlencode($m[6]) );
+				TblCell( $m[6],"?in[]=fw&op[]==&st[]=".urlencode($m[6]) );
 			}
 			if(in_array("sw",$col)){
-				TblCell( $m[7],"?ina=sw&opa==&sta=".urlencode($m[7]) );
+				TblCell( $m[7],"?in[]=sw&op[]==&st[]=".urlencode($m[7]) );
 			}
 			if(in_array("modidx",$col)){
-				TblCell($m[8],"?ina=modidx&opa==&sta=$m[8]");
+				TblCell($m[8],"?in[]=modidx&op[]==&st[]=$m[8]");
 			}
 			if(in_array("status",$col)){
-				TblCell($m[10],"?ina=status&opa==&sta=$m[10]");
+				TblCell($m[10],"?in[]=status&op[]==&st[]=$m[10]");
 			}
 			if(in_array("modloc",$col)){
-				TblCell( $m[11],"?ina=modloc&opa==&sta=".urlencode($m[11]) );
+				TblCell( $m[11],"?in[]=modloc&op[]==&st[]=".urlencode($m[11]) );
 			}
 			echo "</tr>\n";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
-		print @DbError($link);
+		print DbError($link);
 	}
 	?>
 </table>

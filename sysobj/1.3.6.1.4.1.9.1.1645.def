@@ -1,4 +1,4 @@
-# Definition for 1.3.6.1.4.1.9.1.828 created by sk95 on 23.Apr 2013
+# Definition for 1.3.6.1.4.1.9.1.1645 created by Defgen 1.8 on 19.Jun 2013 (stadler)
 
 # General
 SNMPv	2HC
@@ -14,14 +14,18 @@ Dispro	CDP
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
 Bimage	1.3.6.1.4.1.9.9.10.1.1.4.2.1.1.5.1.1.8
 
-# Vlan Specific
+CfgChg	1.3.6.1.4.1.9.9.43.1.1.1.0
+CfgWrt	1.3.6.1.4.1.9.9.43.1.1.3.0
 VLnams	1.3.6.1.4.1.9.9.512.1.1.1.1.4
 VLnamx	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
+StartX	
+EndX	
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.9
@@ -29,7 +33,7 @@ InDisc	1.3.6.1.2.1.2.2.1.13
 OutDisc	1.3.6.1.2.1.2.2.1.19
 IFvlan	1.3.6.1.2.1.17.7.1.4.5.1.1
 IFvlix	
-IFpowr	
+IFpowr		
 IFpwix	
 IFdupl	
 IFduix	
@@ -49,6 +53,6 @@ Momodl	1.3.6.1.2.1.47.1.1.1.1.13
 
 # RRD Graphing
 CPUutl	1.3.6.1.4.1.9.9.109.1.1.1.1.8.1
-Temp	1.3.6.1.4.1.9.9.13.1.3.1.3.5
+Temp	1.3.6.1.4.1.9.9.13.1.3.1.3.5	
 MemCPU		
-Custom	MemIO	
+Custom	Clients;G;#	1.3.6.1.4.1.14179.2.1.1.1.38.3

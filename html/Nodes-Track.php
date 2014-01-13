@@ -6,7 +6,6 @@
 
 error_reporting(E_ALL ^ E_NOTICE);
 
-$calendar  = 1;
 $printable = 1;
 $exportxls = 0;
 
@@ -16,14 +15,12 @@ include_once ("inc/libmon.php");
 include_once ("inc/libnod.php");
 
 $_GET = sanitize($_GET);
-$sta = isset($_GET['sta']) ? $_GET['sta'] : "";
-$stb = isset($_GET['stb']) ? $_GET['stb'] : "";
-$ina = isset($_GET['ina']) ? $_GET['ina'] : "";
-$inb = isset($_GET['inb']) ? $_GET['inb'] : "";
-$opa = isset($_GET['opa']) ? $_GET['opa'] : "";
-$opb = isset($_GET['opb']) ? $_GET['opb'] : "";
-$cop = isset($_GET['cop']) ? $_GET['cop'] : "";
-$ord = isset($_GET['ord']) ? $_GET['ord'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
+
+$ord = isset($_GET['ord']) ? $_GET['ord'] : '';
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
@@ -52,7 +49,7 @@ $cols = array(	"tgtNS"=>"$tgtlbl",
 		"nodes.mac"=>"MAC $adrlbl",
 		"nodes.vlanid"=>"Vlan",
 		"oui"=>"OUI $venlbl",
-		"user"=>$usrlbl,
+		"usrname"=>$usrlbl,
 		"time"=>$timlbl,
 		"cfgNS"=>"$cfglbl"
 		);
@@ -64,57 +61,21 @@ $cols = array(	"tgtNS"=>"$tgtlbl",
 
 <form method="get" action="<?= $self ?>.php" name="track">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50">
-<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
-</th>
-<th valign="top"><?= $cndlbl ?> A<p>
-<select size="1" name="ina">
-<?php
-foreach ($cols as $k => $v){
-	if( !preg_match('/(BL|IG|NS)$/',$k) ){
-		echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
-	}
-}
-?>
-</select>
-<select size="1" name="opa">
-<?php selectbox("oper",$opa) ?>
-</select>
-<p><a href="javascript:show_calendar('track.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?= $sta ?>" size="20">
-</th>
-<th valign="top"><?= $cmblbl ?><p>
-<select size="1" name="cop">
-<?php selectbox("comop",$cop) ?>
-</select>
-</th>
-<th valign="top"><?= $cndlbl ?> B<p>
-<select size="1" name="inb">
-<?php
-foreach ($cols as $k => $v){
-	if( !preg_match('/(BL|IG|NS)$/',$k) ){
-		echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
-	}
-}
-?>
-</select>
-<select size="1" name="opb">
-<?php selectbox("oper",$opb) ?>
-</select>
-<p><a href="javascript:show_calendar('track.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?= $stb ?>" size="20">
-</th>
- 
- <th valign="top"><?= $dislbl ?><p>
-<select multiple name="col[]" size="4">
+<td>
+<?PHP Filters(); ?>
+
+</td>
+<th>
+
+<select multiple name="col[]" size="6">
 <?php
 foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
 }
 ?>
 </select>
-</th>
 
 </th>
 <th width="80">
@@ -127,32 +88,27 @@ foreach ($cols as $k => $v){
 </tr></table></form><p>
 <?php
 }
-$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if($del){
 	$query	= GenQuery('nodetrack','d','','','',array($ina),array($opa),array($sta) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl $ina $opa $sta OK</h5>";}
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl $ina $opa $sta OK</h5>";}
 }
 
-if( isset($_GET['ina']) ){
-ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+if( count($in) ){
+	Condition($in,$op,$st,$co);
 
-?>
-
-<?php
 	TblHead("$modgroup[$self]2",1);
-?>
-</tr>
-<?php
-	$query	= GenQuery('nodetrack','s','nodetrack.device as device,nodetrack.ifname as ifname,value,source,alias,comment,name,nodes.mac as mac,oui,nodes.vlanid as vlanid,user,time',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop), 'JOIN interfaces USING (device,ifname) LEFT JOIN nodes USING (device,ifname)');
-	$res	= @DbQuery($query,$link);
+
+	$query	= GenQuery('nodetrack','s','nodetrack.device as device,nodetrack.ifname as ifname,value,source,alias,comment,name,nodes.mac as mac,oui,nodes.vlanid as vlanid,usrname,time',$ord,$lim,$in,$op,$st,$co, 'JOIN interfaces USING (device,ifname) LEFT JOIN nodes USING (device,ifname)');
+	$res	= DbQuery($query,$link);
 	if($res){
 		$usta = urlencode($sta);
 		$uopa = urlencode($opa);
 		$row = 0;
-		while( ($trk = @DbFetchArray($res)) ){
+		while( ($trk = DbFetchArray($res)) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$cfgst	= "";
+			$cfgst	= '';
 			list($cc,$lc) = Agecol($trk['time'],$trk['time'],$row % 2);
 
 			if($dev and $dev ==  $trk['device'] and $ifn and $ifn == $trk['ifname']){
@@ -162,11 +118,11 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 						$setd = '';
 					}elseif($src == 'comment'){
 						$trk[$src] = preg_replace('/.+DP:(.+),.+/','$1',$trk[$src]);
-						$setd = "value=\"$trk[$src]\",";
+						$setd = "value='$trk[$src]',";
 					}else{
-						$setd = "value=\"$trk[$src]\",";
+						$setd = "value='$trk[$src]',";
 					}
-					if( !@DbQuery("UPDATE nodetrack SET ${setd}source=\"$src\",user=\"$_SESSION[user]\",time=\"$time\" WHERE device = \"$dev\" AND Ifname = \"$ifn\";",$link) ){
+					if( !DbQuery("UPDATE nodetrack SET ${setd}source='$src',usrname='$_SESSION[user]',time=$time WHERE device = '$dev' AND ifname = '$ifn';",$link) ){
 						$cfgst = "<img src=\"img/16/bcnl.png\" title=\"" .DbError($link)."\">";
 					}else{
 						$cfgst = "<img src=\"img/16/bchk.png\" title=\"$srclbl = $src OK\">";
@@ -176,7 +132,7 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 						}
 					}
 				}elseif($val){
-					if( !@DbQuery("UPDATE nodetrack SET value=\"$val\",user=\"$_SESSION[user]\",time=\"$time\" WHERE device = \"$dev\" AND Ifname = \"$ifn\";",$link) ){
+					if( !DbQuery("UPDATE nodetrack SET value='$val',usrname='$_SESSION[user]',time=$time WHERE device = $dev' AND ifname = '$ifn';",$link) ){
 						$cfgst = "<img src=\"img/16/bcnl.png\" title=\"" .DbError($link)."\">";
 					}else{
 						$cfgst = "<img src=\"img/16/bchk.png\" title=\"$vallbl = $val OK\">";
@@ -202,7 +158,7 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 					if($trk['mac']){
 						$img = Nimg("$trk[mac];$trk[oui]");
 ?>
-<a href="Nodes-Status.php?mac=<?= $trk['mac'] ?>&vid=<?= $trk['vlanid'] ?>"><img src="img/oui/<?= $img ?>.png" title=""<?= $trk['mac'] ?> (<?= $trk['oui'] ?>)"></a>
+<a href="Nodes-Status.php?mac=<?= $trk['mac'] ?>&vid=<?= $trk['vlanid'] ?>"><img src="img/oui/<?= $img ?>.png" title="<?= $trk['mac'] ?> (<?= $trk['oui'] ?>)"></a>
 <?php
 					}else{
 						echo "<img src=\"img/p45.png\">";
@@ -215,7 +171,7 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 					if( !isset($_GET['print']) and strpos($_SESSION['group'],$modgroup['Devices-Status']) !== false ){
 						echo "<a href=\"Devices-Status.php?dev=".urlencode($trk[$c])."\"><img src=\"img/16/sys.png\"></a>\n";
 					}
-					echo "<a href=\"?ina=nodetrack.device&opa==&sta=".urlencode($trk[$c])."\">$trk[$c]</a></td>";
+					echo "<a href=\"?in[]=nodetrack.device&op[]==&st[]=".urlencode($trk[$c])."\">$trk[$c]</a></td>";
 				}elseif($c == $trk['source']){
 					echo "<td class=\"blu\">$trk[$c]</td>";
 				}elseif($c == "time"){
@@ -224,13 +180,22 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 ?>
 <td>
 <form method="get">
-<input type="hidden" name="ina" value="<?= $ina ?>">
-<input type="hidden" name="opa" value="<?= $opa ?>">
-<input type="hidden" name="sta" value="<?= $sta ?>">
-<input type="hidden" name="cop" value="<?= $cop ?>">
-<input type="hidden" name="inb" value="<?= $inb ?>">
-<input type="hidden" name="opb" value="<?= $opb ?>">
-<input type="hidden" name="stb" value="<?= $stb ?>">
+<input type="hidden" name="in[]" value="<?= $in[0] ?>">
+<input type="hidden" name="op[]" value="<?= $op[0] ?>">
+<input type="hidden" name="st[]" value="<?= $st[0] ?>">
+<input type="hidden" name="co[]" value="<?= $co[0] ?>">
+<input type="hidden" name="in[]" value="<?= $in[1] ?>">
+<input type="hidden" name="op[]" value="<?= $op[1] ?>">
+<input type="hidden" name="st[]" value="<?= $st[1] ?>">
+<input type="hidden" name="co[]" value="<?= $co[1] ?>">
+<input type="hidden" name="in[]" value="<?= $in[2] ?>">
+<input type="hidden" name="op[]" value="<?= $op[2] ?>">
+<input type="hidden" name="st[]" value="<?= $st[2] ?>">
+<input type="hidden" name="co[]" value="<?= $co[2] ?>">
+<input type="hidden" name="in[]" value="<?= $in[2] ?>">
+<input type="hidden" name="op[]" value="<?= $op[2] ?>">
+<input type="hidden" name="st[]" value="<?= $st[2] ?>">
+<input type="hidden" name="co[]" value="<?= $co[2] ?>">
 
 <input type="hidden" name="dev" value="<?= $trk['device'] ?>">
 <input type="hidden" name="ifn" value="<?= $trk['ifname'] ?>">
@@ -252,9 +217,9 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 			}
 			echo "</tr>\n";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 	}else{
-		print @DbError($link);
+		print DbError($link);
 	}
 ?>
 </table>

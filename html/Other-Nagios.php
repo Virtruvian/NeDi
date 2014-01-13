@@ -1,4 +1,12 @@
 <?php
+# Program: Other-Nagios.php
+# Programmer: ?, updated Robert Smith
+
+	$nagios_cfg_dir = "/tmp/nagios";
+	if (!is_dir("$nagios_cfg_dir")) {
+		mkdir("$nagios_cfg_dir");
+	}
+
 	include("inc/header.php");
 	$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	
@@ -6,13 +14,13 @@
 		if (!( $_POST['device'] == 0 && $_POST['location'] == 0 && $_POST['exttype'] == "a" || $_POST['exptype'] == "r" && $_POST['expression'] == "")):
 			switch ($_POST['exptype']):
 				case "d": 
-					$WHERE1 = "name = '".$_POST['device']."'";
+					$WHERE1 = "device = '".$_POST['device']."'";
 					break;
 				case "l": 
 					$WHERE1 = "location REGEXP BINARY '^".$_POST['location']."'";
 					break;
 				case "r":
-					$WHERE1 = "name REGEXP BINARY '".$_POST['expression']."'";
+					$WHERE1 = "device REGEXP BINARY '".$_POST['expression']."'";
 					break;
 			endswitch;
 			switch ($_POST['limit']):
@@ -32,7 +40,7 @@
 					break;
 			endswitch;
 			($WHERE1 || $WHERE2) ? ($WHERE = " WHERE ".$WHERE1.($WHERE1 && $WHERE2 ? " AND " : NULL).$WHERE2) : $WHERE = "";
-			$query = "SELECT name, ip, description FROM devices".$WHERE;
+			$query = "SELECT device, devip, description FROM devices".$WHERE;
 			$result = DbQuery($query, $link);
 			echo mysql_error();
 			while ($row = DbFetchArray($result)):
@@ -40,42 +48,42 @@
 				switch (TRUE):
 					case preg_match('#[C|c]isco|WS-C|AIR-(AP|BR)|[C|c]at#', $row['description']):
 						if (preg_match('#C[0-9]{4}-K9W7#', $row['description'])):
-							$type['alias'] = $row['name']." (Cisco Access Point)";
+							$type['alias'] = $row['device']." (Cisco Access Point)";
 							$type['group'] = "switches";
 						elseif (preg_match('#Version [2-7]\.#', $row['description'])):
-							$type['alias'] = $row['name']." (Cisco, old firmware)";
+							$type['alias'] = $row['device']." (Cisco, old firmware)";
 							$type['group'] = "switches";
 						else:
-							$type['alias'] = $row['name']." (Cisco)";
+							$type['alias'] = $row['device']." (Cisco)";
 							$type['group'] = "switches_cisco";
 						endif;
 						break;
 					case preg_match('#[P|p]ro[C|c]urve#', $row['description']):
-						$type['alias'] = $row['name']." (HP ProCurve)";
+						$type['alias'] = $row['device']." (HP ProCurve)";
 						$type['group'] = "switches_hp";
 						break;
 					default:
-						$type['alias'] = $row['name']." (Switch)";
+						$type['alias'] = $row['device']." (Switch)";
 						$type['group'] = "switches";
 				endswitch;
 				$replace_array = array("&" => "+");
 				$config = "define host {\n";
 				$config .= "	use			generic-switch\n";
-				$config .= "	host_name		".strtr($row['name'], $replace_array)."\n";
+				$config .= "	host_name		".strtr($row['device'], $replace_array)."\n";
 				$config .= "	alias			".$type['alias']."\n";
-				$config .= "	address			".long2ip($row['ip'])."\n";
+				$config .= "	address			".long2ip($row['devip'])."\n";
 				$config .= "	hostgroups		".$type['group']."\n";
 				$config .= "	notifications_enabled	".($_POST['en'] ? "1" : "0")."\n";
 				$config .= "	}";
 				if ($_POST['tofile']):
-					$file = fopen("/usr/local/nagios/etc/switches/".$row['name'].".cfg", "w");
+					$file = fopen($nagios_cfg_dir."/".$row['device'].".cfg", "w");
 					$bytes_written = fputs($file, $config);
 					fclose($file);
 				endif;
 				if ($_POST['toscreen']):
-					$configScreenOut .= " ##################################".str_repeat("#", strlen($row['name']))."##<br>";
-					$configScreenOut .= " # configuration script for device ".$row['name']." #<br>";
-					$configScreenOut .= " ##################################".str_repeat("#", strlen($row['name']))."##<br><br>";
+					$configScreenOut .= " ##################################".str_repeat("#", strlen($row['device']))."##<br>";
+					$configScreenOut .= " # configuration script for device ".$row['device']." #<br>";
+					$configScreenOut .= " ##################################".str_repeat("#", strlen($row['device']))."##<br><br>";
 					$configScreenOut .= str_replace("\n", "<br>", $config)."<br><br>";
 				endif;
 			endwhile;
@@ -103,9 +111,9 @@
 <input type="radio" checked name="exptype" value="d"> Device: <select name="device">
 	<option value="0" selected>Select a device:</option>
 <?php
-	$result = DbQuery("SELECT name FROM devices ORDER BY UPPER(name)", $link);
+	$result = DbQuery("SELECT device FROM devices ORDER BY UPPER(device)", $link);
 	while ($row = DbFetchArray($result)): ?>
-	<option<?= $row['name'] == $_POST['device'] ? " selected" : NULL ?>><?= $row['name'] ?></option>
+	<option<?= $row['device'] == $_POST['device'] ? " selected" : NULL ?>><?= $row['device'] ?></option>
 <?php
 	endwhile;
 ?>
@@ -140,7 +148,7 @@
 </select><br>
 <br>
 <input type="radio" name="exptype" value="r"<?= $_POST['exptype'] == "r" ? " checked" : NULL ?>> All devices matching following regular expression:
-	<input type="text" name="expression" value="<?= $_POST['expression'] ?>"> <input type="submit" name="regexp" value="Show devices">
+	<input type="text" name="expression" value="<?= $_POST['expression'] ?>"> <input type="submit" name="~" value="Show devices">
 <br>
 <br>
 <input type="radio" name="exptype" value="a"> All devices
@@ -167,8 +175,8 @@
 <?php
 	endif;
 
-	if ($_POST['regexp']):
-		$result = DbQuery("SELECT name, ip FROM devices WHERE name REGEXP BINARY '".$_POST['expression']."'", $link);
+	if ($_POST['~']):
+		$result = DbQuery("SELECT device, devip FROM devices WHERE device REGEXP BINARY '".$_POST['expression']."'", $link);
 ?>
 <div class="textpad devConf">
 <?php
@@ -176,7 +184,7 @@
 <b>Hosts matching regular expression '<?= $_POST['expression'] ?>':</b><br>
 <?php
 			while ($row = DbFetchArray($result)): ?>
-<br><?= $row['name'] ?> (<?= long2ip($row['ip']) ?>)
+<br><?= $row['device'] ?> (<?= long2ip($row['devip']) ?>)
 <?php
 			endwhile;
 		else: ?>

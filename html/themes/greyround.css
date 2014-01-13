@@ -160,7 +160,7 @@ table.full{
 /* Style for logs etc. */
 .textpad{
 	margin: 10px auto;
-	width: 60%;
+	width: 70%;
 	padding: 15px;
 	border-spacing: 1px;
 	border: 5px inset #cccc88;
@@ -173,10 +173,19 @@ table.full{
 /* Font Properties */
 .code{
 	overflow: auto;
+	text-align: left;
 	padding: 11px;
 	font-family: monospace;
 	font: 11px Courier New, monospace;
 	white-space: pre;
+}
+
+/* Scrollable list container */
+.scroller{
+	background-color: #aaaaaa;
+	height:150px;
+	width:100%;
+	overflow: auto;
 }
 
 .red {color: red }

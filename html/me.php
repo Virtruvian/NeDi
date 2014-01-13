@@ -36,11 +36,11 @@ require_once ("inc/libnod.php");
 <body>
 
 <?PHP
-$link  = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query = GenQuery('nodes','s','nodes.*,location,speed,duplex,pvid,dinoct,doutoct,dinerr,douterr,dindis,doutdis,dinbrc','lastseen','1',array('nodip'),array('='),array( ip2long($_SERVER[REMOTE_ADDR]) ),array(),'LEFT JOIN devices USING (device) LEFT JOIN interfaces USING (device,ifname)');
-$res   = @DbQuery($query,$link);
+$res   = DbQuery($query,$link);
 if($res){
-	$n   = @DbFetchRow($res);
+	$n   = DbFetchRow($res);
 	if($n[2]){
 		$img = Nimg($n[3]);
 		$l   = explode($locsep,$n[23]);
@@ -54,9 +54,9 @@ if($res){
 	}else{
 		echo "<h4>$_SERVER[REMOTE_ADDR] was not found</h4>";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 ?>
 

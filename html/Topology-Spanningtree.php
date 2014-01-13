@@ -27,11 +27,11 @@ Device
 <select size="1" name="dev" onchange="document.stree.vln.value=''">
 <option value=""><?= $sellbl ?> ->
 <?php
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('devices','s','device,devip,services,snmpversion,readcomm,location,contact,cliport,icon','device','',array('services & 2','snmpversion'),array('=','!='),array('2','0'),array('AND') );
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
-	while( ($d = @DbFetchRow($res)) ){
+	while( ($d = DbFetchRow($res)) ){
 		echo "<option value=\"$d[0]\" ";
 		if($dev == $d[0]){
 			echo "selected";
@@ -47,15 +47,15 @@ if($res){
 		}
 		echo " >$d[0]\n";
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 echo "</select>";
 if ($dev) {
 	$query	= GenQuery('vlans','s','*','vlanid','',array('device'),array('='),array($dev) );
-	$res	= @DbQuery($query,$link);
-	$nvln	= @DbNumRows($res);
+	$res	= DbQuery($query,$link);
+	$nvln	= DbNumRows($res);
 
 	if($res and $nvln){
 ?>
@@ -64,12 +64,12 @@ if ($dev) {
 <option value="">---
 <?php
 
-		while( ($v = @DbFetchRow($res)) ){
+		while( ($v = DbFetchRow($res)) ){
 			echo "<OPTION VALUE=\"$v[1]\" ";
 			if($vln == $v[1]){echo "selected";}
 			echo " >$v[1] $v[2]\n";
 		}
-		@DbFreeResult($res);
+		DbFreeResult($res);
 		echo "</select>";
 	}
 }
@@ -92,8 +92,8 @@ if ($dev) {
 <?php
 if ($dev) {
 	$query	= GenQuery('interfaces','s','ifidx,ifname,iftype,speed,alias,comment,ifdesc,ifstat','','',array('device'),array('='),array($dev) );
-	$res	= @DbQuery($query,$link);
-	while( ($i = @DbFetchRow($res)) ){
+	$res	= DbQuery($query,$link);
+	while( ($i = DbFetchRow($res)) ){
 		$ifn[$i[0]] = $i[1];
 		$ift[$i[0]] = $i[2];
 		$ifs[$i[0]] = $i[3];
@@ -106,7 +106,7 @@ if ($dev) {
 			$ifi[$i[0]] = "$i[6] - <i>$i[4]</i>";
 		}
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 if('0.0.0.0' == $ip){
 	echo "<h4>$nonlbl IP!</h4>";
 	die;
@@ -180,7 +180,7 @@ if('0.0.0.0' == $ip){
 <tr><th class="<?= $modgroup[$self] ?>2">Designated Root</th><td class="txta"><?= $droot ?>
 <?php if($brmac != $rootif){
 ?>
-<a href="Devices-Interfaces.php?ina=ifmac&opa=%3D&sta=<?= $rootif ?>"><img src="img/16/port.png" title="IF <?= $lstlbl ?>"></a>
+<a href="Devices-Interfaces.php?in[]=ifmac&op[]=%3D&st[]=<?= $rootif ?>"><img src="img/16/port.png" title="IF <?= $lstlbl ?>"></a>
 <?php
 }else{
 ?>
@@ -197,7 +197,7 @@ if('0.0.0.0' == $ip){
 <h2>Interfaces <?= $lstlbl ?></h2>
 <table class="content"><tr class="<?= $modgroup[$self] ?>2">
 <th colspan="3" valign="bottom"><img src="img/16/swit.png"><br>IF <?= $stalbl ?></th>
-<th valign="bottom"><img src="img/16/dcal.png"><br>Cost</th>
+<th valign="bottom"><img src="img/16/dcal.png"><br><?= $coslbl ?></th>
 <th valign="bottom"><img src="img/spd.png" title="<?= $spdlbl ?>"><br><?= substr($spdlbl,0,5) ?></th>
 <th valign="bottom"><img src="img/16/find.png"><br><?= $deslbl ?></th>
 <?php if($shg) { ?><th><img src="img/16/grph.png"><br>IF <?= $gralbl ?></th><?}?>
@@ -214,9 +214,6 @@ if('0.0.0.0' == $ip){
 	}
 	foreach( Walk($ip,$rv,$rc,"1.3.6.1.2.1.17.2.15.1.3") as $ix => $val){
 		$pstate[substr(strrchr($ix, "."), 1 )] = $val;
-	}
-	foreach( Walk($ip,$rv,$rc,"1.3.6.1.2.1.17.2.15.1.4") as $ix => $val){
-		$stpen[substr(strrchr($ix, "."), 1 )] = $val;
 	}
 	foreach( Walk($ip,$rv,$rc,"1.3.6.1.2.1.17.2.15.1.5") as $ix => $val){
 		$pcost[substr(strrchr($ix, "."), 1 )] = $val;
@@ -250,13 +247,11 @@ if('0.0.0.0' == $ip){
 		elseif($pstate[$po] == 5 or $pstate[$po] == "forwarding"){$pst = "<img src=\"img/16/brgt.png\" title=\"STP forwarding\">";}
 		else{$pst = "<img src=\"img/16/bcls.png\" title=\"broken\">";}
 
-		if($stpen[$po] == 1 or $stpen[$po] == "enabled"){$sten = "<img src=\"img/16/bchk.png\" title=\"STP enabled\">";}
-		else{$sten = "<img src=\"img/16/bdis.png\" title=\"STP disabled\">";}
 		$ui = urlencode($ifn[$ix]);
 		list($ifimg,$iftit) = Iftype($ift[$ix]);
 		TblRow($bg);
 		echo "<th class=\"$ifstat\" width=\"20\"><img src=\"img/$ifimg\" title=\"$ix - $iftit\"></th>\n";
-		echo "<td class=\"$bi\" >$pst $sten $rpimg</td><td>\n";
+		echo "<th class=\"$bi\"  width=\"20\">$pst $sten $rpimg</th><td>\n";
 		if($ifstat == "good" and $guiauth != 'none' and !isset($_GET['print'])){
 			echo "<div style=\"font-weight: bold\" class=\"blu\" title=\"$rltlbl $trflbl\" onclick=\"window.open('inc/rt-popup.php?d=$debug&ip=$ip&v=$rv&c=$rc&i=$ix&t=$ud&in=$ui','$ip_$ix','scrollbars=0,menubar=0,resizable=1,width=600,height=400')\">$ifn[$ix]</div></td>\n";
 		}else{

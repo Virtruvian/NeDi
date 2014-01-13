@@ -16,7 +16,8 @@ $ugr = isset($_GET['ugr']) ? $_GET['ugr'] : "";
 $ucm = isset($_GET['ucm']) ? $_GET['ucm'] : "";
 $cmt = isset($_GET['cmt']) ? $_GET['cmt'] : "";
 $grp = isset($_GET['grp']) ? $_GET['grp'] : "";
-$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 10;
+$end = isset($_GET['end']) ? 'checked':'';
+$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 20;
 $off = (isset($_GET['off']) and !isset($_GET['sho']))? $_GET['off'] : 0;
 
 $nof = $off;
@@ -26,19 +27,19 @@ if( isset($_GET['p']) ){
 }elseif( isset($_GET['n']) ){
 	$nof = $off + $lim;
 }
-$dlim = ($lim)?"$nof,$lim":0;
+$dlim = ($lim)?"$lim OFFSET $nof":'';
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if($dli){
 	$query	= GenQuery('incidents','d','','','',array('id'),array('='),array($dli) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Incident $dli $dellbl OK</h5>";}
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Incident $dli $dellbl OK</h5>";}
 }elseif($ugr){
-	$query	= GenQuery('incidents','u','id','=',$ugr,array('user','time','grp'),array(),array($_GET['usr'],$_GET['tme'],$grp) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> Incident $ugr $updlbl OK</h5>";}
+	$query	= GenQuery('incidents','u','id','=',$ugr,array('usrname','time','grp'),array(),array($_GET['usr'],$_GET['tme'],$grp) );
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> Incident $ugr $updlbl OK</h5>";}
 	$grp = "";
 }elseif($ucm){
-	$query	= GenQuery('incidents','u','id','=',$ucm,array('user','comment'),array(),array($_GET['usr'],$cmt) );
-	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> Incident $ucm $updlbl OK</h5>";}
+	$query	= GenQuery('incidents','u','id','=',$ucm,array('usrname','comment'),array(),array($_GET['usr'],$cmt) );
+	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> Incident $ucm $updlbl OK</h5>";}
 }
 ?>
 <h1>Monitoring Incidents</h1>
@@ -49,7 +50,8 @@ if($dli){
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
-<?= $clalbl ?> <select name="grp">
+<img src="img/16/abc.png" title="<?= $clalbl ?>"> 
+<select name="grp">
 <option value=""><?= $fltlbl ?> ->
 <?php
 foreach (array_keys($igrp) as $ig){
@@ -59,8 +61,14 @@ foreach (array_keys($igrp) as $ig){
 }
 ?>
 </select>
+
+<img src="img/16/bbrt.png" title="<?= $fltlbl ?> <?= $stco['100'] ?> (<?= $nonlbl ?> <?= $endlbl ?>)"> 
+<input type="checkbox" name="end" <?= $end ?> onchange="this.form.submit();">
+
 </th>
-<th><?= $limlbl ?> 
+<th>
+	
+<img src="img/16/form.png" title="<?= $limlbl ?>"> 
 <select name="lim">
 <?php selectbox("limit",$lim) ?>
 </select>
@@ -86,20 +94,23 @@ foreach (array_keys($igrp) as $ig){
 </tr>
 
 <?php
+$flte = ($end)?'AND':'';
 if(strpos($grp,'0') ){
-	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('grp'),array('regexp'),array("^".substr($grp,0,1)."."));
+	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('grp','endinc'),array('~','='),array("^".substr($grp,0,1).".",0),array($flte));
 }elseif($grp){
-	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('grp'),array('='),array($grp));
+	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('grp','endinc'),array('=','='),array($grp,0),array($flte));
 }elseif($id){
 	$query	= GenQuery('incidents','s','*','','',array('id'),array('='),array($id));
+}elseif($flte){
+	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('endinc'),array('='),array(0));
 }else{
 	$query	= GenQuery('incidents','s','*','id desc',$dlim);
 }
-$res	= @DbQuery($query,$link);
+$res	= DbQuery($query,$link);
 if($res){
 	$nin = 0;
 	$row = 0;
-	while( ($i = @DbFetchRow($res)) ){
+	while( ($i = DbFetchRow($res)) ){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
 		$fs = date("d.M H:i",$i[4]);
@@ -113,8 +124,8 @@ if($res){
 		$ud = urlencode($i[2]);
 		list($fc,$lc) = Agecol($i[4],$i[5],$row % 2);
 		TblRow($bg);
-		echo "<th>$i[0]</th><th class=\"".$mbak[$i[1]]."\"><img src=\"img/16/" . $mico[$i[1]] . ".png\" title=\"" . $mlvl[$i[1]] . "\"></th>\n";
-		echo "<td><a href=\"Monitoring-Setup.php?ina=name&opa=%3D&sta=$ud\"><b>$i[2]</b></td><td>$i[3] deps</td>\n";
+		echo "<th class=\"$bi\"><a href=\"?id=$i[0]\">$i[0]</a></th><th class=\"".$mbak[$i[1]]."\" width=\"40\"><img src=\"img/16/" . $mico[$i[1]] . ".png\" title=\"" . $mlvl[$i[1]] . "\"></th>\n";
+		echo "<td><a href=\"Monitoring-Setup.php?in[]=name&op[]=%3D&st[]=$ud\">$i[2]</a></td><td>$i[3] deps</td>\n";
 		echo "<td bgcolor=#$fc>$fs</td><td bgcolor=#$fc>$ls</td><th>$i[6]</th><td>$at</td><td>";
 
 		if( isset($_GET['print']) ){
@@ -154,9 +165,9 @@ if($res){
 		$nin++;
 		if($nin == $lim){break;}
 	}
-	@DbFreeResult($res);
+	DbFreeResult($res);
 }else{
-	print @DbError($link);
+	print DbError($link);
 }
 	?>
 </table>
