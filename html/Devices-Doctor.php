@@ -1,8 +1,11 @@
-<?
+<?php
 # Program: Devices-Doctor
 # Programmer: Remo Rickli
 
-$printable = 1;
+$printable = 0;
+$exportxls = 0;
+
+if( isset($_GET['dev']) ){$printable = 1;}
 
 $getif = 0;
 $setif = 0;
@@ -35,27 +38,27 @@ $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 ?>
 <h1>Device Doctor</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="POST" action="<?=$self?>.php" enctype="multipart/form-data">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="POST" action="<?= $self ?>.php" enctype="multipart/form-data">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>Cfg #<br>
-<input type="checkbox" name="sln" <?=($sln)?"checked":""?> ></td>
+<input type="checkbox" name="sln" <?= ($sln)?"checked":"" ?> ></td>
 
-<th>Bcast <?=$mlvl[150]?><br>
-<input type="text" name="bcw" value="<?=$bcw?>" size="2"> %</th>
+<th>Bcast <?= $mlvl[150] ?><br>
+<input type="text" name="bcw" value="<?= $bcw ?>" size="2"> %</th>
 
 <th>
 Tech file<br>
 <input name="tef" type="file" size="30" accept="text/*">
 </td>
 
-<th><?=$cfglbl?><br>
+<th><?= $cfglbl ?><br>
 <select size="1" name="dev" onchange="this.form.submit();">
-<option value=""><?=$sellbl?> ->
-<?
-$query	= GenQuery('configs','s','device','device','','','','','','LEFT JOIN devices USING (device)');
+<option value=""><?= $sellbl ?> ->
+<?php
+$query	= GenQuery('configs','s','device','device','',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
 $res	= @DbQuery($query,$link);
 if($res){
 	while( ($c = @DbFetchRow($res)) ){
@@ -74,73 +77,65 @@ if($res){
 </select>
 </th>
 
-<th width="80"><input type="submit" value="<?=$sholbl?>"></th>
+<th width="80"><input type="submit" value="<?= $sholbl ?>"></th>
 </table>
 </form>
 
-<?
+<?php
 }
 if($dev){
-	$query	= GenQuery('configs','s','config','','',array('device'),array('='),array($dev),'','LEFT JOIN devices USING (device)');
+	$query	= GenQuery('configs','s','config,devos','','',array('device'),array('='),array($dev),array(),'LEFT JOIN devices USING (device)');
 	$res	= @DbQuery($query,$link);
 	if (@DbNumRows($res) != 1) {
 		echo "<h4>$dev: $nonlbl</h4>";
 		@DbFreeResult($res);
 		die;
 	}
-	$cfg	= @DbFetchRow($res);
+	$cfg = @DbFetchRow($res);
 	@DbFreeResult($res);
 	if($debug){	echo "<div class=\"textpad code warn\">$cfg[0]</div>\n";}
 ?>
 <h2>
-<a href="Devices-Config.php?shc=<?=urlencode($dev)?>"><img src="img/16/conf.png" title="<?=$cfglbl?>"></a>
-<?=$dev?> <?=$cfglbl?> <?=$sumlbl?></h2>
-<?
+<a href="Devices-Config.php?shc=<?= urlencode($dev) ?>"><img src="img/16/conf.png" title="<?= $cfglbl ?>"></a>
+<?= $dev ?> <?= $cfglbl ?> <?= $sumlbl ?></h2>
+<?php
 	foreach ( explode("\n",$cfg[0]) as $l ){
-		if( preg_match("/^interface /",$l) ){
+		if( preg_match("/^interface /",$l) or $cfg[1] == "ProCurve" and preg_match("/^vlan /",$l) ){
 			$i = preg_replace("/^interface\s*(.*)$/",'$1',$l);
 			$if[] = $i;
-		}
-		if( preg_match("/^\s+ip address/",$l) ){
+		}elseif( preg_match("/^(!|#|exit)/",$l) ){
+			$i = "";
+		}elseif($i and preg_match("/^\s+ip address/",$l) ){
 			$ipadd[$i] = preg_replace("/^\s+ip address\s+(.*)$/",'$1',$l);
-		}
-		if( preg_match("/^\s+(description|name)/",$l) ){
+		}elseif($i and preg_match("/^\s+(description|name)/",$l) ){
 			$ifdsc[$i] = preg_replace("/^\s+(description|name)\s+(.*)$/",'$2',$l);
-		}
-		if( preg_match("/^\s+ip helper-address/",$l) ){
+		}elseif($i and preg_match("/^\s+ip helper-address/",$l) ){
 			$iphlp[$i] = preg_replace("/^\s+ip helper-address\s+(.*)$/",'$1',$l);
-		}
-		if( preg_match("/^\s+(switchport mode|port link-type)/",$l) ){
+		}elseif($i and preg_match("/^\s+(switchport mode|port link-type)/",$l) ){
 			$ifmod[$i] = preg_replace("/^\s+(switchport mode|port link-type)\s+(.*)$/",'$2',$l);
-		}
-		if( preg_match("/vrf forwarding|vpn-instance/",$l) ){
+		}elseif($i and preg_match("/vrf forwarding|vpn-instance/",$l) ){
 			$l = preg_replace("/.*(vrf forwarding|vpn-instance)\s*(.*)$/",'$2',$l);
 			$ifvpn[$i] = "<a href=\"Topology-Networks.php?ina=vrfname&opa==&sta=".urlencode($l)."\">$l</a>";
 		}
 		
-		
 		if( preg_match("/^logging|info-center loghost/",$l) ){
 			$log[] = $l;
-		}
-		if( preg_match("/^\s?snmp-(agent|server)/",$l) ){
+		}elseif( preg_match("/^\s?snmp-(agent|server)/",$l) ){
 			$snmp[] = $l;
-		}
-		if( preg_match("/^service|server enable/",$l) ){
+		}elseif( preg_match("/^service|server enable/",$l) ){
 			$srv[] = $l;
-		}
-		if( preg_match("/^ip http server/",$l) ){
+		}elseif( preg_match("/^ip http server/",$l) ){
 			$srv[] = $l;
-		}
-		if( preg_match("/^(no )?spanning-tree|^ stp/",$l) ){
+		}elseif( preg_match("/^(no )?spanning-tree|^ stp/",$l) ){
 			$stp[] = $l;
 		}
 	}
 	echo "<h3>Interfaces</h3>";
 	echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\"><td>$namlbl</td><td>IP $adrlbl</td><td>Alias</td><td>$typlbl</td><td>IP Helper</td><td>VRF</td></tr>";
 	foreach($if as $i){
-		$row++;
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
-		echo "<tr class=\"$bg\" onmouseover=\"this.className='$bi'\" onmouseout=\"this.className='$bg'\">";
+		$row++;
+		TblRow($bg);
 		echo "<td>$i</td><td class=\"blu\">$ipadd[$i]</td><td class=\"gry\">$ifdsc[$i]</td>";
 		echo "<td class=\"grn\">$ifmod[$i]</td><td class=\"gry\">$ifhlp[$i]</td><td>$ifvpn[$i]</td></tr>";
 	}

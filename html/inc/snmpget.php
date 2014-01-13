@@ -1,4 +1,4 @@
-<?php
+<?php 
 //===============================
 // SNMPget utility.
 //===============================
@@ -21,13 +21,13 @@ $debug  = isset($_GET['debug']) ? $_GET['debug'] : "";
 ?>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html;charset=<?=$charset?>">
-<link href="../themes/<?=$_SESSION['theme']?>.css" type="text/css" rel="stylesheet">
+<meta http-equiv="Content-Type" content="text/html;charset=<?= $charset ?>">
+<link href="../themes/<?= $_SESSION['theme'] ?>.css" type="text/css" rel="stylesheet">
 </head>
 <body>
-<h1><?=$_GET['ip']?> <?=$_GET['c']?> v<?=$_GET['v']?></h1>
+<h1><?= $_GET['ip'] ?> <?= $_GET['c'] ?> v<?= $_GET['v'] ?></h1>
 <div class="net1">
-<h2><img src="../img/32/brgt.png" hspace="10"> <?=$_GET['oid']?></h2>
+<h2><img src="../img/32/brgt.png" hspace="10"> <?= $_GET['oid'] ?></h2>
 </div>
 <div class="net2 code">
 <?

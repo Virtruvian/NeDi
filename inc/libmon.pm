@@ -29,15 +29,17 @@ B<Returns> -
 =cut
 sub InitMon{
 
-	%srcna = ();
-	%mon   = ();
-	%usr   = ();
-	my $nt = 0;
+	%main::srcna= ();
+	%main::mon  = ();
+	%main::usr  = ();
 
+	my $nt = 0;
 	$nt  = &db::ReadMon("dev");
 	$nt += &db::ReadMon("node");
 
-	&db::ReadUser("groups & 8 AND (phone != \"\" OR email != \"\")");
+	&db::ReadUser("groups & 8 AND (phone != \"\" OR email != \"\")");			# Read users for Mail alerts
+	
+	return $nt;
 }
 
 
@@ -70,7 +72,7 @@ sub GetUptime{
 
 	if($err){
 		&misc::Prt("ERR :$err\n");
-		return 0,0;
+		return -1,0;
 	}else{
 		my $lat = int(1000 * (Time::HiRes::time - $start) );
 		&misc::Prt("SNMP:Latency=${lat}ms Uptime=$r->{$uptimeO}s\n");
@@ -113,52 +115,12 @@ sub PingService{
 
 	if($ret){
 		my $lat = int($latency * 1000 + 1);
-		&misc::Prt("Latency=${lat}ms\n");
+		&misc::Prt("latency=${lat}ms\n");
 		return $lat;
 	}else{
 		&misc::Prt("fail!\n");
-		return 0;
+		return -1;
 	}
-}
-
-=head2 FUNCTION AlertQ()
-
-Queues alerts for delivery within a single SMS or Mail
-
-B<Options> mailmsg, smsmsg, service, device
-
-B<Globals> main::usr
-
-B<Returns> # of mails queued
-=cut
-sub AlertQ{
-	
-	my ($mail, $sms, $srv, $dev) = @_;
-
-	return (0,0) if !$srv;										# No service no queue...
-
-	my $nm = 0;
-	foreach my $u ( keys %main::usr ){
-
-		my $viewdev = ($main::usr{$u}{vd})?&db::Select('devices','device',"device=\"$dev\" AND $main::usr{$u}{vd}"):$dev;
-		if(defined $viewdev and $viewdev eq $dev){						# Send mail only to those who can see the associated device
-
-			if($main::usr{$u}{ml} and $mail and $srv & 1){
-				$main::usr{$u}{mail} .= $mail;
-				&misc::Prt("MLQ :$u+ $mail");
-				$nm++;
-			}
-
-			if($main::usr{$u}{ph} and $sms and $srv & 2){
-				$main::usr{$u}{sms} .= $sms;
-				&misc::Prt("SMSQ:$u+ $sms");
-			}
-
-		}
-
-	}
-
-	return $nm;
 }
 
 =head2 FUNCTION AlertFlush()
@@ -188,7 +150,8 @@ sub AlertFlush{
 			&misc::Prt("ERR :Connecting to SMTP server $misc::smtpserver\n");
 		}else{
 			foreach my $u ( keys %main::usr ){
-				if($main::usr{$u}{mail}){
+				if(@{$main::usr{$u}{mail}}){
+					$sub = @{$main::usr{$u}{mail}}." ${sub}s" if @{$main::usr{$u}{mail}} > 1;
 					&misc::Prt("MAIL:$u/$main::usr{$u}{ml}\n");
 					$smtp->mail($misc::mailfrom) || &ErrSMTP($smtp,"From");
 					$smtp->to($main::usr{$u}{ml}) || &ErrSMTP($smtp,"To");
@@ -200,9 +163,13 @@ sub AlertFlush{
 					$smtp->datasend("\n");
 					$smtp->datasend("Hello $u\n");
 					$smtp->datasend("\n");
-					foreach my $l (split /\\n/,$main::usr{$u}{mail}){
-						$smtp->datasend("$l\n");
+					my $ln = 0;
+					foreach my $l (@{$main::usr{$u}{mail}}){
+						$ln++;
+						$smtp->datasend("$ln) $l\n");
 					}
+					$smtp->datasend("\n");
+
 					if($misc::mailfoot){
 						foreach my $l (split /\\n/,$misc::mailfoot){
 							$smtp->datasend("$l\n");
@@ -210,7 +177,7 @@ sub AlertFlush{
 					}
 					$smtp->dataend() || &ErrSMTP($smtp,"End");
 
-					$main::usr{$u}{mail} = "";
+					@{$main::usr{$u}{mail}} = ();
 					$nm++;
 				}
 			}
@@ -221,23 +188,41 @@ sub AlertFlush{
 	foreach my $u ( keys %main::usr ){
 
 		if($main::usr{$u}{sms}){
-			&misc::Prt("SMS :$u/$main::usr{$u}{ph}\n");
-			#1. Spooling to smsd:
-			$ns++ if open(SMS, ">/var/spool/sms/outgoing/$u");			# User is filename to avoid flooding
-			print SMS "To:$main::usr{$u}{ph}\n\n$main::usr{$u}{sms}\n";
-			close(SMS);
+			if (!-e "/var/spool/sms/checked/$u"){						# Skip if previous SMS hasn't been sent, to avoid smsd crash! TODO use timestamp instead?
+				&misc::Prt("SMS :$u/$main::usr{$u}{ph}\n");
+				#1. Spooling to smsd:
+				$ns++ if open(SMS, ">/var/spool/sms/outgoing/$u");			# User is filename to avoid flooding
+				print SMS "To:$main::usr{$u}{ph}\n\n$main::usr{$u}{sms}\n";
+				close(SMS);
 
-			#2. Calling gammu server:
-			#$ns++ if !system "gammu-smsd-inject TEXT $main::usr{$u}{ph} -text \"$main::usr{$u}{sms}\" >/dev/null";
+				#2. Calling gammu server:
+				#$ns++ if !system "gammu-smsd-inject TEXT $main::usr{$u}{ph} -text \"$main::usr{$u}{sms}\" >/dev/null";
 
-			#3.My lab setup:
-			#$ns++ if !system "/usr/local/bin/svdrpsend.pl -d argus MESG \"$main::usr{$u}{sms}\" >/dev/null";
+				#3.SMTP based SMS gateway:
+				#$smtp->mail($misc::mailfrom) || &ErrSMTP($smtp,"From");
+				#$smtp->to("sms.gw.net") || &ErrSMTP($smtp,"To");
+				#$smtp->data();
+				#$smtp->datasend("To:Mobile#\n");
+				#$smtp->datasend("From: $misc::mailfrom\n");
+				#$smtp->datasend("Subject: $sub\n");
+				##$smtp->datasend("MIME-Version: 1.0\n"); 			# Some need it, Exchange doesn't?
+				#$smtp->datasend("\n");
+				#$smtp->datasend("$main::usr{$u}{sms}\n");
+				#$smtp->dataend() || &ErrSMTP($smtp,"End");
+				#$main::usr{$u}{sms} = "";
 
-			$main::usr{$u}{sms} = "";
+				#4.My lab setup:
+				#$ns++ if !system "/usr/local/bin/svdrpsend.pl -d argus MESG \"$main::usr{$u}{sms}\" >/dev/null";
+
+
+				$main::usr{$u}{sms} = "";
+			}else{
+				&misc::Prt("ERR :SMS skipped since previous message for $u is still being sent!\n");
+			}
 		}
 	}
 
-	&misc::Prt("ALRT:$nm mails from $mq events and $ns SMS sent\n");
+	&misc::Prt("ALRT:$nm mails and $ns SMS sent with $mq events\n");
 	
 	return $nm;
 }
@@ -261,6 +246,124 @@ sub ErrSMTP{
 	my $c = $smtp->code;
 	chomp $m;
 	&misc::Prt("ERR :$c, $m\n");
+}
+
+
+=head2 FUNCTION Elevate()
+
+Returns elevation according to the notify string in nedi.conf, but if
+min-elevation is higher this is returned instead.
+
+Bits
+
+1 = Create event
+
+2 = Send mail
+
+4 = Send sms
+
+B<Options> mode,min-elevation
+
+B<Globals> -
+
+B<Returns> elevation
+=cut
+
+sub Elevate{
+
+	my ($mode,$min) = @_;
+	$min = 0 if !defined $min;
+	my $elevate = 0;
+	if($mode =~ /^[0-9]+$/i){
+			$elevate = $mode;
+	}elsif($mode =~ /^[A-Z]$/){									# Only uppercase mode can elevate above 1
+		if($misc::notify =~ /$mode/){
+			$elevate = 3;
+		}elsif($misc::notify =~ /$mode/i){
+			$elevate = 1;
+		} 
+	}elsif($mode =~ /^[a-z]$/){									# Lowercase mode can still elevate to 1
+		if($misc::notify =~ /$mode/i){
+			$elevate = 1;
+		}
+	}
+
+	return ($elevate > $min)?$elevate:$min;
+}
+
+=head2 FUNCTION Event()
+
+Print a message, insert event and queue alert if desired. If the mode argument is a letter, 
+the event is elevated according to the notify string in nedi.conf. If mode is a number the
+event is elevated accordingly. The monitoring settings for the target determine
+final elevation and processing.
+
+B<Options> mode,level,class,notify,target,device,message,sms
+
+B<Globals> -
+
+B<Returns> # of queued mails
+=cut
+
+sub Event{
+
+	my ($mode,$level,$class,$tgt,$dev,$msg,$sms) = @_;
+	
+	my $elevate = &Elevate($mode,0);
+
+	&misc::Prt("EVNT:CL=$class EL=$elevate TGT=$tgt MSG=$msg\n");
+
+	if($class ne "moni" and exists $main::mon{$tgt}){						# Using alert settings for moni events and never elevate unmonitored sources
+		if($main::mon{$tgt}{ed} and $msg =~ /$main::mon{$tgt}{ed}/){
+			$elevate = 0;
+			&misc::Prt("EINF:$msg contains /$main::mon{$tgt}{ed}/, discarding\n");
+		}
+		if($main::mon{$tgt}{el} and $level >= $main::mon{$tgt}{el}){
+			$elevate = 3;
+			&misc::Prt("ELVL:Forward level limit $main::mon{$tgt}{el} <= $level, forwarding\n");
+		}elsif($main::mon{$tgt}{el}%2 and $level > ($main::mon{$tgt}{el}-2) ){			# Deduct 2 and use > instead >=
+			$elevate = 0;
+			&misc::Prt("ELVL:Discard level limit ".($main::mon{$tgt}{el}-1)." >= event level $level, discarding\n");
+		}
+		if($main::mon{$tgt}{ef} and $msg =~ /$main::mon{$tgt}{ef}/){
+			$elevate = 3;
+			&misc::Prt("EINF:$msg contains /$main::mon{$tgt}{ef}/, forwarding\n");
+		}
+	}
+
+	if($elevate){
+		my $info = ((length $msg > 250)?substr($msg,0,250)."...":$msg);
+		$info =~ s/[\r\n]/, /g;
+		chomp $info;
+		&db::Insert('events','level,time,source,info,class,device',"\"$level\",\"$main::now\",\"$tgt\",\"$info\",\"$class\",\"$dev\"");
+	}
+
+	if($elevate > 1){
+		my $nm = 0;
+		my $ns = 0;
+		foreach my $u ( keys %main::usr ){
+
+			my $viewdev = ($main::usr{$u}{vd})?&db::Select('devices','device',"device=\"$dev\" AND $main::usr{$u}{vd}"):$dev;
+			if(defined $viewdev and $viewdev eq $dev){					# Send mail only to those who can see the associated device
+
+				if($main::usr{$u}{ml} and $msg and $elevate & 2){			# Usr has email, there's a msg and elevation bit 2 is set -> queue mail
+					push (@{$main::usr{$u}{mail}}, "$tgt\t$msg");
+					&misc::Prt("MLQ :$u $tgt $msg\n");
+					$nm++;
+				}
+
+				if($main::usr{$u}{ph} and $sms and $elevate & 4){			# Usr has phone, there's a short message and elevation bit 4 is set -> queue sms
+					$main::usr{$u}{sms} .= "$tgt:$sms ";
+					&misc::Prt("SMSQ:$u $tgt:$sms\n");
+					$ns++;
+				}
+			}
+		}
+		&misc::Prt("EFWD:$nm Mail and $ns SMS queued\n");
+		return $nm;
+	}
+
+	return 0;
 }
 
 1;

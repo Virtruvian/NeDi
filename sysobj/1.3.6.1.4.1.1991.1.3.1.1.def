@@ -6,7 +6,9 @@ Type	FESX424
 Sysdes	
 OS	Ironware
 Icon	w2rn
+Size	1
 Bridge	normal
+ArpND	
 Dispro	
 Serial	1.3.6.1.4.1.1991.1.1.1.1.2.0
 Bimage	1.3.6.1.4.1.1991.1.1.2.1.49.0
@@ -14,11 +16,12 @@ Bimage	1.3.6.1.4.1.1991.1.1.2.1.49.0
 # Vlan Specific
 VLnams	1.3.6.1.4.1.1991.1.1.3.2.1.1.25
 VLnamX	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3

@@ -1,4 +1,4 @@
-<?
+<?php
 # Program: Nodes-Create.php
 # Programmer: Remo Rickli
 
@@ -30,16 +30,16 @@ $iso = isset($_GET['iso']) ? $_GET['iso'] : "";
 ?>
 <h1>Nodes Create</h1>
 
-<form method="get" action="<?=$self?>.php" name="mkvm">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" action="<?= $self ?>.php" name="mkvm">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <td valign="top">
 
-<h3><?=$dstlbl?></h3>
+<h3><?= $dstlbl ?></h3>
 <img src="img/16/dev.png" title="Hypervisor">
 <select size="1" name="dev" onchange="this.form.submit();">
-<option value=""><?=$sellbl?> ->
-<?
+<option value=""><?= $sellbl ?> ->
+<?php
 $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('devices','s','device,devip,cliport,login','','',array('devos','cliport'),array('=','>'),array('ESX','0'), array('AND') );
 $res	= @DbQuery($query,$link);
@@ -63,10 +63,10 @@ if($res){
 ?>
 </select>
 <p>
-<img src="img/16/cubs.png" title="<?=$srclbl?> VM">
+<img src="img/16/cubs.png" title="<?= $srclbl ?> VM">
 <select size="1" name="svm" onchange="this.form.submit();">
-<option value=""><?=$coplbl?> ->
-<?
+<option value=""><?= $coplbl ?> ->
+<?php
 if($dev){
 	$query	= GenQuery('modules','s','*','','',array('device'),array('='),array($dev) );
 	$res	= @DbQuery($query,$link);
@@ -92,60 +92,60 @@ if($dev){
 }
 ?>
 </select>
-<input type="checkbox" name="chw" <?=$chw?> title="<?=$coplbl?> #CPU & Mem" onchange="this.form.submit();">
+<input type="checkbox" name="chw" <?= $chw ?> title="<?= $coplbl ?> #CPU & Mem" onchange="this.form.submit();">
 <p>
-<img src="img/16/cubs.png" title="<?=$dstlbl?> VM">
-<input type="text" name="nvm" size="20" value="<?=$nvm?>" >
+<img src="img/16/trgt.png" title="<?= $tgtlbl ?> VM">
+<input type="text" name="nvm" size="20" value="<?= $nvm ?>" >
 
 </td>
 <td valign="top">
 
 <h3>Node HW</h3>
 <img src="img/16/cpu.png" title="# CPUs">
-<input type="number" min="1" max="8" name="cpu" value="<?=$cpu?>" size="3">
+<input type="number" min="1" max="8" name="cpu" value="<?= $cpu ?>" size="3">
 
 <p>
-<img src="img/16/mem.png" title="Mem <?=$sizlbl?>">
-<input type="number" min="256" max="65535" step="256" name="mem" value="<?=$mem?>" size="6">
+<img src="img/16/mem.png" title="Mem <?= $sizlbl ?>">
+<input type="number" min="256" max="65535" step="256" name="mem" value="<?= $mem ?>" size="6">
 <p>
-<img src="img/16/db.png" title="HDD <?=$sizlbl?>">
+<img src="img/16/db.png" title="HDD <?= $sizlbl ?>">
 <select size="1" name="hdd">
 <option value="1">1Gb
-<option value="4"<?=( ($hdd == "4")?" selected":"")?>>4Gb
-<option value="40"<?=( ($hdd == "40")?" selected":"")?>>40Gb
-<option value="80"<?=( ($hdd == "80")?" selected":"")?>>80Gb
-<option value="160"<?=( ($hdd == "160")?" selected":"")?>>160Gb
-<option value="250"<?=( ($hdd == "250")?" selected":"")?>>250Gb
-<option value="500"<?=( ($hdd == "500")?" selected":"")?>>500Gb
+<option value="4"<?= ( ($hdd == "4")?" selected":"") ?>>4Gb
+<option value="40"<?= ( ($hdd == "40")?" selected":"") ?>>40Gb
+<option value="80"<?= ( ($hdd == "80")?" selected":"") ?>>80Gb
+<option value="160"<?= ( ($hdd == "160")?" selected":"") ?>>160Gb
+<option value="250"<?= ( ($hdd == "250")?" selected":"") ?>>250Gb
+<option value="500"<?= ( ($hdd == "500")?" selected":"") ?>>500Gb
 </select>
 
 </td>
 <td valign="top">
 
-<h3><?=$srvlbl?></h3>
-<img src="img/16/cog.png" title="Boot <?=$latlbl?>">
-<input type="number" min="0" max="8" name="dly" value="<?=$dly?>" size="3">
+<h3><?= $srvlbl ?></h3>
+<img src="img/16/cog.png" title="Boot <?= $latlbl ?>">
+<input type="number" min="0" max="8" name="dly" value="<?= $dly ?>" size="3">
 <p>
 <img src="img/16/node.png" title="VNC Port/Password">
-<input type="number" min="0" max="99" name="vnc" value="<?=$vnc?>" size="3">
-<input type="text" name="vnp" size="12" value="<?=$vnp?>" >
-<input type="checkbox" name="sxg" <?=$sxg?> title="SXGA Screen">
+<input type="number" min="0" max="99" name="vnc" value="<?= $vnc ?>" size="3">
+<input type="text" name="vnp" size="12" value="<?= $vnp ?>" >
+<input type="checkbox" name="sxg" <?= $sxg ?> title="SXGA Screen">
 <p>
-<img src="img/16/cbox.png" title="ISO <?=$fillbl?>">
-<input type="text" name="iso" size="32" value="<?=$iso?>" >
+<img src="img/16/cbox.png" title="ISO <?= $fillbl ?>">
+<input type="text" name="iso" size="32" value="<?= $iso ?>" >
 
 </td>
 <th width="80">
 
-<input type="submit" name="sho" value="<?=$sholbl?>">
+<input type="submit" name="sho" value="<?= $sholbl ?>">
 <p>
-<input type="submit" name="add" value="<?=$addlbl?>">
+<input type="submit" name="add" value="<?= $addlbl ?>">
 
 </th>
 </tr></table></form>
 
 <p>
-<?
+<?php
 if($dev and $sna){
 	$parr = explode('/', $svx);
 	array_pop($parr);
@@ -221,6 +221,8 @@ if($dev and $sna){
 		}else{
 			$lvl = 100;
 			$msg = "User $_SESSION[user] created VM $nvm successfully";
+			
+			echo "<p>$dev $stalbl: <a href=\"Devices-Status.php?dev=$dev\"><img src=\"img/16/dev.png\" title=\"Devices-Status\"></a>";
 		}
 		$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),'',array($lvl,time(),$dev,$msg,'usrd',$dev) );
 		if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}

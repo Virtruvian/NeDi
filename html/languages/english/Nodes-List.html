@@ -11,14 +11,18 @@
 Nodes List
 </div>
 <h2>Introduction</h2>
-List nodes, displaying database properties, graphs and available services.
+List nodes, corresponding interfaces, their graphs and available services for example.
 <p>
 <h4>Important!</h4>
-If you list available services, make sure you don't match too many nodes as it will take a long time to scan the open ports.
+If you list available services, make sure you don't match too many nodes as it 
+will take a long time to scan the open ports. Besides you create a lot of network
+traffic this way!
 <p>
-Conditions involving criterias (e.g. location or contact) from the devices or interfaces (e.g. IF alias) table, cannot be used to delete nodes due to query restrictions!
+Conditions involving criterias (e.g. location or contact) from the devices or interfaces (e.g. IF alias) 
+table, cannot be used to delete nodes due to query restrictions!
+
 <h2>Usage</h2>
-List device Vlans by pressing the "Show" button. Use the "Display" select box to add or remove the columns you wish to see (Ctrl + Mouseclick).
+List nodes by pressing the "Show" button. Use the "Columns" select box to add or remove the columns (hold down CTRL for multiple) you wish to see.
 
 The following filter methods are available to narrow down your search:
 <ol>
@@ -27,14 +31,22 @@ The following filter methods are available to narrow down your search:
 <li>Alternatively you can compare 2 columns directly by using a combination with "col" (To find nodes where firstseen equals lastseen for example).
 </ol>
 
-<h2>Details</h2>
+General Notes:
 <ul>
 <li>Knowledge about regexp is very helpful when working with this module!
-<li>You can save searches in Bookmarks.
-<li>The resulting SQL query can be shown using the cog icon, if logged in as admin. It links to Other-Export to generate CSV files or the likes.
-<li>Clicking on the NIC vendor icon takes you to Nodes-Status where you get all node details at a glance.
+<li>You can save searches in Bookmarks or use the notepad icon in the header to add it to the admin message.
+<li>The last map can be included via paint icon and a limit (default 200) can be chosen as well. This can enhance any printouts which can be generated
+with the print icon in the header. Click on the rows you may wish to highlight (double-click to remove) in the printout itself.
+<li>You can export the list as XLS by clicking on the the list icon in the header.
+<li>The resulting SQL query can be shown using the debug icon in the header (admin only). It links to Other-Export to generate CSV files or the likes.
+<li>The triangles in the top row allow for the list to be sorted accordingly. They won't be available on special columns containing realtime data for example.
 </ul>
 
-<div id="footer">Remo Rickli 2011</div>
-</body>
+<h2>Details</h2>
+<ul>
+<li>Clicking on the NIC vendor icon takes you to Nodes-Status where you get all node details at a glance.
+<li>You can add the displayed nodes to monitoring (testing with a TCP ping by default).
+</ul>
 
+<div id="footer">Remo Rickli 2013</div>
+</body>

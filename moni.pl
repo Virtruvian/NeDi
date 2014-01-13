@@ -8,11 +8,11 @@ Monitoring daemon for polling uptime and checking connectivity of
 services (not threaded for now, thus consider bigger pause, if you
 monitor many targets). Targets will be skipped if it can't be
 contacted (missing IP, doesn't exist in nodes or devices etc.) or if
- dependency is down.
+a dependency is down.
 
 =head1 SYNOPSIS
 
-moni.pl [-D -v -t<level>]
+moni.pl [-D -v -d<level>]
 
 =head2 DESCRIPTION
 
@@ -47,7 +47,7 @@ use Net::SNMP qw(ticks_to_time);
 
 use vars qw($now $warn $p $mq %opt %dev %usr %mon %depdevs %depdown %depcount %msgq);
 
-getopts('Dt:v',\%opt) || &HELP_MESSAGE;
+getopts('Dd:v',\%opt) || &HELP_MESSAGE;
 
 BEGIN{													# To avoid perl thinking var is used once
 	$now = time;
@@ -61,17 +61,18 @@ BEGIN{													# To avoid perl thinking var is used once
 	require "$p/inc/libsnmp.pm";
 }
 
-if ($opt{'t'}) {											# Creates incidents and bails
+if ($opt{'d'}){												# Creates incidents and bails
 	my $ntgt = &mon::InitMon();
 	my @tgts = keys %mon;
-	my $t  = pop @tgts;
-	my $msg = "moni.pl test using first monitored device: $t";
-	&db::Insert('events','level,time,source,info,class,device',"\"$opt{t}\",\"$now\",\"$mon{$t}{dv}\",\"$msg\",\"moni\",\"$mon{$t}{dv}\"");
-	&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{t}\",\"$t\",\"0\",\"$now\",\"0\",\"\",\"0\",\"1\",\"\",\"$mon{$t}{dv}\"");
-	&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{t}\",\"$t\",\"0\",\"$now\",\"".($now+$misc::pause)."\",\"\",\"0\",\"1\",\"\",\"$mon{$t}{dv}\"");
-
-	my ($mq,$sq) = &mon::AlertQ("$msg\n","$msg ",$mon{$t}{al},$mon{$t}{dv});
-	my $af = &mon::AlertFlush("moni.pl Test",$mq,$sq);
+	if( scalar @tgts ){
+		my $t  = pop @tgts;
+		&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{d}\",\"$t\",\"0\",\"$now\",\"0\",\"\",\"0\",\"1\",\"\",\"$mon{$t}{dv}\"");
+		&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{d}\",\"$t\",\"0\",\"".($now+1)."\",\"".($now+$misc::pause)."\",\"\",\"0\",\"1\",\"\",\"$mon{$t}{dv}\"");
+		my $mq = &mon::Event(7,$opt{d},'moni',$t,$mon{$t}{dv},"test alert (device $mon{$t}{dv})","SMS test");
+		my $af = &mon::AlertFlush("Monitoring Test",$mq);
+	}else{
+		&misc::Prt("ERR :Need at least one target in monitoring!\n");
+	}
 	exit;
 }elsif ($opt{'D'}) {											# Daemonize or...
 	&misc::Daemonize;
@@ -79,7 +80,7 @@ if ($opt{'t'}) {											# Creates incidents and bails
 	select(STDOUT); $| = 1;										# ...disable buffering.
 }
 
-while(1) {# TODO support dependency aware threading for better scalability!
+while(1){# TODO support dependency aware threading for better scalability!
 
 	$now = time;
 	$mq  = 0;
@@ -107,88 +108,104 @@ while(1) {# TODO support dependency aware threading for better scalability!
 		&misc::Prt(" Deps=$mon{$d}{dc}\n");
 	}
 
-	&misc::Prt("\nChecking $ntgt targets in total, Pause ${misc::pause}s ---------------\n");
-	foreach my $d (sort { $mon{$b}{dc} <=> $mon{$a}{dc} } keys %mon){				# Check sorted by # of dependants to optimize checks
-		my $latency = my $uptime = 0;
-		&misc::Prt(sprintf ("\nTRGT:%-12.12s Deps=%-4.4s Chk=%-6.6s\n", $d, $mon{$d}{dc}, $mon{$d}{te}) );
-
-		if($mon{$d}{ds} ne 'up'){								# Check if dep is up
-			&misc::Prt("SKIP:Deps=$mon{$d}{ds}($mon{$d}{dc})\n");
-		}elsif($mon{$d}{te}){
-			if($mon{$d}{ip} eq '0.0.0.0'){							# Check is set and target exists
-				&db::Insert('events','level,time,source,info,class,device',"'150',\"$now\",\"$d\",\"No IP found to check $mon{$d}{te}! Not in devices or nodes?\",\"moni\",\"$mon{$d}{dv}\"") if $mon{$d}{ds} eq 'up';
-				&misc::Prt("SKIP:No IP found! Not in devices or nodes?\n");
-			}else{
-				if($mon{$d}{te} eq "ping"){
-					$latency = &mon::PingService($mon{$d}{'ip'});
-				}elsif($mon{$d}{te} =~ /^(http|https|telnet|ssh|mysql|cifs)$/){
-					$latency = &mon::PingService($mon{$d}{'ip'},'tcp',$mon{$d}{te});
-				}elsif($mon{$d}{te} eq "uptime"){
-					($latency, $uptime) = &mon::GetUptime($mon{$d}{'ip'},$mon{$d}{'rv'},$mon{$d}{'rc'});
-					if($latency and $mon{$d}{up} > $uptime and $mon{$d}{up} < 4294900000){	# Ignore alledged reboot, due to 32bit overflow
-						my $wup = ticks_to_time($mon{$d}{up});
-						&misc::Prt("BOOT:Rebooted! Was up for $wup\n");
-						&db::Insert('events','level,time,source,info,class,device',"'150',\"$now\",\"$d\",\"Rebooted (was up for $wup)!\",\"moni\",\"$mon{$d}{dv}\"");
-						$mq += &mon::AlertQ("- $d rebooted! Was up for $wup\n","$d rebooted! ",$mon{$d}{al},$mon{$d}{dv});
-					}
-				}
-				if($latency){
-					my $ok = ++$mon{$d}{ok};
-					my $latmax = ($latency > $mon{$d}{lm})?$latency:$mon{$d}{lm};		# Update max if higher than previous
-					my $latavg = sprintf("%.0f",( ($ok - 1) * $mon{$d}{la} + $latency)/$ok);# This is where school stuff comes in handy (sprintf to round)
-
-					&db::Update('monitoring',"status=\"0\",lastok=\"$now\",uptime=\"$uptime\",ok=\"$ok\",latency=\"$latency\",latmax=\"$latmax\",latavg=\"$latavg\"","name =\"$d\"");
-					&misc::Prt("UP  :");
-					&MarkDep($d,'up',0);							# Mark everytime to avoid errors when moni is restarted
-					if($mon{$d}{st} >= $misc::chka){
-						my $msg = "$d recovered".(($mon{$d}{dc})?", affects $mon{$d}{dc} more targets!":"");
-						my $dnt  = sprintf("was down for %.1fh", $mon{$d}{st}*$misc::pause/3600);
-						&misc::Prt("$msg\n");
-						&db::Insert('events','level,time,source,info,class,device',"'50',\"$now\",\"$d\",\"$msg, $dnt\",\"moni\",\"$mon{$d}{dv}\"");
-						&db::Update('incidents',"end=\"$now\"","name =\"$d\" AND end=0");
-						$mq += &mon::AlertQ("- $msg, latency ${latency}ms, $dnt\n","$msg ",$mon{$d}{al},$mon{$d}{dv});
-					}else{
-						&misc::Prt("Last status=$mon{$d}{st}\n");
-					}
-					&db::Insert('events','level,time,source,info,class,device',"'150',\"$now\",\"$d\",\"Latency ${latency}ms exceeds threshold of ${misc::latw}ms\",\"moni\",\"$mon{$d}{dv}\"") if($latency > $misc::latw);
-				}else{
-					my $st = ++$mon{$d}{st};
-					my $lo = ++$mon{$d}{lo};
-					&db::Update('monitoring',"status=\"$st\",lost=\"$lo\"","name =\"$d\"");
-					&misc::Prt("DOWN:");
-					&MarkDep($d,'down',0);							# Mark everytime to avoid errors when moni is restarted
-					if($mon{$d}{st} == $misc::chka){
-						my $lvl = 200;
-						my $downmsg = "$d is down";
-						if($mon{$d}{dc}){
-							$lvl = 250;
-							$downmsg .= ", affects $mon{$d}{dc} more targets!";
-						}
-						&misc::Prt("$downmsg\n");
-						&db::Insert('events','level,time,source,info,class,device',"\"$lvl\",\"$now\",\"$d\",\"$downmsg\",\"moni\",\"$mon{$d}{dv}\"");
-						&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$lvl\",\"$d\",\"$mon{$d}{dc}\",\"$now\",\"0\",\"\",\"0\",\"1\",\"\",\"$mon{$d}{dv}\"");
-						$mq += &mon::AlertQ("- $downmsg!\n","$downmsg ",$mon{$d}{al},$mon{$d}{dv});
-					}elsif( $mon{$d}{st} == 1 or !($mon{$d}{st} % 10) ){			# Notify 1st and every 10th time
-						&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$now\",\"$d\",\"Is unreachable for $mon{$d}{st} time".(($mon{$d}{st} > 1)?"s":"")."\",\"moni\",\"$mon{$d}{dv}\"");
-					}
-
-				}
-				select(undef, undef, undef, 0.01);						# Wait a msec... (TODO until threading is implemented)
-			}
+	&misc::Prt("\nTesting $ntgt targets in total, Pause ${misc::pause}s ---------------\n");
+	foreach my $t (sort { $mon{$b}{dc} <=> $mon{$a}{dc} } keys %mon){				# Check sorted by # of dependants (check most important ones first)
+		if($mon{$t}{ty} eq 'NeDi Agent'){
+			&misc::Prt("SKIP:NeDi Agent $t is handled by master.pl!\n");
 		}else{
-			&misc::Prt("SKIP:No check configured...\n");
+			TestTgt($t);
+			select(undef, undef, undef, 0.01);						# Wait a msec... (TODO until threading is implemented)
 		}
 	}
-	&mon::AlertFlush("NeDi Monitoring Alert",$mq);
+
+	&mon::AlertFlush("Monitoring Alert",$mq);
 	&misc::Prt("===============================================================================\n");
 	my $took = time - $now;
 	if ($misc::pause > $took){
 		my $sl = $misc::pause - $took;
 		&misc::Prt("Took ${took}s, sleeping ${sl}s\n\n");
-		sleep($sl);
+		my $slept = sleep($sl);
+		&misc::Prt("Slept ${slept}s, why am I doing this?\n\n") if $slept > $sl;
 	}else{
 		&db::Insert('events','level,time,source,info,class',"\"150\",\"$now\",\"NeDi\",\"Monitoring took ${took}s, increase pause!\",\"moni\"");
-		&misc::Prt("No time to pause!\n\n");
+		&misc::Prt("Took ${took}s, no time to pause!\n\n");
+	}
+}
+
+=head2 FUNCTION TestTgt()
+
+Perform actual test on target
+
+B<Options> target name
+
+B<Globals> -
+
+B<Returns> -
+
+=cut
+sub TestTgt{
+
+	my ($d) = @_;
+	my $latency = my $uptime = 0;
+
+	&misc::Prt(sprintf ("\nTRGT:%-12.12s Deps=%-4.4s Test=%-6.6s\n", $d, $mon{$d}{dc}, $mon{$d}{te}) );
+	if($mon{$d}{ds} ne 'up'){									# Check if dep is up
+		&misc::Prt("SKIP:Deps=$mon{$d}{ds}($mon{$d}{dc})\n");
+		return;
+	}elsif($mon{$d}{te} eq "ping"){
+		$latency = &mon::PingService($mon{$d}{'ip'});
+	}elsif($mon{$d}{te} =~ /^(http|https|telnet|ssh|mysql|cifs)$/){
+		$latency = &mon::PingService($mon{$d}{'ip'},'tcp',$mon{$d}{te});
+	}elsif($mon{$d}{te} eq "uptime"){
+		($latency, $uptime) = &mon::GetUptime($mon{$d}{'ip'},$mon{$d}{'rv'},$mon{$d}{'rc'});
+		if($latency != -1 and $mon{$d}{up} > $uptime and $mon{$d}{up} < 4294900000){		# Ignore alleged reboot, due to 32bit overflow
+			my $wup = ticks_to_time($mon{$d}{up});
+			$mq += &mon::Event($mon{$d}{al},150,'moni',$d,$mon{$d}{dv},"rebooted! Was up for $wup","rebooted!");
+		}
+	}else{
+		&misc::Prt("SKIP:No test configured...\n");
+		return;
+	}
+	if($latency != -1){
+		my $ok = ++$mon{$d}{ok};
+		my $latmax = ($latency > $mon{$d}{lm})?$latency:$mon{$d}{lm};				# Update max if higher than previous
+		my $latavg = sprintf("%.0f",( ($ok - 1) * $mon{$d}{la} + $latency)/$ok);		# This is where school stuff comes in handy (sprintf to round)
+
+		&db::Update('monitoring',"status=\"0\",lastok=\"$now\",uptime=\"$uptime\",ok=\"$ok\",latency=\"$latency\",latmax=\"$latmax\",latavg=\"$latavg\"","name =\"$d\"");
+		&misc::Prt("UP  :");
+		&MarkDep($d,'up',0);									# Mark everytime to avoid errors when moni is restarted
+		if($mon{$d}{st} >= $misc::chka){
+			my $msg = "recovered".(($mon{$d}{dc})?", affects $mon{$d}{dc} more targets!":"");
+			my $dnt  = sprintf("was down for %.1fh", $mon{$d}{st}*$misc::pause/3600);
+			&db::Update('incidents',"end=\"$now\"","name =\"$d\" AND end=0");
+			$mq += &mon::Event($mon{$d}{al},50,'moni',$d,$mon{$d}{dv},"$msg, $dnt",$msg);
+		}else{
+			&misc::Prt("Last status=$mon{$d}{st}\n");
+		}
+		&db::Insert('events','level,time,source,info,class,device',"'150',\"$now\",\"$d\",\"Latency ${latency}ms exceeds threshold of ${misc::latw}ms\",\"moni\",\"$mon{$d}{dv}\"") if($latency > $misc::latw);
+	}else{
+		my $st = ++$mon{$d}{st};
+		my $lo = ++$mon{$d}{lo};
+		&db::Update('monitoring',"status=\"$st\",lost=\"$lo\"","name =\"$d\"");
+		&MarkDep($d,'down',0);									# Mark everytime to avoid errors when moni is restarted
+
+		my $lvl = 200;
+		my $msg = "is down";
+		if($mon{$d}{dc}){
+			$lvl = 250;
+			$msg .= ", affects $mon{$d}{dc} more targets!";
+		}
+		if($mon{$d}{st} == $misc::chka){
+			&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$lvl\",\"$d\",\"$mon{$d}{dc}\",\"$now\",\"0\",\"\",\"0\",\"1\",\"\",\"$mon{$d}{dv}\"");
+			$mq += &mon::Event($mon{$d}{al},$lvl,'moni',$d,$mon{$d}{dv},$msg,$msg);
+			&misc::Prt("DOWN:For $misc::chka times, generated $mq alerts\n");
+		}elsif( !($mon{$d}{st} % 100) and $mon{$d}{al} & 128){					# Keep nagging every 100th time, if enabled
+			$msg .= " (unreachable for $mon{$d}{st} times)";
+			$mq += &mon::Event($mon{$d}{al},$lvl,'moni',$d,$mon{$d}{dv},$msg);
+			&misc::Prt("DOWN:$mon{$d}{al} For $mon{$d}{st} times, generated $mq nags\n");
+		}else{
+			&misc::Prt("DOWN:$mon{$d}{al} For $mon{$d}{st} times\n");
+		}
 	}
 }
 
@@ -203,7 +220,7 @@ B<Globals> main::depdown
 B<Returns> -
 
 =cut
-sub MarkDep {
+sub MarkDep{
 
 	my ($d, $stat, $iter) = @_;
 
@@ -231,7 +248,7 @@ B<Globals> -
 B<Returns> # of dependants
 
 =cut
-sub CountDep {
+sub CountDep{
 
 	my ($d, $iter) = @_;
 
@@ -269,9 +286,9 @@ sub HELP_MESSAGE{
 	print "usage: moni.pl <Option(s)>\n\n";
 	print "---------------------------------------------------------------------------\n";
 	print "Options:\n";
-	print "-t <lev>	test with level (creates mail (on msgxxx match), SMS, message and incident)\n";
+	print "-d <lev>	debug with level (creates mail (on msgxxx match), SMS, message and incident)\n";
 	print "-v	verbose output\n";
 	print "-D	daemonize moni.pl\n\n";
-	print "(C) 2001-2011 Remo Rickli (and contributors)\n\n";
-	die;
+	print "(C) 2001-2013 Remo Rickli (and contributors)\n\n";
+	exit;
 }

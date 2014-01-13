@@ -1,10 +1,12 @@
-<?
+<?php
 # Program: Devices-Config.php
 # Programmer: Remo Rickli
 
 error_reporting(E_ALL ^ E_NOTICE);
 
 $printable = 1;
+$exportxls = 0;
+if( isset($_GET['shl']) ){$exportxls = 1;}
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
@@ -20,18 +22,20 @@ $dco = isset($_GET['dco']) ? $_GET['dco'] : "";
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 
 $shl = isset($_GET['shl']) ? $_GET['shl'] : "";
-$str = isset($_GET['str']) ? $_GET['str'] : "";
+$sta = isset($_GET['sta']) ? $_GET['sta'] : "";
 $ld = isset($_GET['ld']) ? $_GET['ld'] : "";
 
 $dd = isset($_GET['dd']) ? $_GET['dd'] : "";
 $cm = isset($_GET['cm']) ? $_GET['cm'] : "";
 
-$lim = isset($_GET['lim']) ? $_GET['lim'] : 100;
-$lid = isset($_GET['lid']) ? $_GET['lid'] : 10;
+$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 100;
+$lid = isset($_GET['lid']) ? preg_replace('/\D+/','',$_GET['lid']) : 10;
 
 $cfgup = array();
 
 $cols = array(	"device"=>"Device",
+		"devip"=>"IP $adrlbl",
+		"devos"=>"OS",
 		"config"=>"$cfglbl",
 		"length(config)"=>"$sizlbl",
 		"changes"=>"$chglbl",
@@ -40,38 +44,43 @@ $cols = array(	"device"=>"Device",
 		);
 
 $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-$query	= GenQuery('configs','s','device,time','device','','','','','','LEFT JOIN devices USING (device)');
+$query	= GenQuery('configs','s','device,time,icon','device','',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
 $res	= @DbQuery($query,$link);
 if($res){
 	while( ($c = @DbFetchRow($res)) ){
 		$cfgup[$c[0]] = $c[1];
+		$devic[$c[0]] = $c[2];
 	}
 	@DbFreeResult($res);
 }else{
 	print @DbError($link);
 }
 ?>
-<h1>Devices <?=$cfglbl?></h1>
+<h1>Devices <?= $cfglbl ?></h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 
-<form method="get" action="<?=$self?>.php" name="cfg">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
-<th valign="top"><h3><?=$lstlbl?></h3>
+<form method="get" action="<?= $self ?>.php" name="cfg">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+
+</th>
+<th valign="top">
+
+<?= $lstlbl ?><p>
 <select size="1" name="shl">
-<option value="n"><?=$cfglbl?> regexp
-<option value="i" <?=($shl == "i")?"selected":""?>><?=$cfglbl?> !regexp
-<option value="c" <?=($shl == "c")?"selected":""?>><?=$chglbl?> regexp
-<option value="t" <?=($shl == "t")?"selected":""?>>Device <?=$typlbl?> regexp
-<option value="d" <?=($shl == "d")?"selected":""?>>device =
+<option value="n"><?= substr($cfglbl,0,6) ?> regexp
+<option value="i" <?= ($shl == "i")?" selected":"" ?>><?= substr($cfglbl,0,6) ?> !regexp
+<option value="c" <?= ($shl == "c")?" selected":"" ?>><?=  substr($chglbl,0,6) ?> regexp
+<option value="t" <?= ($shl == "t")?" selected":"" ?>><?= $typlbl ?> regexp
+<option value="d" <?= ($shl == "d")?" selected":"" ?>>device =
 </select>
 
-<input type="text" name="str" value="<?=$str?>" size="20">
+<input type="text" name="sta" value="<?= $sta ?>" size="20">
 
-<select size="1" name="ld" onchange="document.cfg.str.value=document.cfg.ld.options[document.cfg.ld.selectedIndex].value">
-<option value=""><?=$sellbl?> ->
-<?
+<select size="1" name="ld" onchange="document.cfg.sta.value=document.cfg.ld.options[document.cfg.ld.selectedIndex].value">
+<option value=""><?= $sellbl ?> ->
+<?php
 foreach (array_keys($cfgup) as $d){
 	echo "<option value=\"$d\"". (($ld == $d)?" selected":"").">$d\n";
 }
@@ -79,47 +88,49 @@ foreach (array_keys($cfgup) as $d){
 </select>
 
 </th>
-<th valign="top"><h3><?=$cmplbl?></h3>
+<th valign="top">
 
+<?= $cmplbl ?><p>
 <select size="1" name="dd">
-<option value="">- <?=$typlbl?> -
-<?
+<option value="">- <?= $typlbl ?> -
+<?php
 foreach (array_keys($cfgup) as $d){
 	echo "<option value=\"$d\"". (($dd == $d)?" selected":"").">$d\n";
 }
 ?>
 </select>
 <select size="1" name="cm" title="Verbose show access vlans and random numbers too">
-<option value=""><?=$sellbl?> ->
-<option value="v" <?=($cm == "v")?"selected":""?>>Side by Side
-<option value="i" <?=($cm == "i")?"selected":""?>>IOS <?=$optlbl?>
-<option value="p" <?=($cm == "p")?"selected":""?>>Procurve <?=$optlbl?>
-<option value="f" <?=($cm == "f")?"selected":""?>>Ironware <?=$optlbl?>
+<option value=""><?= $sellbl ?> ->
+<option value="v" <?= ($cm == "v")?" selected":"" ?>>Side by Side
+<option value="i" <?= ($cm == "i")?" selected":"" ?>>IOS <?= $optlbl ?>
+<option value="p" <?= ($cm == "p")?" selected":"" ?>>Procurve <?= $optlbl ?>
+<option value="f" <?= ($cm == "f")?" selected":"" ?>>Ironware <?= $optlbl ?>
 </select>
 
 </th>
-<th valign="top"><h3><?=$limlbl?></h3>
+<th valign="top">
 
-<select size="1" name="lim" title="<?=$cfglbl?>/<?=$chglbl?>">
-<? selectbox("limit",$lim);?>
+<?= $limlbl ?><p>
+<select size="1" name="lim" title="<?= $cfglbl ?>/<?= $chglbl ?>">
+<?php selectbox("limit",$lim) ?>
 </select>
 
 <select size="1" name="lid" title="Devices">
-<? selectbox("limit",$lid);?>
+<?php selectbox("limit",$lid) ?>
 </select>
 
 </th>
 <th width="80">
 
-<input type="submit" value="<?=$sholbl?>" name="gen">
+<input type="submit" value="<?= $sholbl ?>" name="gen">
 </th>
 </table></form><p>
-<?
+<?php
 }
 
 if ($dch){
 	if($isadmin){
-		$query	= GenQuery('configs','u',"device=\"$dch\"",'','',array('changes'),'',array('') );
+		$query	= GenQuery('configs','u','device','=',$dch,array('changes'),array(),array('') );
 		if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> $dch $dellbl $chglbl $lstlbl OK</h5>";}
 	}else{
 		echo $nokmsg;
@@ -140,23 +151,8 @@ setTimeout("history.go(-2)",2000);
 }
 
 if ($gen){
-	$query	= GenQuery('devices','s','device,devip,type,devos,icon,cliport');
-	$res	= @DbQuery($query,$link);
-	if($res){
-		while( ($d = @DbFetchRow($res)) ){
-			$devip[$d[0]] = long2ip($d[1]);
-			$devty[$d[0]] = $d[2];
-			$devos[$d[0]] = $d[3];
-			$devic[$d[0]] = $d[4];
-			$devpo[$d[0]] = $d[5];
-		}
-		@DbFreeResult($res);
-	}else{
-		print @DbError($link);
-	}
-
 	if(($dd or $cm)){
-		$query	= GenQuery('configs','s','configs.*','','',array('device'),array('='),array($ld),'','LEFT JOIN devices USING (device)');
+		$query	= GenQuery('configs','s','configs.*','','',array('device'),array('='),array($ld),array(),'LEFT JOIN devices USING (device)');
 		$res	= @DbQuery($query,$link);
 		$srcok	= @DbNumRows($res);
 		if ($srcok == 1) {
@@ -180,12 +176,12 @@ if ($gen){
 		foreach ($cmpdev as $ddv){
 			$ud	= rawurlencode($ddv);
 ?>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th><a href="Devices-Status.php?dev=<?=$ud?>"><img src="img/dev/<?=$devic[$ddv]?>.png"></a><br><?=($ld == $ddv)?"$ddv ($srclbl)":"$ddv"?></th>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<th><a href="Devices-Status.php?dev=<?= $ud ?>"><img src="img/dev/<?= $devic[$ddv] ?>.png"></a><br><?= ($ld == $ddv)?"$ddv ($srclbl)":"$ddv" ?></th>
 <tr class="txta"><td valign="top">
-<a href="?shc=<?=$ud?>"><img src="img/16/note.png" title="<?=$sholbl?>"></a>
+<a href="?shc=<?= $ud ?>"><img src="img/16/note.png" title="<?= $sholbl ?>"></a>
 <div class="code">
-<?
+<?php
 			if($ld == $ddv){
 				$lnr = 0;
 				foreach ( explode("\n",$rdvc[1]) as $cl ){
@@ -220,21 +216,10 @@ if ($gen){
 			$opa	= '=';
 			$ina	='device';
 		}
-?>
-<h2><?=$lstlbl?></h2>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<?
+		ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+		TblHead("$modgroup[$self]2",2);
 
-		ColHead('device',80);
-		?><th>IP</th><?
-		?><th>OS</th><?
-		ColHead('config');
-		ColHead('length(config)');
-		ColHead('changes');
-		ColHead('length(changes)');
-		ColHead('time');
-
-		$query	= GenQuery('configs','s','configs.*,length(config),length(changes)',$ord,$lid,array($ina),array($opa),array($str),'','LEFT JOIN devices USING (device)');
+		$query	= GenQuery('configs','s','configs.*,length(config),length(changes),inet_ntoa(devip),type,devos,icon,cliport',$ord,$lid,array($ina),array($opa),array($sta),array(),'LEFT JOIN devices USING (device)');
 
 		$res	= @DbQuery($query,$link);
 		if($res){
@@ -243,21 +228,18 @@ if ($gen){
 			while( ($con = @DbFetchRow($res)) ){
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
-				$img = $devic[$con[0]];
-				$typ = $devty[$con[0]];
 				$ud  = rawurlencode($con[0]);
-				echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\"><th class=\"$bi\">\n";
-				echo "<a href=Devices-Status.php?dev=$ud><img src=\"img/dev/$img.png\" title=\"$typ\"></a><br>$con[0]</td>\n";
-				echo "<td>".Devcli($devip[$con[0]],$devpo[$con[0]])."</td><td>".$devos[$con[0]]."</td>\n";
-				echo "<td><a href=$_SERVER[PHP_SELF]?shc=$ud><div class=\"code\">\n";
-				echo substr(implode("\n",preg_grep("/$str/i",explode("\n",$con[1]) ) ),0,$lim);
-				echo "</div></a></td><td>$con[4]</td>\n";
-				$cu  = date($_SESSION['date'],$con[3]);
+				TblRow($bg);
+				TblCell($con[0],"","class=\"$bi\" width=\"50px\"","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/$con[9].png\" title=\"$$con[7]\"></a><br>","th-img");
+				TblCell( Devcli($con[6],$con[10]) );
+				TblCell($con[8]);
+				TblCell( substr(implode("\n",preg_grep("/$sta/i",explode("\n",$con[1]) ) ),0,$lim),"?shc=$ud","class=\"code\"" );
+				TblCell($con[4]);
+				TblCell( substr(implode("\n",preg_grep("/$sta/i",explode("\n",$con[2]) ) ),0,$lim),"","class=\"code\"" );
+				TblCell($con[5]);
 				list($u1c,$u2c) = Agecol($con[3],$con[3],$row % 2);
-				echo "<td><div class=\"code\">";
-				echo substr(implode("\n",preg_grep("/$str/i",explode("\n",$con[2]) ) ),0,$lim);
-				echo "</div></td><td>$con[5]</td><td bgcolor=\"#$u1c\" nowrap>$cu</td>\n";
-				echo "</td></tr>\n";
+				TblCell( date($_SESSION['date'],$con[3]),"","bgcolor=\"#$u1c\" nowrap" );
+				echo "</tr>\n";
 			}
 			@DbFreeResult($res);
 		}else{
@@ -266,15 +248,15 @@ if ($gen){
 	?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Devices</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Devices</td></tr>
 </table>
-	<?
+	<?php
 	}
 
 }elseif($shc){
 	echo "<h2>$shc</h2>\n";
 
-	$query	= GenQuery('configs','s','*','','',array('device'),array('='),array($shc),'','LEFT JOIN devices USING (device)');
+	$query	= GenQuery('configs','s','configs.*,inet_ntoa(devip),cliport','','',array('device'),array('='),array($shc),array(),'LEFT JOIN devices USING (device)');
 	$res	= @DbQuery($query,$link);
 	$cfgok	= @DbNumRows($res);
 	if ($cfgok == 1) {
@@ -290,21 +272,22 @@ if ($gen){
 	$charr	= preg_replace("/(^\s*[0-9]{1,3}\-.*)$/","<span class='drd'>$1</span>",$charr);
 	$charr	= preg_replace("/(^\s*[0-9]{1,3}\+.*)$/","<span class='olv'>$1</span>",$charr);
 ?>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th><img src="img/32/note.png"><br><?=$cfglbl?> (<?=date($_SESSION['date'],$cfg[3])?>)</th>
-<th><img src="img/32/news.png"><br><?=$chglbl?></th></tr>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<th><img src="img/32/note.png"><br><?= $cfglbl ?> (<?= date($_SESSION['date'],$cfg[3]) ?>)</th>
+<th><img src="img/32/news.png"><br><?= $chglbl ?></th></tr>
 <tr class="txta"><td valign="top">
-<a href="?shc=<?=$ucfg?>&sln=<?=!$sln?>&smo=<?=$smo?>"><img src="img/16/form.png" title="Line #"></a>
-<a href="?shc=<?=$ucfg?>&sln=<?=$sln?>&smo=<?=!$smo?>"><img src="img/16/say.png" title="motd"></a>
-<a href="System-Export.php?action=export&exptbl=configs&query=SELECT+config+FROM+configs+where+DEVICE%3D%22<?=$ucfg?>%22&type=plain"><img src="img/16/flop.png" title="<?=(($verb1)?"$explbl $cfglbl":"$cfglbl $explbl")?>"></a>
-<a href="Devices-Status.php?dev=<?=$ucfg?>"><img src="img/16/sys.png" title="Device-Status"></a>
-<a href="Devices-Doctor.php?dev=<?=$ucfg?>"><img src="img/16/cinf.png" title="<?=$cfglbl?> <?=$sumlbl?>"></a>
-<? if($isadmin){?>
-<a href="<?=$_SERVER[PHP_SELF]?>?dco=$ucfg"><img src="img/16/bcnl.png" onclick="return confirm('$cfg[0]: $dellbl $cfglbl?')" title="$dellbl $cfglbl!"></a>
-<?}?>
+<a href="?shc=<?= $ucfg ?>&sln=<?=!$sln ?>&smo=<?= $smo ?>"><img src="img/16/form.png" title="Line #"></a>
+<a href="?shc=<?= $ucfg ?>&sln=<?= $sln ?>&smo=<?=!$smo ?>"><img src="img/16/say.png" title="motd"></a>
+<a href="System-Export.php?action=export&exptbl=configs&query=SELECT+config+FROM+configs+where+DEVICE%3D%22<?= $ucfg ?>%22&type=plain"><img src="img/16/flop.png" title="<?= (($verb1)?"$explbl $cfglbl":"$cfglbl $explbl") ?>"></a>
+<a href="Devices-Status.php?dev=<?= $ucfg ?>"><img src="img/16/sys.png" title="Device-Status"></a>
+<a href="Devices-Doctor.php?dev=<?= $ucfg ?>"><img src="img/16/cinf.png" title="<?= $cfglbl ?> <?= $sumlbl ?>"></a>
+<?= (Devcli($cfg[4],$cfg[5],2)) ?>
+<?php if($isadmin)
+	echo "<a href=$_SERVER[PHP_SELF]?dco=$ucfg><img src=\"img/16/bcnl.png\" onclick=\"return confirm('$dellbl $cfglbl?')\" title=\"$dellbl $cfglbl!\"></a>\n";
+?>
 
 <div class="code">
-<?
+<?php
 	$lnr = 0;
 	foreach ( explode("\n",$cfg[1]) as $cl ){
 		if ($sln) $lnr++;
@@ -315,8 +298,8 @@ echo "</div></td><td valign=top>";
 
 <form method="post" action="System-Files.php">
 <select name="cfg" id="cfg" onchange="this.form.submit();">
-<option value=""><?=(($verb1)?"$edilbl $fillbl":"$fillbl $edilbl")?> ->
-<?
+<option value=""><?= (($verb1)?"$edilbl $fillbl":"$fillbl $edilbl") ?> ->
+<?php
 if (is_dir("$nedipath/conf/$shc")){
 	foreach (glob("$nedipath/conf/$shc/*.cfg") as $f) {
 		$l = substr(strrchr($f, '/'),1);
@@ -325,15 +308,14 @@ if (is_dir("$nedipath/conf/$shc")){
 }
 ?>
 </select>
-<?
-if($isadmin)
-	echo "<a href=$_SERVER[PHP_SELF]?dch=$ucfg><img src=\"img/16/bcnl.png\" onclick=\"return confirm('$cfg[0]: $dellbl $chglbl $lstlbl?')\" title=\"$dellbl $chglbl!\"></a>\n";
+<?php if($isadmin)
+	echo "<a href=$_SERVER[PHP_SELF]?dch=$ucfg><img src=\"img/16/bcnl.png\" onclick=\"return confirm('$dellbl $chglbl $lstlbl?')\" title=\"$dellbl $chglbl!\"></a>\n";
 ?>
 </form>
 
-<div class="code"><?=implode("\n",$charr)?>
+<div class="code"><?= implode("\n",$charr) ?>
 </div></td></tr></table>
-<?
+<?php
 }else{
 
 	echo "<p><br><h2><a href=\"Monitoring-Events.php?ina=class&opa==&sta=cfge\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>
@@ -407,7 +389,7 @@ function Opdiff($cfg,$mo){
     
 ## PHPDiff returns the differences between $old and $new, formatted
 ## in the standard diff(1) output format.
-function PHPDiff($old,$new,$mode) 
+function PHPDiff($old,$new,$sbs) 
 {
    # split the source text into arrays of lines
    $t1 = explode("\n",$old);
@@ -464,7 +446,7 @@ function PHPDiff($old,$new,$mode)
   $op = 0;
   $x0=$x1=0; $y0=$y1=0;
   $out = array();
-  if($mode){# Sidebyside by Remo
+  if($sbs){# Sidebyside by Remo
 	$out[] = "<table class='full'>";
 	foreach($actions as $act) {
 		if ($act==1) { $op|=$act; $x1++; continue; }

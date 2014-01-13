@@ -16,17 +16,19 @@ syslog.pl [-D -v -p<port>]
 
 Incoming messages are translated as follows:
 
-Sev.  Level        Comment
+Sev.  Level     Comment
 
-0,1,2 Alert  (200) Triggers notification
+0     Emergency (250) -
 
-3     Warning(150) -
+1,2   Alert     (200) -
 
-4     Notice (100) -
+3     Warning   (150) -
 
-x     Info    (50) Default for devices
+4     Notice    (100) -
 
-x     Other   (10) Default for any other IP
+x     Info      (50) Default for monitored targets
+
+x     Other     (10) Default for any other IP
 
 =head2 LICENSE
 
@@ -88,7 +90,7 @@ while($sock->recv(my $info, $maxlen)) {
 	my($client_port, $client_ip) = sockaddr_in($sock->peername);
 	my $ip = inet_ntoa($client_ip);
 
-# TODO put some aggregation here
+# TODO put some aggregation here -> while(1) then recv with timeout instead and put Alertflush here and call every 10s or so...
 	&Process($ip,$info);
 
 	if($now - $misc::pause > $desup){								# update targets if older than a monitoring cycle, after processing current event
@@ -118,9 +120,8 @@ sub Process {
 
 	$info =~ s/<(\d+)>(.*)/$2/;
 	$info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=',.:<>? \E]//g;
-	$info = substr($info,0,255);
 
-	if(exists $srcna{$src}){
+	if(exists $srcna{$src}){									# Source IP is monitored
 		$src = $srcna{$src};
 		$pri =~ s/<(\d+)>.*/$1/;
 		if($pri !~ /^\d+$/){
@@ -130,21 +131,12 @@ sub Process {
 		my $sev = ($pri & 7);
 		if   ($sev == 4)	{$level = 100}
 		elsif($sev == 3)	{$level = 150}
-		elsif($sev =~ /[012]/)	{$level = 200}
+		elsif($sev =~ /[12]/)	{$level = 200}
+		elsif($sev =~ /[0]/)	{$level = 250}
 		else			{$level = 50}
 
-		if($mon{$src}{ed} =~ /^\d+$/ and $mon{$src}{ed} > $level){					# skip if eventdel is number & higher than level
-			&misc::Prt("DROP:$src	$mon{$src}{ed}>$level in $raw\n");
-		}elsif($mon{$src}{ed} !~ /^\d+$|^$/ and $info =~ /$mon{$src}{ed}/){				# skip if eventdel matches info
-			&misc::Prt("DROP:$src	/$mon{$src}{ed}/ in $raw\n");
-		}else{
-			&misc::Prt("PROC:$src ($_[0])\tL:$level ($pri)\nMESG:$info\n");
-			&db::Insert('events','level,time,source,info,class,device',"\"$level\",\"$now\",\"$src\",\"$info\",\"$mon{$src}{cl}\",\"$mon{$src}{dv}\"");
-			if($mon{$src}{ef} ne "" and $info =~ /$mon{$src}{ef}/){
-				my $mq = &mon::AlertQ("Event: $info\n","$src: $info",$mon{$src}{al},$mon{$src}{dv});
-				my $af = &mon::AlertFlush("$src syslog alert",$mq);
-			}
-		}
+		my $mq = &mon::Event(1,$level,$mon{$src}{cl},$src,$mon{$src}{dv},$info);
+		&mon::AlertFlush("NeDi Syslog Forward for $src",$mq);
 	}else{
 		&misc::Prt("PROC:$src ($_[0])\tL:$level ($pri)\nMESG:$info\n");
 		&db::Insert('events','level,time,source,info,class',"\"$level\",\"$now\",\"$src\",\"$info\",\"-\"");
@@ -171,6 +163,6 @@ sub HELP_MESSAGE {
 	print "-D		daemonize moni.pl\n";
 	print "-v		verbose output\n";
 	print "-p x		listen on port x (default 514)\n\n";
-	print "syslog (C) 2001-2011 Remo Rickli (and contributors)\n\n";
+	print "syslog (C) 2001-2013 Remo Rickli (and contributors)\n\n";
 	die;
 }

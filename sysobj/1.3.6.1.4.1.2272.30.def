@@ -7,7 +7,9 @@ Typoid
 Sysdes	
 OS	Nortel
 Icon	c3on
+Size	10
 Bridge	normal
+ArpND	old
 Dispro	
 Serial	1.3.6.1.4.1.2272.1.4.2.0
 Bimage	1.3.6.1.4.1.2272.1.1.7.0
@@ -15,11 +17,12 @@ Bimage	1.3.6.1.4.1.2272.1.1.7.0
 # Vlan Specific
 VLnams	1.3.6.1.4.1.2272.1.3.2.1.2
 VLnamx	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	
 IFalix	
 InBcast	1.3.6.1.2.1.2.2.1.12

@@ -12,11 +12,13 @@ System Service
 </div>
 
 <h2>Introduction</h2>
-View processes of your NeDi host and start or stop certain services. 
+View processes and resources of your NeDi host and start or stop certain services. 
 
 <h2>Usage</h2>
-Click on the Walk icon to stop or the grey X to start either monitoring, syslog,
- snmptrapd, freeradius or iperf. On the far right you see the discovery status and whether the node calculation is being performed this very instsant (nodelock).
+Click on <img src="../../img/16/walk.png"> to stop or <img src="../../img/16/bcls.png"> start the given service.
+<p>
+This only works, if the services don't need to open any priviledged ports (< 1024). Of course you could run the webserver as root, but that can
+create security risks! Therefore NeDi's Syslog (syslog.pl) and snmptrapd run on high-ports and usually are redirected by an internal firewall.
 
 <h2>Details</h2>
 <ul>
@@ -32,10 +34,12 @@ crontab accordingly.
 <p>
 At the end of a run the nodes table needs to be locked during calculation, 
 with that no other thread meddles with them. Furthermore should Top RRDs only
-be taken care of by the last thread or they're gonna look like Picassoes.
+be taken care of by the last thread to finish or they're gonna look like Picassoes.
 <p>
+On the far right you see the discovery status (# of threads is revealed by hovering over <img src="../../img/16/walk.png">. If the nodes table is locked a <img src="../../img/16/lokc.png"> is shown next to it.
+	 
 In case a discovery terminated unexpectedly or a nodelock hangs, you can reset it
-by clicking on the red X. 
+by clicking on <img src="../../img/16/bcnl.png">. 
 
-<div id="footer">Remo Rickli 2011</div>
+<div id="footer">Remo Rickli 2013</div>
 </body>

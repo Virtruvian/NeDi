@@ -1,11 +1,12 @@
-<?
+<?php
 # Program: Reports-Combination.php
 # Programmer: Remo Rickli (and contributors)
 
 error_reporting(E_ALL ^ E_NOTICE);
 
-$calendar  = 1;
 $printable = 1;
+$calendar  = 1;
+$exportxls = 0;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
@@ -21,7 +22,7 @@ $sta = (isset($_GET['sta']) && $ina != "") ? $_GET['sta'] : "";
 $rep = isset($_GET['rep']) ? $_GET['rep'] : "";
 $gra = isset($_GET['gra']) ? $_GET['gra'] : array();
 
-$lim = isset($_GET['lim']) ? $_GET['lim'] : 10;
+$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 10;
 $gsz = isset($_GET['gsz']) ? $_GET['gsz'] : "";
 
 $map = isset($_GET['map']) ? "checked" : "";
@@ -33,103 +34,101 @@ $cols = array(	"device"=>"Device",
 		"type"=>"Device $typlbl",
 		"firstdis"=>"$fislbl $dsclbl",
 		"lastdis"=>"$laslbl $dsclbl",
-		"vtpdomain"=>"VTP Domain",
+		"devgroup"=>$grplbl,
 		"location"=>$loclbl,
 		"contact"=>$conlbl
 		);
 
 $reps = array(	"ass"=>"Assets",
-		"pop"=>"$poplbl",
-		"mon"=>"Monitoring",
+		"pop"=>$poplbl,
+		"mon"=>$monlbl,
+		"err"=>$errlbl
 		);
 ?>
-<h1><?=($rep)?"$reps[$rep] Report":"Reports $cmblbl"?></h1>
+<h1><?= ($rep)?"$reps[$rep] Report":"Reports $cmblbl" ?></h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" name="report" action="<?=$self?>.php">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" name="report" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
 
 <select size="1" name="ina">
-<option value=""><?=$fltlbl?>->
-<?
+<option value=""><?= $fltlbl ?>->
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
 }
 ?>
 </select>
 
 <select size="1" name="opa">
-<? selectbox("oper",$opa);?>
+<?php selectbox("oper",$opa) ?>
 </select>
 <p>
 <a href="javascript:show_calendar('report.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?=$sta?>" size="20">
+<input type="text" name="sta" value="<?= $sta ?>" size="20">
 
 </th>
 <th>
 <select name="rep" size="4">
-<?
+<?php
 foreach ($reps as $k => $v){
-	echo "<option value=\"$k\" ".(($rep == $k)?"selected":"").">$v\n";
+	echo "<option value=\"$k\" ".(($rep == $k)?" selected":"").">$v\n";
 }
 ?>
 </select>
 
 <select multiple size="4" name="gra[]">
-<option value="" style="color: blue">- <?=(($verb1)?"$sholbl $gralbl":"$gralbl $sholbl")?> -
-<option value="msg"<?=(in_array("msg",$gra))?" selected":"";?>> <?=$msglbl?> <?=$sumlbl?>
-<option value="mon"<?=(in_array("mon",$gra))?" selected":"";?>> <?=$tgtlbl?> <?=$avalbl?>
-<option value="nod"<?=(in_array("nod",$gra))?" selected":"";?>> <?=$totlbl?> Nodes
-<option value="tpw"<?=(in_array("tpw",$gra))?" selected":"";?>> <?=$totlbl?> PoE
-<option value="ttr"<?=(in_array("ttr",$gra))?" selected":"";?>> <?=$totlbl?> non-link <?=$trflbl?>
-<option value="ter"<?=(in_array("ter",$gra))?" selected":"";?>> <?=$totlbl?> non-Wlan <?=$errlbl?>
-<option value="ifs"<?=(in_array("ifs",$gra))?" selected":"";?>> IF <?=$stalbl?>  <?=$sumlbl?>
+<option value="" style="color: blue">- <?= (($verb1)?"$sholbl $gralbl":"$gralbl $sholbl") ?> -
+<option value="msg"<?= (in_array("msg",$gra))?" selected":"" ?>> <?= $msglbl ?> <?= $sumlbl ?>
+<option value="mon"<?= (in_array("mon",$gra))?" selected":"" ?>> <?= $tgtlbl ?> <?= $avalbl ?>
+<option value="nod"<?= (in_array("nod",$gra))?" selected":"" ?>> <?= $totlbl ?> Nodes
+<option value="tpw"<?= (in_array("tpw",$gra))?" selected":"" ?>> <?= $totlbl ?> PoE
+<option value="ttr"<?= (in_array("ttr",$gra))?" selected":"" ?>> <?= $totlbl ?> non-link <?= $trflbl ?>
+<option value="ter"<?= (in_array("ter",$gra))?" selected":"" ?>> <?= $totlbl ?> non-Wlan <?= $errlbl ?>
+<option value="ifs"<?= (in_array("ifs",$gra))?" selected":"" ?>> IF <?= $stalbl ?>  <?= $sumlbl ?>
 </select>
 
 </th>
-<th align="right">
+<td>
 
-<?=$limlbl?> 
+<img src="img/16/form.png" title="<?= $limlbl ?>"> 
 <select size="1" name="lim">
-<? selectbox("limit",$lim);?>
+<?php selectbox("limit",$lim) ?>
 </select>
 <p>
-<?=$gralbl?> <?=$sizlbl?> 
+<img src="img/16/grph.png" title="<?= $gralbl ?> <?= $sizlbl ?>"> 
 <select size="1" name="gsz">
-<option value=""><?=$siz['x']?>
-<option value="4" <?=($gsz == "4")?"selected":""?> ><?=$siz['l']?>
-<option value="3" <?=($gsz == "3")?"selected":""?> ><?=$siz['m']?>
-<option value="2" <?=($gsz == "2")?"selected":""?> ><?=$siz['s']?>
+<option value=""><?= $siz['x'] ?>
+<option value="4" <?= ($gsz == "4")?" selected":"" ?> ><?= $siz['l'] ?>
+<option value="3" <?= ($gsz == "3")?" selected":"" ?> ><?= $siz['m'] ?>
+<option value="2" <?= ($gsz == "2")?" selected":"" ?> ><?= $siz['s'] ?>
 </select>
 
-</th>
-<th align="left">
+</td>
+<td align="left">
 
-<input type="checkbox" name="map" <?=$map?>> <?=(($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl")?><br>
-<input type="checkbox" name="ord" <?=$ord?>> <?=$altlbl?> <?=$srtlbl?><br>
-<input type="checkbox" name="opt" <?=$opt?>> <?=$optlbl?>
+<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
+<input type="checkbox" name="map" <?= $map ?>><br>
+<img src="img/16/abc.png" title="<?= $altlbl ?> <?= $srtlbl ?>"> 
+<input type="checkbox" name="ord" <?= $ord ?>><br>
+<img src="img/16/hat2.png" title="<?= $optlbl ?>"> 
+<input type="checkbox" name="opt" <?= $opt ?>>
 
-</th>
+</td>
 <th width="80">
 
-<input type="submit" name="do" value="<?=$sholbl?>">
+<input type="submit" name="do" value="<?= $sholbl ?>">
 
 </th></tr></table></form><p>
-<?
+<?php
 }
-	
-if($sta and !array_key_exists($ina, $cols) ){echo "<h4>($fltlbl $limlbl)</h4>";$sta ="";$ina ="";}
-
-ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-
 echo "<center>\n";
-if ($map and file_exists("log/map_$_SESSION[user].php")) {
+if ($map and file_exists("map/map_$_SESSION[user].php")) {
 	echo "<h2>$netlbl Map</h2>\n";
-	echo "<img src=\"log/map_$_SESSION[user].php\" style=\"border:1px solid black\"><p>\n";
+	echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"><p>\n";
 }
 
 if($gra[0]){
@@ -145,6 +144,10 @@ if($gra[0]){
 }
 echo "</center>\n";
 
+if($sta and !array_key_exists($ina, $cols) ){echo "<h4>($fltlbl $limlbl)</h4>";$sta ="";$ina ="";}
+
+ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if($rep){
 	if($rep == "ass"){
 		DevType($ina,$opa,$sta,$lim,$ord);
@@ -156,7 +159,6 @@ if($rep){
 	if($rep == "pop"){
 		NodSum($ina,$opa,$sta,$lim,$ord);
 		IntActiv($ina,$opa,$sta,$lim,$ord,$opt);
-		IntPoE($ina,$opa,$sta,$lim,$ord);
 		NodDist($ina,$opa,$sta,$lim,$ord);
 		NetDist($ina,$opa,$sta,$lim,$ord);
 		NetPop($ina,$opa,$sta,$lim,$ord);
@@ -167,6 +169,14 @@ if($rep){
 		IncDist($ina,$opa,$sta,$lim,$ord);
 		IncGroup($ina,$opa,$sta,$lim,$ord);
 		IncHist($ina,$opa,$sta,$lim,$ord,$opt);
+	}
+
+	if($rep == "err"){
+		DevDupIP($ina,$opa,$sta,$lim,$ord);
+		NodDup($ina,$opa,$sta,$lim,$ord);
+		IntErr($ina,$opa,$sta,$lim,$ord,$opt);
+		IntDsc($ina,$opa,$sta,$lim,$ord,$opt);
+		LnkErr($ina,$opa,$sta,$lim,$ord);
 	}
 }
 

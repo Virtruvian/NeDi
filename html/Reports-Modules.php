@@ -1,4 +1,4 @@
-<?
+<?php
 # Program: Reports-Modules.php
 # Programmer: Remo Rickli (and contributors) 
 
@@ -12,79 +12,105 @@ include_once ("inc/libdev.php");
 include_once ("inc/librep.php");
 
 $_GET = sanitize($_GET);
-$rep = isset($_GET['rep']) ? $_GET['rep'] : array();
-$flt = isset($_GET['flt']) ? $_GET['flt'] : "";
-$ord = isset($_GET['ord']) ? "checked" : "";
 $ina = isset($_GET['ina']) ? $_GET['ina'] : "";
 $opa = isset($_GET['opa']) ? $_GET['opa'] : "";
 $sta = (isset($_GET['sta']) && $ina != "") ? $_GET['sta'] : "";
+
+$rep = isset($_GET['rep']) ? $_GET['rep'] : array();
+
+$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 10;
+
+$map = isset($_GET['map']) ? "checked" : "";
+$ord = isset($_GET['ord']) ? "checked" : "";
 
 $cols = array(	"device"=>"Device $namlbl",
 		"devip"=>"IP $adrlbl",
 		"type"=>"Device $typlbl",
 		"firstdis"=>"$fislbl $dsclbl",
 		"lastdis"=>"$laslbl $dsclbl",
-		"vtpdomain"=>"VTP Domain",
+		"services"=>$srvlbl,
+		"description"=>$deslbl,
+		"devos"=>"Device OS",
+		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
+		"group"=>$grplbl,
+		"snmpversion"=>"SNMP $verlbl",
 		"model"=>"Module $typlbl",
-		"moddesc"=>"Module $deslbl"
+		"moddesc"=>"Module $deslbl",
+		"status"=>"Module $stalbl"
 		);
 
 ?>
 <h1>Module Reports</h1>
-<?
+<?php
 if( !isset($_GET['print']) ){
 ?>
 
-<form method="get" name="report" action="<?=$self?>.php">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" name="report" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
 
 <select size="1" name="ina">
-<option value=""><?=$fltlbl?>->
-<?
+<option value=""><?= $fltlbl ?>->
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
 }
 ?>
 </select>
 
 <select size="1" name="opa">
-<? selectbox("oper",$opa);?>
+<?php selectbox("oper",$opa) ?>
 </select>
 <p>
 <a href="javascript:show_calendar('report.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?=$sta?>" size="20">
+<input type="text" name="sta" value="<?= $sta ?>" size="20">
 
 </th>
 <th>
 <select multiple name="rep[]" size="4">
-<option value="sum" <?=(in_array("sum",$rep))?"selected":""?> ><?=$dislbl?>
-<option value="inv" <?=(in_array("inv",$rep))?"selected":""?> ><?=$invlbl?>
-<option value="prt" <? if(in_array("prt",$rep)){echo "selected";} ?> >Print Supplies
-<option value="vms" <? if(in_array("vms",$rep)){echo "selected";} ?> >Virtual Machines
-<?
+<option value="sum" <?= (in_array("sum",$rep))?" selected":"" ?> ><?= $dislbl ?>
+<option value="inv" <?= (in_array("inv",$rep))?" selected":"" ?> ><?= $invlbl ?>
+<option value="prt" <?php if(in_array("prt",$rep)){echo "selected";} ?> >Print Supplies
+<option value="vms" <?php if(in_array("vms",$rep)){echo "selected";} ?> >Virtual Machines
+<?php
 $tquery = GenQuery("cisco_contracts", "t");					# Not printable yet :-(
 $res    = DbQuery($tquery, $link);
 if( DbFetchRow($res) ){								# Show item only, if cisco_contracts table exists
 ?>
-<OPTION VALUE="ves" <?=(in_array("ves",$rep))?"selected":""?> ><?=$wtylbl?> <?=$stalbl?>
+<OPTION VALUE="ves" <?= (in_array("ves",$rep))?" selected":"" ?> ><?= $wtylbl ?> <?= $stalbl ?>
 <?}?>
 </SELECT>
 
 </th>
-<th align="left">
+<th>
 
-<input type="checkbox" name="ord" <?=$ord?>> <?=$altlbl?> <?=$srtlbl?><br>
+<img src="img/16/form.png" title="<?= $limlbl ?>"> 
+<select size="1" name="lim">
+<?php selectbox("limit",$lim) ?>
+</select>
 
 </th>
-<th width="80"><input type="submit" name="do" value="<?=$sholbl?>"></th>
+<th align="left">
+
+<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
+<input type="checkbox" name="map" <?= $map ?>><br>
+<img src="img/16/abc.png" title="<?= $altlbl ?> <?= $srtlbl ?>"> 
+<input type="checkbox" name="ord" <?= $ord ?>><br>
+
+</th>
+<th width="80"><input type="submit" name="do" value="<?= $sholbl ?>"></th>
 </tr></table></form><p>
 	
-<?
+<?php
 }
+if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
+	echo "<center><h2>$netlbl Map</h2>\n";
+	echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
+}
+
 if($rep){
 	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 
@@ -109,21 +135,21 @@ if($rep){
 // added for Cisco contract check by Andreas Wassatsch
 if ( in_array("ves",$rep) ){
 ?>
-<h2><?=$wtylbl?> <?=$stalbl?></h2>
+<h2><?= $wtylbl ?> <?= $stalbl ?></h2>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2">
+<tr class="<?= $modgroup[$self] ?>2">
 <th colspan="2"><img src="img/16//dev.png"><br>Device / Slot</th>
 <th><img src="img/16//find.png"><br>Info</th>
-<th><img src="img/16//form.png"><br><?=$serlbl?></th>
-<th><img src="img/16//idea.png"><br><?=$stalbl?></th>
+<th><img src="img/16//form.png"><br><?= $serlbl ?></th>
+<th><img src="img/16//idea.png"><br><?= $stalbl ?></th>
 </tr>
-<?
+<?php
 	if($ord){
 		$sort = "type";
 	}else{
 		$sort = "name";
 	}
-	$query	= GenQuery('devices','s','name,type,serial,devos,bootimage',$sort,'',array('type'),array('regexp'),array($flt) );
+	$query	= GenQuery('devices','s','name,type,serial,devos,bootimage',$sort,'',array($ina),array($opa),array($sta) );
 	$res	= @DbQuery($query,$link);
 
 	$link_ccc = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
@@ -164,7 +190,7 @@ if ( in_array("ves",$rep) ){
 					if ($row % 2){$bg = "txta";}else{$bg = "txtb";}
 					$row++;
 					echo "<tr class=\"$bg\"><th>\n";
-					$query_ccc = "SELECT service_level,contract_number,end_date,DATEDIFF(STR_TO_DATE(end_date, '%d-%b-%Y'),CURDATE()) FROM cisco_contracts WHERE serial_number=\"$m[2]\"";
+					$query_ccc = "SELECT service_level,contract_number,end_date,DATEDIFF(STR_TO_DATE(end_date, '%d-%b-%Y'),CURDATE()) FROM cisco_contracts WHERE serial_number=\"$m[4]\"";
 					$res_ccc = @DbQuery($query_ccc,$link_ccc);
 					$ccc = @DbFetchRow($res_ccc);
 					if ($ccc[3] > 30) {
@@ -197,9 +223,9 @@ if ( in_array("ves",$rep) ){
 	?>
 </table>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>2"><td><?=$dev?> devices, <?=$row?> modules</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $dev ?> devices, <?= $row ?> modules</td></tr>
 </table>
-	<?
+	<?php
 }
 
 include_once ("inc/footer.php");

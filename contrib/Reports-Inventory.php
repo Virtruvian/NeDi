@@ -31,9 +31,9 @@ $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if( !isset($_GET['export']) and $_GET['export']!='pdf'){
 ?>
 <h1>Contract Review</h1>
-<form method="get" action="<?=$self?>.php">
+<form method="get" action="<?= $self ?>.php">
 	<table class="content">
-		<tr class="<?=$modgroup[$self]?>1">
+		<tr class="<?= $modgroup[$self] ?>1">
 			<th>
 				<center><table>
 				<tr><td>Operating System</td>
@@ -52,7 +52,7 @@ if( !isset($_GET['export']) and $_GET['export']!='pdf'){
 				</table></center>
 			</th>
 			<th width=80>
-				<input type="submit" name="submit" value="<?=$shobtn?>">
+				<input type="submit" name="submit" value="<?= $shobtn ?>">
 				<input type="submit" name="export" value="pdf">
 			</th>
 		</tr>

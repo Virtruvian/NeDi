@@ -8,9 +8,6 @@ td{
 	padding: 4px;
 	color: #444444;
 	border-radius: 4px;
-	-moz-border-radius: 4px;
-	-webkit-border-radius: 4px;
-	-khtml-border-radius: 4px;
 }
 
 th{
@@ -18,51 +15,68 @@ th{
 	font-weight: bold;
 	color: #444444;
 	border-radius: 4px;
-	-moz-border-radius: 4px;
-	-webkit-border-radius: 4px;
-	-khtml-border-radius: 4px;
 }
 
 /* Headings */
 h1   {
-	color: #aaaaaa; 
+	color: #cccccc; 
 	font-size: 18px;
 	font-weight: bold;
 	text-align: center;
+	text-shadow: 2px 3px 3px #222222;
 }
 
 h2   {
-	color: #999999;
+	color: #dddddd;
 	font-size: 16px;
 	font-weight: bold;
 	text-align: center;
+	text-shadow: 2px 3px 3px #222222;
 }
 
 h3   {
-	color: #bbbbbb;
+	color: #eeeeee;
 	font-size: 14px;
 	text-align: center;
 	padding: 4px;
-	background-color: #666666;
 	font-weight: bold;
+	text-shadow: 2px 3px 3px #222222;
 	border-radius: 4px;
-	-moz-border-radius: 4px;
-	-webkit-border-radius: 4px;
-	-khtml-border-radius: 4px;
+	background: -webkit-linear-gradient( #848484 5%, #cacaca);
+	background: -moz-linear-gradient( #848484 5%, #cacaca);
+	background: -ms-linear-gradient( #848484 5%, #cacaca);
 }
 
 h4   {
-	color: #993333;
+	color: #440000;
 	font-size: 12px;
 	font-weight: bold;
 	text-align: center;
+	width: 40%;
+	border: 1px solid #ffaa66;
+	margin-left: auto;
+  	margin-right: auto;
+	padding: 5px;
+	border-radius: 5px;
+	background-color: rgba(180, 120, 60, 0.8);
+	background: -webkit-linear-gradient(rgba(250, 190, 100, .9), rgba(150, 90, 25, 0.8) 90%);
+	background: linear-gradient(rgba(250, 190, 100, .9), rgba(150, 90, 25, 0.8) 90%);
 }
 
 h5   {
-	color: #339933;
+	color: #004400;
 	font-size: 12px;
 	font-weight: bold;
 	text-align: center;
+	width: 40%;
+	border: 1px solid #88ffaa;
+	margin-left: auto;
+  	margin-right: auto;
+	padding: 5px;
+	border-radius: 5px;
+	background-color: rgba(60, 180, 120, 0.8);
+	background: -webkit-linear-gradient(rgba(100, 250, 190, .9), rgba(30, 150, 90, 0.8) 90%);
+	background: linear-gradient(rgba(100, 250, 190, .9), rgba(30, 150, 90, 0.8) 90%);
 }
 
 /* Input Fields */
@@ -90,6 +104,7 @@ img.bigbar{
 	margin : 4px;
 	vertical-align: middle;
 	border: 1px solid #333333;
+	border-radius: 5px;
 }
 
 img.smallbar{
@@ -97,16 +112,24 @@ img.smallbar{
 	margin : 2px;
 	vertical-align: middle;
 	border: 1px solid #333333;
+	border-radius: 3px;
 }
 
 /* Form Properties */
 :focus {background-color: #e0e0e0}
 
 /* Link Properties */
-:link {color: #004488;text-decoration: none;}
+:link {
+	color: #004488;
+	text-decoration: none;
+	transition: color 0.4s ease;
+}
 :visited {color: #003366;text-decoration: none;}
 :link:focus, :visited:focus {color: #cccc00}
-:link:hover, :visited:hover {color: #cc8800}
+:link:hover, :visited:hover {
+	transition: color 0.8s ease;
+	color: #cc8800
+}
 :link:active, :visited:active {color: #f00000}
 
 /* Header table & Footer div*/
@@ -114,20 +137,20 @@ img.smallbar{
 	width: 100%;
 	border-spacing: 1px;
 	background-color: #888888;
+	text-shadow: 0 1px 1px rgba(255, 255, 255, .9);
 }
 
 #footer{
 	margin: 10px auto;
 	color: #444444;
 	width: 90%;
+	background-color: #888888;
 	border: 1px solid #888888;
 	padding: 8px;
 	text-align: right;
 	font-style: italic;
+	text-shadow: 0 1px 1px rgba(255, 255, 255, .9);
 	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
 }
 
 /* Actual Module */
@@ -136,9 +159,6 @@ table.content{
 	border-spacing: 1px;
 	background-color: #888888;
 	border-radius: 4px;
-	-moz-border-radius: 4px;
-	-webkit-border-radius: 4px;
-	-khtml-border-radius: 4px;
 }
 
 /* Helper td */
@@ -147,9 +167,8 @@ td.helper{
 	vertical-align: top;
 	background-color: #505050;
 	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
+	background: -webkit-linear-gradient(#888888, #444444);
+	background: linear-gradient(#888888, #444444);
 }
 
 table.fixed{
@@ -168,12 +187,9 @@ table.full{
 	border-spacing: 1px;
 	border: 2px solid #666666;
 	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
 }
 
-/* Font Properties */
+/* Fixed Width Font */
 .code{
 	overflow: auto;
 	padding: 10px;
@@ -206,34 +222,43 @@ table.full{
 .imgb{background-color: #e6e6e6}
 
 /* Status Fields */
-.good{background-color: #70d060}
-.noti{background-color: #6070d0}
-.warn{background-color: #d0d560}
-.alrm{background-color: #d0b060}
-.crit{background-color: #d07070}
-.part{background-image:url('../img/dia.png')}
+.good{	-webkit-box-shadow: inset 0 -5px 15px #30a020, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #30a020, 0 1px 1px #333333;
+	background-color: #70d060
+}
+.noti{	-webkit-box-shadow: inset 0 -5px 15px #2030a0, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #2030a0, 0 1px 1px #333333;
+	background-color: #6070d0
+}
+.warn{	-webkit-box-shadow: inset 0 -5px 15px #a0a020, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #a0a020, 0 1px 1px #333333;
+	background-color: #d0d060
+}
+.alrm{	-webkit-box-shadow: inset 0 -5px 15px #a08020, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #a08020, 0 1px 1px #333333;
+	background-color: #d0b060
+}
+.crit{	-webkit-box-shadow: inset 0 -5px 15px #a03030, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #a03030, 0 1px 1px #333333;
+	background-color: #d07070
+}
+.part{
+	background-image:url('../img/dia.png');
+}
 
-/* Default Group Based Module Colors */
-.adm1{background-color: #aaaa99}
-.adm2{background-color: #bbbbaa}
+/* Module Colors */
+.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+	background-color: #aaaaaa;
+	background: -webkit-linear-gradient(#cccccc 25%, #a0a0a0 75%);
+	background: linear-gradient( #cccccc 25%, #a0a0a0 75%);
+}
 
-.net1{background-color: #aaaaaa}
-.net2{background-color: #bbbbbb}
+.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+	background-color: #bbbbbb;
+	background: -webkit-linear-gradient(#dddddd 25%, #b0b0b0 75%);
+	background: linear-gradient( #dddddd 25%, #b0b0b0 75%);
+}
 
-.dsk1{background-color: #aaaaaa}
-.dsk2{background-color: #bbbbbb}
-
-.mon1{background-color: #aaaaaa}
-.mon2{background-color: #bbbbbb}
-
-.mgr1{background-color: #aaaaaa}
-.mgr2{background-color: #bbbbbb}
-
-.oth1{background-color: #aaaaaa}
-.oth2{background-color: #bbbbbb}
-
-.usr1{background-color: #aaaaaa}
-.usr2{background-color: #bbbbbb}
 
 /* ThemeNMenu Style Sheet */
 
@@ -271,12 +296,14 @@ table.full{
 
 .ThemeNSubMenuTable
 {
-	border:		1px solid #666666;
-	background-color:	#eeeeee;
-	border-radius: 4px;
-	-moz-border-radius: 4px;
-	-webkit-border-radius: 4px;
-	-khtml-border-radius: 4px;
+	background: #c0c0c0;
+	background: -webkit-linear-gradient(#e0e0e0, #c0c0c0);
+	background: linear-gradient(#e0e0e0, #c0c0c0);
+	border: solid 1px #b0b0b0;
+	-webkit-border-radius: 10px;
+	border-radius: 10px;
+	-webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, .3);
+	box-shadow: 5px 5px 5px rgba(0, 0, 0, .3);
 }
 
 .ThemeNSubMenuTable td
@@ -296,8 +323,11 @@ table.full{
 .ThemeNMainItemHover,.ThemeNMainItemActive,
 .ThemeNMenuItemHover,.ThemeNMenuItemActive
 {
-	color:		#789FAE;
-	background-color:	#C3D8E7;
+	color: #558899;
+	background: #d0d0d0;
+	background: -webkit-linear-gradient(#f0f0f0, #a0a0a0);
+	background: linear-gradient(#f0f0f0,  #a0a0a0);
+	font-weight: bold;
 }
 
 .ThemeNMenuSplit
@@ -318,16 +348,6 @@ table.full{
 	background-color:	inherit;
 	border-right:	1px solid #ADAA9C;
 }
-
-/* image shadow animation */
-
-/*
-	seq1:	image for normal
-	seq2:	image for hover and active
-
-	To use, in the icon field, input the following:
-	<img class="seq1" src="normal.gif" /><img class="seq2" src="hover.gif" />
-*/
 
 .ThemeNMenuItem img.seq1
 {

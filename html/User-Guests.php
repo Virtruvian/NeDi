@@ -1,37 +1,38 @@
-<?
+<?php
 # Program: User-Wlan.php
 # Programmer: Remo Rickli
 
-error_reporting(E_ALL ^ E_NOTICE);
+#error_reporting(E_ALL ^ E_NOTICE);
 
 $printable = 1;
+$exportxls = 0;
 
 include_once ("inc/header.php");
 
 $_GET = sanitize($_GET);
 $ip = isset($_GET['ip']) ? $_GET['ip'] : "";
 $du = isset($_GET['du']) ? $_GET['du'] : "";
+$lo = isset($_GET['lo']) ? $_GET['lo'] : "";
 $us = isset($_GET['us']) ? $_GET['us'] : "";
-$au = isset($_GET['au']) ? 1:0;
 
 $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 ?>
-<h1><?=$usrlbl?> <?=$edilbl?></h1>
+<h1><?= $usrlbl ?> <?= $edilbl ?></h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" name="usr" action="<?=$self?>.php">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" name="usr" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
 Device <SELECT size="1" name="ip" onchange="this.form.submit();">
 <OPTION VALUE="">------------
-<?
-$query	= GenQuery('devices','s','device,devip','','',array('os'),array('='),array('MSM') );
+<?php
+$query	= GenQuery('devices','s','device,inet_ntoa(devip)','','',array('devos'),array('='),array('MSM') );
 $res	= @DbQuery($query,$link);
 if($res){
 	while( $d = @DbFetchRow($res) ){
-		echo "<option value=\"$d[1]\"".( ($ip == $d[1])?"selected":"").">$d[0]\n";
+		echo "<option value=\"$d[1]\"".( ($ip == $d[1])?" selected":"").">$d[0]\n";
 	}
 	@DbFreeResult($res);
 }else{
@@ -45,45 +46,45 @@ if($res){
 <th>User <input type="text" name="us" size="12">
 </th>
 <th width="80">
-<input type="submit" name="au" value="<?=$addlbl?>">
+<input type="submit" value="<?= $addlbl ?>">
 </th>
 </tr></table></form><p>
-<?
+<?php
 }
 
 if($ip){
-	require_once("inc/soapapi-inc.php");
+	#require_once("inc/soapapi-inc.php");
+	if($debug){echo "INC : api<br>\n";}
 	SoapApi::ClearWSDLCache();
 
 	try {
-		$url = sprintf("%s://%s:%d/SOAP", "http", long2ip($ip), 448);
+		$url = sprintf("%s://%s:%d/SOAP", "http", $ip, 448);
+		if($debug){echo "URL : $url<br>\n";}
 
-		$c = new SoapApi("inc/soapapi-7901.wsdl", array('connection_timeout'=> $timeout,
+		$c = new SoapApi("http://$ip/soapapi.wsdl", array('connection_timeout'=> $timeout,
 							'location' => $url ,
-							'local_cert' => "inc/soap-api-client.crt",
+							'local_cert' => "log/soap-api-client.crt",
 							'passphrase' => "clientcertpa55")
 				);
 
-		$rc = $c->soapGetSOAPVersion();
-		if ($rc->version != "2.6.0") {
-			echo "<h4>$errlbl SOAP API ".$rc->version."</h4>";
-			exit(1);
-		}
-
-		if($au and $us){
+		if($us){
 			echo "<h3>$addlbl $usrlbl $us</h3>";
 			flush();
 			$c->soapAddUserAccount($us, $us, "Enabled", "Enabled");
-			sleep(5);
+			sleep(8);# TODO find better way than that to avoid errors???
 		}elseif($du){
+			echo "<h3>$usrlbl $du, $dellbl</h3>";
 			$c->soapDeleteUserAccount($du);
+		}elseif($lo){
+			echo "<h3>$usrlbl $lo, Logout</h3>";
+			$c->soapExecuteUserAccountLogout($lo);
 		}
 
 ?>
-<h2><?=$usrlbl?> <?=$lstlbl?></h2>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
+<h2><?= $usrlbl ?> <?= $lstlbl ?></h2>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
 <th>ID</th>
-<th><?=$namlbl?></th>
+<th><?= $namlbl ?></th>
 <th>Access Ctrl</th>
 <th>Active</th>
 <th>Expired</th>
@@ -92,14 +93,14 @@ if($ip){
 <th>Period</th>
 <th>Not Begun</th>
 <th>Not Ended</th>
-<th><?=$timlbl?> Left</th>
-<th><?=$fislbl?></th>
+<th><?= $timlbl ?> Left</th>
+<th><?= $fislbl ?></th>
 <th>Session Left</th>
-<th><?=$laslbl?></th>
-<th><?=$cmdlbl?></th>
+<th><?= $laslbl ?></th>
+<th><?= $cmdlbl ?></th>
 
 </tr>
-<?
+<?php
 		$users = SoapGetList("soapGetUserAccountList","username");
 
 		foreach ($users as $i => $nam){
@@ -123,8 +124,9 @@ if($ip){
 			echo "<th>".$rc->result->item->remainingSessionTime."</th>";
 			echo "<th>".$rc->result->item->expiration."</th>\n";
 
-			echo "<th><a href=\"?ip=$ip&du=$nam\"><img src=\"img/16/bcnl.png\" title=\"$usrlbl $dellbl\" onclick=\"return confirm('$dellbl: $cfmmsg?')\"></a></th>";
-			echo " <tr>\n";
+			echo "<th><a href=\"?ip=$ip&lo=$nam\"><img src=\"img/16/exit.png\" title=\"Logout\"></a>";
+			echo "<a href=\"?ip=$ip&du=$nam\"><img src=\"img/16/bcnl.png\" title=\"$usrlbl $dellbl\" onclick=\"return confirm('$dellbl: $cfmmsg?')\"></a>";
+			echo "</th><tr>\n";
 		#	$us = $c->GetUserAccountValidity($val);
 		#			print_r($rc);
 		}
@@ -165,4 +167,63 @@ function StatImg($stat,$size) {
 	}
 }
 
+#/*
+class SoapApi extends SoapClient
+{
+    static function ClearWSDLCache()
+    {
+        //  clearing WSDL cache
+        ini_set("soap.wsdl_cache_enabled", "0");
+    }
+
+    function soapGetUserAccount($username)
+    {
+        //  Get the user account settings. This also returns all effectives attributes from account profiles (no custom attribute though).
+        $rc = $this->GetUserAccount(array("username" => $username));
+
+        return $rc;
+    }
+
+    function soapGetUserAccountList()
+    {
+        //  Get the user account list.
+        $rc = $this->GetUserAccountList(array());
+
+        return $rc;
+    }
+
+    function soapAddUserAccount($username, $password, $activeState, $accessControlledState)
+    {
+        //  Add a new user account.
+        $rc = $this->AddUserAccount(array("username" => $username, "password" => $password, "activeState" => $activeState, "accessControlledState" => $accessControlledState));
+
+        return $rc;
+    }
+
+    function soapDeleteUserAccount($username)
+    {
+        //  Delete an user account.
+        $rc = $this->DeleteUserAccount(array("username" => $username));
+
+        return $rc;
+    }
+
+    function soapGetUserAccountStatus($username)
+    {
+        //  Get the status of an User Account.
+        $rc = $this->GetUserAccountStatus(array("username" => $username));
+
+        return $rc;
+    }
+
+    function soapExecuteUserAccountLogout($username)
+    {
+        //  Logout an User Account.
+        $rc = $this->ExecuteUserAccountLogout(array("username" => $username));
+
+        return $rc;
+    }
+
+}
+#*/
 ?>

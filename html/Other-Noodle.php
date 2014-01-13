@@ -1,23 +1,24 @@
-<?
+<?php
 # Program: Other-Noodle.php
 # Programmer: Remo Rickli
 
 $printable = 1;
 $calendar  = 1;
+$exportxls = 0;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
 $str = isset($_GET['str']) ? $_GET['str'] : "";
-$mod = isset($_GET['mod']) ? $_GET['mod'] : "";
-$lim = isset($_GET['lim']) ? $_GET['lim'] : 10;
+$mde = isset($_GET['mde']) ? $_GET['mde'] : "";
+$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
 
 
-$tabs['dev'] = array(	'devices'	=> array ('device','type','serial','description','devos','bootimage','location','contact','vtpdomain'),
+$tabs['dev'] = array(	'devices'	=> array ('device','inet_ntoa(devip)','type','serial','description','devos','bootimage','location','contact','group'),
 			'configs'	=> array ('device','config','changes'),
 			'events'	=> array ('source','info'),
-			'interfaces'	=> array ('device','ifname','ifdesc','comment'),
+			'interfaces'	=> array ('device','ifname','ifmac','ifdesc','comment'),
 			'iftrack'	=> array ('device','ifname'),
 			'incidents'	=> array ('name','comment'),
 			'links'		=> array ('device','ifname','neighbor','nbrifname','linktype'),
@@ -25,16 +26,16 @@ $tabs['dev'] = array(	'devices'	=> array ('device','type','serial','description'
 			'modules'	=> array ('device','model','moddesc','serial','hw','fw','sw'),
 			'monitoring'	=> array ('name','depend','test','eventfwd','eventdel'),
 			'nodetrack'	=> array ('device','ifname','destination','user'),
-			'networks'	=> array ('device','ifname','vrfname'),
+			'networks'	=> array ('device','ifname','inet_ntoa(ifip)','vrfname'),
 			'stock'		=> array ('serial','type','user','location','comment','source'),
 			'stolen'	=> array ('name','mac','device','ifname','user'),
 			'vlans'		=> array ('device','vlanname')
 			);
 
-$tabs['node'] = array(	'nodes'		=> array ('name','mac','oui','device','ifname','nodos'),
+$tabs['node'] = array(	'nodes'		=> array ('name','mac','oui','inet_ntoa(nodip)','device','ifname','nodos'),
 			'events'	=> array ('source','info'),
 			'nodetrack'	=> array ('device','ifname','destination','user'),
-			'iptrack'	=> array ('mac','name','device'),
+			'iptrack'	=> array ('mac','inet_ntoa(nodip)','name','device'),
 			'monitoring'	=> array ('name','depend','test','eventfwd','eventdel')
 			);
 
@@ -82,27 +83,27 @@ $lnk = array(	'device'	=> 'Devices-Status.php?dev=',
 ?>
 <h1>Noodle Search</h1>
 
-<?if( !isset($_GET['print']) ){?>
-<form method="get" name="find" action="<?=$self?>.php">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a>
+<?php  if( !isset($_GET['print']) ) { ?>
+<form method="get" name="find" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
 
 </th>
-<th valign="top"><?=$sholbl?><p>
+<th valign="top"><?= $sholbl ?><p>
 
-<select size="1" name="mod">
-<option value="dev"><?=$tgtlbl?> ->
-<option value="dev" <?=($mod == "dev")?"selected":""?>>Device
-<option value="node"<?=($mod == "node")?"selected":""?>>Node
-<option value="usr" <?=($mod == "usr")?"selected":""?>><?=$usrlbl?>
+<select size="1" name="mde">
+<option value="dev"><?= $tgtlbl ?> ->
+<option value="dev" <?= ($mde == "dev")?" selected":"" ?>>Device
+<option value="node"<?= ($mde == "node")?" selected":"" ?>>Node
+<option value="usr" <?= ($mde == "usr")?" selected":"" ?>><?= $usrlbl ?>
 </select> ~
-<input type="search" name="str" value="<?=$str?>" size="40">
+<input type="search" name="str" value="<?= $str ?>" size="40">
 
 </th>
-<th valign="top"><?=$limlbl?><p>
+<th valign="top"><?= $limlbl ?><p>
 
 <select size="1" name="lim">
-<? selectbox("limit",$lim);?>
+<?php selectbox("limit",$lim) ?>
 </select>
 
 </th>
@@ -113,20 +114,24 @@ $lnk = array(	'device'	=> 'Devices-Status.php?dev=',
 </th>
 </tr></table></form>
 <p>
-<?
+<?php
 }
 
 if ($str){
 	echo "<h3>";
-	if    ($mod == "dev") {echo "<img src=\"img/16/dev.png\" title=\"Device $tgtlbl\">";}
-	elseif($mod == "node"){echo "<img src=\"img/16/node.png\" title=\"Node $tgtlbl\">";}
-	elseif($mod == "usr") {echo "<img src=\"img/16/user.png\" title=\"$usrlbl $tgtlbl\">";}
-	echo " $cndlbl: $mod regexp \"$str\"</h3>";
+	if    ($mde == "dev") {echo "<img src=\"img/16/dev.png\" title=\"Device $tgtlbl\">";}
+	elseif($mde == "node"){echo "<img src=\"img/16/node.png\" title=\"Node $tgtlbl\">";}
+	elseif($mde == "usr") {echo "<img src=\"img/16/user.png\" title=\"$usrlbl $tgtlbl\">";}
+	echo " $cndlbl: $mde regexp \"$str\"</h3>";
 	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
-	foreach ($tabs[$mod] as $table => $cols){
-		if($debug){print_r($cols); echo "<br>";}
-		$incol  = "CONCAT_WS(',',".implode(",", $cols).")";
+	foreach ($tabs[$mde] as $table => $cols){
+		if($debug){
+			echo "<div class=\"textpad noti\">";
+			print_r($cols);
+			echo "</div>";
+		}
+		$incol  = "CONCAT(".implode(",", $cols).")";
 		$outcol = implode(",", $cols);
 		$query	= GenQuery($table,'s',$outcol,'','',array($incol),array('regexp'),array($str) );
 		$res	= @DbQuery($query,$link);
@@ -142,7 +147,7 @@ if ($str){
 			while($l = @DbFetchArray($res)) {
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
-				echo  "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">";
+				TblRow($bg);
 				foreach($l as $id => $field) {
 					if( strlen($field) > 100 ){
 						echo "<td>".substr(implode("\n",preg_grep("/$str/i",explode("\n",$field) ) ),0,100 ) . "...</td>";
@@ -160,9 +165,9 @@ if ($str){
 ?>
 </table>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> <?=$vallbl?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table><br>
-<?
+<?php
 		}
 	}
 }

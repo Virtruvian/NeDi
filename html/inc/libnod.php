@@ -1,4 +1,4 @@
-<?
+<?php
 //===============================
 // Node related functions.
 //===============================
@@ -28,6 +28,7 @@ function Nimg($m) {
 	elseif (stristr($m,"Apple Computer Inc"))		{return  "appl2";}
 	elseif (stristr($m,"Apple, Inc"))			{return  "appl1";}
 	elseif (stristr($m,"APPLE"))				{return  "appl3";}
+	elseif (stristr($m,"ASTARO"))				{return  "ast";}
 	elseif (stristr($m,"ASUS"))				{return  "asu";}
 	elseif (stristr($m,"AUDIO CODES"))			{return  "aud";}
 	elseif (stristr($m,"AVM GmbH"))				{return  "avm";}
@@ -106,6 +107,7 @@ function Nimg($m) {
 	elseif (stristr($m,"LANTRONIX"))			{return  "ltx";}
 	elseif (stristr($m,"LEXMARK"))				{return  "lex";}
 	elseif (stristr($m,"LINKSYS"))				{return  "lsy";}
+	elseif (stristr($m,"LG Electronics"))			{return	 "lg";}
 	elseif (stristr($m,"LN Srithai"))			{return	 "lg";}
 	elseif (stristr($m,"March"))				{return	 "mar";}
 	elseif (stristr($m,"Matsushita"))			{return  "mat";}
@@ -119,6 +121,7 @@ function Nimg($m) {
 	elseif (stristr($m,"MOTOROLA"))				{return  "mot";}
 	elseif (stristr($m,"MOXA"))				{return	 "mox";}
 	elseif (stristr($m,"MSI"))				{return  "msi";}
+	elseif (stristr($m,"Murata Manufact"))			{return  "mur";}
 	elseif (stristr($m,"NATIONAL INSTRUMENTS"))		{return  "ni";}
 	elseif (stristr($m,"NComputing"))			{return	 "nc";}
 	elseif (stristr($m,"NEC"))				{return	 "nec";}
@@ -152,7 +155,6 @@ function Nimg($m) {
 	elseif (stristr($m,"RARITAN"))				{return  "rar";}
 	elseif (stristr($m,"REALTEK"))				{return  "rtk";}
 	elseif (stristr($m,"RICOH"))				{return  "rco";}
-	elseif (stristr($m,"RIM"))				{return	 "rim";}
 	elseif (stristr($m,"Riverbed"))				{return	 "riv";}
 	elseif (stristr($m,"Rockwell"))				{return	 "ra";}
 	elseif (stristr($m,"Routerboard.com"))			{return	 "rbd";}
@@ -215,6 +217,7 @@ function Nimg($m) {
 	elseif (preg_match("/JUNIPER|PERIBIT|Netscreen/i",$m))  {return  "jun";}
 	elseif (preg_match("/LITE-ON|Liteon/i",$m))		{return	 "lio";}
 	elseif (preg_match("/MGE UPS|Schneider/i",$m))		{return	 "sce";}
+	elseif (preg_match("/^RIM$|Research In Motion/",$m))	{return  "rim";}
 	elseif (preg_match("/SMC Net|STANDARD MICROSYS/i",$m))	{return  "smc";}
 	elseif (preg_match("/SUPER(\s)?MICRO/i",$m))		{return  "sum";}
 	elseif (preg_match("/ZYXEL|ZyGate/i",$m))		{return  "zyx";}
@@ -225,44 +228,48 @@ function Nimg($m) {
 // Emulate good old nbtstat on port 137
 function NbtStat($ip) {
 
-	$nbts	= pack('C50',129,98,00,00,00,01,00,00,00,00,00,00,32,67,75,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,00,00,33,00,01);
-	$fp		= @fsockopen("udp://$ip", 137, $errno, $errstr);
-	if (!$fp) {
-		return "ERROR! $errno $errstr";
-	}else {
-		fwrite($fp, "$nbts");
-		stream_set_timeout($fp, 0, 1000000 );
-		$data =  fread($fp, 400);
-		fclose($fp);
+	if ($ip == "0.0.0.0") {
+		return "<img src=\"img/16/bcls.png\"> No IP!";
+	}else{
+		$nbts	= pack('C50',129,98,00,00,00,01,00,00,00,00,00,00,32,67,75,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,00,00,33,00,01);
+		$fp		= @fsockopen("udp://$ip", 137, $errno, $errstr);
+		if (!$fp) {
+			return "ERROR! $errno $errstr";
+		}else {
+			fwrite($fp, "$nbts");
+			stream_set_timeout($fp, 0, 1000000 );
+			$data =  fread($fp, 400);
+			fclose($fp);
 
-		if (preg_match("/AAAAAAAAAA/",$data) ){
-			$nna = unpack('cnam',substr($data,56,1));  							# Get number of names
-			$out = substr($data,57);                							# get rid of WINS header
+			if (preg_match("/AAAAAAAAAA/",$data) ){
+				$nna = unpack('cnam',substr($data,56,1));  							# Get number of names
+				$out = substr($data,57);                							# get rid of WINS header
 
-			for ($i = 0; $i < $nna['nam'];$i++){
-				$nam = preg_replace("/ +/","",substr($out,18*$i,15));
-				$id = unpack('cid',substr($out,18*$i+15,1));
-				$fl = unpack('cfl',substr($out,18*$i+16,1));
-				$na = "";
-				$gr = "";
-				$co = "";
-				if ($fl['fl'] > 0){
-					if ($id['id'] == "3"){
+				for ($i = 0; $i < $nna['nam'];$i++){
+					$nam = preg_replace("/ +/","",substr($out,18*$i,15));
+					$id = unpack('cid',substr($out,18*$i+15,1));
+					$fl = unpack('cfl',substr($out,18*$i+16,1));
+					$na = "";
+					$gr = "";
+					$co = "";
+					if ($fl['fl'] > 0){
+						if ($id['id'] == "3"){
+							if ($na == ""){
+								$na = $nam;
+							}else{
+								$co = $nam;
+							}
+						}
+					}else{
 						if ($na == ""){
-							$na = $nam;
-						}else{
-							$co = $nam;
+							$gr = $nam;
 						}
 					}
-				}else{
-					if ($na == ""){
-						$gr = $nam;
-					}
 				}
+				return "<img src=\"img/16/bchk.png\"> $na $gr $co";
+			}else{
+				return "<img src=\"img/16/bstp.png\"> No response";
 			}
-			return "<img src=\"img/16/bchk.png\"> $na $gr $co";
-		}else{
-			return "<img src=\"img/16/bstp.png\"> No response";
 		}
 	}
 }
@@ -313,6 +320,9 @@ function CheckTCP ($ip, $p,$d){
 //===================================================================
 // Create and send magic packet (copied from the PHP webiste)
 function Wake($ip, $mac, $port){
+
+	global $errlbl, $sndlbl;
+
 	$nic = fsockopen("udp://" . $ip, $port);
 	if($nic){
 		$packet = "";
@@ -327,9 +337,12 @@ function Wake($ip, $mac, $port){
 		}
 		$ret = fwrite($nic, $packet);
 		fclose($nic);
-		if($ret)
+		if($ret){
+			echo "<h5>WoL $sndlbl $ip OK</h5>\n";
 			return true;
+		}
 	}
+	echo "<h4>WoL $sndlbl $ip $errlbl</h4>\n";
 	return false;
 }
 

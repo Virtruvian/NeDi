@@ -1,4 +1,4 @@
-<?
+<?php
 # Program: Other-Plot.php
 # Programmer: Remo Rickli
 
@@ -27,31 +27,31 @@ $_GET = sanitize($_GET);						# Can't sanitize before including header (which br
 
 ?>
 <h1>Other Plot</h1>
-<form method="get" action="<?=$self?>.php">
-<table class="content" ><tr class="<?=$modgroup[$self]?>1">
-<th width=50><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
-<th valign="top"><?=$sizlbl?><p>
+<form method="get" action="<?= $self ?>.php">
+<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
+<th width=50><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<th valign="top"><?= $sizlbl ?><p>
 <select size=1 name="res">
-<option value="vga" <?=($res == "vga")?"selected":""?>>640x480
-<option value="svga" <?=($res == "svga")?"selected":""?>>800x600
-<option value="xga" <?=($res == "xga")?"selected":""?>>1024x768
-<option value="sxga" <?=($res == "sxga")?"selected":""?>>1280x1024
-<option value="uxga" <?=($res == "uxga")?"selected":""?>>1600x1200
+<option value="vga" <?= ($res == "vga")?" selected":"" ?>>640x480
+<option value="svga" <?= ($res == "svga")?" selected":"" ?>>800x600
+<option value="xga" <?= ($res == "xga")?" selected":"" ?>>1024x768
+<option value="sxga" <?= ($res == "sxga")?" selected":"" ?>>1280x1024
+<option value="uxga" <?= ($res == "uxga")?" selected":"" ?>>1600x1200
 </select><br>
 </th>
 <th valign="top">Range<p>
-x <input type="text" name="xf" value="<?=$xf?>" size=3> - <input type="text" name="xt" value="<?=$xt?>" size=3><br>
-y <input type="text" name="yf" value="<?=$yf?>" size=3> - <input type="text" name="yt" value="<?=$yt?>" size=3>
+x <input type="text" name="xf" value="<?= $xf ?>" size=3> - <input type="text" name="xt" value="<?= $xt ?>" size=3><br>
+y <input type="text" name="yf" value="<?= $yf ?>" size=3> - <input type="text" name="yt" value="<?= $yt ?>" size=3>
 </th>
 <th valign="top">
 f($x)<p>
-<input name="function" value="<?=$f?>" size=60>
+<input name="function" value="<?= $f ?>" size=60>
 </th>
-<th width=80><input type="submit" value="<?=$sholbl?>"></th>
+<th width=80><input type="submit" value="<?= $sholbl ?>"></th>
 </tr></table></form><p>
 <center>
-<img src="<?=$self?>.php?cmd=img&function=<?=rawurlencode($f)?>&xf=<?=$xf?>&yf=<?=$yf?>" BORDER=2>
+<img src="<?= $self ?>.php?cmd=img&function=<?= rawurlencode($f) ?>&xf=<?= $xf ?>&yf=<?= $yf ?>" BORDER=2>
 </center>
-<?
+<?php
 include_once ("inc/footer.php");
 ?>

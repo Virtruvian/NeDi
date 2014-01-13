@@ -7,7 +7,9 @@ Typoid
 Sysdes	
 OS	XOS
 Icon	w3pd
+Size	1
 Bridge	normal
+ArpND	old
 Dispro	LLDPXN
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
 Bimage	1.3.6.1.4.1.1916.1.1.1.13.0
@@ -15,11 +17,12 @@ Bimage	1.3.6.1.4.1.1916.1.1.1.13.0
 # Vlan Specific
 VLnams	1.3.6.1.4.1.1916.1.2.1.2.1.2
 VLnamx	1.3.6.1.4.1.1916.1.2.1.2.1.10
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3
@@ -41,7 +44,7 @@ Movalu	9
 Moslot	1.3.6.1.2.1.47.1.1.1.1.6
 Modhw	1.3.6.1.2.1.47.1.1.1.1.8
 Modsw	
-Modfw	1.3.6.1.2.1.47.1.1.1.1.10
+Modfw	1.3.6.1.2.1.47.1.1.1.1.9
 Modser	1.3.6.1.2.1.47.1.1.1.1.11
 Momodl	1.3.6.1.2.1.47.1.1.1.1.13
 

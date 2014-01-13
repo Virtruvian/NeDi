@@ -59,22 +59,31 @@ ropr: Read only prompt, if no readonly prompt is used set to some string which w
 enpr: Enable prompt
 
 =item *
+enab: Enable command
+
+=item *
 conf: Command to display config
+
+=item *
+ctim: Wait additional seconds for config (default 10)
 
 =item *
 strt: Match start of config (use a . to match anything)
 
 =item *
-page: Disable paging
+page: Command to disable paging
 
 =item *
-dfwd: Show dynamic bridge forwarding table
+dfwd: Show dynamic bridge forwarding table (only IOS & CatOS)
 
 =item *
-sfwd: Show static bridge forwarding table
+sfwd: Show static bridge forwarding table (only IOS & CatOS)
 
 =item *
-arp: Show arp table
+arp: Show arp table (ASA, Nexus)
+
+=item *
+wsnr: Command for wireless SNR levels (only IOS-ap, but not finished yet)
 
 =back
 
@@ -91,7 +100,7 @@ IOS       Name>   Name#         Name(config)#
 
 CatOS     Name>   Name>(enable) -
 
-Omnistack         Name#         
+Omnistack -       Name#         
 
 ProCurve  Name>   Name#         Name(config)# 
 
@@ -101,6 +110,7 @@ JunOS     -       Name>         Name#
 
 ESX       -       Name#         -
 
+etc.
 
 =head3 Enable VMware ESX support
 
@@ -124,35 +134,49 @@ Edit $cmd{'ESX'}{'conf'} to adjust path to *.vmx files for backup.
 
 our $clipause = 1;
 
+#TODO assign the 'strt' strings Software|# What:| General System Information)|\*\*\* CORE|<config>|\sversion
+
 # Alcatel-Lucent
 $cmd{'Omnistack'}{'ropr'} = 'GitsDoNid';
 $cmd{'Omnistack'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'Omnistack'}{'enab'} = 'enable';
 $cmd{'Omnistack'}{'conf'} = 'show configuration snapshot';
 $cmd{'Omnistack'}{'strt'} = '.';
+
+#Aruba
+$cmd{'ArubaOS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'ArubaOS'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'ArubaOS'}{'enab'} = 'enable';
+$cmd{'ArubaOS'}{'conf'} = 'show running-config';
+$cmd{'ArubaOS'}{'strt'} = '^version';
+$cmd{'ArubaOS'}{'page'} = 'no paging';
+$cmd{'ArubaOS'}{'dfwd'} = 'show mac-address-table';
 
 # AVAYA
 $cmd{'Nortel'}{'ropr'} = '(.+?)>\s?$';
 $cmd{'Nortel'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'Nortel'}{'enab'} = 'enable';
 $cmd{'Nortel'}{'conf'} = 'show run';
 $cmd{'Nortel'}{'strt'} = '.';
 $cmd{'Nortel'}{'page'} = 'terminal length 0';
 
 # BROCADE
-$cmd{'Ironware'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'Ironware'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'Ironware'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'Ironware'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'Ironware'}{'enab'} = 'enable';
 $cmd{'Ironware'}{'conf'} = 'show run';
 $cmd{'Ironware'}{'strt'} = '.';
 $cmd{'Ironware'}{'page'} = 'skip-page-display';
 
 # CIENA
-$cmd{'LEOS'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'LEOS'}{'enpr'} = $cmd{'IOS'}{'ropr'};
+$cmd{'LEOS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'LEOS'}{'enpr'} = '(.+?)>\s?$';
 $cmd{'LEOS'}{'conf'} = 'configuration show';
 $cmd{'LEOS'}{'strt'} = '.';
 $cmd{'LEOS'}{'page'} = 'system shell set more off';
 
-$cmd{'SAOS'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'SAOS'}{'enpr'} = $cmd{'IOS'}{'ropr'};
+$cmd{'SAOS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'SAOS'}{'enpr'} = '(.+?)>\s?$';
 $cmd{'SAOS'}{'conf'} = 'configuration show';
 $cmd{'SAOS'}{'strt'} = '.';
 $cmd{'SAOS'}{'page'} = 'system shell set more off';
@@ -160,39 +184,60 @@ $cmd{'SAOS'}{'page'} = 'system shell set more off';
 # CISCO
 $cmd{'IOS-old'}{'ropr'} = '(.+?)>\s?$';
 $cmd{'IOS-old'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'IOS-old'}{'enab'} = 'enable';
 $cmd{'IOS-old'}{'conf'} = 'show run';
 $cmd{'IOS-old'}{'strt'} = '^Current';
+$cmd{'IOS-old'}{'end'}  = '^end$';
 $cmd{'IOS-old'}{'page'} = 'terminal length 0';
-$cmd{'IOS-old'}{'dfwd'} = 'sh mac-address-table dyn';							# Older IOS, tx Rufer & Eviltrooper
-$cmd{'IOS-old'}{'sfwd'} = 'sh port-security addr';							# tx Duane Walker
+$cmd{'IOS-old'}{'dfwd'} = 'show mac-address-table dyn';							# Older IOS, tx Rufer & Eviltrooper
+$cmd{'IOS-old'}{'sfwd'} = 'show port-security addr';							# tx Duane Walker
 
 $cmd{'IOS'}{'ropr'} = '(.+?)>\s?$';
 $cmd{'IOS'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'IOS'}{'enab'} = 'enable';
 $cmd{'IOS'}{'conf'} = 'show run';
+$cmd{'IOS'}{'ctim'} = 30;
 $cmd{'IOS'}{'strt'} = '^Current';
+$cmd{'IOS'}{'end'}  = '^end$';
 $cmd{'IOS'}{'page'} = 'terminal length 0';
-$cmd{'IOS'}{'dfwd'} = 'show mac address-table dynamic';
-$cmd{'IOS'}{'sfwd'} = 'sh port-security addr';								# tx Duane Walker
+$cmd{'IOS'}{'dfwd'} = 'show mac address-table | e CPU|Switch|Router|/.*,';				# tx colejv
+$cmd{'IOS'}{'tech'} = "show tech-support | redirect tftp://%NeDi%/%FILE%";
 
-$cmd{'IOS-wl'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'IOS-wl'}{'enpr'} = $cmd{'IOS'}{'enpr'};
-$cmd{'IOS-wl'}{'conf'} = 'show run';
-$cmd{'IOS-wl'}{'strt'} = '^Current';
-$cmd{'IOS-wl'}{'page'} = 'terminal length 0';
-$cmd{'IOS-wl'}{'dfwd'} = 'sh bridge | exclude \*\*\*';
-$cmd{'IOS-wl'}{'wsnr'} = 'show dot11 statistics client-traffic'; # Credits to HB9DDO
+$cmd{'IOS-ap'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'IOS-ap'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'IOS-ap'}{'enab'} = 'enable';
+$cmd{'IOS-ap'}{'conf'} = 'show run';
+$cmd{'IOS-ap'}{'strt'} = '^Current';
+$cmd{'IOS-ap'}{'end'}  = '^end$';
+$cmd{'IOS-ap'}{'page'} = 'terminal length 0';
+$cmd{'IOS-ap'}{'dfwd'} = 'show bridge | exclude \*\*\*';
+$cmd{'IOS-ap'}{'wsnr'} = 'show dot11 statistics client-traffic'; 					# Credits to HB9DDO
 
-$cmd{'IOS-fw'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'IOS-fw'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'IOS-wlc'}{'ropr'} = '\(Cisco Controller\) >$';
+$cmd{'IOS-wlc'}{'enpr'} = $cmd{'IOS-wlc'}{'ropr'};
+$cmd{'IOS-wlc'}{'conf'} = 'show run-config commands';
+$cmd{'IOS-wlc'}{'strt'} = '.';
+$cmd{'IOS-wlc'}{'page'} = 'config paging disable';
+
+$cmd{'IOS-pix'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'IOS-pix'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'IOS-pix'}{'enab'} = 'enable';
+$cmd{'IOS-pix'}{'conf'} = 'show run';
+$cmd{'IOS-pix'}{'strt'} = '^PIX Version';
+$cmd{'IOS-pix'}{'page'} = 'no pager';									# PIX 6.3
+$cmd{'IOS-pix'}{'arp'} = 'show arp';
+
+$cmd{'IOS-fw'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'IOS-fw'}{'enpr'} = '(.+?)#\s?$';
 $cmd{'IOS-fw'}{'enab'} = 'enable';
 $cmd{'IOS-fw'}{'conf'} = 'show run';
 $cmd{'IOS-fw'}{'strt'} = '^PIX|ASA';
-#$cmd{'IOS-fw'}{'page'} = 'no pager';									# PIX 6.3
+$cmd{'IOS-fw'}{'end'}  = '^: end$';
 $cmd{'IOS-fw'}{'page'} = 'no terminal pager';								# PIX 8.0.3, ASA 8.2
-$cmd{'IOS-fw'}{'arp'} = 'sh arp';
+$cmd{'IOS-fw'}{'arp'} = 'show arp';
 
-$cmd{'IOS-fv'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'IOS-fv'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'IOS-fv'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'IOS-fv'}{'enpr'} = '(.+?)#\s?$';
 $cmd{'IOS-fv'}{'enab'} = 'enable';
 $cmd{'IOS-fv'}{'conf'} = 'show run';
 $cmd{'IOS-fv'}{'strt'} = '^FWSM';
@@ -206,51 +251,82 @@ $cmd{'IOS-css'}{'strt'} = '^!Generated' ;
 $cmd{'CatOS'}{'ropr'} = '(.+)>\s?$';
 $cmd{'CatOS'}{'enpr'} = '(.+)>\s?\(enable\)\s?$';
 $cmd{'CatOS'}{'enab'} = 'enable';
-$cmd{'CatOS'}{'dfwd'} = 'sh cam dyn';
+$cmd{'CatOS'}{'dfwd'} = 'show cam dyn';
 $cmd{'CatOS'}{'conf'} = 'show conf';
 $cmd{'CatOS'}{'strt'} = '^begin';
 $cmd{'CatOS'}{'page'} = 'set length 0';
 
-$cmd{'NXOS'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'NXOS'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'NXOS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'NXOS'}{'enpr'} = '(.+?)#\s?$';
 $cmd{'NXOS'}{'enab'} = 'enable';
-$cmd{'NXOS'}{'dfwd'} = 'sh cam dyn';
-$cmd{'NXOS'}{'conf'} = 'show running-config include-switch-profile';
-$cmd{'NXOS'}{'strt'} = '^begin';
-$cmd{'NXOS'}{'page'} = 'set length 0';
+$cmd{'NXOS'}{'dfwd'} = 'sh mac address-table dyn';
+$cmd{'NXOS'}{'conf'} = 'show running-config';
+$cmd{'NXOS'}{'strt'} = '^begin|running-config';
+$cmd{'NXOS'}{'page'} = 'terminal length 0';
+$cmd{'NXOS'}{'arp'} = 'sh ip arp vrf all';
 
 # ENTERASYS
-$cmd{'EOS'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'EOS'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'EOS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'EOS'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'EOS'}{'enab'} = 'enable';
 $cmd{'EOS'}{'conf'} = 'show run';
 $cmd{'EOS'}{'strt'} = '!PLATFORM';
 $cmd{'EOS'}{'page'} = 'terminal length 0';
 
 # EXTREME
-$cmd{'Xware'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'Xware'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'Xware'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'Xware'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'Xware'}{'enab'} = 'enable';
 $cmd{'Xware'}{'conf'} = 'show configuration';
 $cmd{'Xware'}{'strt'} = 'Software Version';
 $cmd{'Xware'}{'page'} = 'disable clipaging session';
 
-$cmd{'XOS'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'XOS'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'XOS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'XOS'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'XOS'}{'enab'} = 'enable';
 $cmd{'XOS'}{'conf'} = 'show configuration';
 $cmd{'XOS'}{'strt'} = '^#';
 $cmd{'XOS'}{'page'} = 'disable clipaging';
 
-# # Software|# What:| General System Information)|\*\*\* CORE|<config>|\sversion TODO assign the 'strt' strings...
+# Fortigate
+$cmd{'FortiOS'}{'ropr'} = 'GitsDoNid';
+$cmd{'FortiOS'}{'enpr'} = '(.+?)\$\s?$';
+$cmd{'FortiOS'}{'conf'} = 'show full-configuration';
+$cmd{'FortiOS'}{'strt'} = '^config';
+$cmd{'FortiOS'}{'more'} = '--More-- ';
 
 # JUNIPER
 $cmd{'JunOS'}{'ropr'} = 'GitsDoNid';
 $cmd{'JunOS'}{'enpr'} = '(.+?)>\s?$';
+$cmd{'JunOS'}{'enab'} = 'enable';
 $cmd{'JunOS'}{'conf'} = 'show configuration | no-more';
 #$cmd{'JunOS'}{'dfwd'} = 'show ethernet-switching table | no-more';					# Sneuser: for switches only
 $cmd{'JunOS'}{'strt'} = '^## Last commit';
 
+$cmd{'NetScreen'}{'ropr'} = 'GitsDoNid';
+$cmd{'NetScreen'}{'enpr'} = '(.+?)>\s?$';
+$cmd{'NetScreen'}{'enab'} = 'enable';
+$cmd{'NetScreen'}{'conf'} = 'get config';
+$cmd{'NetScreen'}{'page'} = 'set console page 0';
+$cmd{'NetScreen'}{'strt'} = '^Total';
+
+# Hirschmann
+$cmd{'Hirschmann'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'Hirschmann'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'Hirschmann'}{'enab'} = 'enable';
+$cmd{'Hirschmann'}{'conf'} = 'show run';
+$cmd{'Hirschmann'}{'strt'} = '!Current';
+
 # HP
+$cmd{'Comwar3'}{'ropr'} = 'GitsDoNid';
+$cmd{'Comwar3'}{'enpr'} = '(.+?)[>\]]\s?(\n%.+)?$';							# Sends a % line after login prompt!
+$cmd{'Comwar3'}{'enab'} = 'super';
+$cmd{'Comwar3'}{'conf'} = 'display current';
+$cmd{'Comwar3'}{'strt'} = '#';
+$cmd{'Comwar3'}{'more'} = '  ---- More ----';								# Experimental, to get old 3Com switches backed up
+
 $cmd{'Comware'}{'ropr'} = 'GitsDoNid';
-$cmd{'Comware'}{'enpr'} = '(.+?)>\s?$';
+$cmd{'Comware'}{'enpr'} = '(.+?)[>\]]\s?$';
 $cmd{'Comware'}{'enab'} = 'super';
 $cmd{'Comware'}{'conf'} = 'display current';
 $cmd{'Comware'}{'strt'} = '.';
@@ -260,28 +336,37 @@ $cmd{'ProCurve'}{'ropr'} = '(.+?)>\s?(\x1b\[[;\?0-9A-Za-z]+)+$';					# Match the
 $cmd{'ProCurve'}{'enpr'} = '(.+?)#\s?(\x1b\[[;\?0-9A-Za-z]+)+$';
 $cmd{'ProCurve'}{'enab'} = 'enable';
 $cmd{'ProCurve'}{'conf'} = 'show run';
-$cmd{'ProCurve'}{'strt'} = '^Running';
+$cmd{'ProCurve'}{'strt'} = 'Configuration Editor; ';
 $cmd{'ProCurve'}{'page'} = 'no page';
+$cmd{'ProCurve'}{'tech'} = "copy command-output \"sh tech all\" tftp %NeDi% %FILE%";
 
-$cmd{'MSM'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'MSM'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'MSM'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'MSM'}{'enpr'} = '(.+?)#\s?$';
 $cmd{'MSM'}{'enab'} = 'enable';
 $cmd{'MSM'}{'conf'} = 'show all conf';
-$cmd{'MSM'}{'strt'} = '.';
+$cmd{'MSM'}{'ctim'} = 120;
+$cmd{'MSM'}{'strt'} = 'enable';
 
-$cmd{'SROS'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'SROS'}{'enpr'} = $cmd{'IOS'}{'enpr'};
+$cmd{'SROS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'SROS'}{'enpr'} = '(.+?)#\s?$';
 $cmd{'SROS'}{'enab'} = 'enable';
 $cmd{'SROS'}{'conf'} = 'show run';
 $cmd{'SROS'}{'strt'} = '.';
 $cmd{'SROS'}{'page'} = 'terminal length 0';
 
-$cmd{'TMS'}{'ropr'} = $cmd{'IOS'}{'ropr'};
-$cmd{'TMS'}{'enpr'} = $cmd{'IOS'}{'enpr'};
-$cmd{'TMS'}{'conf'} = 'show run';
+$cmd{'TMS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'TMS'}{'enpr'} = '(.+?)#\s?$';
 $cmd{'TMS'}{'enab'} = 'enable';
+$cmd{'TMS'}{'conf'} = 'show run';
 $cmd{'TMS'}{'strt'} = '.';
 $cmd{'TMS'}{'page'} = 'no page';
+
+$cmd{'VC'}{'ropr'} = 'GitsDoNid';
+$cmd{'VC'}{'enpr'} = '->\s?$';
+$cmd{'VC'}{'enab'} = 'super';
+$cmd{'VC'}{'conf'} = 'show config';
+$cmd{'VC'}{'strt'} = '#';
+$cmd{'VC'}{'end'}  = 'SUCCESS';
 
 #HuaweiVRP
 $cmd{'HuaweiVRP'}{'ropr'} = '(.+?)>\s?$';
@@ -297,12 +382,36 @@ $cmd{'LANCOM'}{'enpr'} = '>\s$';
 $cmd{'LANCOM'}{'conf'} = 'readconfig';                                                  # Backs up main config
 $cmd{'LANCOM'}{'strt'} = '.';
 
+# Maipu
+$cmd{'Maipu'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'Maipu'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'Maipu'}{'enab'} = 'enable';
+$cmd{'Maipu'}{'conf'} = 'show run';
+$cmd{'Maipu'}{'strt'} = '.';
+
 # MIKROTIK
 $cmd{'ROS'}{'ropr'} = '(.+?)>\s?$';
 $cmd{'ROS'}{'enpr'} = '(.+?)>\s?$';
 $cmd{'ROS'}{'conf'} = 'export';
 $cmd{'ROS'}{'strt'} = '.';
 $cmd{'ROS'}{'page'} = '';
+
+# Netgear
+$cmd{'Netgear'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'Netgear'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'Netgear'}{'enab'} = 'enable';
+$cmd{'Netgear'}{'conf'} = 'show run';
+$cmd{'Netgear'}{'strt'} = '^Current';
+$cmd{'Netgear'}{'page'} = 'terminal length 0';
+$cmd{'Netgear'}{'dfwd'} = 'show mac-addr-table all'; 
+$cmd{'Netgear'}{'sfwd'} = 'show port-security all '; 
+
+# Ruckus
+$cmd{'ZDOS'}{'ropr'} = '(.+?)>\s?$';
+$cmd{'ZDOS'}{'enpr'} = '(.+?)#\s?$';
+$cmd{'ZDOS'}{'enab'} = 'enable';
+$cmd{'ZDOS'}{'conf'} = 'show config';
+$cmd{'ZDOS'}{'strt'} = '.';
 
 # VMWARE
 $cmd{'ESX'}{'ropr'} = 'GitsDoNid';
@@ -318,7 +427,7 @@ Connects to a device using telnet or SSH and sets user if enable is ok
 
 Verbose output is divided into different stages:
 
-CLI|SHH|TEL:check transport & policy conformance
+CLI|SSH|TEL:check transport & policy conformance
 
 CLI0:connecting
 
@@ -330,7 +439,7 @@ CLI3:1st level login
 
 CLI4:Enable required?
 
-CLI5:Enabling prompts for username
+CLI5:Enable prompts for username
 
 CLI6:Enable password with username
 
@@ -392,13 +501,13 @@ sub Connect{
 		&misc::Prt("CLI :connection disabled\n");
 		return (undef, "connection disabled");
 	}
-	return (undef, "connection error on port $po") if !defined $session;						# To catch failed connections
+	return (undef, "connection error on port $po") if !defined $session;				# To catch failed connections
 
 	($pre, $match) = $session->waitfor("/are you sure|offending key|modulus too small|connection refused|ssh_exchange_identification|any key|Ctrl-Y|$misc::uselogin|password\\s?:|$cmd{$os}{ropr}|$cli::cmd{$os}{enpr}/i");
 	$err = $session->errmsg;
 	if($err){											# on OBSD $err=pattern match read eof
 		$session->close if defined $session;
-		&misc::Prt("ERR :$err\n");
+		&misc::Prt("ERR0:$err\n");
 		return (undef, "connection $err");
 	}elsif($match =~ /connection refused/i){
 		$session->close if defined $session;
@@ -406,7 +515,7 @@ sub Connect{
 		return (undef, "connection refused");
 	}elsif($match =~ /Selected cipher type not supported/){
 		$session->close if defined $session;
-		&misc::Prt("CLI :Selected cipher type not supported\n");				# Sneuser: Juniper with Export image, you need a domestic image!
+		&misc::Prt("CLI0:Selected cipher type not supported\n");				# Sneuser: Juniper with Export image, you need a domestic image!
 		return (undef, "connection cipher type not supported");
 	}elsif($match =~ /ssh_exchange_identification/i){
 		$session->close if defined $session;
@@ -425,21 +534,21 @@ sub Connect{
 		&misc::Prt("CLI0:Hostkey too small\n");
 		return (undef, "connection hostkey too small");
 	}elsif($match =~ /any key|Ctrl-Y/i){
-		&misc::Prt("CLI1:Matched $match, sending ctrl-Y\n");
+		&misc::Prt("CLI1:Matched '$match' sending ctrl-Y\n");
 		$session->put("\cY");									# Since Nortel wants Ctrl-Y...
 		($pre, $match) = $session->waitfor("/$misc::uselogin|password\\s?:|$cmd{$os}{ropr}|$cmd{$os}{enpr}/i");
 		if($match =~ /$misc::uselogin/i){
-			&misc::Prt("CLI1:Matched $match, sending username\n");
+			&misc::Prt("CLI1:Matched '$match' sending username\n");
 			$next = "us";
 		}elsif($match =~ /password\s?(:|for)/i){
-			&misc::Prt("CLI1:Matched $match, sending password\n");
+			&misc::Prt("CLI1:Matched '$match' sending password\n");
 			$next = "pw";
 		}
 	}elsif($match =~ /$misc::uselogin/i){
-		&misc::Prt("CLI2:Matched $match, sending username\n");
+		&misc::Prt("CLI2:Matched '$match' sending username\n");
 		$next = "us";
 	}elsif($match =~ /password\s?(:|for)/i){
-		&misc::Prt("CLI2:Matched $match, sending password\n");
+		&misc::Prt("CLI2:Matched '$match' sending password\n");
 		$next = "pw";
 	}
 
@@ -448,7 +557,7 @@ sub Connect{
 		&misc::Prt("CLI3:Username $realus sent\n");
 		($pre, $match) = $session->waitfor("/password\\s?:|invalid|incorrect|denied|authentication failed|$misc::uselogin|$cmd{$os}{ropr}|$cmd{$os}{enpr}/i");
 		if($match =~ /password\s?(:|for)/i){
-			&misc::Prt("CLI3:Matched $match, sending password\n");
+			&misc::Prt("CLI3:Matched '$match' sending password\n");
 			$next = "pw";
 		}else{
 			&misc::Prt("CLI3:Login, no match ($pre)\n");
@@ -458,19 +567,19 @@ sub Connect{
 		$session->print($misc::login{$us}{pw});
 		&misc::Prt("CLI3:Password sent\n");
 		($pre, $match) = $session->waitfor("/any key|Ctrl-Y|password\\s?:|invalid|incorrect|denied|authentication failed|$misc::uselogin|$cmd{$os}{ropr}|$cmd{$os}{enpr}/i");
-		#print "PRE :$pre\nMTCH:$match\n" if $main::opt{'d'}; TODO find out why my enterasys disconnects here
+		#print "PRE :$pre\nMTCH:$match\n" if $main::opt{'d'}; #TODO find out why my enterasys disconnects here
 	}
 	$err = $session->errmsg;
 	if($err){
-		&misc::Prt("ERR :$err\n");
+		&misc::Prt("ERR3:$err\n");
 		$session->close;
 		return (undef, "login error");
 	}elsif($match =~ /password\s?(:|for)|invalid|incorrect|denied|Authentication failed|$misc::uselogin/i){
-		&misc::Prt("CLI3:Matched $match, login failed\n");
+		&misc::Prt("CLI3:Matched '$match' login failed\n");
 		$session->close;
-		return (undef, "login failed");
+		return (undef, "login wrong");
 	}elsif($match =~ /any key|Ctrl-Y/i){								# Some want this now (with SSH)...
-		&misc::Prt("CLI3:Matched $match, sending ctrl-Y\n");
+		&misc::Prt("CLI3:Matched '$match' sending ctrl-Y\n");
 		$session->put("\cY");									# Since Nortel wants Ctrl-Y...
 		($pre, $match) = $session->waitfor("/$cmd{$os}{enpr}/i");
 		$err = $session->errmsg;
@@ -481,20 +590,20 @@ sub Connect{
 			($pre, $match) = $session->waitfor("/$misc::uselogin|password\\s?:|$cmd{$os}{enpr}/i");
 			$err = $session->errmsg;
 			if($err){
-				&misc::Prt("ERR :$err\n");
+				&misc::Prt("ERR4:$err\n");
 				$session->close;
 				return (undef, "login error");
 			}elsif($match =~ /$misc::uselogin/i){
-				&misc::Prt("CLI5:Matched $match, sending username\n");
+				&misc::Prt("CLI5:Matched '$match' sending username\n");
 				$session->print($realus);
 				($pre, $match) = $session->waitfor("/password\\s?:/i");
 				$err = $session->errmsg;
 				if($err){
-					&misc::Prt("ERR :$err\n");
+					&misc::Prt("ERR5:$err\n");
 					$session->close;
 					return (undef, "login error");
 				}elsif($match =~ /password\s?(:|for)/i){
-					&misc::Prt("CLI6:Matched $match, sending password\n");
+					&misc::Prt("CLI6:Matched '$match' sending password\n");
 					$session->print($misc::login{$us}{en});
 					($pre, $match) = $session->waitfor("/password\\s?:|invalid|incorrect|denied|authentication failed|$cmd{$os}{enpr}/i");
 					$err = $session->errmsg;
@@ -502,7 +611,7 @@ sub Connect{
 					&misc::Prt("CLI6:Enabling with user, no match in -->$pre<--\n");
 				}
 			}elsif($match =~ /password\s?(:|for)/i){
-				&misc::Prt("CLI7:Matched $match, sending password\n");
+				&misc::Prt("CLI7:Matched '$match' sending password\n");
 				$session->print($misc::login{$us}{en});
 				($pre, $match) = $session->waitfor("/password\\s?:|invalid|incorrect|denied|authentication failed|unable to verif |$cmd{$os}{enpr}/i");
 				$err = $session->errmsg;
@@ -513,13 +622,14 @@ sub Connect{
 			$err = "no read-only prompt";
 		}
 	}
-	if ($match =~ /$cmd{$os}{enpr}/i){								# Are we enabled?
+	if($match =~ /$cmd{$os}{enpr}/i){								# Are we enabled?
 		&misc::Prt("CLI8:Matched enable prompt, OK\n");
 		return ($session, "OK");
 	}else{
-		&misc::Prt("ERR :$err\n");
+		$err = $session->errmsg;
+		&misc::Prt("CLI8:Matched '$match' enable failed \n");
 		$session->close;
-		return (undef, $err, undef);
+		return (undef, "enable failed");
 	}
 }
 
@@ -624,13 +734,13 @@ sub BridgeFwd{
 		return $status;
 	}else{
 		$session->max_buffer_length(8 * 1024 * 1024);						# Increase buffer to 8Mb
-		if ($cmd{$main::dev{$na}{os}}{page}){
+		if($cmd{$main::dev{$na}{os}}{page}){
 			my @page = $session->cmd($cmd{$main::dev{$na}{os}}{page});
-			&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{page}: @page\n");
+			&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{page}, @page\n");
 		}
 		@cam = $session->cmd($cmd{$main::dev{$na}{os}}{dfwd});
 		&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{dfwd}\n");
-		if ($misc::getfwd eq 'sec' and exists $cmd{$main::dev{$na}{os}}{sfwd}){
+		if($misc::getfwd eq 'sec' and exists $cmd{$main::dev{$na}{os}}{sfwd}){
 			&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{sfwd}\n");
 			push @cam, $session->cmd($cmd{$main::dev{$na}{os}}{sfwd});
 		}
@@ -643,11 +753,11 @@ sub BridgeFwd{
 		my $vl = "";
 		my $ul = 0;
 		my $rt = 0;
-		if($main::dev{$na}{os} =~ /^IOS/){
-			if ($l =~ /\s+(dynamic|forward|secure(dynamic|sticky))\s+/i){			# (secure) Thanks to Duane Walker 7/2007
+		if($main::dev{$na}{os} =~ /^(IOS|NXOS)/){
+			if ($l =~ /\s+(dynamic|static|forward|secure(dynamic|sticky))\s+/i){		# (secure) tx Duane Walker 7/2007
 				my @mactab = split (/\s+/,$l);
 				foreach my $col (@mactab){
-					if ($col =~ /^(Te|Gi|Fa|Do|Po|Vi)/){$po = &misc::Shif($col)}
+					if ($col =~ /^(Eth|Fa|Gi|Te|Do|Po|Vi)/){$po = &misc::Shif($col)}
 					elsif ($col =~ /^[0-9|a-f]{4}\./){$mc = $col}
 					elsif ($main::dev{$na}{os} ne "IOS-wl" and !$vl and $col =~ /^[0-9]{1,4}$/){$vl = $col} # Only use, if no vlan yet and it's not a Cisco AP
 				}
@@ -655,12 +765,8 @@ sub BridgeFwd{
 					my @sub = split(/\./,$po);
 					if(exists $misc::portprop{$na}{$sub[0]}){			# Parent IF exists, treat as sub
 						$vl = $sub[1];
-						if($misc::portprop{$na}{$sub[0]}{lnk}){			# inherit properties on subinterface
-							$misc::portprop{$na}{$po}{lnk} = 1;
-						}
-						if($misc::portprop{$na}{$sub[0]}{rtr}){			# inherit properties on subinterface
-							$misc::portprop{$na}{$po}{rtr} = 1;
-						}
+						$misc::portprop{$na}{$po}{lnk} = $misc::portprop{$na}{$sub[0]}{lnk};
+						$misc::portprop{$na}{$po}{rtr} = $misc::portprop{$na}{$sub[0]}{rtr};
 					}
 				}
 			}
@@ -689,7 +795,7 @@ sub BridgeFwd{
 
 				if(exists $misc::ifmac{$mc}){
 					&misc::Prt("LINK:Seeing ".join(", ",keys %{$misc::ifmac{$mc}})." on $po: is uplink\n");
-					$misc::portprop{$na}{$po}{lnk} = 1;
+					$misc::portprop{$na}{$po}{lnk}++;
 					$main::int{$na}{$misc::portprop{$na}{$po}{idx}}{com} .= " MAC:".join(", ",keys %{$misc::ifmac{$mc}}) if $main::int{$na}{$misc::portprop{$na}{$po}{idx}}{com} !~ /^ (C|F|LL|N)DP:/;
 				}
 			}else{
@@ -715,7 +821,7 @@ B<Returns> 0 on success, 1 on failure
 sub Arp{
 
 	my ($na) = @_;
-	my ($line, @out);
+	my (@out, %myarpc);
 	my $narp = 0;
 
 	&misc::Prt("\nArp (CLI)   -------------------------------------------------------------------\n");
@@ -726,7 +832,7 @@ sub Arp{
 		$session->max_buffer_length(8 * 1024 * 1024);						# Increase buffer to 8Mb
 		if ($cmd{$main::dev{$na}{os}}{page}){
 			my @page = $session->cmd($cmd{$main::dev{$na}{os}}{page});
-			&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{page}: @page\n");
+			&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{page}, @page\n");
 		}
 		@out = $session->cmd($cmd{$main::dev{$na}{os}}{arp});
 		&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{arp}\n");
@@ -734,39 +840,59 @@ sub Arp{
 	}
 
 	foreach my $l (@out){
+
 		my $mc = "";
+		my $ip = "";
 		my $po = "";
 		my $vl = "";
 		my $ul = 0;
 		my $rt = 0;
-		if($main::dev{$na}{os} =~ /^IOS/){
-			if ($l =~ /\s+([0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3})\s+/i){
-				my @atab = split (/\s+/,$l);
-				$po = $atab[1];
-				$mc = $atab[3];
-				$mc =~ s/[^0-9a-f]//g;							# Strip to pure hex
-				if($mc !~ /$misc::ignoredmacs/){
-					$misc::arp{$mc} = $atab[2];
-					if( exists($misc::portprop{$na}{$po}) ){
-						$misc::portprop{$na}{$po}{pop}++;
-						&misc::Prt("ARPC:$mc $misc::arp{$mc} on $po\n");
-						$misc::portnew{$mc}{$na}{po} = $po;
-						$misc::portnew{$mc}{$na}{vl} = $vl;
-						$nspo++;
 
-						if(exists $misc::ifmac{$mc}){
-							&misc::Prt("LINK:Seeing ".join(", ",keys %{$misc::ifmac{$mc}})." on $po: uplink\n");
-							$misc::portprop{$na}{$po}{lnk} = 1;
-							$main::int{$na}{$misc::portprop{$na}{$po}{idx}}{com} .= " MAC:".join(", ",keys %{$misc::ifmac{$mc}});
-						}
-					}else{
-						&misc::Prt("ARPC:$mc $misc::arp{$mc}, no IF $po\n");
+		if ($l =~ /(([0-9A-Fa-f]{4}\.){2}[0-9A-Fa-f]{4})/i){					# based on sk95 NXOS contribution
+			my @atab = split (/\s+/,$l);
+			if($main::dev{$na}{os} =~ /^IOS/){
+				$po = $atab[1];
+				$ip = $atab[2];
+				$mc = $atab[3];
+			}elsif($main::dev{$na}{os} eq 'NXOS'){
+				$ip = $atab[0];
+				$mc = $atab[2];
+				$po = $atab[3];
+			}
+			$mc =~ s/[^0-9a-f]//g;								# Strip to pure hex
+			if($mc !~ /$misc::ignoredmacs/){
+				$myarpc{$mc}++;								# Find multiple MACs
+				$misc::arp{$mc} = $ip;				
+				if( exists($misc::portprop{$na}{$po}) ){
+					$misc::portprop{$na}{$po}{pop}++;
+					&misc::Prt("ARPC:$mc $misc::arp{$mc} on $po\n");
+					$misc::portnew{$mc}{$na}{po} = $po;
+					$misc::portnew{$mc}{$na}{vl} = $vl;
+					$narp++;
+
+					if(exists $misc::ifmac{$mc}){
+						&misc::Prt("LINK:Seeing ".join(", ",keys %{$misc::ifmac{$mc}})." on $po: uplink\n");
+						$misc::portprop{$na}{$po}{lnk}++;
+						$main::int{$na}{$misc::portprop{$na}{$po}{idx}}{com} .= " MAC:".join(", ",keys %{$misc::ifmac{$mc}});
 					}
+				}else{
+					&misc::Prt("ARPC:$mc $misc::arp{$mc}, no IF $po\n");
+				}
+			}
+
+			foreach my $mc ( keys %myarpc ){
+				if(exists $misc::arpc{$mc}){
+					$misc::arpc{$mc} = $myarpc{$mc} if $misc::arpc{$mc} < $myarpc{$mc};
+				}else{
+					$misc::arpc{$mc} = $myarpc{$mc};
+				}
+				if(!exists $misc::ifmac{$mc} and $myarpc{$mc} > $misc::arppoison){	# Check for ARP poisoning
+					$misc::mq += &mon::Event('N',150,'sec',$na,$na,"$myarpc{$mc} IP addresses for $mc exceed threshold of $misc::arppoison");
 				}
 			}
 		}
 	}
-	&misc::Prt("ARPC:$narp ARP entries found\n"," a$narp");
+	&misc::Prt("ARPC:$narp ARP entries found\n"," a$narp ");
 	return "OK-Arp";
 }
 
@@ -787,34 +913,54 @@ sub Config{
 	my ($session, $status, $go);
 	my @run = ();
 
+	my $os = $main::dev{$na}{os};
+
 	&misc::Prt("\nConfig (CLI)   ----------------------------------------------------------------\n");
-	($session, $status) = Connect($main::dev{$na}{ip}, $main::dev{$na}{cp}, $main::dev{$na}{us}, $main::dev{$na}{os});
-	#($session, $status, $pty) = Connect($main::dev{$na}{ip}, $main::dev{$na}{cp}, $main::dev{$na}{us}, $main::dev{$na}{os});
+	($session, $status) = Connect($main::dev{$na}{ip}, $main::dev{$na}{cp}, $main::dev{$na}{us}, $os);
+	#($session, $status, $pty) = Connect($main::dev{$na}{ip}, $main::dev{$na}{cp}, $main::dev{$na}{us}, $os);
 	if($status ne "OK"){
 		return $status;
 	}else{
 		$session->max_buffer_length(8 * 1024 * 1024);						# Increase buffer to 8Mb
-		$session->timeout($misc::timeout + 20);							# Increase for building config
-		if($cmd{$main::dev{$na}{os}}{page}){
-			my @page = $session->cmd($cmd{$main::dev{$na}{os}}{page});
-			&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{page}: @page\n");
+		if($cmd{$os}{page}){
+			my @page = $session->cmd($cmd{$os}{page});
+			&misc::Prt("CMD :$cmd{$os}{page}, @page\n");
 		}
-		&misc::Prt("CMD :$cmd{$main::dev{$na}{os}}{conf}\n");
-		@run = $session->cmd($cmd{$main::dev{$na}{os}}{conf});
+		$session->timeout( ($misc::timeout + (exists $cmd{$os}{ctim})?$cmd{$os}{ctim}:10) );							# Increase for building config
+		if(!$cmd{$os}{page} and $cmd{$os}{more}){						# No pager, but a more prompt, need to page manually
+			$session->print($cmd{$os}{conf});
+			my $morerun = "";
+			my $mcol = 0;
+			&misc::Prt("MORE:");
+			do{
+				($pre, $match) = $session->waitfor("/$cmd{$os}{more}|$cmd{$os}{enpr}/i");
+				$pre =~ s/\r|\x1b\[42D\s*//g;						# Ugly hack to get rid of backspaces after more prompt
+				$morerun .= $pre;
+				$session->put(" ") if $match eq "$cmd{$os}{more}";
+				&misc::Prt(".");
+				$mcol++;
+				&misc::Prt("\nMORE:") unless $mcol % 74;
+			}while($match !~ /$cmd{$os}{enpr}/i);						# press space until prompt is received
+			&misc::Prt(" $mcol\n");
+			@run = split(/[\r\n]/,$morerun);	
+		}else{
+			&misc::Prt("CMD :$cmd{$os}{conf}\n");
+			@run = $session->cmd($cmd{$os}{conf});
+		}
 		$session->close;
 	}
 
 	foreach my $line (@run){
 		$line =~ s/[\r\n]//g;
-		if ($line =~ /$cmd{$main::dev{$na}{os}}{strt}/){$go = 1}
+		if ($line =~ /$cmd{$os}{strt}/){$go = 1}
 		if ($go){
-			$line =~ s/\x1b\[(24;1H|2K|1;24r)//g;						# ProCurve special sauce
+			$line =~ s/\x1b\[(42;1H|2K|1;24r|24;1H)//g;					# ProCurve special sauce
 			&misc::Prt("CONF:$line\n");
 			push @misc::curcfg,$line;
 		}else{
 			&misc::Prt("WAIT:$line\n");
 		}
-		if ($line =~ /^(: )?end$|<\/config>/){$go = 0}
+		if (exists $cmd{$os}{end} and $line =~ /$cmd{$os}{end}/){$go = 0}
 	}
 	if( scalar(@misc::curcfg) < 3 ){
 		&misc::Prt("ERR :No config ($misc::curcfg[0])\n","Be");
@@ -875,12 +1021,8 @@ sub SendCmd{
 			print LOG "$c\n";
 			&misc::Prt("CMD :$c\n");
 			my @out = $session->cmd($c); 
-			if($session->errmsg){
-				$err = $session->errmsg;
-				&misc::Prt("ERR :$err\n");
-			}
 			foreach my $line (@out){
-				$line =~ s/\x1b\[(24;1H|2K|1;24r)//g;			# ProCurve clensing...
+				$line =~ s/\x1b\[(24;1H|2K|1;24r)//g;					# ProCurve clensing...
 				print LOG $line;
 				&misc::Prt("RES :$line");
 				$err = $line if $line =~ /^(\s?% )?(Invalid|Unknown|Failed|cannot)/;	# Catch errors, but ignore "% Warnings" (doesn't seem to work on ProCurve switches using SSH!)
@@ -898,7 +1040,6 @@ sub SendCmd{
 	return $err;
 }
 
-
 =head2 FUNCTION Spawn()
 
 Spawns a pty.
@@ -915,6 +1056,7 @@ sub Spawn{
 	my $pty = new IO::Pty or die $!;
 
 	&misc::Prt("PTY :Forking $_[0]\n");
+	$SIG{CHLD} = 'IGNORE';
 	unless (my $pid = fork){
 		die $! unless defined $pid;
 
@@ -930,7 +1072,6 @@ sub Spawn{
 		open STDOUT, ">&$tty_fd" or die $!;
 		open STDERR, ">&STDOUT" or die $!;
 		close $tty;
-
 		exec $_[0] or die $!;
 	}
 	$pty;

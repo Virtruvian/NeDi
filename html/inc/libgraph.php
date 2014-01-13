@@ -27,25 +27,21 @@ function Safelabel($s){
 #===================================================================
 function GraphTraffic($rrd,$t){
 
-	global $errlbl,$trflbl,$debug;
+	global $errlbl,$trflbl,$debug,$stalbl;
 
-	$c = 0;
+	$c	= 0;
 	$drawin = '';
 	$drawout= '';
-	$idef   = 'inoct';
-	$odef   = 'outoct';
-	#$agrtyp = 'MAX'; #TODO check whether this makes sense with aggregation or remove from RRDs to preserve space!
-	$agrtyp = 'AVERAGE';
+	$outdir = '';
+	$odef   = '';
+	$idef   = '';
 	$inmod  = 'AREA';
-	$outmod = 'LINE2';
 	$n	= count($rrd);
 
 	if($t == 'trf'){
-		if ($_SESSION['gbit']){
-			$tit = "$trflbl [Bit/s]";
-		}else{
-			$tit = "$trflbl [Byte/s]";
-		}
+		$idef = 'inoct';
+		$odef = 'outoct';
+		$tit = ($_SESSION['gbit'])?"$trflbl [Bit/s]":"$trflbl [Byte/s]";
 	}elseif($t == 'err'){
 		$idef = 'inerr';
 		$odef = 'outerr';
@@ -53,39 +49,60 @@ function GraphTraffic($rrd,$t){
 	}elseif($t == 'dsc'){
 		$idef = 'indisc';
 		$odef = 'outdisc';
-		$tit = "Discards/s";
+		$tit = 'Discards/s';
+	}elseif($t == 'sta'){
+		$tit = "IF $stalbl";
 	}else{
 		$idef = 'inbcast';
-		$tit = "Broadcasts/s";
+		$tit = 'Broadcasts/s';
+	}
+	if($_SESSION['gneg']){
+		$outdir = '-';
+		$outmod = 'AREA';
+	}else{
+		$outmod = 'LINE2';
 	}
 
 	foreach (array_keys($rrd) as $i){
 		$c++;
+		$eol = ($c == $n)?"\\l":"";
 		$il = str_replace(":","\:",$i);
-		if ($_SESSION['gbit'] and $t == 'trf'){
-			$drawin .= "DEF:$idef$c=$rrd[$i]:$idef:$agrtyp ";
-			$drawin .= "CDEF:b$idef$c=$idef$c,8,* $inmod:b$idef$c#". StackCol($t,$c,3) .":\"$il in ";
-			$drawout .= "DEF:$odef$c=$rrd[$i]:$odef:$agrtyp ";
-			$drawout .= "CDEF:b$odef$c=$odef$c,8,* $outmod:b$odef$c#". StackCol($t,$c,0) .":\"$il out";
+		if($_SESSION['gbit'] and $t == 'trf'){
+			$drawin .= "DEF:inbyte$c=$rrd[$i]:$idef:AVERAGE ";
+			$drawin .= "CDEF:$idef$c=inbyte$c,8,* $inmod:$idef$c#". StackCol($t,$c,3) .":\"$il in ";
+			$drawout .= "DEF:outbyte$c=$rrd[$i]:$odef:AVERAGE ";
+			$drawout .= "CDEF:$odef$c=outbyte$c,${outdir}8,* $outmod:$odef$c#". StackCol($t,$c,0) .":\"$il out";
+		}elseif($t == 'sta'){
+			$drawin .= "DEF:sta$c=$rrd[$i]:status:AVERAGE ";
+			$drawin .= "CDEF:sh$c=sta$c,0,EQ $inmod:sh$c#cc8844: ";
+			$drawin .= "CDEF:dn$c=sta$c,1,2,LIMIT,1,0,IF $inmod:dn$c#cccc44: ";#TODO remove $inmod and just multiply by $c to avoid stacking problem?
+			$drawin .= "CDEF:up$c=sta$c,2,GT $inmod:up$c#44cc44: ";
+			$drawin .= "CDEF:un$c=sta$c,UN $inmod:un$c#cccccc:\"$il ";
 		}else{
-			$drawin .= "DEF:$idef$c=$rrd[$i]:$idef:$agrtyp $inmod:$idef$c#". StackCol($t,$c,3) .":\"$il in ";
-			$drawout .= "DEF:$odef$c=$rrd[$i]:$odef:$agrtyp $outmod:$odef$c#". StackCol($t,$c,0) .":\"$il out";
+			$drawin  .= "DEF:$idef$c=$rrd[$i]:$idef:AVERAGE $inmod:$idef$c#". StackCol($t,$c,3) .":\"$il in ";
+			$drawout .= "DEF:outgr$c=$rrd[$i]:$odef:AVERAGE ";
+			$drawout .= "CDEF:$odef$c=outgr$c,${outdir}1,* $outmod:$odef$c#". StackCol($t,$c,0) .":\"$il out";
 		}
-		if($c == $n){
-			$drawout .= "\\l";
-			$drawin .= "\\l";
+
+		if ($t == 'trf' and $n == 1 and !$_SESSION['gneg']){# Couldn't figure out yet, why 95% is incorrect on negative traffic??!?
+			$drawin  .= "\" VDEF:tio95=$idef$c,95,PERCENT LINE1:tio95#ffcc44:\"95%\" GPRINT:tio95:\"%4.2lf%s\" ";
+			$drawout .= "\" VDEF:too95=$odef$c,95,PERCENT LINE1:too95#ff4444:\"95%\" GPRINT:too95:\"%4.2lf%s\" ";
+			$drawin  .= "GPRINT:$idef$c:MIN:\"Min\:%3.2lf%s\" GPRINT:$idef$c:AVERAGE:\"Avg\:%3.2lf%s\" GPRINT:$idef$c:MAX:\"Max\:%3.2lf%s ";
+			$drawout .= "GPRINT:$odef$c:MIN:\"Min\:%3.2lf%s\" GPRINT:$odef$c:AVERAGE:\"Avg\:%3.2lf%s\" GPRINT:$odef$c:MAX:\"Max\:%3.2lf%s ";
 		}
-		$drawin .= "\" ";
-		$drawout .= "\" ";
+
+		$drawin  .= "$eol\" ";
+		$drawout .= "$eol\" ";
 
 		if($debug){
+			$drawin  .= "\n\t";
 			$drawout .= "\n\t";
-			$drawin .= "\n\t";
 		}
-		$inmod = 'STACK';
+		$inmod  = 'STACK';
 		$outmod = 'STACK';
 	}
-	if ($t == 'brc'){
+
+	if ($t == 'brc' or $t == 'sta'){
 		return array($drawin,$tit);
 	}else{
 		return array($drawin.$drawout,$tit);
@@ -120,6 +137,8 @@ function StackCol($type,$ct,$dir){
 		}else{
 			return sprintf("%x%x%x",$ct%4*2+6,$ct%3*5,$ct%5*3);
 		}
+	}elseif($type == 'sta'){
+		return sprintf("%x%x%x",$ct%9,$ct%4*2+9,16-$ct%16);
 	}else{
 		return sprintf("%x%x%x",$ct%5*3+1,$ct%9,16-$ct%16);
 	}
@@ -138,7 +157,9 @@ function GraphOpts($siz,$sta,$end,$tit,$opt){
 	if($siz == '1'){
 		if($opt == 1){					# error graph
 			return "-w50 -h30 -j -c CANVAS#eeccbb";
-		}elseif($opt){					# >1 traffic graph
+		}elseif($opt == 100){				# broadcast graph
+			return "-w50 -h30 -u$opt -j -c CANVAS#dddddd";
+		}elseif($opt){					# traffic graph
 			return "-w50 -h30 -u$opt -j -c CANVAS#ccddee";
 		}else{						# discardsm broadcast
 			return "-w50 -h30 -j -c CANVAS#eeeeee";

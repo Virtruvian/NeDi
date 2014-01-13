@@ -78,6 +78,7 @@ img.bigbar{
 	margin : 4px;
 	vertical-align: middle;
 	border: 1px solid #333333;
+	border-radius: 4px;
 }
 
 img.smallbar{
@@ -85,6 +86,7 @@ img.smallbar{
 	margin : 2px;
 	vertical-align: middle;
 	border: 1px solid #333333;
+	border-radius: 2px;
 }
 
 /* Form Properties */
@@ -104,9 +106,6 @@ img.smallbar{
 	padding: 8px;
 	background-color: #d4d4d4;
 	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
 }
 
 #footer{
@@ -117,9 +116,6 @@ img.smallbar{
 	padding: 8px;
 	background-color: #d4d4d4;
 	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
 }
 
 /* Actual Module */
@@ -193,24 +189,18 @@ table.full{
 .crit{background-color: #ff8888}
 .part{background-image:url('../img/dia.png')}
 
-/* Default Group Based Module Colors */
-.adm1{background-color: #dddddd}
-.adm2{background-color: #d8d8d8}
+/* Module Colors */
+.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+	background-color: #bbbbbb;
+	background: -webkit-linear-gradient(90deg, #b0b0b0 25%, #cccccc 75%);
+	background: -moz-linear-gradient(25% 75% 90deg, #b0b0b0, #cccccc);
+	background: -ms-linear-gradient(25% 75% 90deg, #b0b0b0, #cccccc);
+}
 
-.net1{background-color: #dddddd}
-.net2{background-color: #d8d8d8}
+.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+	background-color: #cccccc;
+	background: -webkit-linear-gradient(90deg, #c0c0c0 25%, #dddddd 75%);
+	background: -moz-linear-gradient(25% 75% 90deg, #c0c0c0, #dddddd);
+	background: -ms-linear-gradient(25% 75% 90deg, #c0c0c0, #dddddd);
+}
 
-.dsk1{background-color: #dddddd}
-.dsk2{background-color: #d8d8d8}
-
-.mon1{background-color: #dddddd}
-.mon2{background-color: #d8d8d8}
-
-.mgr1{background-color: #dddddd}
-.mgr2{background-color: #d8d8d8}
-
-.oth1{background-color: #dddddd}
-.oth2{background-color: #d8d8d8}
-
-.usr1{background-color: #dddddd}
-.usr2{background-color: #d8d8d8}

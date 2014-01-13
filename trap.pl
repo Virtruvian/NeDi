@@ -17,6 +17,8 @@ Upon receiving a trap, the script will check whether a device with the source IP
 
 The script conaints some basic mappings to further raise authentication and configuration related events. Look at the source, if you want to add more mappings. Trap handling has not been further pursued in favour of syslog messages.
 
+Test with: echo Test\\n1.2.3.4\\nThis is a test\\nLooking good\\nI think!|/var/nedi/trap.pl
+
 =head2 LICENSE
 
 This program is free software: you can redistribute it and/or modify
@@ -59,20 +61,21 @@ my $src = <STDIN>;
 chomp($src);
 my $ip = <STDIN>;
 chomp($ip);
-$ip =~ s/UDP: \[([0-9.]+)\]:161.*/$1/;
+$ip =~ s/UDP:\s?\[([0-9.]+)\]:.*/$1/;
 
 my $info = <STDIN>;
-$info .= <STDIN>;
-$info .= <STDIN>;
-$info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=',.:<>? \E]//g;
+$info .= ", ".<STDIN>;
+$info .= ", ".<STDIN>;
+$info .= ", ".<STDIN>;
+$info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=',.:<>? \E]//g;							# Remove unwanted characters
+$info =~ s/.*snmpTrapOID.0//;										# Cut before TrapOID
 
 my $level = 10;
-my $src = $ip;
 &db::ReadMon( &misc::Ip2Dec($ip) );
 &db::ReadUser("groups & 8 AND (phone != \"\" OR email != \"\")");
 
-if(exists $srcna{$src}){
-	$src = $srcna{$src};
+if(exists $srcna{$ip}){										# Source IP lookup (%srcna created by db::readmon)
+	my $tgt = $srcna{$ip};
 	$level = 50;
 
 	if($info =~ s/IF-MIB::ifIndex/Ifchange/){
@@ -90,13 +93,8 @@ if(exists $srcna{$src}){
 		$level = 100;
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.9.9.46/Cisco VTP/){
 	}
-	if($mon{$src}{ef} ne "" and $info =~ /$mon{$src}{ef}/){
-		my $mq = &mon::AlertQ($info,"",$mon{$src}{dv}) if ($mon{$src}{al} & 1);
-		my $sq = &mon::AlertQ("","$src: $info",$mon{$src}{dv}) if ($mon{$src}{al} & 2);
-		my $af = &mon::AlertFlush("$src SNMP trap",$mq,$sq);
-	}
-}
-
-unless($mon{$src}{ed} ne "" and $info =~ /$mon{$src}{ed}/){					# insert only if drop doesn't match
-	&db::Insert('events','level,time,source,info,class,device',"\"$level\",\"$now\",\"$src\",\"$info\",\"trap\",\"$src\"");
+	&mon::Event(1,$level,'trap',$tgt,$tgt,"$info","$info");
+	&mon::AlertFlush("NeDi Trap Forward for $tgt",$mq);
+}else{
+	&db::Insert('events','level,time,source,info,class',"\"$level\",\"$now\",\"$ip\",\"$info\",\"trap\"");
 }

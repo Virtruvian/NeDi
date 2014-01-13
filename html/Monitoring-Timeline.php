@@ -1,9 +1,10 @@
-<?
+<?php
 # Program: Monitoring-Timeline.php
 # Programmer: Remo Rickli
 
 $calendar  = 1;
 $printable = 1;
+$exportxls = 0;
 
 include_once ("inc/header.php");
 include_once ("inc/libmon.php");
@@ -29,84 +30,84 @@ $cols = array(	"info"=>"Info",
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
-		"vtpdomain"=>"VTP Domain",
+		"devgroup"=>$grplbl
 		);
 
 ?>
-<h1><?=$msglbl?> Timeline</h1>
+<h1>Monitoring Timeline</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" name="dynfrm" action="<?=$self?>.php">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" name="dynfrm" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
 <th valign="top">
 
 <select size="1" name="ina">
-<option value=""><?=$fltlbl?>->
-<?
+<option value=""><?= $fltlbl ?>->
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
 }
 ?>
 </select>
 
 <select size="1" name="opa">
-<? selectbox("oper",$opa);?>
+<?php selectbox("oper",$opa) ?>
 </select>
 <p>
-<input type="text" name="sta" value="<?=$sta?>" size="20">
+<input type="text" name="sta" value="<?= $sta ?>" size="20">
 
 </th>
 <td>
 
-<img src="img/16/eyes.png" title="<?=$sholbl?> <?=$grplbl?>">
+<img src="img/16/eyes.png" title="<?= $sholbl ?> <?= $grplbl ?>">
 <select size="1" name="det">
-<option value=""><?=$nonlbl?>
-<option value="level" <?=($det == "level")?"selected":""?>><?=$levlbl?>
-<option value="source" <?=($det == "source")?"selected":""?>><?=$srclbl?>
-<option value="class" <?=($det == "class")?"selected":""?>><?=$clalbl?>
+<option value=""><?= $nonlbl ?>
+<option value="level" <?= ($det == "level")?" selected":"" ?>><?= $levlbl ?>
+<option value="source" <?= ($det == "source")?" selected":"" ?>><?= $srclbl ?>
+<option value="class" <?= ($det == "class")?" selected":"" ?>><?= $clalbl ?>
 </select>
-<img src="img/16/abc.png" title="<?=$typlbl?>">
+<img src="img/16/abc.png" title="<?= $typlbl ?>">
 <select size="1" name="bsz">
-<option value="si"><?=(($verb1)?"$siz[s] $imglbl":"$imglbl $siz[s]")?>
-<option value="mi" <?=($bsz == "mi")?"selected":""?>><?=(($verb1)?"$siz[m] $imglbl":"$imglbl $siz[m]")?>
-<option value="ms" <?=($bsz == "ms")?"selected":""?>><?=(($verb1)?"$siz[m] $shplbl":"$shplbl $siz[m]")?>
-<option value="li" <?=($bsz == "li")?"selected":""?>><?=(($verb1)?"$siz[l] $imglbl":"$imglbl $siz[l]")?>
+<option value="si"><?= (($verb1)?"$siz[s] $imglbl":"$imglbl $siz[s]") ?>
+<option value="mi" <?= ($bsz == "mi")?" selected":"" ?>><?= (($verb1)?"$siz[m] $imglbl":"$imglbl $siz[m]") ?>
+<option value="ms" <?= ($bsz == "ms")?" selected":"" ?>><?= (($verb1)?"$siz[m] $shplbl":"$shplbl $siz[m]") ?>
+<option value="li" <?= ($bsz == "li")?" selected":"" ?>><?= (($verb1)?"$siz[l] $imglbl":"$imglbl $siz[l]") ?>
 </select>
 <p>
-<img src="img/16/clock.png" title="<?=$timlbl?> <?=$sizlbl?>">
+<img src="img/16/clock.png" title="<?= $timlbl ?> <?= $sizlbl ?>">
 <select size="1" name="gra">
-<option value="3600"><?=$tim['h']?>
-<option value="86400" <?=($gra == "86400")?"selected":""?>><?=$tim['d']?>
-<option value="604800" <?=($gra == "604800")?"selected":""?>><?=$tim['w']?>
-<option value="2592000" <?=($gra == "2592000")?"selected":""?>><?=$tim['m']?>
+<option value="3600"><?= $tim['h'] ?>
+<option value="86400" <?= ($gra == "86400")?" selected":"" ?>><?= $tim['d'] ?>
+<option value="604800" <?= ($gra == "604800")?" selected":"" ?>><?= $tim['w'] ?>
+<option value="2592000" <?= ($gra == "2592000")?" selected":"" ?>><?= $tim['m'] ?>
 </select>
 
 </td>
 <th>
 
-<img src="img/16/blft.png" title="<?=$sttlbl?>"><a href="javascript:show_calendar('dynfrm.srt');">
-<img src="img/16/date.png"></a><input type=text name="srt" value="<?=$srt?>" size="15">
+<img src="img/16/bblf.png" title="<?= $sttlbl ?>"><a href="javascript:show_calendar('dynfrm.srt');">
+<img src="img/16/date.png"></a><input type=text name="srt" value="<?= $srt ?>" size="15">
 <p>
-</p><img src="img/16/brgt.png" title="<?=$endlbl?>"><a href="javascript:show_calendar('dynfrm.end');">
-<img src="img/16/date.png"></a><input type=text name="end" value="<?=$end?>" size="15">
+</p><img src="img/16/bbrt.png" title="<?= $endlbl ?>"><a href="javascript:show_calendar('dynfrm.end');">
+<img src="img/16/date.png"></a><input type=text name="end" value="<?= $end ?>" size="15">
 </th>
 
 <th width="80">
-<input type="submit" name="tml" value="<?=$sholbl?>">
+<input type="submit" name="tml" value="<?= $sholbl ?>">
 </th>
 </tr>
 </table></form><p>
 <?}?>
 
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th width="80"><img src="img/32/clock.png"><br><?=$timlbl?></th>
-<th><img src="img/32/bell.png"><br><?=$msglbl?></th>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<th width="80"><img src="img/16/clock.png"><br><?= $timlbl ?></th>
+<th><img src="img/16/bell.png"><br><?= $msglbl ?></th>
 </tr>
 
-<?
+<?php
 ConHead($ina, $opa, $sta);
 
 $from	= strtotime($srt);
@@ -119,10 +120,11 @@ while($istart < $to){
 	$iend = $istart + $gra;
 	if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 	$row++;
-	$fs   = urlencode(date("m/d/Y H:i:s",$istart));
-	$fe   = urlencode(date("m/d/Y H:i:s",$iend));
-	echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\"><th class=\"$bi\" nowrap>\n";
-	echo "<a href=\"Monitoring-Events.php?ina=time&opa=%3E=&sta=$fs&cop=AND&inb=time&opb=%3C&stb=$fe&lim=0\">".date("j.M G:i",$istart)."</a></th><td>\n";
+	$fs = urlencode(date("m/d/Y H:i:s",$istart));
+	$fe = urlencode(date("m/d/Y H:i:s",$iend));
+	TblRow($bg);
+	echo "<th class=\"$bi\" nowrap>\n";
+	echo "<a href=\"Monitoring-Events.php?ina=time&opa=%3E=&sta=$fs&cop=AND&inb=time&opb=%3C&stb=$fe&lim=$listlim\">".date("j.M G:i",$istart)."</a></th><td>\n";
 	if($det){
 		$query	= GenQuery('events','g',"$det;icon",'','',array('time','time',$ina),array('>=','<',$opa),array($istart,$iend,$sta),array('AND','AND'),'LEFT JOIN devices USING (device)');
 		$res	= @DbQuery($query,$link);
@@ -132,9 +134,9 @@ while($istart < $to){
 				$mbar = Bar($m[1],"lvl$m[0]",$bsz,$m[0]);
 				if($det == 'level'){
 					if($bsz == 'ms'){
-						echo "<a href=\"Monitoring-Events.php?ina=time&opa=%3E=&sta=$fs&cop=AND&inb=time&opb=%3C&stb=$fe&lvl=$m[0]&lim=0\">$mbar</a>\n";
+						echo "<a href=\"Monitoring-Events.php?ina=time&opa=%3E=&sta=$fs&cop=AND&inb=time&opb=%3C&stb=$fe&lvl=$m[0]&lim=$listlim\">$mbar</a>\n";
 					}else{
-						echo "<a href=\"Monitoring-Events.php?ina=time&opa=%3E=&sta=$fs&cop=AND&inb=time&opb=%3C&stb=$fe&lvl=$m[0]&lim=0\">";
+						echo "<a href=\"Monitoring-Events.php?ina=time&opa=%3E=&sta=$fs&cop=AND&inb=time&opb=%3C&stb=$fe&lvl=$m[0]&lim=$listlim\">";
 						echo "<img src=\"img/16/" . $mico[$m[0]] . ".png\" title=\"$m[1] " . $mlvl[$m[0]] . "\"></a>$mbar\n";
 					}
 				}else{
@@ -183,9 +185,9 @@ while($istart < $to){
 	?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> <?=$vallbl?>, <?=$tmsg?> <?=$msglbl?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?>, <?= $tmsg ?> <?= $msglbl ?></td></tr>
 </table>
-	<?
+	<?php
 
 include_once ("inc/footer.php");
 ?>

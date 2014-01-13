@@ -1,10 +1,10 @@
-<?
+<?php
 # Program: Devices-Write.php
 # Programmer: Remo Rickli
 
 $printable = 1;
 $calendar  = 1;
-
+$exportxls = 0;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
@@ -44,11 +44,11 @@ $cols = array(	"device"=>$namlbl,
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
-		"vtpdomain"=>"VTP Domain",
-		"vtpmode"=>"VTP Mode",
-		"snmpversion"=>"SNMP Ver",
+		"devgroup"=>$grplbl,
+		"devmode"=>$modlbl,
+		"snmpversion"=>"SNMP $verlbl",
 		"community"=>"Community",
-		"cliport"=>"CLI port",
+		"cliport"=>"CLI $porlbl",
 		"login"=>"Login",
 		"firstdis"=>"$fislbl $dsclbl",
 		"lastdis"=>"$laslbl $dsclbl"
@@ -56,96 +56,96 @@ $cols = array(	"device"=>$namlbl,
 ?>
 <h1>Device Write</h1>
 
-<form method="post" name="list" action="<?=$self?>.php" name="cfg">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50" rowspan="3"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
-<th valign="top"><?=$cndlbl?> A<p>
+<form method="post" name="list" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50" rowspan="3"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<th valign="top"><?= $cndlbl ?> A<p>
 <select size="1" name="ina">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+       echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
 }
 ?>
 </select>
 <select size="1" name="opa">
-<? selectbox("oper",$opa);?>
+<?php selectbox("oper",$opa) ?>
 </select>
 <p><a href="javascript:show_calendar('list.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?=$sta?>" size="20" OnFocus="select();">
+<input type="text" name="sta" value="<?= $sta ?>" size="20" OnFocus="select();">
 </th>
-<th valign="top"><?=$cmblbl?><p>
+<th valign="top"><?= $cmblbl ?><p>
 <select size="1" name="cop">
-<? selectbox("comop",$cop);?>
+<?php selectbox("comop",$cop) ?>
 </select>
 </th>
-<th valign="top"><?=$cndlbl?> B<p>
+<th valign="top"><?= $cndlbl ?> B<p>
 <select size="1" name="inb">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($inb == $k)?"selected":"").">$v\n";
+       echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
 }
 ?>
 </select>
 <select size="1" name="opb">
-<? selectbox("oper",$opb);?>
+<?php selectbox("oper",$opb) ?>
 </select>
 <p><a href="javascript:show_calendar('list.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?=$stb?>" size="20" OnFocus="select();">
-<input type="text" name="sub" value="<?=$sub?>" size="20" OnFocus="select();" title="Substitutes this search string and use result as command argument">
+<input type="text" name="stb" value="<?= $stb ?>" size="20" OnFocus="select();">
+<input type="text" name="sub" value="<?= $sub ?>" size="20" OnFocus="select();" title="Substitutes this search string and use result as command argument">
 </th>
 
 </tr>
-<tr class="<?=$modgroup[$self]?>2">
+<tr class="<?= $modgroup[$self] ?>2">
 
 <th valign="top" colspan=2>
-<?=$cmdlbl?> / <?=$cfglbl?><p>
-<textarea rows="6" name="cmd" cols="60"><?=$cmd?></textarea>
+<?= $cmdlbl ?> / <?= $cfglbl ?><p>
+<textarea rows="6" name="cmd" cols="60"><?= $cmd ?></textarea>
 </th>
 
-<th valign="top">Interface <?=$cfglbl?><p>
+<th valign="top">Interface <?= $cfglbl ?><p>
 <select size="1" name="int">
-	<option value=""><?=$sellbl?> ->
-	<option value="Et" <? if($int == "Et"){echo "selected";} ?>>Ethernet
-	<option value="Fa" <? if($int == "Fa"){echo "selected";} ?>>Fastethernet
-	<option value="Gi" <? if($int == "Gi"){echo "selected";} ?>>Gigabit
-	<option value="Te" <? if($int == "Te"){echo "selected";} ?>>TenGigabit
-	<option value="Vi" <? if($int == "Vi"){echo "selected";} ?>>Vlan IF
-	<option value="Vl" <? if($int == "Vl"){echo "selected";} ?>>Vlan
+	<option value=""><?= $sellbl ?> ->
+	<option value="Et" <?php if($int == "Et"){echo "selected";} ?>>Ethernet
+	<option value="Fa" <?php if($int == "Fa"){echo "selected";} ?>>Fastethernet
+	<option value="Gi" <?php if($int == "Gi"){echo "selected";} ?>>Gigabit
+	<option value="Te" <?php if($int == "Te"){echo "selected";} ?>>TenGigabit
+	<option value="Vi" <?php if($int == "Vi"){echo "selected";} ?>>Vlan IF
+	<option value="Vl" <?php if($int == "Vl"){echo "selected";} ?>>Vlan
 </select>
- <input type="text" size="2"name="smod" value="<?=$smod?>" name="smod" OnFocus="select();">
- / <input type="text" size="2" name="sint" value="<?=$sint?>" OnFocus="select();">
- / <input type="text" size="2" name="ssub" value="<?=$ssub?>" OnFocus="select();">
- - <input type="text" size="2" name="emod" value="<?=$emod?>" OnFocus="select();">
- / <input type="text" size="2" name="eint" value="<?=$eint?>" OnFocus="select();">
- / <input type="text" size="2" name="esub" value="<?=$esub?>" OnFocus="select();">
+ <input type="text" size="2"name="smod" value="<?= $smod ?>" name="smod" OnFocus="select();">
+ / <input type="text" size="2" name="sint" value="<?= $sint ?>" OnFocus="select();">
+ / <input type="text" size="2" name="ssub" value="<?= $ssub ?>" OnFocus="select();">
+ - <input type="text" size="2" name="emod" value="<?= $emod ?>" OnFocus="select();">
+ / <input type="text" size="2" name="eint" value="<?= $eint ?>" OnFocus="select();">
+ / <input type="text" size="2" name="esub" value="<?= $esub ?>" OnFocus="select();">
 <p>
-<textarea rows="4" name="icfg" cols="50"><?=$icfg?></textarea>
+<textarea rows="4" name="icfg" cols="50"><?= $icfg ?></textarea>
 </th>
 
 </tr>
-<tr class="<?=$modgroup[$self]?>1">
+<tr class="<?= $modgroup[$self] ?>1">
 
 <th valign="top" colspan="3">
-<?
+<?php
 if ( strstr($guiauth,'-pass') ){
 	?>
-	Password <input type="password" value="<?=$pwd?>" name="pwd">
-	<?
+	Password <input type="password" value="<?= $pwd ?>" name="pwd">
+	<?php
 }
 ?>
-<input type="submit" value="<?=$sholbl?>" name="sim">
-<input type="submit" value="<?=$sndlbl?>" name="scm">
-<input type="submit" value="<?=$cfglbl?>" name="con">
+<input type="submit" value="<?= $sholbl ?>" name="sim">
+<input type="submit" value="<?= $sndlbl ?>" name="scm">
+<input type="submit" value="<?= $cfglbl ?>" name="con">
 </th></tr>
 </table>
 </form>
 <p>
 
-<?
+<?php
 
 if($ina){
 	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-	$query	= GenQuery('devices','s','device,devip,devos,cliport,login','','',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop) );
+	$query	= GenQuery('devices','s','*','','',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop) );
 	$res	= @DbQuery($query,$link);
 	if($res){
 		$prevos = "";
@@ -157,7 +157,7 @@ if($ina){
 				$prevos = $d['devos'];
 				$devos[$d['device']] = $d['devos'];
 				$devsta[$d['device']] = $d[$ina];
-				if($inb){$devstb[$d['name']] = $d[$inb];}
+				if($inb){$devstb[$d['device']] = $d[$inb];}
 				$devpo[$d['device']] = $d['cliport'];
 				$devlo[$d['device']] = $d['login'];
 			}else{
@@ -195,9 +195,9 @@ if($ina){
 	?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Devices (<?=$query?>)</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Devices (<?= $query ?>)</td></tr>
 </table>
-	<?
+	<?php
 	}elseif($scm or $con){
 		if(!$sub){
 			$fd =  @fopen("log/cmd_$_SESSION[user]","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user]");
@@ -228,7 +228,7 @@ if($ina){
 				$lvl = 100;
 				$msg = "User $_SESSION[user] wrote $cstr successfully";
 			}
-			$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),'',array($lvl,time(),$dv,$msg,'usrd',$dv) );
+			$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),array(),array($lvl,time(),$dv,$msg,'usrd',$dv) );
 			if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}
 		}
 		echo "</div><br><p>";
@@ -246,7 +246,7 @@ function Buildcmd($arg="",$configureos=""){
 	}elseif($configureos == "Comware"){
 		$config .= "sys\n";
 	}
-	$config .= $cmd;
+	$config .= $cmd . (preg_match('/\n$/',$cmd)?"":"\n");						# Add return on last line, if missing (tx Tristan)
 	if($sub){
 		$config .= preg_replace("/$stb/",$sub,$arg);
 	}else{
@@ -270,9 +270,9 @@ function Buildcmd($arg="",$configureos=""){
 		}
 	}
 	if($configureos == "IOS" or $configureos == "ProCurve"){
-		$config .= "\nend\nwrite mem\n";
+		$config .= "end\nwrite mem\n";
 	}elseif($configureos == "Comware"){
-		$config .= "\nquit\nsave\ny\n\ny\n";
+		$config .= "quit\nsave\ny\n\ny\n";
 	}
 	return "$config\n";
 }

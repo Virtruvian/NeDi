@@ -1,4 +1,4 @@
-<?
+<?php
 # Program: Reports-Wlan.php
 # Programmer: Remo Rickli
 
@@ -15,36 +15,40 @@ $opt = isset($_GET['opt']) ? "checked" : "";
 ?>
 <h1>Wlan Access Points</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" action="<?=$self?>.php">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
-<th><?=$srtlbl?> 
+<form method="get" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+
+</th>
+<th>
+
+<img src="img/16/abc.png" title="<?= $srtlbl ?>">
 <select name="ord" size="1">
-<option value="name" <?=($ord == "name")?"selected":""?> >Name
-<option value="firstseen" <?=($ord == "firstseen")?"selected":""?> ><?=$fislbl?>
-<option value="lastseen" <?=($ord == "lastseen")?"selected":""?> ><?=$laslbl?>
-<option value="ip" <?=($ord == "ip")?"selected":""?> >IP address
-<option value="ipupdate" <?=($ord == "ipupdate")?"selected":""?> >IP <?=$updlbl?>
-<option value="ip" <?=($ord == "mac")?"selected":""?> >MAC address
-<option value="device" <?=($ord == "device")?"selected":""?> >Device
-<option value="ifupdate" <?=($ord == "ifupdate")?"selected":""?> >IF <?=$updlbl?>
+<option value="name" <?= ($ord == "name")?" selected":"" ?> >Name
+<option value="firstseen" <?= ($ord == "firstseen")?" selected":"" ?> ><?= $fislbl ?>
+<option value="lastseen" <?= ($ord == "lastseen")?" selected":"" ?> ><?= $laslbl ?>
+<option value="ip" <?= ($ord == "ip")?" selected":"" ?> >IP address
+<option value="ipupdate" <?= ($ord == "ipupdate")?" selected":"" ?> >IP <?= $updlbl ?>
+<option value="ip" <?= ($ord == "mac")?" selected":"" ?> >MAC address
+<option value="device" <?= ($ord == "device")?" selected":"" ?> >Device
+<option value="ifupdate" <?= ($ord == "ifupdate")?" selected":"" ?> >IF <?= $updlbl ?>
 
 </select>
 
 </th>
 <th>
 
-<input type="checkbox" name="opt" <?=$opt?> > <?=$optlbl?>
+<img src="img/16/hat2.png" title="<?= $optlbl ?>"><input type="checkbox" name="opt" <?= $opt ?> >
 
 </th>
 <th width="80">
 	
-<input type="submit" value="<?=$sholbl?>">
+<input type="submit" value="<?= $sholbl ?>">
 
 </th></tr></table></form><p>
-<?
+<?php
 }
 $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('wlan');
@@ -63,14 +67,14 @@ if($res){
 
 ?>
 
-<h2>AP <?=$lstlbl?></h2>
+<h2>AP <?= $lstlbl ?></h2>
 
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th colspan="4"><img src="img/32/node.png"><br>Name - IP - MAC Match</th>
-<th colspan="3"><img src="img/32/dev.png"><br>Device - IF - Nodes</th>
-<th colspan="2"><img src="img/32/clock.png"><br>First Seen / Last Seen</th>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<th colspan="4"><img src="img/16/node.png"><br><?= $namlbl ?> - IP - MAC <?= $fltlbl ?></th>
+<th colspan="3"><img src="img/16/dev.png"><br>Device - IF - Nodes</th>
+<th colspan="2"><img src="img/16/clock.png"><br><?= $fislbl ?> / <?= $laslbl ?></th>
 
-<?
+<?php
 
 $query	= GenQuery('nodes');
 $res	= @DbQuery($query,$link);
@@ -107,8 +111,8 @@ while( ($n = @DbFetchRow($res)) ){
 ?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> out of <?=$nno?> Nodes matching <?=$nwmac?> MAC samples</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> out of <?= $nno ?> Nodes <?= $fltlbl ?> <?= $nwmac ?> MACs</td></tr>
 </table>
-<?
+<?php
 include_once ("inc/footer.php");
 ?>

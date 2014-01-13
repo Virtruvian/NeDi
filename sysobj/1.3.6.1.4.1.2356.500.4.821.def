@@ -8,18 +8,21 @@ SNMPv	1
 Type	Lancom821-AnnexB
 OS	LCOS
 Icon	rsan
+Size	1
 Bridge	
+ArpND	old
 Dispro	
 Serial	1.3.6.1.4.1.2356.500.4.821.3.1.1.4.1
 Bimage	1.3.6.1.4.1.2356.500.4.821.3.1.1.3.1
 
 # Vlan Specific
 VLnams	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3

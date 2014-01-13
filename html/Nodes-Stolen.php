@@ -1,8 +1,9 @@
-<?
+<?php
 # Program: Nodes-Stolen.php
 # Programmer: Remo Rickli
 
 $printable = 1;
+$exportxls = 0;
 
 include_once ("inc/header.php");
 include_once ("inc/libnod.php");
@@ -28,50 +29,50 @@ if ($stl){
 ?>
 <h1>Stolen Nodes</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
-<form method="get" action="<?=$self?>.php">
+<form method="get" action="<?= $self ?>.php">
 Sort
 <SELECT name="ord" size="1" onChange="submit();">
-<OPTION VALUE="name" <?=($ord == "name")?"selected":""?> ><?=$namlbl?>
-<OPTION VALUE="stlip" <?=($ord == "stlip")?"selected":""?> >IP <?=$adrlbl?>
-<OPTION VALUE="mac" <?=($ord == "mac")?"selected":""?> >MAC <?=$adrlbl?>
-<OPTION VALUE="device" <?=($ord == "device")?"selected":""?> >Device
-<OPTION VALUE="time" <?=($ord == "updated")?"selected":""?> ><?=$timlbl?>
+<OPTION VALUE="name" <?= ($ord == "name")?" selected":"" ?> ><?= $namlbl ?>
+<OPTION VALUE="stlip" <?= ($ord == "stlip")?" selected":"" ?> >IP <?= $adrlbl ?>
+<OPTION VALUE="mac" <?= ($ord == "mac")?" selected":"" ?> >MAC <?= $adrlbl ?>
+<OPTION VALUE="device" <?= ($ord == "device")?" selected":"" ?> >Device
+<OPTION VALUE="time" <?= ($ord == "updated")?" selected":"" ?> ><?= $timlbl ?>
 </select>
 </form>
 </th>
 <th align="right">
-<form method="get" action="<?=$self?>.php">
-<?=$namlbl?> <input type="text" name="na" value="<?=$na?>" size="20">
-IP <input type="text" name="stlip" value="<?=$ip?>" size="15">
-MAC <input type="text" name="stl" value="<?=$stl?>" size="12">
+<form method="get" action="<?= $self ?>.php">
+<?= $namlbl ?> <input type="text" name="na" value="<?= $na ?>" size="20">
+IP <input type="text" name="stlip" value="<?= $ip ?>" size="15">
+MAC <input type="text" name="stl" value="<?= $stl ?>" size="12">
 <p>
-Device <input type="text" name="dev" value="<?=$dev?>" size="20">
-Interface <input type="text" name="ifn" value="<?=$ifn?>" size="8">
+Device <input type="text" name="dev" value="<?= $dev ?>" size="20">
+IF <input type="text" name="ifn" value="<?= $ifn ?>" size="8">
 
 </th>
-<th width="80"><input type="submit" value="<?=$addlbl?>">
+<th width="80"><input type="submit" value="<?= $addlbl ?>">
 </form>
 </th>
 </tr></table><p>
-<?
+<?php
 }
-$query	= GenQuery('stolen','s','stolen.*',$ord,'','','','','','LEFT JOIN devices USING (device)');
+$query	= GenQuery('stolen','s','stolen.*',$ord,'',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
 $res	= @DbQuery($query,$link);
 if($res){
 ?>
-<h2>Stolen Nodes <?=$lstlbl?></h2>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th colspan="3"><img src="img/32/node.png"><br>Node Info</th>
+<h2>Stolen Nodes <?= $lstlbl ?></h2>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<th colspan="3"><img src="img/32/node.png"><br>Node <?= $inflbl ?></th>
 <th colspan="2"><img src="img/32/dev.png"><br>Device - IF</th>
-<th><img src="img/32/eyes.png"><br><?=$laslbl?> / <?=$timlbl?></th>
-<th><img src="img/32/user.png"><br>Action / <?=$usrlbl?></th>
+<th><img src="img/32/eyes.png"><br><?= $laslbl ?> / <?= $timlbl ?></th>
+<th><img src="img/32/user.png"><br><?= $actlbl ?> / <?= $usrlbl ?></th>
 
-<?
+<?php
 	$row = 0;
 	while( ($s = @DbFetchRow($res)) ){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
@@ -112,9 +113,9 @@ if($res){
 	?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Nodes</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Nodes</td></tr>
 </table>
-	<?
+	<?php
 
 include_once ("inc/footer.php");
 ?>

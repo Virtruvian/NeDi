@@ -9,18 +9,21 @@ SNMPv	2c
 Type	FGT800
 OS	FortiOS
 Icon	fwan
+Size	1
 Bridge	
+ArpND	old
 Dispro	
 Serial	1.3.6.1.4.1.12356.1.2.0
 Bimage	1.3.6.1.4.1.12356.1.3.0
 
 # Vlan Specific
 VLnams	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3

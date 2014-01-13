@@ -1,6 +1,7 @@
 /* General Classes */
 body {
 	font: 11px verdana, arial, sans-serif; 
+	background-color: #666666;
 	background-repeat: repeat;
 	background-image: URL(bgsteel.jpg);
 }
@@ -99,8 +100,10 @@ img.smallbar{
 
 /* Login (only used in default.css)  */
 .loginbg {
-	background-repeat: repeat;
-	background: #ddbb99 url(bgblue.png);
+ 	background-repeat: repeat;
+	background: #99aacc url(bgblue.png);
+/*	box-shadow: inset 0 -5px 40px #444444, 0 3px 3px #333333;
+	background: #99aacc;*/
 }
 
 table.login{
@@ -108,6 +111,8 @@ table.login{
 	border-spacing: 1px;
 	background-color: #222222;
 	margin: 50px auto;
+	-webkit-box-shadow: 4px 4px 8px #666;
+	box-shadow:4px 4px 8px #666;
 }
 
 /* Header table & Footer div*/
@@ -115,6 +120,8 @@ table.login{
 	width: 100%;
 	border-spacing: 1px;
 	background-color: #222222;
+	-webkit-box-shadow: 4px 4px 8px #666;
+	box-shadow:4px 4px 8px #666;
 }
 
 #footer{
@@ -124,6 +131,8 @@ table.login{
 	padding: 8px;
 	text-align: right;
 	font-style: italic;
+	-webkit-box-shadow: 4px 4px 8px #666;
+	box-shadow:4px 4px 8px #666;
 }
 
 /* Actual Module */
@@ -132,12 +141,16 @@ table.content{
 	empty-cells:show;
 	border-spacing: 1px;
 	background-color: #444444;
+	-webkit-box-shadow: 4px 4px 8px #666;
+	box-shadow:4px 4px 8px #666;
 }
 
 /* Helper td */
 td.helper{
 	padding: 10px;
 	vertical-align: top;
+	background: -webkit-linear-gradient( rgba(200, 200, 200, 0.5), rgba(200, 200, 200, 0) );
+	background: linear-gradient( rgba(200, 200, 200, 0.5), rgba(200, 200, 200, 0) );
 }
 
 table.fixed{
@@ -151,10 +164,12 @@ table.full{
 /* Style for logs etc. */
 .textpad{
 	margin: 10px auto;
-	width: 60%;
+	width: 66%;
 	padding: 10px;
 	border-spacing: 1px;
-	border: 2px solid #c06060;
+	border: 1px solid #666;
+	-webkit-box-shadow: 4px 4px 8px #666;
+	box-shadow:4px 4px 8px #666;
 }
 
 /* Font Properties */
@@ -198,26 +213,26 @@ table.full{
 .part{background-image:url('../img/dia.png')}
 
 /* Default Group Based Module Colors */
-.adm1{background-color: #bb6666}
-.adm2{background-color: #cc7777}
+.adm1{background-color: #bb6666;-webkit-box-shadow: inset 0 -5px 15px #aa5555;box-shadow: inset 0 -5px 15px #aa5555;}
+.adm2{background-color: #cc7777;-webkit-box-shadow: inset 0 -5px 15px #aa5555;box-shadow: inset 0 -5px 15px #aa5555;}
 
-.net1{background-color: #99aacc}
-.net2{background-color: #aabbdd}
+.net1{background-color: #99aacc;-webkit-box-shadow: inset 0 -5px 15px #8899bb;box-shadow: inset 0 -5px 15px #8899bb;}
+.net2{background-color: #aabbdd;-webkit-box-shadow: inset 0 -5px 15px #8899bb;box-shadow: inset 0 -5px 15px #8899bb;}
 
-.dsk1{background-color: #99ddaa}
-.dsk2{background-color: #aaeebb}
+.dsk1{background-color: #99ddaa;-webkit-box-shadow: inset 0 -5px 15px #88cc99;box-shadow: inset 0 -5px 15px #88cc99;}
+.dsk2{background-color: #aaeebb;-webkit-box-shadow: inset 0 -5px 15px #88cc99;box-shadow: inset 0 -5px 15px #88cc99;}
 
-.mon1{background-color: #aabb66}
-.mon2{background-color: #bbcc77}
+.mon1{background-color: #aabb66;-webkit-box-shadow: inset 0 -5px 15px #99aa55;box-shadow: inset 0 -5px 15px #99aa55;}
+.mon2{background-color: #bbcc77;-webkit-box-shadow: inset 0 -5px 15px #99aa55;box-shadow: inset 0 -5px 15px #99aa55;}
 
-.mgr1{background-color: #aa8866}
-.mgr2{background-color: #bb9977}
+.mgr1{background-color: #aa8866;-webkit-box-shadow: inset 0 -5px 15px #997755;box-shadow: inset 0 -5px 15px #997755;}
+.mgr2{background-color: #bb9977;-webkit-box-shadow: inset 0 -5px 15px #997755;box-shadow: inset 0 -5px 15px #997755;}
 
-.oth1{background-color: #aa6688}
-.oth2{background-color: #bb7788}
+.oth1{background-color: #aa6688;-webkit-box-shadow: inset 0 -5px 15px #995577;box-shadow: inset 0 -5px 15px #995577;}
+.oth2{background-color: #bb7788;-webkit-box-shadow: inset 0 -5px 15px #995577;box-shadow: inset 0 -5px 15px #995577;}
 
-.usr1{background-color: #ddbb99}
-.usr2{background-color: #eeccaa}
+.usr1{background-color: #ddbb99;-webkit-box-shadow: inset 0 -5px 15px #ccaa88;box-shadow: inset 0 -5px 15px #ccaa88;}
+.usr2{background-color: #eeccaa;-webkit-box-shadow: inset 0 -5px 15px #ccaa88;box-shadow: inset 0 -5px 15px #ccaa88;}
 /* ThemeNMenu Style Sheet */
 
 .ThemeNMenu,.ThemeNSubMenuTable

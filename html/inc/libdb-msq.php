@@ -62,12 +62,12 @@ function AddRecord($table,$key,$col,$val){
 	$mres	= @DbQuery("SELECT * FROM $table WHERE $key",$link);
 	if($mres){
 		if( @DbNumRows($mres) ){
-			$status = "<img src=\"img/16/bdis.png\" title=\"$alrlbl OK\">";
+			$status = "<img src=\"img/16/bdis.png\" title=\"$alrlbl OK\" vspace=\"4\">";
 		}else{
 			if( !@DbQuery("INSERT INTO $table ($col) VALUES ($val)",$link) ){
-				$status = "<img src=\"img/16/bcnl.png\" title=\"" .DbError($link)."\">";
+				$status = "<img src=\"img/16/bcnl.png\" title=\"" .DbError($link)."\" vspace=\"4\">";
 			}else{
-				$status = "<img src=\"img/16/bchk.png\" title=\"$addlbl OK\">";
+				$status = "<img src=\"img/16/bchk.png\" title=\"$addlbl OK\" vspace=\"4\">";
 			}
 		}
 	}else{
@@ -77,30 +77,14 @@ function AddRecord($table,$key,$col,$val){
 }
 
 //===============================================================================
-// Returns join based on column TODO forget about this (too complex fir librep)?
-
-function JoinDev($ina){
-
-	if($ina == 'vlanid'){
-		return array($ina,'LEFT JOIN vlans USING (device)');
-	}elseif($ina == 'ifip' or $ina == 'vrfname'){
-		return array($ina,'LEFT JOIN networks USING (device)');
-	}elseif($ina == 'neighbor'){
-		$ina = "CONCAT_WS(',',device,neighbor)";
-		return array($ina,'LEFT JOIN links USING (device)');
-	}else{
-		return array($ina,'');
-	}
-}
-
-//===============================================================================
 // Generates SQL queries:
 //
 // $tbl	= table to apply query to
-// $do 	's'= select (is default), 'i'=insert (using $in for columns and $st for values), 't'=show tables, 'c'=show columns,
-//	'u'=update (using $in,$st to set and $col,$ord to match), 'o'=optimize, 'd'=delete, 'g'=group, 'a'=average, 'm'=sum, 'x'=max 
+// $do 	s= select (is default), i=insert (using $in for columns and $st for values), o=optimize, d=delete, p=drop db
+//	b=show DBs ($col used as operator with $tbl), h=show tables, c=show columns, t=truncate, u=update (using $in,$op,$st to set values 
+//	and "WHERE $col $ord $lim" to match), g=group, a=average, m=sum, x=max 
 // $col	= column(s) to display or to group by (separate with ; to exlude from grouping or to calculate with $do= a, m or x)
-// $ord	= order by (where device also takes numerical interface sorting (with /) into account)
+// $ord	= order by (where ifname also takes numerical interface sorting (e.g. 0/1) into account)
 // $lim	= limiting results
 // $in,op,st	= array of columns,operators and strings to be used for WHERE in UPDATE, INSERT, SELECT and DELETE queries
 // $co	= combines current values with the next series of $in,op,st
@@ -110,22 +94,34 @@ function JoinDev($ina){
 // * time:	Time will be turned into EPOC, if it's not a number already.
 // * mac:	. : - are removed
 //
-function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),$st=array(),$co=array(),$jn=""){
-#TODO add sanitization here using mysql_real_escape_string() or addslashes()
+function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=array(),$rawst=array(),$rawco=array(),$jn=""){
+
 	global $debug;
 
+	$tbl = mysql_real_escape_string($tbl);								# Mitigate SQL injection
+	$ord = mysql_real_escape_string($ord);
+	$lim = mysql_real_escape_string($lim);
+	
+	$in = array_map( 'mysql_real_escape_string', $rawin );
+	$op = array_map( 'mysql_real_escape_string', $rawop );
+	$st = array_map( 'mysql_real_escape_string', $rawst );
+	$co = array_map( 'mysql_real_escape_string', $rawco );
 	if($do == 'i'){
 		$qry = "INSERT INTO $tbl (". implode(',',$in) .") VALUES (\"". implode('","',$st) ."\")";
 	}elseif($do == 'u'){
 		if( $in[0] ){
 			$x = 0;
 			foreach ($in as $c){
-				if($c){$s[]="$c=\"$st[$x]\"";}
+				$o = ( array_key_exists($x, $op) )?$op[$x]:'=';				# Use '=' if no operator is set
+				if($c){$s[]="$c $o \"$st[$x]\"";}
 				$x++;
 			}
-			$w   = ($ord)?" WHERE $col=\"$ord\"":" WHERE $col";
-			$qry = "UPDATE $tbl SET ". implode(',',$s) ." $w";
+			$qry = "UPDATE $tbl SET ". implode(',',$s) ." WHERE $col $ord \"$lim\"";
 		}
+	}elseif($do ==  'b'){
+		$qry = "SHOW DATABASES $col \"$tbl\"";
+	}elseif($do ==  'p'){
+		$qry = "DROP DATABASE $tbl";
 	}elseif($do ==  'h'){
 		$qry = "SHOW TABLES $tbl";
 	}elseif($do ==  't'){
@@ -140,10 +136,10 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 		$l = ($lim) ? "LIMIT $lim" : "";
 		if( strstr($ord, 'ifname') ){
 			$desc = strpos($ord, 'desc')?" desc":"";
-			$ord  = ($desc)?substr($ord,0,-5):$ord;		# Cut away desc for proper handling below
-			$colarr = explode(".", $ord);			# Handle table in join queries
-			$icol = ($colarr[0] == 'ifname')?'ifname':"$colarr[0].ifname";
-			$dcol = ($colarr[0] == 'ifname')?'device':"$colarr[0].device";
+			$ord  = ($desc)?substr($ord,0,-5):$ord;						# Cut away desc for proper handling below
+			$oar = explode(".", $ord);							# Handle table in join queries
+			$icol = ($oar[0] == 'ifname' or $oar[0] == 'nbrifname')?'ifname':"$oar[0].ifname";
+			$dcol = ($oar[0] == 'ifname' or $oar[0] == 'nbrifname')?'device':"$oar[0].device";
 			$od = "ORDER BY $dcol $desc,SUBSTRING_INDEX($icol, '/', 1), SUBSTRING_INDEX($icol, '/', -1)*1+0";
 		}elseif($ord){
 			$od = "ORDER BY $ord";
@@ -164,7 +160,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 						$v = strtotime($v);
 					}elseif($c == 'mac'){
 						$v = preg_replace("/[.:-]/","", $v);
-					}elseif(preg_match("/^(dev|orig|nod|if|mon)ip$/",$c) and !preg_match('/^[0-9]+$/',$v) ){			# Do we have an dotted IP?
+					}elseif(preg_match("/^(dev|orig|nod|if|mon)ip$/",$c) and !preg_match('/^[0-9]+$/',$v) ){	# Do we have an dotted IP?
 						if( strstr($v,'/') ){									# CIDR?
 							list($ip, $prefix) = explode('/', $v);
 							$dip = sprintf("%u", ip2long($ip));
@@ -179,10 +175,8 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 								$v = sprintf("%u", ip2long($v));
 							}
 						}
-					}
-					if( strpos($o,'CI') ){
-						$c = "LCASE($in[$x])";
-						$o = substr($op[$x],0,-2);
+					}elseif( preg_match("/^(if|nod|mon)ip6$/",$c) ){
+						$c = "HEX($c)";
 					}
 					if(strstr($o,'regexp') and $v == '' ){$v = '.';}
 					if( strstr($o, 'COL ') ){
@@ -224,7 +218,11 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 		}
 	}
 
-	if($debug){echo "<div class=\"textpad noti\"><a href=\"System-Export.php?action=export&query=".urlencode($qry)."\">$qry</a></div>\n";}
+	if($debug){
+		echo "<div class=\"textpad warn\">";
+		debug_print_backtrace();
+		echo "<p><a href=\"System-Export.php?action=export&query=".urlencode($qry)."\">$qry</a></div>\n";
+	}
 
 	return $qry;
 }

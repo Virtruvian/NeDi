@@ -1,13 +1,15 @@
-# Definition for 1.3.6.1.4.1.2021.250.255 created by Defgen 1.8 on 10.Dec 2011 (admin)
+# Definition for 1.3.6.1.4.1.2021.250.255 created by Defgen 1.8 on 18.Mar 2013 (admin)
 
 # General
-SNMPv	2
+SNMPv	2HC
 Type	UCD-unknown
 Typoid	
 Sysdes	
 OS	other
 Icon	vpan
+Size	1
 Bridge	
+ArpND	old
 Dispro	
 Serial	
 Bimage	
@@ -15,11 +17,14 @@ Bimage
 # Vlan Specific
 VLnams	
 VLnamx	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
+StartX	
+EndX	
 IFname	1.3.6.1.2.1.2.2.1.2
+IFaddr	old
 IFalia	
 IFalix	
 InBcast	1.3.6.1.2.1.2.2.1.12
@@ -27,7 +32,7 @@ InDisc	1.3.6.1.2.1.2.2.1.13
 OutDisc	1.3.6.1.2.1.2.2.1.19
 IFvlan	
 IFvlix	
-IFpowr	
+IFpowr		
 IFpwix	
 IFdupl	
 IFduix	

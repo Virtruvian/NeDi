@@ -1,4 +1,4 @@
-<?
+<?php
 # Program: Topology-Routes.php
 # Programmer: Remo Rickli
 
@@ -21,7 +21,7 @@ $vrf = isset($_GET['vrf']) ? $_GET['vrf'] : "";
 
 $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
-$query	= GenQuery('networks','s','*','ifip','',array('ifip'),array('!='),array('2130706433'),'','LEFT JOIN devices USING (device)');	# exclude 127.0.0.1
+$query	= GenQuery('networks','s','*','ifip','',array('ifip'),array('!='),array('2130706433'),array(),'LEFT JOIN devices USING (device)');	# exclude 127.0.0.1
 $res	= @DbQuery($query,$link);
 if($res){
 	while( ($r = @DbFetchRow($res)) ){
@@ -52,20 +52,20 @@ if($res){
 }
 
 ?>
-<h1>Routing Tool</h1>
+<h1><?= $mtitl[0] ?> <?= $mtitl[1] ?></h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" action="<?=$self?>.php" name="rout">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" action="<?= $self ?>.php" name="rout">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
-VRF <input type="text" name="vrf" value="<?=$vrf?>" size="12">
+VRF <input type="text" name="vrf" value="<?= $vrf ?>" size="12">
 </th>
 <th>
-<?=$srclbl?> <select size=1 name="src">
-<option value=""><?=$sellbl?> ->
-<?
+<?= $srclbl ?> <select size=1 name="src">
+<option value=""><?= $sellbl ?> ->
+<?php
 foreach (array_keys($netif) as $n ){
 		echo "<OPTION VALUE=$n";
 		if($src == $n){echo " selected";}
@@ -74,8 +74,8 @@ foreach (array_keys($netif) as $n ){
 ?>
 </select>
 
-<?=$dstlbl?> <select size=1 name="dst">
-<?
+<?= $dstlbl ?> <select size=1 name="dst">
+<?php
 foreach (array_keys($netif) as $n ){
 		echo "<OPTION VALUE=$n";
 		if($dst == $n){echo " selected";}
@@ -88,8 +88,8 @@ foreach (array_keys($netif) as $n ){
 <th>
 Router
 <select size=1 name="rtr">
-<option value=""><?=$sellbl?> ->
-<?
+<option value=""><?= $sellbl ?> ->
+<?php
 foreach (array_keys($devtyp) as $r ){
 	echo "<OPTION VALUE=\"$r\" ";
 	if($rtr == $r){echo "selected";}
@@ -97,23 +97,23 @@ foreach (array_keys($devtyp) as $r ){
 }
 ?>
 </SELECT>
-<input type="submit" value="<?=$sholbl?>">
+<input type="submit" value="<?= $sholbl ?>">
 </th>
 </tr></table></form>
-<?
+<?php
 }
 if($trc){
 ?>
-<h2>Route Trace <?=$src?> - <?=$dst?><?=(($vrf)?" VRF $vrf":"")?></h2>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
+<h2>Route Trace <?= $src ?> - <?= $dst ?><?= (($vrf)?" VRF $vrf":"") ?></h2>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
 <th><img src="img/16/dev.png"><br>Device</th>
-<th><img src="img/16/net.png"><br><?=$netlbl?></th>
-<th><img src="img/16/home.png"><br><?=$dstlbl?></th>
+<th><img src="img/16/net.png"><br><?= $netlbl ?></th>
+<th><img src="img/16/home.png"><br><?= $dstlbl ?></th>
 <th><img src="img/16/ncon.png" ><br>Next Hop</th>
 <th><img src="img/16/dcal.png"><br>Metric 1</th>
 <th><img src="img/16/find.png"><br>Protocol</th>
 
-<?
+<?php
 	$lnet	= $src;
 	$currtr	= $netif[$lnet];
 	$path	= "";
@@ -123,10 +123,10 @@ if($trc){
 		$row++;
 		$ur = rawurlencode($currtr);
 ?>
-<tr class="<?=$bg?>"><th class="<?=$bi?>" width="80">
-<a href="?rtr=<?=$ur?>"><img src="img/dev/<?=$devimg[$currtr]?>.png" title="<?=$devtyp[$currtr]?>"></a>
-<br><?=$currtr?></th><td><?=$lnet?></td>
-<?
+<tr class="<?= $bg ?>"><th class="<?= $bi ?>" width="80">
+<a href="?rtr=<?= $ur ?>"><img src="img/dev/<?= $devimg[$currtr] ?>.png" title="<?= $devtyp[$currtr] ?>"></a>
+<br><?= $currtr ?></th><td><?= $lnet ?></td>
+<?php
 
 		unset($r);
 		$r = DevRoutes($devip[$currtr],$devver[$currtr],$devcom[$currtr],$vrf);
@@ -151,9 +151,9 @@ if($trc){
 			}
 		}
 ?>
-<td><?=$ndst?>/<?=$pfix?></td><td><?=$nho?></td>
-<td align="center"><?=$me1?></td><td><img src="img/16/<?=$rpimg?>.png"> <?=$rp?></td></tr>
-<?
+<td><?= $ndst ?>/<?= $pfix ?></td><td><?= $nho ?></td>
+<td align="center"><?= $me1?></td><td><img src="img/16/<?= $rpimg ?>.png"> <?= $rp ?></td></tr>
+<?php
 		flush();
 		if ( strpos($path, $currtr) ){
 			echo "<h4>$currtr $lopmsg<h4>\n";
@@ -172,23 +172,23 @@ if($trc){
 </table>
 
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Hops: <?=$path?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Hops: <?= $path ?></td></tr>
 </table>
-	<?
+	<?php
 }elseif($rtr){
 	$ud = urlencode($rtr);
 ?>
-<h2><?=$rtr?> <?=$sumlbl?></h2>
+<h2><?= $rtr ?> <?= $sumlbl ?></h2>
 <table class="content">
 <tr><th class="imga" width="80">
-<a href=Devices-Status.php?dev=<?=$ud?> ><img src="img/dev/<?=$devimg[$rtr]?>.png" title="<?=$stalbl?>"></a>
-<br><?=$rtr?></th><td class="txta"><?=(Devcli($devip[$rtr],$devcli[$rtr]))?></td></tr>
-<tr><th class="<?=$modgroup[$self]?>2"><?=$srvlbl?></th><td class="txtb"><?=($devsrv[$rtr])?$devsrv[$rtr]:"&nbsp;"?></td></tr>
-<tr><th class="<?=$modgroup[$self]?>2"><?=$loclbl?></th><td class="txta"><?=$devloc[$rtr]?></td></tr>
-<tr><th class="<?=$modgroup[$self]?>2"><?=$conlbl?></th><td class="txtb"><?=$devcon[$rtr]?></td></tr>
-<tr><th class="<?=$modgroup[$self]?>2">SNMP</th><td class="txta"><?=$devcom[$rtr]?> (Version <?=$devver[$rtr] & 7?>)</td></tr>
+<a href=Devices-Status.php?dev=<?= $ud ?> ><img src="img/dev/<?= $devimg[$rtr] ?>.png" title="<?= $stalbl ?>"></a>
+<br><?= $rtr ?></th><td class="txta"><?= (Devcli($devip[$rtr],$devcli[$rtr])) ?></td></tr>
+<tr><th class="<?= $modgroup[$self] ?>2"><?= $srvlbl ?></th><td class="txtb"><?= ($devsrv[$rtr])?$devsrv[$rtr]:"&nbsp;" ?></td></tr>
+<tr><th class="<?= $modgroup[$self] ?>2"><?= $loclbl ?></th><td class="txta"><?= $devloc[$rtr] ?></td></tr>
+<tr><th class="<?= $modgroup[$self] ?>2"><?= $conlbl ?></th><td class="txtb"><?= $devcon[$rtr] ?></td></tr>
+<tr><th class="<?= $modgroup[$self] ?>2">SNMP</th><td class="txta"><?= $devcom[$rtr] ?> (Version <?= $devver[$rtr] & 7?>)</td></tr>
 </table>
-<?
+<?php
 	#snmp_set_oid_numeric_print(1);
 	foreach( Walk($devip[$rtr], $devver[$rtr], $devcom[$rtr],"1.3.6.1.3.118.1.2.2.1") as $ix => $val){
 		$key = preg_replace('/(SNMPv2-SMI::experimental|[.]?1.3.6.1.3).118.1.2.2.1./','',$ix);
@@ -203,19 +203,19 @@ if($trc){
 	}
 	if($val){
 ?>
-<h2><?=$rtr?> VRF <?=$lstlbl?></h2>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th><img src="img/16/abc.png"><br><?=$namlbl?></th>
-<th><img src="img/16/find.png"><br><?=$deslbl?></th>
+<h2><?= $rtr ?> VRF <?= $lstlbl ?></h2>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<th><img src="img/16/abc.png"><br><?= $namlbl ?></th>
+<th><img src="img/16/find.png"><br><?= $deslbl ?></th>
 <th><img src="img/16/ncon.png" ><br>RD</th>
 <th><img src="img/16/port.png"><br># IF</th>
-<th><img src="img/16/swit.png" title"Status and router uptime at last change"><br><?=$stalbl?></th>
-<?
+<th><img src="img/16/swit.png" title"Status and router uptime at last change"><br><?= $stalbl ?></th>
+<?php
 		foreach (array_keys($vrfs) as $vna){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
 			$uvn = rawurlencode($vna);
-			echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
+			TblRow($bg);
 			echo "<th class=\"$bi\"><a href=\"?rtr=$ud&vrf=$uvn\">$vna</a></th><td>".$vrfs[$vna]['2']."</td>\n";
 			echo "<td>".$vrfs[$vna]['3']."</td><td align=\"center\">".$vrfs[$vna]['6']."/".$vrfs[$vna]['7']."</td>\n";
 			echo "<td>".(($vrfs[$vna]['5'])?"<img src=\"img/16/bchk.png\"> @":"<img src=\"img/16/bdis.png\"> @").$vrfs[$vna]['11']."</td></tr>\n";
@@ -223,24 +223,24 @@ if($trc){
 ?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> <?=$vallbl?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
-<?
+<?php
 	}else{
 		echo "<h4>(VRFs: $nonlbl)</h4>";
 	}
 ?>
 
-<h2><?=$rtr?> Routes <?=$lstlbl?><?=(($vrf)?" VRF $vrf":"")?></h2>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th colspan=2><img src="img/16/home.png"><br><?=$dstlbl?></th>
+<h2><?= $rtr ?> Routes <?= $lstlbl ?><?= (($vrf)?" VRF $vrf":"") ?></h2>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<th colspan=2><img src="img/16/home.png"><br><?= $dstlbl ?></th>
 <th><img src="img/16/ncon.png" ><br>Next Hop</th>
 <th><img src="img/16/port.png"><br>Interface</th>
-<th><img src="img/16/tap.png" ><br><?=$bwdlbl?></th>
+<th><img src="img/16/tap.png" ><br><?= $bwdlbl ?></th>
 <th><img src="img/16/dcal.png"><br>Metric 1</th>
 <th><img src="img/16/find.png"><br>Protocol</th>
-<th><img src="img/16/clock.png"><br><?=$agelbl?></th>
-<?
+<th><img src="img/16/clock.png"><br><?= $agelbl ?></th>
+<?php
 	$query	= GenQuery('interfaces','s','*','','',array('device'),array('='),array($rtr) );
 	$res	= @DbQuery($query,$link);
 	while( ($i = @DbFetchRow($res)) ){
@@ -265,7 +265,7 @@ if($trc){
 		list($ifimg,$iftit)	= Iftype($ity[$r[$rd]['ifx']]);
 		list($ntimg,$ntit)	= Nettype($rd);
 	
-		echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
+		TblRow($bg);
 		echo "<th class=\"$bi\" width=\"20\"><img src=\"img/$ntimg\" title=$ntit></th>\n";
 		echo "<td><a href=\"Topology-Networks.php?ina=ifip&opa==&sta=$rd%2F$pfix&draw=png\">$rd/$pfix</a></td>\n";
 		echo "<td>".$r[$rd]['nho']." <a href=?rtr=$unh&vrf=$uvn>".$netif[$r[$rd]['nho']]."</a></td><td><img src=\"img/$ifimg\" title=$iftit> ";
@@ -277,9 +277,9 @@ if($trc){
 ?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> <?=$vallbl?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
-<?
+<?php
 }
 include_once ("inc/footer.php");
 
@@ -366,7 +366,7 @@ function DevRoutes($ip,$rv,$rc,$vrfname){
 			}
 			if(!$ix ){							#no OIDs for route info, timeout or route do not exist. 
 				echo "</table><h4>$toumsg</h4>";
-				if($_SESSION['vol']){echo "<embed src=\"inc/enter2.mp3\" volume=\"$_SESSION[vol]\" hidden=\"true>\"\n";}
+				if($_SESSION['vol']){echo "<embed src=\"inc/enter2.mp3\" volume=\"$_SESSION[vol]\" hidden=\"true\">\n";}
 				die;
 			}
 			#metric inetCidrRouteMetric1

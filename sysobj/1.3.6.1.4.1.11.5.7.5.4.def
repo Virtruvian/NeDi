@@ -1,0 +1,57 @@
+# Definition for 1.3.6.1.4.1.11.5.7.5.4 created by Defgen 1.8 on 14.Mar 2013 (admin)
+
+# General
+SNMPv	2HC
+Type	HPVCflex10
+Typoid	1.3.6.1.4.1.232.2.2.4.2.0
+Sysdes	
+OS	VC
+Icon	spgn
+Size	1
+Bridge	normalX
+ArpND	old
+Dispro	LLDPXN
+Serial	1.3.6.1.4.1.232.2.2.2.1.0
+Bimage	1.3.6.1.4.1.232.11.2.14.1.1.5.1
+
+# Vlan Specific
+VLnams	1.3.6.1.4.1.11.5.7.5.2.1.1.6.1.1.2
+VLnamx	
+Group	
+Mode	
+
+# Interfaces
+StartX	
+EndX	
+IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
+IFalia	
+IFalix	
+InBcast	1.3.6.1.2.1.31.1.1.1.3
+InDisc	1.3.6.1.2.1.2.2.1.13
+OutDisc	1.3.6.1.2.1.2.2.1.19
+IFvlan	1.3.6.1.2.1.17.7.1.4.5.1.1
+IFvlix	
+IFpowr		
+IFpwix	
+IFdupl	
+IFduix	
+Halfdp	
+Fulldp	
+
+# Modules
+Modesc	1.3.6.1.4.1.11.5.7.5.2.1.1.5.1.1.6
+Moclas	
+Movalu	60
+Moslot	1.3.6.1.4.1.11.5.7.5.2.1.1.5.1.1.7
+Modhw	
+Modsw	
+Modfw	
+Modser	1.3.6.1.4.1.11.5.7.5.2.1.1.5.1.1.5
+Momodl	1.3.6.1.4.1.11.5.7.5.2.1.1.5.1.1.4
+
+# RRD Graphing
+CPUutl	
+Temp		
+MemCPU		
+Custom		

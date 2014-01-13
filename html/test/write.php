@@ -1,6 +1,6 @@
 <html><body>
 <h3>
-<?
+<?php
 
 	echo shell_exec('whoami');
 	echo "</h3>";

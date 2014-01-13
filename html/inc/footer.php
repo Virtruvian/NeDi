@@ -1,12 +1,12 @@
 <p>
-<div id="footer" class="<?=$modgroup[$self]?>1">
-<?
+<div id="footer" class="<?= $modgroup[$self] ?>1">
+<?php
 if( isset($_GET['print']) or isset($_GET['xls']) ){
 	echo "$_SESSION[user], $now";
 }else{
 ?>
-&copy; 2001-2012 Remo Rickli & contributors
-<?
+&copy; 2001-2013 Remo Rickli & contributors
+<?php
 }
 ?>
 </div>

@@ -13,12 +13,12 @@ Manage System Files
 </div>
 
 <h2>Introduction</h2>
-This modules provides 3 major features:
+This modules provides 4 major features:
 <ol>
-<li> Edit/View system and configuration files.
-<li> Import SQL data or update NeDi itself.
-<li> Manage html/log files and tftp boot images.
-<li> Delete RRDs (apparently broken) which haven't been updated for more days than retire is set to.
+<li> Edit/View system, device configuration and nedi log files.
+<li> Import SQL data or update NeDi files.
+<li> Manage html/log, map, foto and tftpboot files.
+<li> Delete "broken" RRDs which haven't been updated for more days than retire is set to in nedi.conf.
 </ol>
 
 <h2>Editor/Viewer</h2>
@@ -29,14 +29,15 @@ This modules provides 3 major features:
 </ul>
 
 <h2>Import/Update</h2>
-<li> Upload a .sql.gz (packed) file which will replace the DB data. You can restore dumps created with System-Export.
-<ul> Upload a nedi.tgz archive and choose whether you whish to backup your existing config (check for compatibilty!).
+<li> Upload a .sql.gz (packed) file which will replace the DB data. You can restore dumps created with System-Export for example
+<li> Upload an archive with alternative user icons (usr/0-99.jpg) or device panels (panel/devtype.jpg).
+<ul> Upload a nedi.tgz archive and choose whether you whish to backup your existing config (check for compatibilty!) or not
 </ul>
 
 <h2>Manage Files</h2>
 <ul> Upload files in the apropriate area. Files in html/log can be accessed directly by clicking on file name.
-<li> Delete files by clicking on the red X.
+<li> Delete files by clicking on <img src="../../img/16/bcnl.png">.
 </ul>
 
-<div id="footer">Remo Rickli 2011</div>
+<div id="footer">Remo Rickli 2013</div>
 </body>

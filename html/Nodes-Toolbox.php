@@ -1,8 +1,10 @@
-<?
+<?php
 # Program: Nodes-Toolbox.php
-# Programmer: Eli Gill, modifications by Remo Rickli, additional support Marco Rauchensteins
+# Programmer: Eli Gill, modifications by Remo Rickli, additional support Marco Rauchenstein
 
 $printable = 1;
+$exportxls = 1;
+
 
 include_once ("inc/header.php");
 
@@ -13,32 +15,31 @@ $ping_size	= isset($_GET['Size']) ? $_GET['Size'] : 32;
 $do		= isset($_GET['Do']) ? $_GET['Do'] : "";
 
 ?>
-<h1><?=$netlbl?> Tool Box</h1>
+<h1><?= $netlbl ?> Tool Box</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" action="<?=$self?>.php" name="nettools">
-<table class="content" ><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" action="<?= $self ?>.php" name="nettools">
+<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
 <a href="log/kitty.exe"><img src="img/16/kons.png" title="Kitty"></a>
 <a href="log/iperf.exe"><img src="img/16/flas.png" title="Iperf"></a>
 </th><th>
-<?=$dstlbl?> <input type="text" name="Dest" value="<?=$dest?>" size="15" />
-<?=$numlbl?> <input type="text" name="Count" value="<?=$ping_count?>" size="2" />
-<?=$sizlbl?> <input type="text" name="Size" value="<?=$ping_size?>" size="4" />
-<input type="submit" value="Ping" name="Do"/>
+<?= $dstlbl ?> <input type="text" name="Dest" value="<?= $dest ?>" size="15" />
+<?= $numlbl ?> <input type="text" name="Count" value="<?= $ping_count ?>" size="2" />
+<?= $sizlbl ?> <input type="text" name="Size" value="<?= $ping_size ?>" size="4" />
 <input type="submit" value="Lookup" name="Do"/>
-<input type="submit" value="Traceroute" name="Do"/>
+<input type="submit" value="Ping" name="Do"/>
 <input type="submit" value="Ping Range" name="Do"/>
+<input type="submit" value="Traceroute" name="Do"/>
 <input type="submit" value="Scan" name="Do"/>
 </th>
 </table>
 </form>
 
-<?
+<?php
 }
-
 ob_end_flush();
 if($do == "Ping"){
 	echo "<h2>$ping_count Ping(s) with $ping_size bytes to $dest</h2><div class=\"textpad code txta\">";
@@ -68,14 +69,14 @@ if($do == "Ping"){
 }else{
 # Based on Steffen's idea
 ?>
-<h2>Client <?=$cfglbl?></h2>
+<h2>Client <?= $cfglbl ?></h2>
 <div class="textpad txtb">
 
 <h3><img src="img/32/nwin.png"> Windows Clients</h3>
 <h4>Kitty & Firefox</h4>
 <div class="txta code">
 
-<?=$sellbl?> telnet:// -> Kitty.exe
+<?= $sellbl ?> telnet:// -> Kitty.exe
 
 <b>about:config</b>
 network.protocol-handler.app.ssh		STRING "C:\Program Files\Kitty.exe"
@@ -86,7 +87,7 @@ network.protocol-handler.warn-external.ssh	BOOL   false
 
 <h4>Kitty & IE</h4>
 <div class="txta code">
-<?=$cmdlbl?> <a href="log/telnet-ssh-kitty.reg">telnet-ssh-kitty.reg</a>
+<?= $cmdlbl ?> kitty.exe -sshhandler || <?= $cmdlbl ?> <a href="log/telnet-ssh-kitty.reg">telnet-ssh-kitty.reg</a>
 </div>
 
 <h4>Radmin</h4>
@@ -151,14 +152,14 @@ ssh -l $name $1
 chmod 755 cli.sh
 chmod 755 ssh.sh
 
-<?=$sellbl?> telnet:// & ssh:// -> cli.sh
+<?= $sellbl ?> telnet:// & ssh:// -> cli.sh
 </div>
 
-<?
+<?php
 }
 ?>
 </div>
 <br><p>
-<?
+<?php
 include_once ("inc/footer.php");
 ?>

@@ -1,15 +1,14 @@
-<?
+<?php
 # Program: System-Export.php
-# Programmer: Pascal Voegeli, Remo Rickli (minor additions)
-
+# Programmer: Pascal Voegeli, Remo Rickli (minor additions, avoid NULL on empty chars aroun 466)
+#
+# NOTE: For security reasons only admins can use the export function now. Remove "$isadmin AND " on line 160, if you don't care!
+#
 $printable = 1;
+$exportxls = 0;
 
 // Header.php contains the navigation and general settings for the UI
 include_once("inc/header.php");
-
-if(!$isadmin){#TODO investigate more effective sanitization
-	$_GET = stripslashes(sanitize($_GET));
-}
 
 // This is used later in the HTML form to ensure that there is always something selected,
 // even if nothing has been passed to the script with GET
@@ -31,20 +30,20 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 
 <h1>Export</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" name="export" action="<?=$self?>.php">
+<form method="get" name="export" action="<?= $self ?>.php">
 
 <table class="content" >
-	<tr class="<?=$modgroup[$self]?>1">
-		<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+	<tr class="<?= $modgroup[$self] ?>1">
+		<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
 		<!-- This <th> contains the export part of the form -->
 		<td valign="top" align="center">
 
 			<!-- If the module is loaded without any GET variables the selected action is "Export" -->
-			<h3><input type="radio" name="action" value="export" <?=$action=="export"?"checked":""?>>Export</input></h3>
-			<table><tr><td><?=$frmlbl?>:</td>
+			<h3><input type="radio" name="action" value="export" <?= $action=="export"?"checked":"" ?>>Export</input></h3>
+			<table><tr><td><?= $frmlbl ?>:</td>
 			<!-- There are 3 different types of things that can be selected in this box: -->
 			<!-- If a database table is selected, a "SELECT * FROM..." query is automatically written to the text box -->
 			<!-- If the "Device Config Files" entry is selected, the separator and quotes fields are disabled and a specific -->
@@ -61,16 +60,16 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 					document.forms['export'].quotes.disabled=true;
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='eventret') {
-					document.forms['export'].query.value='DELETE FROM events where time < <?=(time() - $retire * 86400)?>';
+					document.forms['export'].query.value='DELETE FROM events where time < <?= (time() - $retire * 86400) ?>';
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='iftrkret') {
-					document.forms['export'].query.value='DELETE FROM iftrack where ifupdate < <?=(time() - $retire * 86400)?>';
+					document.forms['export'].query.value='DELETE FROM iftrack where ifupdate < <?= (time() - $retire * 86400) ?>';
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='iptrkret') {
-					document.forms['export'].query.value='DELETE FROM iptrack where ipupdate < <?=(time() - $retire * 86400)?>';
+					document.forms['export'].query.value='DELETE FROM iptrack where ipupdate < <?= (time() - $retire * 86400) ?>';
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='devret') {
-					document.forms['export'].query.value='DELETE FROM devices where lastdis < <?=(time() - $retire * 86400)?>';
+					document.forms['export'].query.value='DELETE FROM devices where lastdis < <?= (time() - $retire * 86400) ?>';
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='resetlog') {
 					document.forms['export'].query.value='FLUSH LOGS;RESET MASTER';
@@ -83,7 +82,7 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 			">
 				<option value="none">select...</option>
 				<option value="none">--- DB tables ---</option>
-			<?  // Some PHP code
+			<?php  // Some PHP code
 				// All the names of the database tables are collected and put into the select box
 				$res = DbQuery(GenQuery("", "h"), $dblink);
 				while($n = DbFetchRow($res)){
@@ -100,7 +99,7 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 			</select>
 			Separator:
 			<select size="1" name="sep">
-			<?  // Some PHP code
+			<?php  // Some PHP code
 				$separators = array(";", ";;", ":", "::", ",", "/");
 				foreach($separators as $s){
 					echo "<option value=\"$s\"".($s==$sep?" selected":"").">".$s."</option>\n";
@@ -108,20 +107,20 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 				}
 			?>
 			</select>
-			&nbsp;Quotes <input type="checkbox" name="quotes" <?=$quotes?>>
-			Header <input type="checkbox" name="colhdr" <?=$colhdr?>></td></tr>
+			&nbsp;Quotes <input type="checkbox" name="quotes" <?= $quotes ?>>
+			Header <input type="checkbox" name="colhdr" <?= $colhdr ?>></td></tr>
 			<tr><td>Query:</td>
 			<td>
-			<textarea rows="3" name="query" cols="60"><?=$query?></textarea>
+			<textarea rows="3" name="query" cols="60"><?= $query ?></textarea>
 			</table>
 		</td>
 	
 		<!-- This <th> contains the SQL dump part of the form -->
 		<td valign="top" align="center">
-			<h3><input type="radio" name="action" value="sqldump" <?=$action=="sqldump"?"checked":""?>>Dump Tables</input></h3>
+			<h3><input type="radio" name="action" value="sqldump" <?= $action=="sqldump"?"checked":"" ?>>Dump Tables</input></h3>
 			<p>
 				<select multiple size="6" name="sqltbl[]">
-				<?  // Some PHP code
+				<?php  // Some PHP code
 					$res = DbQuery(GenQuery("", "h"), $dblink);
 					while($n = DbFetchRow($res)){
 						echo "<option value=\"".$n[0]."\"".(in_array($n[0], $sqltbl)?" selected":"").">".$n[0]."</option>\n";
@@ -133,19 +132,20 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 
 		<!-- This <th> contains the archive settings -->
 		<th width="80" valign="top" align="center">
-			<h3><?=$dstlbl?></h3>
+			<h3><?= $dstlbl ?></h3>
 			<p>
 			<select size="1" name="type">
-				<option value="htm" <?=($type=="htm")?"selected":""?>>html</option>
-				<option value="plain" <?=($type=="plain")?"selected":""?>>plain</option>
-				<option value="gz" <?=($type=="gz")?"selected":""?>>Gzip</option>
-				<option value="bz2" <?=($type=="bz2")?"selected":""?>>Bzip2</option>
-				<option value="tar" <?=($type=="tar")?"selected":""?>>Tar</option>
+				<option value="htm" <?= ($type=="htm")?" selected":"" ?>>html</option>
+				<option value="plain" <?= ($type=="plain")?" selected":"" ?>>plain</option>
+				<option value="gz" <?= ($type=="gz")?" selected":"" ?>>Gzip</option>
+				<option value="bz2" <?= ($type=="bz2")?" selected":"" ?>>Bzip2</option>
+				<option value="tar" <?= ($type=="tar")?" selected":"" ?>>Tar</option>
 			</select>
 			<p>
-			<input type="checkbox" name="timest" <?=$timest?>><img src="img/16/form.png" title="<?=(($verb1)?"$addlbl $timlbl":"$timlbl $addlbl")?>/<?=$frmlbl?> IP">
+			<img src="img/16/abc.png" title="<?= (($verb1)?"$addlbl $timlbl":"$timlbl $addlbl") ?>/<?= $frmlbl ?> IP">
+			<input type="checkbox" name="timest" <?= $timest ?>>
 			<p>
-			<input type="submit" value="<?=$cmdlbl?>">
+			<input type="submit" value="<?= $cmdlbl ?>">
 		</th>
 	</tr>
 </table>
@@ -154,24 +154,21 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 
 <!-- End of the HTML part -->
 
-<?
+<?php
 }
 // If the "Export" radio button has been selected
-if($action == "export") {
+if($isadmin and $action == "export") {
+	$start = microtime(1);
 	// An empty query produces an error message
 	if($query == "") {
 		echo "<h4>Query $emplbl!</h4>";
 	}
 	// Execute and return status, if the query is not an SELECT query
 	elseif(!preg_match ('/^(SELECT|EXPLAIN)/i',$query) ) {
-		if($isadmin){
-			if( !$res = DbQuery($query, $dblink) ) {
-				echo "<h4>$query $errlbl</h4>";
-			}else{
-				echo "<h5>$query OK</h5>";
-			}
+		if( !$res = DbQuery($query, $dblink) ) {
+			echo "<h4>$query $errlbl</h4>";
 		}else{
-			echo "$nokmsg";
+			echo "<h5>$query OK</h5>";
 		}
 	}
 	// And finally, if the query is invalid for any other reasons, an error message is printed
@@ -238,9 +235,11 @@ if($action == "export") {
 		while($l = @DbFetchArray($res)) {
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			echo  "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">";
+			TblRow($bg);
 			foreach($l as $id => $field) {
-				if($timest and  preg_match("/^(origip|dev|if|nod)ip$|^mask$/",$id) ){
+				if( $field and preg_match("/^(if|nod|mon)ip6$/",$id) ){
+					echo "<td>".inet_ntop($field)."</td>";
+				}elseif($field and $timest and  preg_match("/^(orig|dev|if|nod|mon)ip$/",$id) ){
 					echo "<td>".long2ip($field)."</td>";
 				}elseif($timest and preg_match("/^(first|last|time|(if|ip|os)?update)/",$id) ){
 					echo "<td>".date($_SESSION['date'],$field)."</td>";
@@ -253,9 +252,9 @@ if($action == "export") {
 		?>
 </table>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> <?=$vallbl?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?>, <?= round( microtime(1) - $start,2 ) ?> <?= $tim['s'] ?></td></tr>
 </table>
-		<?
+		<?php
 	}
 	// For any other SQL query this is processed
 	else {
@@ -284,7 +283,7 @@ if($action == "export") {
 	}
 }
 // If the "SQL Dump" radio button has been selected
-else if($action == "sqldump") {
+else if($isadmin and $action == "sqldump") {
 	// This is the beginning of the output table
 	echo "<h2>Log</h2><div class=\"textpad txta\">\n";
 
@@ -308,16 +307,16 @@ else if($action == "sqldump") {
 	echo "<meta http-equiv=\"refresh\" content=\"0; URL=".$archive."\">\n";
 }
 else if($isadmin and $action == "trunc") {
-	$query = GenQuery("$sqltbl", "t");
-	if( !@DbQuery($query,$dblink) ){echo "<h4>".DbError($dblink)."</h4>";}else{echo "<h5>".(($verb1)?"$sqltbl $dellbl $vallbl":"$sqltbl $vallbl $dellbl")." OK</h5>";}
+	$query = GenQuery($sqltbl[0],"t");
+	if( !@DbQuery($query,$dblink) ){echo "<h4>".DbError($dblink)."</h4>";}else{echo "<h5>".(($verb1)?"$sqltbl[0] $dellbl $vallbl":"$sqltbl[0] $vallbl $dellbl")." OK</h5>";}
 }
 else if($isadmin and $action == "opt") {
-	$query = GenQuery("$sqltbl", "o");
-	if( !@DbQuery($query,$dblink) ){echo "<h4>".DbError($dblink)."</h4>";}else{echo "<h5>".(($verb1)?"$optlbl $sqltbl":"$sqltbl $optlbl")." OK</h5>";}
+	$query = GenQuery($sqltbl[0],"o");
+	if( !@DbQuery($query,$dblink) ){echo "<h4>".DbError($dblink)."</h4>";}else{echo "<h5>".(($verb1)?"$optlbl $sqltbl[0]":"$sqltbl[0] $optlbl")." OK</h5>";}
 }
 else if($isadmin and $action == "rep") {
-	$query = GenQuery("$sqltbl", "r");
-	if( !@DbQuery($query,$dblink) ){echo "<h4>".DbError($dblink)."</h4>";}else{echo "<h5>".(($verb1)?"$replbl $sqltbl":"$sqltbl $replbl")." OK</h5>";}
+	$query = GenQuery($sqltbl[0],"r");
+	if( !@DbQuery($query,$dblink) ){echo "<h4>".DbError($dblink)."</h4>";}else{echo "<h5>".(($verb1)?"$replbl $sqltbl[0]":"$sqltbl[0] $replbl")." OK</h5>";}
 }
 else {
 	echo "<h2>DB $dbname $sumlbl</h2>\n";
@@ -341,28 +340,28 @@ else {
 	?>
 </table>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>2"><td>
+<tr class="<?= $modgroup[$self] ?>2"><td>
 <div style="float:right">
 
-<?if($recs[0]){?>
-<a href="?action=export&exptbl=links&sep=%3B&query=SELECT+*+FROM+<?=$tab[0]?> limit 1000"><img src="img/16/eyes.png" title="<?=$sholbl?>"></a>
+<?php  if($recs[0]) { ?>
+<a href="?action=export&exptbl=links&sep=%3B&query=SELECT+*+FROM+<?= $tab[0] ?> limit <?= $listlim ?>"><img src="img/16/eyes.png" title="<?= $sholbl ?>"></a>
 <?}
-if($isadmin){?>
-<a href="?action=opt&sqltbl=<?=$tab[0]?>"><img src="img/16/db.png" title="<?=$optlbl?>"></a>
-<a href="?action=rep&sqltbl=<?=$tab[0]?>"><img src="img/16/dril.png" title="<?=$replbl?>"></a>
-<a href="?action=trunc&sqltbl=<?=$tab[0]?>"><img src="img/16/bcnl.png" onclick="return confirm('<?=(($verb1)?"$dellbl $vallbl":"$vallbl $dellbl")?>, <?=$cfmmsg?>')" title="<?=(($verb1)?"$dellbl $vallbl":"$vallbl $dellbl")?>"></a>
+if($isadmin) { ?>
+<a href="?action=opt&sqltbl[]=<?= $tab[0] ?>"><img src="img/16/hat2.png" title="<?= $optlbl ?>"></a>
+<a href="?action=rep&sqltbl[]=<?= $tab[0] ?>"><img src="img/16/dril.png" title="<?= $replbl ?>"></a>
+<a href="?action=trunc&sqltbl[]=<?= $tab[0] ?>"><img src="img/16/bcnl.png" onclick="return confirm('<?= (($verb1)?"$dellbl $vallbl":"$vallbl $dellbl") ?>, <?= $cfmmsg ?>')" title="<?= (($verb1)?"$dellbl $vallbl":"$vallbl $dellbl") ?>"></a>
 <?}?>
 </div>
 
-<?=$recs[0]?> <?=$vallbl?></td></tr>
+<?= $recs[0] ?> <?= $vallbl ?></td></tr>
 </table>
 
-</td><?
+</td><?php
 		$col++;
 	}
 ?>
 </tr></table>
-<?
+<?php
 }
 // Now the database connection can be closed
 @DbClose($dblink);
@@ -436,7 +435,7 @@ function DbDump($tables, $link, $outfile) {
 		$res = DbQuery("DESCRIBE `$tbl`;", $link);
 		while($field = DbFetchArray($res)) {
 			// If a field is either of type "varchar()" or "text" the we add a '1' to the array...
-			if( preg_match("/char|text/",$field['Type']) ) {
+			if( preg_match("/binary|char|text/",$field['Type']) ) {
 				$chfields[] = 1;
 			}
 			// ...otherwise, we add a '0'
@@ -463,15 +462,11 @@ function DbDump($tables, $link, $outfile) {
 				// If the current field is a "varchar()" or "text" field
 				// then it is surrounded by "". The array $chfields[]
 				// tells us, if the current field is numeric (0) or not (1).
-				if(($chfields[$i] == 1)&&($field[$i]!="")) $sql .= "\"";
-				if($field[$i] != "") {
-					$field[$i] = str_replace("\"", "\\\"", $field[$i]);
-					$sql .= $field[$i];
-				}
-				else {
-					$sql .= "NULL";
-				}
- 				if(($chfields[$i] == 1)&&($field[$i]!="")) $sql .= "\"";
+				if($chfields[$i] == 1 or $field[$i] == "") $sql .= "\"";
+				#$field[$i] = str_replace("\"", "\\\"", $field[$i]); #TODO escape binary IPv6
+				$field[$i] = mysql_real_escape_string($field[$i]);
+				$sql .= $field[$i];
+				if($chfields[$i] == 1 or $field[$i] == "") $sql .= "\"";
 				if($i < count($field)-1) $sql .= ", ";
 			}
 			$sql .= ");\n";

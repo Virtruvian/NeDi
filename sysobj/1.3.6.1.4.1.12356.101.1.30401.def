@@ -2,29 +2,38 @@
 
 # General
 SNMPv	2HC
-Type	3140B
-Typoid	1.3.6.1.2.1.47.1.1.1.1.13.1
+Type	FGT_3140B
+Typoid	
+Sysdes	
 OS	FortiOS
-Icon	fwrn
-Bridge	normal
-Dispro	CDP
-Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
-Bimage	1.3.6.1.2.1.47.1.2.1.1.2.1
+Icon	fwan
+Size	1
+Bridge	
+ArpND	old
+Dispro	
+Serial	1.3.6.1.4.1.12356.100.1.1.1.0
+Bimage	1.3.6.1.4.1.12356.101.4.1.1.0
 
 # Vlan Specific
-VLnams	1.3.6.1.2.1.17.7.1.4.3.1.1
-VTPdom	
-VTPmod	
+VLnams	
+VLnamx	
+Group	1.3.6.1.4.1.12356.101.3.2.1.1.2.2
+Mode	
 
 # Interfaces
+StartX	
+EndX	
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
-InBcast	1.3.6.1.2.1.31.1.1.1.3
+InBcast	1.3.6.1.2.1.31.1.1.1.9
 InDisc	1.3.6.1.2.1.2.2.1.13
 OutDisc	1.3.6.1.2.1.2.2.1.19
-IFvlan	1.3.6.1.2.1.17.7.1.4.5.1.1
+IFvlan	
 IFvlix	
+IFpowr	
+IFpwix	
 IFdupl	1.3.6.1.2.1.10.7.2.1.19
 IFduix	
 Halfdp	2
@@ -39,10 +48,10 @@ Modhw
 Modsw	
 Modfw	
 Modser	
-Momodl	
+Momodl	1.3.6.1.4.1.12356.101.4.1.8
 
 # RRD Graphing
 CPUutl	1.3.6.1.4.1.12356.101.4.1.3.0
-Temp	
-MemCPU	1.3.6.1.4.1.12356.101.4.1.4
-Custom	Sessions;G;Sessions	1.3.6.1.4.1.12356.101.4.1.8.0
+Temp		
+MemCPU	1.3.6.1.4.1.12356.101.4.1.4.0	-%
+Custom	Sessions;G;#	1.3.6.1.4.1.12356.101.4.1.8.0

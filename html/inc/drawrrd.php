@@ -16,6 +16,8 @@ ReadConf('nomenu');
 if( !$rrdcmd or !isset($_SESSION['group']) ){
 	die;
 }
+date_default_timezone_set($_SESSION['tz']);
+
 include_once ("libgraph.php");
 
 $_GET = sanitize($_GET);
@@ -30,6 +32,12 @@ $debug = isset($_GET['debug']) ? $_GET['debug'] : "";
 include_once ("../languages/$_SESSION[lang]/gui.php");
 
 $draw	= "";
+$outdir = "";
+$outmod = "LINE2";
+if($_SESSION['gneg']){
+	$outdir = "-";
+	$outmod = "AREA";
+}
 if($typ == 'cpu'){
 	$tit = "CPU $lodlbl";
 	$rrd = "$nedipath/rrd/" . rawurlencode($_GET['dv']) ."/system.rrd";
@@ -57,7 +65,7 @@ if($typ == 'cpu'){
 	$draw .= "CDEF:temp3=temp,1.2,/ AREA:temp3#99aadd ";
 	$draw .= "CDEF:temp4=temp,1.3,/ AREA:temp4#aabbee ";
 	$draw .= "LINE2:temp#224488:\"$grdlbl Celsius\" ";
-	if ($_SESSION['gfar']){$draw .= "CDEF:far=temp,1.8,*,32,+ LINE2:far#006699:\"$grdlbl Fahrenheit\" ";}
+	if ($_SESSION['far']){$draw .= "CDEF:far=temp,1.8,*,32,+ LINE2:far#006699:\"$grdlbl Fahrenheit\" ";}
 }elseif($typ == 'cuv'){
 	$tit = ($_GET['if'][0])?$_GET['if'][0]:"IO Memory";
 	$u   = ($_GET['if'][1])?$_GET['if'][1]:"Bytes $frelbl";
@@ -72,22 +80,35 @@ if($typ == 'cpu'){
 }elseif($typ == 'ttr'){
 	$rrd = "$nedipath/rrd/top.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
-	$tit = "$totlbl $trflbl";
+	$tit = "$totlbl $acslbl $trflbl";
 	if ($_SESSION['gbit']){
-		$draw .= "DEF:tinoct=$rrd:tinoct:AVERAGE ";
-		$draw .= "CDEF:btinoct=tinoct,8,* AREA:btinoct#0088cc:\"In Mbit/s\" ";
-		$draw .= "DEF:totoct=$rrd:totoct:AVERAGE ";
-		$draw .= "CDEF:btotoct=totoct,8,* LINE2:btotoct#000088:\"Out Mbit/s\l\" ";
+		$draw .= "DEF:tino=$rrd:tinoct:AVERAGE ";
+		$draw .= "CDEF:tinoct=tino,8,* AREA:tinoct#0088cc:\"In Mbit/s     \" ";
+		$draw .= "DEF:toto=$rrd:totoct:AVERAGE ";
+		$draw .= "CDEF:totoct=toto,${outdir}8,* $outmod:totoct#000088:\"Out Mbit/s\l\" ";
 	}else{
-		$draw .= "DEF:tinoct=$rrd:tinoct:AVERAGE AREA:tinoct#0088cc:\"In Mbyte/s\" ";
-		$draw .= "DEF:totoct=$rrd:totoct:AVERAGE LINE2:totoct#000088:\"Out Mbyte/s\l\" ";
+		$draw .= "DEF:tinoct=$rrd:tinoct:AVERAGE AREA:tinoct#0088cc:\"In Mbyte/s    \" ";
+		$draw .= "DEF:toto=$rrd:totoct:AVERAGE ";
+		$draw .= "CDEF:totoct=toto,${outdir}1,* $outmod:totoct#000088:\"Out Mbyte/s\l\" ";
+	}
+	if(!$_SESSION['gneg']){
+		$draw .= "VDEF:tio95=tinoct,95,PERCENT LINE1:tio95#eeaa44:\"In 95%\" GPRINT:tio95:\"%4.1lf%S\" ";
+		$draw .= "VDEF:too95=totoct,95,PERCENT LINE1:too95#ee4444:\"Out 95%\" GPRINT:too95:\"%4.1lf%S\l\"";
 	}
 }elseif($typ == 'ter'){
 	$rrd = "$nedipath/rrd/top.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
 	$tit = "$totlbl $errlbl";
-	$draw .= "DEF:tinerr=$rrd:tinerr:AVERAGE AREA:tinerr#880000:\"In #/s\" ";
-	$draw .= "DEF:toterr=$rrd:toterr:AVERAGE LINE2:toterr#886600:\" Out #/s\l\" ";
+	$draw .= "DEF:tinerr=$rrd:tinerr:AVERAGE AREA:tinerr#aa0000:\"In #/s\" ";
+	$draw .= "DEF:outgr=$rrd:toterr:AVERAGE ";
+	$draw .= "CDEF:toterr=outgr,${outdir}1,* $outmod:toterr#aa8800:\" Out #/s\l\" ";
+}elseif($typ == 'tdi'){
+	$rrd = "$nedipath/rrd/top.rrd";
+	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
+	$tit = "$totlbl Discards";
+	$draw .= "DEF:tindis=$rrd:tindis:AVERAGE AREA:tindis#8844aa:\"In #/s\" ";
+	$draw .= "DEF:outgr=$rrd:totdis:AVERAGE ";
+	$draw .= "CDEF:totdis=outgr,${outdir}1,* $outmod:totdis#662288:\" Out #/s\l\" ";
 }elseif($typ == 'nod'){
 	$rrd = "$nedipath/rrd/top.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
@@ -127,9 +148,9 @@ if($typ == 'cpu'){
 	$draw .= "DEF:msg150=$rrd:msg150:AVERAGE STACK:msg150#cccc44:\"".substr($mlvl[150],0,4)."\" ";
 	$draw .= "DEF:msg200=$rrd:msg200:AVERAGE STACK:msg200#cc8844:\"".substr($mlvl[200],0,4)."\" ";
 	$draw .= "DEF:msg250=$rrd:msg250:AVERAGE STACK:msg250#cc4444:\"".substr($mlvl[250],0,4)."\l\" ";
-}elseif($typ == 'trf' or $typ == 'err' or $typ == 'brc' or $typ == 'dsc'){
+}elseif($typ == 'trf' or $typ == 'err' or $typ == 'brc' or $typ == 'dsc' or $typ == 'sta'){
 	foreach ($_GET['if'] as $i){
-		$rrd[$i] = "$nedipath/rrd/" . rawurlencode($_GET['dv']) . "/" . rawurlencode($i) . ".rrd";
+		$rrd[$i] = "$nedipath/rrd/" . rawurlencode($_GET['dv']) . "/" . rawurlencode($i) . ".rrd";			# rawurlencode for valid filenames!
 		if($safe){$debug = ( file_exists("$rrd[$i]") )?"":"RRD $rrd[$i] not found!";}
 	}
 	list($draw,$tit) = GraphTraffic($rrd,$typ);

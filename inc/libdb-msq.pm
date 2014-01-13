@@ -46,7 +46,7 @@ sub InitDB {
 	print "Creating $misc::dbname ";
 	$dbh->do("CREATE DATABASE $misc::dbname");
 	$dbh->do("GRANT ALL PRIVILEGES ON $misc::dbname.* TO \'$misc::dbuser\'\@\'$_[2]\' IDENTIFIED BY \'$misc::dbpass\'");
-	if ($mysqlVer =~ /5\.0/) {									#fix for mysql 5.0 with old client libs
+	if($mysqlVer =~ /5\.0/) {									#fix for mysql 5.0 with old client libs
 		$dbh->do("SET PASSWORD FOR \'$misc::dbuser\'\@\'$_[2]\' = OLD_PASSWORD(\'$misc::dbpass\')");
 	}
 	print "for $misc::dbuser\@$_[2]\n";
@@ -61,39 +61,42 @@ sub InitDB {
 						firstdis INT unsigned, lastdis INT unsigned, services TINYINT unsigned,
 						description VARCHAR(255), devos VARCHAR(16), bootimage VARCHAR(64),
 						location VARCHAR(255), contact VARCHAR(255),
-						vtpdomain VARCHAR(32), vtpmode TINYINT unsigned, snmpversion TINYINT unsigned,
+						devgroup VARCHAR(32), devmode TINYINT unsigned, snmpversion TINYINT unsigned,
 						readcomm VARCHAR(32), cliport SMALLINT unsigned, login VARCHAR(32),
 						icon VARCHAR(16), origip INT unsigned, cpu TINYINT unsigned,memcpu BIGINT unsigned,
 						temp TINYINT unsigned, cusvalue BIGINT unsigned, cuslabel VARCHAR(32), sysobjid VARCHAR(255),
-						writecomm VARCHAR(32), INDEX (device(8)), PRIMARY KEY (device) )");
- 	$dbh->commit;
-
-	print "devdel, ";
-	$dbh->do("CREATE TABLE devdel	(	device VARCHAR(64) NOT NULL UNIQUE, user VARCHAR(32), time INT unsigned,
-						INDEX (device(8)), PRIMARY KEY  (device) )");
+						writecomm VARCHAR(32), devopts CHAR(32), size TINYINT unsigned, stack TINYINT unsigned,
+						maxpoe SMALLINT unsigned, totpoe SMALLINT unsigned, INDEX (device(8)), PRIMARY KEY (device) )");
  	$dbh->commit;
 
 	print "modules, ";
 	$dbh->do("CREATE TABLE modules	(	device VARCHAR(64) NOT NULL, slot VARCHAR(64), model VARCHAR(32), moddesc VARCHAR(255),
-						serial VARCHAR(32), hw VARCHAR(128), fw VARCHAR(128), sw VARCHAR(128),
-						modidx VARCHAR(32), INDEX (device(8)), INDEX (slot(8)) ) ");# modidx can look like 1.2, thus needs to be varchar (and 32 e.g. for Aruba)
+						serial VARCHAR(32), hw VARCHAR(128), fw VARCHAR(128), sw VARCHAR(128), modidx VARCHAR(32), 
+						modclass TINYINT unsigned, status SMALLINT unsigned, modloc VARCHAR(255), INDEX (device(8)), INDEX (slot(8)) ) ");# modidx can look like 1.2, thus needs to be varchar (and 32 e.g. for Aruba)
  	$dbh->commit;
 
 	print "interfaces, ";
 	$dbh->do("CREATE TABLE interfaces(	device VARCHAR(64) NOT NULL, ifname VARCHAR(32) NOT NULL, ifidx BIGINT unsigned,
 						linktype CHAR(4), iftype INT unsigned, ifmac CHAR(12),
-						ifdesc VARCHAR(255), alias VARCHAR(64), ifstat TINYINT unsigned,
-						speed BIGINT unsigned, duplex CHAR(2), pvid SMALLINT unsigned default 0,
-						inoct BIGINT unsigned, inerr INT unsigned, outoct BIGINT unsigned, outerr INT unsigned,
-						dinoct BIGINT signed default 0, dinerr INT signed default 0, doutoct BIGINT signed default 0,
-						douterr INT signed default 0, comment VARCHAR(255), poe SMALLINT unsigned default 0,
+						ifdesc VARCHAR(255), alias VARCHAR(64), ifstat TINYINT unsigned default 0,
+						speed BIGINT unsigned default 0, duplex CHAR(2), pvid SMALLINT unsigned default 0,
+						inoct BIGINT unsigned default 0, inerr INT unsigned default 0,
+						outoct BIGINT unsigned default 0, outerr INT unsigned default 0,
+						dinoct BIGINT unsigned default 0, dinerr INT unsigned default 0,
+						doutoct BIGINT unsigned default 0, douterr INT unsigned default 0,
+						indis INT unsigned default 0, outdis INT unsigned default 0, 
+						dindis INT unsigned default 0,	doutdis INT unsigned default 0,
+						inbrc INT unsigned default 0, dinbrc INT unsigned default 0,
+						lastchg INT unsigned default 0, poe SMALLINT unsigned default 0,
+						comment VARCHAR(255), trafalert TINYINT unsigned default 95, 
+						trafwarn TINYINT unsigned default 75, macflood SMALLINT unsigned default 50,
 						INDEX (device(8)), INDEX (ifname(8)),INDEX (ifidx) )");
  	$dbh->commit;
 
 	print "networks, ";
-	$dbh->do("CREATE TABLE networks (	device VARCHAR(64) NOT NULL, ifname VARCHAR(32), ifip INT unsigned, mask INT unsigned,
-						vrfname VARCHAR(32), status TINYINT unsigned,
-						INDEX (device(8)), INDEX (ifname), INDEX (ifip) )");
+	$dbh->do("CREATE TABLE networks (	device VARCHAR(64) NOT NULL, ifname VARCHAR(32), ifip INT unsigned,
+						ifip6 varbinary(16), prefix TINYINT unsigned, vrfname VARCHAR(32),
+						status SMALLINT unsigned, INDEX (device(8)), INDEX (ifname), INDEX (ifip) )");
  	$dbh->commit;
 
 	print "configs, ";
@@ -101,7 +104,7 @@ sub InitDB {
 						time INT unsigned, INDEX (device(8)), PRIMARY KEY  (device)  )");
  	$dbh->commit;
 
-	print "stock, ";
+	print "stock,\n";
 	$dbh->do("CREATE TABLE stock	(	serial VARCHAR(32) UNIQUE, type VARCHAR(32),user VARCHAR(32),
 						time INT unsigned, location VARCHAR(255), state TINYINT unsigned, comment VARCHAR(255),
 						lastwty INT unsigned, source VARCHAR(32) default '-', INDEX(serial) )");
@@ -116,8 +119,8 @@ sub InitDB {
 	$dbh->do("CREATE TABLE links	(	id INT unsigned NOT NULL AUTO_INCREMENT, device VARCHAR(64) NOT NULL,
 						ifname VARCHAR(32), neighbor VARCHAR(64) NOT NULL, nbrifname VARCHAR(32),
 						bandwidth BIGINT unsigned, linktype CHAR(4), linkdesc VARCHAR(255), nbrduplex CHAR(2),
-						nbrvlanid SMALLINT unsigned, INDEX(id), INDEX(device(8)), INDEX(ifname(8)),
-						INDEX(neighbor(8)), INDEX(nbrifname(8)), PRIMARY KEY(id) )");
+						nbrvlanid SMALLINT unsigned, time INT unsigned, INDEX(id), INDEX(device(8)),
+						INDEX(ifname(8)), INDEX(neighbor(8)), INDEX(nbrifname(8)), PRIMARY KEY(id) )");
  	$dbh->commit;
 
 	print "locations, ";
@@ -135,10 +138,15 @@ sub InitDB {
 
 	print "monitoring, ";
 	$dbh->do("CREATE TABLE monitoring(	name VARCHAR(64) NOT NULL UNIQUE, monip INT unsigned, class CHAR(4) default 'dev', 
-						test CHAR(6) default '', lastok INT unsigned default 0,	status INT unsigned default 0,
-						lost INT unsigned default 0, ok INT unsigned default 0,	latency SMALLINT unsigned default 0, latmax SMALLINT unsigned default 0,
-						latavg SMALLINT unsigned default 0, uptime INT unsigned default 0, alert TINYINT unsigned default 0, eventfwd VARCHAR(255) default '',
-						eventdel VARCHAR(255) default '', depend VARCHAR(64) default '-', device VARCHAR(64) NOT NULL, INDEX (name(8)), INDEX (device(8)) )");
+						test CHAR(6) default '', testopt VARCHAR(64) default '', testres VARCHAR(64) default '',
+						lastok INT unsigned default 0,	status INT unsigned default 0, lost INT unsigned default 0,
+						ok INT unsigned default 0, latency SMALLINT unsigned default 0, latmax SMALLINT unsigned default 0,
+						latavg SMALLINT unsigned default 0, uptime INT unsigned default 0, alert TINYINT unsigned default 0,
+						eventfwd VARCHAR(255) default '', eventlvl TINYINT unsigned default 0, eventdel VARCHAR(255) default '',
+						depend VARCHAR(64) default '-', device VARCHAR(64) NOT NULL, notify CHAR(32) default '', noreply TINYINT unsigned default 2,
+						latwarn SMALLINT unsigned default 100, cpualert TINYINT unsigned default 75, memalert INT unsigned default 1024,
+						tempalert TINYINT unsigned default 55, poewarn TINYINT unsigned default 8, arppoison SMALLINT unsigned default 1, 
+						supplyalert TINYINT unsigned default 5, INDEX (name(8)), INDEX (device(8)) )");
  	$dbh->commit;
 
 	print "incidents, ";
@@ -149,28 +157,28 @@ sub InitDB {
  	$dbh->commit;
 
 	print "nodes, ";
-	$dbh->do("CREATE TABLE nodes 	(	name VARCHAR(64), nodip INT unsigned, mac CHAR(12) NOT NULL, oui VARCHAR(32),
+	$dbh->do("CREATE TABLE nodes 	(	name VARCHAR(64), nodip INT unsigned, mac VARCHAR(16) NOT NULL, oui VARCHAR(32),
 						firstseen INT unsigned, lastseen INT unsigned, device VARCHAR(64),
 						ifname VARCHAR(32), vlanid SMALLINT unsigned, ifmetric INT unsigned,
 						ifupdate INT unsigned, ifchanges INT unsigned,	ipupdate INT unsigned,
 						ipchanges INT unsigned, iplost INT unsigned, arpval SMALLINT unsigned,
-						tcpports VARCHAR(64), udpports VARCHAR(64), nodtype VARCHAR(64) default '-',
-						nodos VARCHAR(64) default '-', osupdate INT unsigned default 0,
+						nodip6 varbinary(16), tcpports VARCHAR(64), udpports VARCHAR(64), nodtype VARCHAR(64), 
+						nodos VARCHAR(64), osupdate INT unsigned default 0, noduser VARCHAR(32),
 						INDEX(name(8)), INDEX(nodip), INDEX(mac), INDEX(vlanid), INDEX(device(8)) )");
  	$dbh->commit;
 
-	print "nodetrack, ";
+	print "nodetrack,\n";
 	$dbh->do("CREATE TABLE nodetrack(	device varchar(64), ifname varchar(32), value varchar(64), source char(8),
 						user varchar(32),time int unsigned, INDEX(device(8)), INDEX(ifname(8)) )");
  	$dbh->commit;
 
 	print "iftrack, ";
-	$dbh->do("CREATE TABLE iftrack	(	mac CHAR(12) NOT NULL,ifupdate INT unsigned, device VARCHAR(64),
+	$dbh->do("CREATE TABLE iftrack	(	mac VARCHAR(16) NOT NULL,ifupdate INT unsigned, device VARCHAR(64),
 						ifname VARCHAR(32), vlanid SMALLINT unsigned,
-						ifmetric TINYINT unsigned, INDEX(mac), INDEX(vlanid), INDEX(device(8)) )");
+						ifmetric INT unsigned, INDEX(mac), INDEX(vlanid), INDEX(device(8)) )");
  	$dbh->commit;
-	print "iptrack, ";
-	$dbh->do("CREATE TABLE iptrack (	mac CHAR(12) NOT NULL,ipupdate INT unsigned, name VARCHAR(64), nodip INT unsigned,
+	print "iptrack,";
+	$dbh->do("CREATE TABLE iptrack (	mac VARCHAR(16) NOT NULL,ipupdate INT unsigned, name VARCHAR(64), nodip INT unsigned,
 						vlanid SMALLINT unsigned, device VARCHAR(64) NOT NULL default '',
 						INDEX(mac), INDEX(vlanid), INDEX(device(8)) )");
  	$dbh->commit;
@@ -182,17 +190,17 @@ sub InitDB {
  	$dbh->commit;
 
 	print "users, ";
-	$dbh->do("CREATE TABLE users 	(	user VARCHAR(32) NOT NULL UNIQUE, password VARCHAR(32) NOT NULL default '',
-						groups TINYINT unsigned NOT NULL default '0', email VARCHAR(64) default '', phone VARCHAR(32) default '',
+	$dbh->do("CREATE TABLE users 	(	user VARCHAR(32) NOT NULL UNIQUE, password VARCHAR(64) NOT NULL default '',
+						groups SMALLINT unsigned NOT NULL default '0', email VARCHAR(64) default '', phone VARCHAR(32) default '',
 						time INT unsigned, lastlogin INT unsigned, comment VARCHAR(255) default '',
 						language VARCHAR(16) NOT NULL default 'english', theme VARCHAR(16) NOT NULL default 'default',
-						volume TINYINT unsigned NOT NULL default '34', columns TINYINT unsigned NOT NULL default '5',
-						msglimit TINYINT unsigned NOT NULL default '5', graphs TINYINT unsigned NOT NULL default '2',
-						dateformat VARCHAR(16) NOT NULL default 'j.M y G:i', viewdev VARCHAR(255) default '',
+						volume TINYINT unsigned NOT NULL default '40', columns TINYINT unsigned NOT NULL default '6',
+						msglimit TINYINT unsigned NOT NULL default '5', miscopts SMALLINT unsigned NOT NULL default '2',
+						dateformat VARCHAR(16) NOT NULL default 'j.M y G:i470', viewdev VARCHAR(255) default '',
 						PRIMARY KEY(user) )");
 
-	$sth = $dbh->prepare("INSERT INTO users (user,password,groups,time,comment,volume,columns,msglimit,graphs) VALUES ( ?,?,?,?,?,?,?,?,? )");
-	$sth->execute ( 'admin','21232f297a57a5a743894a0e4a801fc3','255',$main::now,'default admin','34','8','10','3' );
+	$sth = $dbh->prepare("INSERT INTO users (user,password,groups,time,comment,volume,columns,msglimit,miscopts) VALUES ( ?,?,?,?,?,?,?,?,? )");
+	$sth->execute ( 'admin','3cac26b5bd6addd1ba4f9c96a58ff8c2c2c8ac15018f61240f150a4a968b8562','255',$main::now,'default admin','40','8','10','3' );
  	$dbh->commit;
 
 	print "system, ";
@@ -206,11 +214,10 @@ sub InitDB {
 
 	print "chat, ";
 	$dbh->do("CREATE TABLE chat (time INT unsigned,  user VARCHAR(32), message VARCHAR(255), INDEX(time),INDEX (user(8)) )");
-
 	print "wlan";
-	$dbh->do("CREATE TABLE wlan (mac VARCHAR(12),time INT unsigned, INDEX(mac) )");
+	$dbh->do("CREATE TABLE wlan (mac CHAR(8),time INT unsigned, INDEX(mac) )");
 	my @wlan = ();
-	if (-e "$main::p/inc/wlan.txt"){
+	if(-e "$main::p/inc/wlan.txt"){
 		open  ("WLAN", "$main::p/inc/wlan.txt" );
 		@wlan = <WLAN>;
 		close("WLAN");
@@ -221,7 +228,7 @@ sub InitDB {
  	$dbh->commit;
 	$sth->finish if $sth;
 	$dbh->disconnect();
-	print " done.\n";
+	print "... done.\n\n";
 }
 
 
@@ -283,18 +290,27 @@ sub ReadDev {
 		$main::dev{$f[0]}{cul}= $f[24];
 		$main::dev{$f[0]}{so} = $f[25];
 		$main::dev{$f[0]}{wc} = $f[26];								# SNMP write community
-		$misc::snmpini{$main::dev{$f[0]}{ip}}{rv} = $main::dev{$f[0]}{rv};			# Tie comm & ver to IP,
-		$misc::snmpini{$main::dev{$f[0]}{ip}}{rc} = $main::dev{$f[0]}{rc};
-		$misc::snmpini{$main::dev{$f[0]}{ip}}{na} = $f[0];
-		$misc::snmpini{$main::dev{$f[0]}{oi}}{rv} = $main::dev{$f[0]}{rv};			# it's all we have at first
-		$misc::snmpini{$main::dev{$f[0]}{oi}}{rc} = $main::dev{$f[0]}{rc};
-		$misc::snmpini{$main::dev{$f[0]}{oi}}{na} = $f[0];
+		$main::dev{$f[0]}{opt}= $f[27];
+		$main::dev{$f[0]}{siz}= $f[28];
+		$main::dev{$f[0]}{stk}= $f[29];
+		$main::dev{$f[0]}{mpw}= $f[30];
+		$main::dev{$f[0]}{tpw}= $f[31];
+		$main::dev{$f[0]}{pl} = $main::dev{$f[0]}{ls};						# Preserve lastseen for calculations
+		$main::dev{$f[0]}{pi} = $main::dev{$f[0]}{ip};
+		$misc::seedini{$main::dev{$f[0]}{ip}}{rv} = $main::dev{$f[0]}{rv};			# Tie comm & ver to IP,
+		$misc::seedini{$main::dev{$f[0]}{ip}}{rc} = $main::dev{$f[0]}{rc};
+		$misc::seedini{$main::dev{$f[0]}{ip}}{na} = $f[0];
+		$misc::seedini{$main::dev{$f[0]}{oi}}{rv} = $main::dev{$f[0]}{rv};			# it's all we have at first
+		$misc::seedini{$main::dev{$f[0]}{oi}}{rc} = $main::dev{$f[0]}{rc};
+		$misc::seedini{$main::dev{$f[0]}{oi}}{na} = $f[0];
 		$npdev++;
 	}
 	$sth->finish if $sth;
 	$dbh->disconnect;
 
 	&misc::Prt("RDEV:$npdev devices read from $misc::dbname.devices\n");
+
+	return $npdev;
 }
 
 
@@ -329,6 +345,7 @@ sub ReadLink {
 	$dbh->disconnect;
 
 	&misc::Prt("RLNK:$nlink links ($where) read from $misc::dbname.links\n");
+	return $nlink;
 }
 
 
@@ -352,37 +369,35 @@ sub ReadNod {
 	my $sth = $dbh->prepare("SELECT * FROM nodes $where");
 	$sth->execute();
 	while ((my @f) = $sth->fetchrow_array) {
-		if($f[8] and $misc::useivl and $f[8] =~ /$misc::useivl/){				# Avoid using IVL with vlid 0
-			$mc = $f[2].$f[8];
-		}else{
-			$mc = $f[2];
-		}
-		$main::nod{$mc}{na} = $f[0];
-		$main::nod{$mc}{ip} = &misc::Dec2Ip($f[1]);
-		$main::nod{$mc}{nv} = $f[3];
-		$main::nod{$mc}{fs} = $f[4];
-		$main::nod{$mc}{ls} = $f[5];
-		$main::nod{$mc}{dv} = $f[6];
-		$main::nod{$mc}{if} = $f[7];
-		$main::nod{$mc}{vl} = $f[8];
-		$main::nod{$mc}{im} = $f[9];
-		$main::nod{$mc}{iu} = $f[10];
-		$main::nod{$mc}{ic} = $f[11];
-		$main::nod{$mc}{au} = $f[12];
-		$main::nod{$mc}{ac} = $f[13];
-		$main::nod{$mc}{al} = $f[14];
-		$main::nod{$mc}{av} = $f[15];
-		$main::nod{$mc}{tp} = $f[16];
-		$main::nod{$mc}{up} = $f[17];
-		$main::nod{$mc}{os} = $f[18];
-		$main::nod{$mc}{ty} = $f[19];
-		$main::nod{$mc}{ou} = $f[20];
+		$main::nod{$f[2]}{na} = $f[0];
+		$main::nod{$f[2]}{ip} = &misc::Dec2Ip($f[1]);
+		$main::nod{$f[2]}{nv} = $f[3];
+		$main::nod{$f[2]}{fs} = $f[4];
+		$main::nod{$f[2]}{ls} = $f[5];
+		$main::nod{$f[2]}{dv} = $f[6];
+		$main::nod{$f[2]}{if} = $f[7];
+		$main::nod{$f[2]}{vl} = $f[8];
+		$main::nod{$f[2]}{im} = $f[9];
+		$main::nod{$f[2]}{iu} = $f[10];
+		$main::nod{$f[2]}{ic} = $f[11];
+		$main::nod{$f[2]}{au} = $f[12];
+		$main::nod{$f[2]}{ac} = $f[13];
+		$main::nod{$f[2]}{al} = $f[14];
+		$main::nod{$f[2]}{av} = $f[15];
+		$main::nod{$f[2]}{i6} = $f[16];
+		$main::nod{$f[2]}{tp} = $f[17];
+		$main::nod{$f[2]}{up} = $f[18];
+		$main::nod{$f[2]}{os} = $f[19];
+		$main::nod{$f[2]}{ty} = $f[20];
+		$main::nod{$f[2]}{ou} = $f[21];
+		$main::nod{$f[2]}{us} = $f[22];
 		$nnod++;
 	}
 	$sth->finish if $sth;
 	$dbh->disconnect;
 
 	&misc::Prt("RNOD:$nnod nodes read ($where) from $misc::dbname.nodes\n");
+	return $nnod;
 }
 
 
@@ -410,9 +425,9 @@ sub BackupCfg {
 	if($sth->rows == 0 and !$main::opt{t}){								# No previous config found, therefore write new.
 		$sth = $dbh->prepare("INSERT INTO configs(device,config,changes,time) VALUES ( ?,?,?,? )");
 		$sth->execute ($dv,$cfg,$chg,$main::now);
-		&misc::WriteCfg($dv) if $main::opt{'B'};
+		&misc::WriteCfg($dv) if defined $main::opt{'B'};
 		&misc::Prt("","Bn");
-		&Insert('events','level,time,source,info,class,device',"\"100\",\"$main::now\",\"$dv\",\"New config with ".length($cfg)." characters added\",\"cfgn\",\"$dv\"") if $misc::notify =~ /b/i;
+		$misc::mq += &mon::Event('B','100','cfgn',$dv,$dv,"New config with ".length($cfg)." characters added");
 	}elsif($sth->rows == 1){									# Previous config found, get changes
 		my @pc = $sth->fetchrow_array;
 		my @pcfg = split(/\n/,$pc[0]);
@@ -423,20 +438,15 @@ sub BackupCfg {
 				$dbh->do("DELETE FROM configs where device = \"$dv\"");
 				$sth = $dbh->prepare("INSERT INTO configs(device,config,changes,time) VALUES ( ?,?,?,? )");
 				$sth->execute ($dv,$cfg,$chg,$main::now);
-				&misc::WriteCfg($dv) if $main::opt{B};
+				&misc::WriteCfg($dv) if defined $main::opt{B};
 				my $len = length($achg);
 				$achg =~ s/["']//g;
 				my $msg = "Config changed by $len characters:\n$achg\n";
-				&misc::Prt("WCFG:$msg\n","Bu");
-				if($misc::notify =~ /b/i){
-					$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /B/;
-					$achg =~ s/[\r\n]/, /g;
-					$msg = "Config changed - " . (($len > 100)?substr($achg,0,100)."...":$achg);
-					my $lev = ($len > 1000)?100:50;
-					&Insert('events','level,time,source,info,class,device',"\"$lev\",\"$main::now\",\"$dv\",\"$msg\",\"cfgc\",\"$dv\"");
-				}
+				my $lvl = ($len > 1000)?100:50;
+				$misc::mq += &mon::Event('B',$lvl,'cfgc',$dv,$dv,$msg);
+				&misc::Prt('',"Bu");
 			} else {
-			    &misc::WriteCfg($dv) if $main::opt{B} and ! -e "$misc::nedipath/conf/$dv";	# Write config file anyway if no dev folder exists
+			    &misc::WriteCfg($dv) if defined $main::opt{B} and ! -e "$misc::nedipath/conf/$dv";	# Write config file anyway if no dev folder exists
 			}
 		}
 	}
@@ -461,41 +471,17 @@ sub WriteDev {
 	my ($dv) = @_;
 	return if !$dv;
 
-	$main::dev{$dv}{rv} = 0  unless defined $main::dev{$dv}{rv};
-	$main::dev{$dv}{rc} = "" unless defined $main::dev{$dv}{rc};
-	$main::dev{$dv}{wv} = 0  unless defined $main::dev{$dv}{wv};
-	$main::dev{$dv}{wc} = "" unless defined $main::dev{$dv}{wc};
-	$main::dev{$dv}{hc} = 0  unless defined $main::dev{$dv}{hc};
-
-	$main::dev{$dv}{oi} = 0  unless defined $main::dev{$dv}{oi};
-
-	$main::dev{$dv}{us} = "" unless defined $main::dev{$dv}{us};
-	$main::dev{$dv}{cp} = 0  unless defined $main::dev{$dv}{cp};
-
-	if(!$main::dev{$dv}{ic}){
-		if($main::dev{$dv}{sv} > 8){
-			$main::dev{$dv}{ic} = 'csan';
-		}elsif($main::dev{$dv}{sv} > 4){
-			$main::dev{$dv}{ic} = 'w3an';
-		}elsif($main::dev{$dv}{sv} > 1){
-			$main::dev{$dv}{ic} = 'w2an';
-		}else{
-			$main::dev{$dv}{ic} = 'w1an';
-		}
-	}
-	my $snmpver = $main::dev{$dv}{rv} + $main::dev{$dv}{wv} * 4 + $main::dev{$dv}{hc};
-	my $dip = &misc::Ip2Dec($main::dev{$dv}{ip});
-	my $doi = &misc::Ip2Dec($main::dev{$dv}{oi});
+	my $snmpver = ((defined $main::dev{$dv}{rv})?$main::dev{$dv}{rv}:0) + ((defined $main::dev{$dv}{wv})?$main::dev{$dv}{wv}:0) * 4 + ((defined $main::dev{$dv}{hc})?$main::dev{$dv}{hc}:0);
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
 	$dbh->do("DELETE FROM  devices where device = \"$dv\"");
 	$sth = $dbh->prepare("INSERT INTO devices(	device,devip,serial,type,firstdis,lastdis,services,
 							description,devos,bootimage,location,contact,
-							vtpdomain,vtpmode,snmpversion,readcomm,cliport,login,
-							icon,origip,cpu,memcpu, temp, cusvalue, cuslabel, sysobjid, writecomm
-							) VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
+							devgroup,devmode,snmpversion,readcomm,cliport,login,icon,
+							origip,cpu,memcpu,temp,cusvalue,cuslabel,sysobjid,writecomm,devopts,size,stack,maxpoe,totpoe
+							) VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
 	$sth->execute (	$dv,
-			$dip,
+			&misc::Ip2Dec($main::dev{$dv}{ip}),
 			$main::dev{$dv}{sn},
 			$main::dev{$dv}{ty},
 			$main::dev{$dv}{fs},
@@ -506,21 +492,26 @@ sub WriteDev {
 			$main::dev{$dv}{bi},
 			$main::dev{$dv}{lo},
 			$main::dev{$dv}{co},
-			$main::dev{$dv}{vd},
-			$main::dev{$dv}{vm},
+			$main::dev{$dv}{dg},
+			$main::dev{$dv}{dm},
 			$snmpver,
-			$main::dev{$dv}{rc},
-			$main::dev{$dv}{cp},
-			$main::dev{$dv}{us},
-			$main::dev{$dv}{ic},
-			$doi,
+			(defined $main::dev{$dv}{rc})?$main::dev{$dv}{rc}:"",
+			(defined $main::dev{$dv}{cp})?$main::dev{$dv}{cp}:0,
+			(defined $main::dev{$dv}{us})?$main::dev{$dv}{us}:"",
+			&misc::DevIcon($main::dev{$dv}{sv},$main::dev{$dv}{ic}),
+			&misc::Ip2Dec($main::dev{$dv}{oi}),
 			$main::dev{$dv}{cpu},
 			$main::dev{$dv}{mcp},
 			$main::dev{$dv}{tmp},
 			$main::dev{$dv}{cuv},
 			$main::dev{$dv}{cul},
 			$main::dev{$dv}{so},
-			$main::dev{$dv}{wc}
+			(defined $main::dev{$dv}{wc})?$main::dev{$dv}{wc}:"",
+			$main::dev{$dv}{opt},
+			$main::dev{$dv}{siz},
+			$main::dev{$dv}{stk},
+			$main::dev{$dv}{mpw},
+			$main::dev{$dv}{tpw}
 			);
 	$dbh->commit;
 	$sth->finish if $sth;
@@ -544,26 +535,31 @@ sub ReadAddr {
 
 	my $nmac = 0;
 	my $nip  = 0;
+	my $nip6 = 0;
 		
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
-	my $sth = $dbh->prepare("SELECT device,ifmac FROM interfaces where ifmac !=\"\"");
+	my $sth = $dbh->prepare("SELECT device,ifmac,ifidx FROM interfaces where ifmac !=\"\"");
 	$sth->execute();
 	while((my @i) = $sth->fetchrow_array){
-		$misc::ifmac{$i[1]}{$i[0]}++;
+		$misc::ifmac{$i[1]}{$i[0]} = $i[2];
 		$nmac++;
 	}
 
-	$sth = $dbh->prepare("SELECT device,inet_ntoa(ifip) FROM networks where ifip != 2130706433");
+	$sth = $dbh->prepare("SELECT device,inet_ntoa(ifip),ifip6 FROM networks where ifip != 2130706433");# Ignore 127.0.0.1
 	$sth->execute();
 	while ((my @i) = $sth->fetchrow_array) {
-		$misc::ifip{$i[1]}{$i[0]}++;
-		&misc::Prt("RADDR:IP $i[1] found on $misc::ifip{$i[1]}{$i[0]} interfaces\n") if $misc::ifip{$i[1]}{$i[0]} > 1;
-		$nip++;
+		if($i[2]){
+			$misc::ifip{$i[2]}{$i[0]}++;
+			$nip6++;
+		}else{
+			$misc::ifip{$i[1]}{$i[0]}++;
+			$nip++;
+		}
 	}
 	$sth->finish if $sth;
 	$dbh->disconnect;
 
-	&misc::Prt("RADDR:$nmac MAC & $nip IP addresses read.\n");
+	&misc::Prt("RADDR:$nmac MAC, $nip IP and $nip6 IPv6 addresses read.\n");
 }
 
 =head2 FUNCTION ReadInt()
@@ -572,7 +568,7 @@ Reads IF information.
 
 B<Options> devicename
 
-B<Globals> misc::ifmac, misc::ifip
+B<Globals> main::int
 
 B<Returns> -
 
@@ -604,22 +600,31 @@ sub ReadInt {
 		$main::int{$i[0]}{$i[2]}{die} = $i[17];
 		$main::int{$i[0]}{$i[2]}{doo} = $i[18];
 		$main::int{$i[0]}{$i[2]}{doe} = $i[19];
-		$main::int{$i[0]}{$i[2]}{poe} = $i[21];
-		$main::int{$i[0]}{$i[2]}{idi} = 0;
-		$main::int{$i[0]}{$i[2]}{odi} = 0;
-		$main::int{$i[0]}{$i[2]}{ibr} = 0;
+		$main::int{$i[0]}{$i[2]}{poe} = $i[27];
+		$main::int{$i[0]}{$i[2]}{idi} = $i[20];
+		$main::int{$i[0]}{$i[2]}{odi} = $i[21];
+		$main::int{$i[0]}{$i[2]}{did} = $i[22];
+		$main::int{$i[0]}{$i[2]}{dod} = $i[23];
+		$main::int{$i[0]}{$i[2]}{ibr} = $i[24];
+		$main::int{$i[0]}{$i[2]}{dib} = $i[25];
+		$main::int{$i[0]}{$i[2]}{chg} = $i[26];
+		$main::int{$i[0]}{$i[2]}{poe} = $i[27];
 
-		$main::int{$i[0]}{$i[2]}{plt} = $i[3];							# Needed for link tracking in WriteInt
+		$main::int{$i[0]}{$i[2]}{plt} = $i[3];							# Needed for link tracking in misc::CheckIf
+		$main::int{$i[0]}{$i[2]}{pst} = $i[8];
 		$main::int{$i[0]}{$i[2]}{psp} = $i[9];
 		$main::int{$i[0]}{$i[2]}{pdp} = $i[10];
 		$main::int{$i[0]}{$i[2]}{pvi} = $i[11];
-		$main::int{$i[0]}{$i[2]}{pco} = $i[20];
+		$main::int{$i[0]}{$i[2]}{pcg} = $i[26];
+		$main::int{$i[0]}{$i[2]}{pco} = $i[28];
+
 		$nint++;
 	}
 	$sth->finish if $sth;
 	$dbh->disconnect;
 
 	&misc::Prt("RIF :$nint IF read ($where) from $misc::dbname.interfaces\n");
+	return $nint;
 }
 
 
@@ -637,118 +642,18 @@ B<Returns> -
 sub WriteInt {
 
 	my ($dv,$skip) = @_;
-	my $nint = 0;
-	my $nwar = 0;
-	my $nalr = 0;
-	my $nethint = 0;
-	my $totpoe = 0;
-	my $avgpoe = 0;
+	my $tint = 0;
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
 	$dbh->do("DELETE FROM  interfaces where device = \"$dv\"");
 	$sth = $dbh->prepare("INSERT INTO interfaces(	device,ifname,ifidx,linktype,iftype,ifmac,ifdesc,alias,ifstat,speed,duplex,pvid,
-							inoct,inerr,outoct,outerr,dinoct,dinerr,doutoct,douterr,comment,poe)
-							VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
+							inoct,inerr,outoct,outerr,dinoct,dinerr,doutoct,douterr,indis,outdis,dindis,doutdis,inbrc,dinbrc,lastchg,poe,comment)
+							VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
 	foreach my $i ( sort keys %{$main::int{$dv}} ){
-		if($main::int{$dv}{$i}{ina}){
-			if(exists $main::int{$dv}{$i}{psp}){						# Check delta for existing IFs
-				my $iftxt = "$main::int{$dv}{$i}{ina} ";
-				$iftxt .= " - $main::int{$dv}{$i}{ali} " if $main::int{$dv}{$i}{ali};
-				my $lvl = 100;
-				if($main::int{$dv}{$i}{lty}){
-					$iftxt .= "(is $main::int{$dv}{$i}{com})";
-					$lvl = 150;
-				}elsif($main::int{$dv}{$i}{plt}){
-					$iftxt .= "(was $main::int{$dv}{$i}{pco})";
-					$lvl = 150;
-				}
-
-				unless($skip =~ /t/){
-					if( ($misc::notify =~ /t/i or $misc::notify =~ /l/i and $main::int{$dv}{$i}{lty}) and $main::int{$dv}{$i}{spd}){
-						my $rioct = int( $main::int{$dv}{$i}{dio} * 800 / ($misc::discostep * $main::int{$dv}{$i}{spd}) );
-						my $rooct = int( $main::int{$dv}{$i}{doo} * 800 / ($misc::discostep * $main::int{$dv}{$i}{spd}) );
-						if($rioct > $misc::trfa and $rioct < 101){
-							my $msg = "$iftxt having $rioct% inbound traffic exeeds alert threshold of ${misc::trfa}% for ${misc::discostep}s!";
-							&Insert('events','level,time,source,info,class,device',"\"200\",\"$main::now\",\"$dv\",\"$msg\",\"trfa\",\"$dv\"");
-							$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /T/ or $misc::notify =~ /L/ and $main::int{$dv}{$i}{lty};
-							$nalr++;
-						}elsif($rioct > $misc::trfw and $rioct < 101){
-							my $msg = "$iftxt having $rioct% inbound traffic exeeds warning threshold of ${misc::trfw}% for ${misc::discostep}s";
-							&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"trfw\",\"$dv\"");
-							$nwar++;
-						}
-						if($rooct > $misc::trfa and $rooct < 101){
-							my $msg = "$iftxt having $rooct% outbound traffic exeeds alert threshold of ${misc::trfa}% for ${misc::discostep}s!";
-							&Insert('events','level,time,source,info,class,device',"\"200\",\"$main::now\",\"$dv\",\"$msg\",\"trfa\",\"$dv\"");
-							$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /T/ or $misc::notify =~ /L/ and $main::int{$dv}{$i}{lty};
-							$nalr++;
-						}elsif($rooct > $misc::trfw and $rooct < 101){
-							my $msg = "$iftxt having $rooct% outbound traffic exeeds warning threshold of ${misc::trfw}% for ${misc::discostep}s";
-							&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"trfw\",\"$dv\"");
-							$nwar++;
-						}
-					}
-				}
-
-				unless($skip =~ /e/){
-					if($misc::notify =~ /e/i or $misc::notify =~ /l/i and $main::int{$dv}{$i}{lty}){
-						if($main::int{$dv}{$i}{typ} != 71){						# Ignore Wlan IF
-							if($main::int{$dv}{$i}{die} > $misc::discostep){
-								my $msg = "$iftxt having $main::int{$dv}{$i}{die} inbound errors for ${misc::discostep}s!";
-								&Insert('events','level,time,source,info,class,device',"\"200\",\"$main::now\",\"$dv\",\"$msg\",\"trfe\",\"$dv\"");
-								$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /E/ or $misc::notify =~ /L/ and $main::int{$dv}{$i}{lty};
-								$nalr++;
-							}elsif($main::int{$dv}{$i}{die} > $misc::discostep / 60){
-								my $msg = "$iftxt having $main::int{$dv}{$i}{die} inbound errors for ${misc::discostep}s";
-								&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"trfe\",\"$dv\"");						
-								$nwar++;
-							}
-							if($main::int{$dv}{$i}{doe} > $misc::discostep){
-								my $msg = "$iftxt having $main::int{$dv}{$i}{doe} outbound errors for ${misc::discostep}s!";
-								&Insert('events','level,time,source,info,class,device',"\"200\",\"$main::now\",\"$dv\",\"$msg\",\"trfe\",\"$dv\"");
-								$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /E/ or $misc::notify =~ /L/ and $main::int{$dv}{$i}{lty};
-								$nalr++;
-							}elsif($main::int{$dv}{$i}{doe} > $misc::discostep / 60){
-								my $msg = "$iftxt having $main::int{$dv}{$i}{doe} outbound errors for ${misc::discostep}s";
-								&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"trfe\",\"$dv\"");						
-								$nwar++;
-							}
-						}
-					}
-				}
-
-				if(!($main::int{$dv}{$i}{sta} & 4) and $main::int{$dv}{$i}{sta} & 128){			# 4 means adm stat is skipped and 128 it was disabled since last discovery
-					my $msg = "$iftxt has been disabled";
-					&misc::Prt("WIF :$msg\n");
-					if($misc::notify =~ /a/i or $misc::notify =~ /l/i and $main::int{$dv}{$i}{lty}){
-						&Insert('events','level,time,source,info,class,device',"\"$lvl\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"");
-						$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /A/ or $misc::notify =~ /L/ and $main::int{$dv}{$i}{lty};
-
-					}
-				}
-
-				if(!($main::int{$dv}{$i}{sta} & 8) and $main::int{$dv}{$i}{sta} & 64){			# 8 means opr stat is skipped and 64 it went down since last discovery
-					my $msg = "$iftxt went down";
-					&misc::Prt("WIF :$msg\n");
-					if($misc::notify =~ /o/i or $misc::notify =~ /l/i and $main::int{$dv}{$i}{lty}){
-						&Insert('events','level,time,source,info,class,device',"\"$lvl\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"");
-						$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /O/ or $misc::notify =~ /L/ and $main::int{$dv}{$i}{lty};
-					}
-				}
-
-				if($misc::notify =~ /l/i and ($main::int{$dv}{$i}{lty} or $main::int{$dv}{$i}{plt}) ){
-					my $typc = ($main::int{$dv}{$i}{lty} ne $main::int{$dv}{$i}{plt})?" type ".(($main::int{$dv}{$i}{plt})?"from $main::int{$dv}{$i}{plt} ":"").(($main::int{$dv}{$i}{lty})?"to $main::int{$dv}{$i}{lty}":""):"";
-					my $spdc = ($main::int{$dv}{$i}{spd} ne $main::int{$dv}{$i}{psp})?" speed from ".&misc::DecFix($main::int{$dv}{$i}{psp})." to ".&misc::DecFix($main::int{$dv}{$i}{spd}):"";
-					my $dupc = ($main::int{$dv}{$i}{dpx} ne $main::int{$dv}{$i}{pdp})?" duplex from $main::int{$dv}{$i}{pdp} to $main::int{$dv}{$i}{dpx}":"";
-					if($typc or $spdc or $dupc){
-						my $msg  = "$iftxt changed$typc$spdc$dupc";
-						&misc::Prt("WIF :$msg\n");
-						&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"");
-						$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /L/;
-					}
-				}
-			}
-
+		if(!$main::int{$dv}{$i}{new}){
+			&misc::Prt("WIF :Index $i not found, not writing\n");
+		}else{
+			&misc::CheckIf($dv,$i,$skip);
 			$sth->execute (	$dv,
 					$main::int{$dv}{$i}{ina},
 					$i,
@@ -769,27 +674,23 @@ sub WriteInt {
 					$main::int{$dv}{$i}{die},
 					$main::int{$dv}{$i}{doo},
 					$main::int{$dv}{$i}{doe},
-					substr($main::int{$dv}{$i}{com},0,255),
-					$main::int{$dv}{$i}{poe} );
-			$totpoe += $main::int{$dv}{$i}{poe}/1000;
-			$nethint++ if $main::int{$dv}{$i}{typ} =~ /^(6|7|117)$/;
-			$nint++;
-		}else{
-			&misc::Prt("WIF :No name for index $i, potential error in .def\n");
+					$main::int{$dv}{$i}{idi},
+					$main::int{$dv}{$i}{odi},
+					$main::int{$dv}{$i}{did},
+					$main::int{$dv}{$i}{dod},
+					$main::int{$dv}{$i}{ibr},
+					$main::int{$dv}{$i}{dib},
+					$main::int{$dv}{$i}{chg},
+					$main::int{$dv}{$i}{poe},
+					substr($main::int{$dv}{$i}{com},0,255) );
+			$tint++;
 		}
 	}
 	$dbh->commit;
 	$sth->finish if $sth;
 	$dbh->disconnect;
-	$avgpoe = sprintf("%.0f",$totpoe/$nethint) if $nethint;
-	if($avgpoe > $misc::poew){								# PoE can be optained on IF or DP, thus calculation is here
-		my $msg = "Average PoE delivery ${avgpoe}W exceeds threshold of ${misc::poew}W (${totpoe}W total)";
-		&misc::Prt("WIF :$msg\n");
-		&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"") if $misc::notify !~ /w/;
-		$nwar++;
-	}
-	&misc::Prt("WIF :$nint interfaces written to $misc::dbname.interfaces\n");
-	&misc::Prt("WIF :$nwar warnings/$nalr alerts written to $misc::dbname.events\n") if ($nwar or $nalr);
+
+	&misc::Prt("WIF :$tint interfaces written to $misc::dbname.interfaces\n");
 }
 
 
@@ -811,36 +712,25 @@ sub WriteMod {
 	my %dbmod= ();
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
-	if($misc::notify =~ /m/i){									# Track existing mods if enabled
-		my $sth = $dbh->prepare("SELECT * FROM modules WHERE device = \"$dv\"");# TODO adapt for printers and ESX
+	if(exists $main::mon{$dv} and $misc::notify =~ /m/i){						# Track existing mods if enabled
+		my $sth = $dbh->prepare("SELECT * FROM modules WHERE device = \"$dv\"");
 		$sth->execute();
 		while ((my @f) = $sth->fetchrow_array) {
 			$dbmod{$f[8]} = 1;
 			if(exists $main::mod{$dv}{$f[8]}){						# Check idx to avoid defining entry..
 				if($f[3] ne $main::mod{$dv}{$f[8]}{de}){				# ..this would define!
-					my $msg = "Module $f[3] SN:$f[4] in $f[1] was changed to a $main::mod{$dv}{$f[8]}{de} with SN:$main::mod{$dv}{$f[8]}{sn}";
-					&misc::Prt("WMOD:$msg\n");
-					&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"");
-					$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /M/;
+					$misc::mq += &mon::Event('M',150,'nedo',$dv,$dv,"Module $f[3] SN:$f[4] in $f[1] was changed to a $main::mod{$dv}{$f[8]}{de} with SN:$main::mod{$dv}{$f[8]}{sn}");
 				}elsif($f[4] and $f[4] ne $main::mod{$dv}{$f[8]}{sn}){
-					my $msg = "Module $f[3] SN:$f[4] in $f[1] got replaced with same model and SN:$main::mod{$dv}{$f[8]}{sn}";
-					&misc::Prt("WMOD:$msg\n");
-					&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"");
-					$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /M/;
-
+					$misc::mq += &mon::Event('M',150,'nedo',$dv,$dv,"Module $f[3] SN:$f[4] in $f[1] got replaced with same model and SN:$main::mod{$dv}{$f[8]}{sn}");
 				}
 			}else{
-				my $msg = "Module $f[3] SN:$f[4] in $f[1] has been removed";
-				&misc::Prt("WMOD:$msg\n");
-				&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"");
-				$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /M/;
+				$misc::mq += &mon::Event('M',150,'nedo',$dv,$dv,"Module $f[3] SN:$f[4] in $f[1] has been removed");
 			}
 		}
-
 	}
 	$sth->finish if $sth;
 	$dbh->do("DELETE FROM  modules where device = \"$dv\"");
-	my $sth = $dbh->prepare("INSERT INTO modules(device,slot,model,moddesc,serial,hw,fw,sw,modidx) VALUES ( ?,?,?,?,?,?,?,?,? )");
+	my $sth = $dbh->prepare("INSERT INTO modules(device,slot,model,moddesc,serial,hw,fw,sw,modidx,modclass,status) VALUES ( ?,?,?,?,?,?,?,?,?,?,? )");
 	foreach my $i ( sort keys %{$main::mod{$dv}} ){
 		$sth->execute (	$dv,
 				$main::mod{$dv}{$i}{sl},
@@ -850,12 +740,13 @@ sub WriteMod {
 				$main::mod{$dv}{$i}{hw},
 				$main::mod{$dv}{$i}{fw},
 				$main::mod{$dv}{$i}{sw},
-				$i );
-		if($main::dev{$dv}{fs} ne $main::now and $misc::notify =~ /m/i and !exists $dbmod{$i}){
-			my $msg = "New $main::mod{$dv}{$i}{de} module with SN:$main::mod{$dv}{$i}{sn} found in $main::mod{$dv}{$i}{sl}";
-			&misc::Prt("WMOD:$msg\n");
-			&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"nedi\",\"$dv\"");
-			$misc::mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /M/;
+				$i,
+				$main::mod{$dv}{$i}{mc},
+				$main::mod{$dv}{$i}{st}
+				);
+
+		if(exists $main::mon{$dv} and $main::dev{$dv}{fs} ne $main::now and !exists $dbmod{$i}){
+			$misc::mq += &mon::Event('M',150,'nedo',$dv,$dv,"New $main::mod{$dv}{$i}{de} module with SN:$main::mod{$dv}{$i}{sn} found in $main::mod{$dv}{$i}{sl}");
 		}
 		$nmod++;
 	}
@@ -879,9 +770,8 @@ B<Returns> -
 =cut
 sub WriteVlan {
 
-	my $nvlans = 0;
-
 	my ($dv) = @_;
+	my $nvlans = 0;
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
 	$dbh->do("DELETE FROM  vlans where device = \"$dv\"");
@@ -911,30 +801,32 @@ B<Returns> -
 sub WriteNet {
 
 	my ($dv) = @_;
-	my $nnet = 0;
+	my $nip  = 0;
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
 	$dbh->do("DELETE FROM  networks where device = \"$dv\"");
-	my $sth = $dbh->prepare("INSERT INTO networks(	device,ifname,ifip,mask,vrfname,status ) VALUES ( ?,?,?,?,?,? )");
+	my $sth = $dbh->prepare("INSERT INTO networks(	device,ifname,ifip,ifip6,prefix,vrfname,status ) VALUES ( ?,?,?,?,?,?,? )");
 	foreach my $n ( sort keys %{$main::net{$dv}} ){
 		$sth->execute (	$dv,
-						$main::net{$dv}{$n}{ifn},
-						&misc::Ip2Dec($n),
-						&misc::Ip2Dec($main::net{$dv}{$n}{msk}),
-						$main::net{$dv}{$n}{vrf},
-						$main::net{$dv}{$n}{vrs} );
-		$nnet++;
+				$main::net{$dv}{$n}{ifn},
+				((!$main::net{$dv}{$n}{ip6})?&misc::Ip2Dec($n):""),
+				(($main::net{$dv}{$n}{ip6})?$n:""),
+				$main::net{$dv}{$n}{pfx},
+				$main::net{$dv}{$n}{vrf},
+				$main::net{$dv}{$n}{sta} );
+		$nip++;
 	}
 	$dbh->commit;
 	$sth->finish if $sth;
 	$dbh->disconnect;
-	&misc::Prt("WNET:$nnet networks written to $misc::dbname.networks\n");
+	&misc::Prt("WNET:$nip networks written to $misc::dbname.networks\n");
 }
 
 
 =head2 FUNCTION WriteLink()
 
-Writes the links of a given device.
+Writes the links of a given device. Will just return without argument
+or if there are no links for this device.
 
 B<Options> devicename
 
@@ -946,14 +838,14 @@ B<Returns> -
 sub WriteLink {
 
 	my ($dv) = @_;
-	return if !$dv;
+	return if !$dv or !exists $main::link{$dv} ;
 
 	my $nlink  = 0;
 	my $nslink = 0;
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
 	$dbh->do("DELETE FROM links where device = \"$dv\" AND linktype != \"STAT\"");
-	my $sth = $dbh->prepare("INSERT INTO links(device,ifname,neighbor,nbrifname,bandwidth,linktype,linkdesc,nbrduplex,nbrvlanid) VALUES ( ?,?,?,?,?,?,?,?,? )");
+	my $sth = $dbh->prepare("INSERT INTO links(device,ifname,neighbor,nbrifname,bandwidth,linktype,linkdesc,nbrduplex,nbrvlanid,time) VALUES ( ?,?,?,?,?,?,?,?,?,? )");
 
 	foreach my $i ( sort keys %{$main::link{$dv}} ){
 		foreach my $ne ( sort keys %{$main::link{$dv}{$i}} ){
@@ -965,7 +857,8 @@ sub WriteLink {
 							$main::link{$dv}{$i}{$ne}{$ni}{ty},
 							$main::link{$dv}{$i}{$ne}{$ni}{de},
 							$main::link{$dv}{$i}{$ne}{$ni}{du},
-							$main::link{$dv}{$i}{$ne}{$ni}{vl} );
+							$main::link{$dv}{$i}{$ne}{$ni}{vl},
+							$main::now );
 					$nlink++;
 				}else{
 					$nslink++;
@@ -999,7 +892,7 @@ sub UnStock {
 	if( $dbh->do("UPDATE stock SET time=\"$main::now\",comment=\"Discovered as $dv with IP $main::dev{$dv}{ip}\",state=100 where serial = \"$main::dev{$dv}{sn}\" and state != 100") + 0){
 		&misc::Prt("STOK:Discovered device $main::dev{$dv}{sn} set active in $misc::dbname.stock\n");
 	}
-	foreach my $i ( sort keys %{$main::mod{$dv}} ){# TODO add stocktracking options for discovered devs?
+	foreach my $i ( sort keys %{$main::mod{$dv}} ){
 		if($main::mod{$dv}{$i}{sn}){
 			if( $dbh->do("UPDATE stock SET time=\"$main::now\",comment=\"Discovered in $dv $main::mod{$dv}{$i}{sl}\",state=100 where serial = \"$main::mod{$dv}{$i}{sn}\" and state != 100") + 0){
 				&misc::Prt("STOK:Discovered module $main::mod{$dv}{$i}{sn} set active in $misc::dbname.stock\n");
@@ -1012,313 +905,97 @@ sub UnStock {
 
 =head2 FUNCTION WriteNod()
 
-Write the nodes table.
+Writes the nodes table by only connecting once and preparing all actions combined to scale for large networks using multiple threads.
+In addition entries from IF and IP track tables are deleted upon retiring a node.
 
-B<Options> match statement
+B<Options> -
 
-B<Globals> main::link
+B<Globals> main::nod
 
 B<Returns> -
 
 =cut
 sub WriteNod {
 
-	my $nnod = 0;
+	my $dnod = my $inod = my $unod = 0;
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
-	my $sth = $dbh->prepare("SELECT * FROM stolen");
-	$sth->execute();
-	my %stomac = ();
-	while ((my @smac) = $sth->fetchrow_array) {
-		$stomac{$smac[2]} = "$smac[6]";
-	}
-	$dbh->do("TRUNCATE nodes");
-	$sth = $dbh->prepare("INSERT INTO nodes(	name,nodip,mac,oui,firstseen,lastseen,device,ifname,vlanid,ifmetric,ifupdate,ifchanges,
-							ipupdate,ipchanges,iplost,arpval,tcpports,udpports,nodtype,nodos,osupdate) VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
 
-	foreach my $mcvl ( sort keys %main::nod ){
-		my $mc = substr($mcvl,0,12);
-		if (exists $stomac{$mc} and $main::nod{$mcvl}{ls} == $main::now and $misc::notify =~ /n/i){
-			my $msg = "Node $mc reappeared as $main::nod{$mcvl}{na}/$main::nod{$mcvl}{ip} on $main::nod{$mcvl}{if}";
-			&misc::Prt("WNOD:$msg\n");
-			&Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$main::nod{$mcvl}{dv}\",\"$msg\",\"sec\",\"$main::nod{$mcvl}{dv}\"");
-			$misc::mq += &mon::AlertQ("$msg of $main::nod{$mcvl}{dv}\n","",1,$main::nod{$mcvl}{dv}) if $misc::notify =~ /N/;
-		}
+	my $std = $dbh->prepare("DELETE FROM nodes WHERE mac=?");
+	my $stf = $dbh->prepare("DELETE FROM iftrack WHERE mac=?");
+	my $sta = $dbh->prepare("DELETE FROM iptrack WHERE mac=?");
 
-		$sth->execute (	$main::nod{$mcvl}{na},
-				&misc::Ip2Dec($main::nod{$mcvl}{ip}),
-				$mcvl,
-				$main::nod{$mcvl}{nv},
-				$main::nod{$mcvl}{fs},
-				$main::nod{$mcvl}{ls},
-				$main::nod{$mcvl}{dv},
-				$main::nod{$mcvl}{if},
-				$main::nod{$mcvl}{vl},
-				$main::nod{$mcvl}{im},
-				$main::nod{$mcvl}{iu},
-				$main::nod{$mcvl}{ic},
-				$main::nod{$mcvl}{au},
-				$main::nod{$mcvl}{ac},
-				$main::nod{$mcvl}{al},
-				$main::nod{$mcvl}{av},
-				$main::nod{$mcvl}{tp},
-				$main::nod{$mcvl}{up},
-				$main::nod{$mcvl}{os},
-				$main::nod{$mcvl}{ty},
-				$main::nod{$mcvl}{ou} );
-		$nnod++;
-	}
-	$dbh->commit;
-	$sth->finish if $sth;
-	$dbh->disconnect;
-	&misc::Prt("WNOD:$nnod nodes written to $misc::dbname.nodes\n");
-}
+	my $sti = $dbh->prepare("INSERT INTO nodes(	name,nodip,mac,oui,firstseen,lastseen,device,ifname,vlanid,ifmetric,ifupdate,ifchanges,
+							ipupdate,ipchanges,iplost,arpval,nodip6,tcpports,udpports,nodtype,nodos,osupdate,noduser) VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
 
+	my $stu = $dbh->prepare("UPDATE nodes SET	name=?,nodip=?,mac=?,oui=?,firstseen=?,lastseen=?,device=?,ifname=?,vlanid=?,ifmetric=?,ifupdate=?,ifchanges=?,
+							ipupdate=?,ipchanges=?,iplost=?,arpval=?,nodip6=?,tcpports=?,udpports=?,nodtype=?,nodos=?,osupdate=?,noduser=? WHERE mac=? LIMIT 1");# update only 1st to let multiple nodes retire (should not happen anyway due to new nodelock with PID)
 
-=head2 FUNCTION DelDev()
-
-Delete RRDs & Configs of deleted devices. Leverages rmtree() which is
-used for cleanup on init as well.
-
-B<Options> -
-
-B<Globals> -
-
-B<Returns> -
-
-=cut
-sub DelDev {
-
-	my $nrrd = 0;
-	my $ncfg = 0;
-
-	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
-	my $sth = $dbh->prepare("SELECT * FROM devdel");
-	$sth->execute();
-	my %devdel = ();
-	while (my @dd = $sth->fetchrow_array) {
-		$devdel{$dd[0]} = "$dd[1] - ". localtime($dd[2]);
-	}
-	$dbh->do("TRUNCATE devdel");
-	$sth->finish if $sth;
-	$dbh->disconnect;
-
-	foreach my $dv ( keys %devdel ){
-		my $nrrd = &main::rmtree( "$misc::nedipath/rrd/$dv");
-		my $ncfg = &main::rmtree( "$misc::nedipath/conf/$dv");
-		&misc::Prt("DELD:$nrrd RRD & $ncfg Config files (with dirs) deleted of $dv for $devdel{$dv}\n");
-	}
-}
-
-
-=head2 FUNCTION TopRRD()
-
-Update Top traffic, error, power & monitoring RRDs.
-
-B<Options> -
-
-B<Globals> -
-
-B<Returns> -
-
-=cut
-sub TopRRD {
-
-	my (@mok, @msl, @mal, %ifstat);
-	my $err = $m50 = my $m100 = my $m150 = my $m200 = my $m250 = 0;
-
-	&misc::Prt("\nTopRRD       ------------------------------------------------------------------\n");
-	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
-
-	# Using delta octets to avoid error from missing or rebooted switches. Needs to be divided by rrdstep*1M to get MB/s
-	my $sth = $dbh->prepare("SELECT sum(dinoct)/(1000000*$misc::rrdstep),sum(doutoct)/(1000000*$misc::rrdstep) FROM interfaces WHERE linktype = \"\"");
-	$sth->execute();
-	(my @tet) = $sth->fetchrow_array;
-	$sth->finish if $sth;
-	unless($tet[0]){
-		$tet[0] = 0;
-		$tet[1] = 0;
-	}
-
-	# Wired interface (type not 71) errors/s
-	$sth = $dbh->prepare("SELECT sum(dinerr)/$misc::rrdstep,sum(douterr)/$misc::rrdstep FROM interfaces WHERE iftype != 71");
-	$sth->execute();
-	(my @twe) = $sth->fetchrow_array;
-	$sth->finish if $sth;
-	unless($twe[0]){
-		$twe[0] = 0;
-		$twe[1] = 0;
-	}
-
-	# Total Nodes lastseen
-	$sth = $dbh->prepare("SELECT count(lastseen) FROM nodes where lastseen = $main::now");
-	$sth->execute();
-	(my @nodl) = $sth->fetchrow_array;
-	$sth->finish if $sth;
-
-	# Total Nodes firstseen
-	$sth = $dbh->prepare("SELECT count(firstseen) FROM nodes where firstseen = $main::now");
-	$sth->execute();
-	(my @nodf) = $sth->fetchrow_array;
-	$sth->finish if $sth;
-
-	# Total power in Watts
-	$sth = $dbh->prepare("SELECT sum(poe)/1000 FROM interfaces");
-	$sth->execute();
-	(my @pwr) = $sth->fetchrow_array;
-	$sth->finish if $sth;
-	unless($pwr[0]){
-		$pwr[0] = 0;
-	}
-
-	# Count IF ifstat up=3, down=1 and admin down=0 ignoring transients (+192)
-	$sth = $dbh->prepare("SELECT ifstat & 63,count(ifstat & 63) from interfaces group by ifstat & 63");
-	$sth->execute();
-	$ifstat[0] = 0;
-	$ifstat[1] = 0;
-	$ifstat[3] = 0;
-	while (my @is = $sth->fetchrow_array) {
-		$ifstat[$is[0]] = $is[1];
-	}
-	$sth->finish if $sth;
-
-	# Number of monitored targets and last check
-	$sth = $dbh->prepare("select count(status),lastok from monitoring WHERE test != '' AND latency < $misc::latw AND status = 0 group by lastok");
-	$sth->execute();
-	@mok = $sth->fetchrow_array;
-	$sth->finish if $sth;
-
-	if($mok[0]){
-		# Number of slow targets
-		$sth = $dbh->prepare("select count(status) from monitoring WHERE test != '' AND latency > $misc::latw AND status = 0");
-		$sth->execute();
-		@msl = $sth->fetchrow_array;
-		$sth->finish if $sth;
-
-		# Number of dead targets
-		$sth = $dbh->prepare("select count(status) from monitoring WHERE test != '' AND status > 0");
-		$sth->execute();
-		@mal = $sth->fetchrow_array;
-		$sth->finish if $sth;
-		if($mok[1] < (time - $misc::chka * $misc::pause) ){					# moni.pl not running or no one alive
-			$mok[0] = 0;
-			$mal[0] = 0;
-			my $msg = "Last successful check on ".localtime($mok[1]).", is moni running?";
-			&Insert('events','level,time,source,info,class',"\"150\",\"$main::now\",\"NeDi\",\"$msg\",\"nedi\"");
-			&misc::Prt("TRRD:$msg\n");
-		}
-	}else{
-		$mok[0] = 0;
-		$msl[0] = 0;
-		$mal[0] = 0;
-		&misc::Prt("TRRD:Nothing up or moni not running!\n");
-	}
-
-	# Number of cathegorized events during discovery cycle
-	$sth = $dbh->prepare("SELECT level,count(*) FROM events WHERE time > ".(time - $misc::rrdstep)." GROUP BY level");
-	$sth->execute();
-	while ((my @m) = $sth->fetchrow_array) {
-		if($m[0] eq 50){
-			$m50 = $m[1];
-		}elsif($m[0] eq 100){
-			$m100 = $m[1];
-		}elsif($m[0] eq 150){
-			$m150 = $m[1];
-		}elsif($m[0] eq 200){
-			$m200 = $m[1];
-		}elsif($m[0] eq 250){
-			$m250 = $m[1];
-		}
-	}
-
-	$sth->finish if $sth;
-	$dbh->disconnect;
-
-	&misc::Prt("TRRD:$misc::nedipath/rrd/top.rrd: Trf=$tet[0]/$tet[1] Err=$twe[0]/$twe[1] Nod=$nodl[0]/$nodf[0]\n");
-	&misc::Prt("TRRD:Pwr=$pwr[0]W IF=$ifstat[3]/$ifstat[1]/$ifstat[0] Mon=$mok[0]/$msl[0]/$mal[0] MSG=$m50/$m100/$m150/$m200/$m250\n");
-	if($main::opt{t} or $main::opt{a}){
-		&misc::Prt("TRRD:Not writing when testing or adding a single device\n");
-	}else{
-		unless(-e "$misc::nedipath/rrd/top.rrd"){
-			my $ds = 2 * $misc::rrdstep;
-			RRDs::create(	"$misc::nedipath/rrd/top.rrd",
-					"-s","$misc::rrdstep",
-					"DS:tinoct:GAUGE:$ds:0:U",
-					"DS:totoct:GAUGE:$ds:0:U",
-					"DS:tinerr:GAUGE:$ds:0:U",
-					"DS:toterr:GAUGE:$ds:0:U",
-					"DS:nodls:GAUGE:$ds:0:U",
-					"DS:nodfs:GAUGE:$ds:0:U",
-					"DS:tpoe:GAUGE:$ds:0:U",
-					"DS:upif:GAUGE:$ds:0:U",
-					"DS:downif:GAUGE:$ds:0:U",
-					"DS:disif:GAUGE:$ds:0:U",
-					"DS:monok:GAUGE:$ds:0:U",
-					"DS:monsl:GAUGE:$ds:0:U",
-					"DS:monal:GAUGE:$ds:0:U",
-					"DS:msg50:GAUGE:$ds:0:U",
-					"DS:msg100:GAUGE:$ds:0:U",
-					"DS:msg150:GAUGE:$ds:0:U",
-					"DS:msg200:GAUGE:$ds:0:U",
-					"DS:msg250:GAUGE:$ds:0:U",
-					"RRA:AVERAGE:0.5:1:$misc::rrdsize",
-					"RRA:AVERAGE:0.5:10:$misc::rrdsize");
-			$err = RRDs::error;
-		}
-		if($err){
-			&misc::Prt("TRRD:File error!\n");
+	foreach my $mcvl ( sort keys %main::nod ){							# Based on Lukas' idea
+		if($main::nod{$mcvl}{ls} < $misc::retire){
+			$std->execute($mcvl);
+			$sta->execute($mcvl);
+			$stf->execute($mcvl);
+			$dnod++;
+		}elsif($main::nod{$mcvl}{fs} == $main::now){
+			$sti->execute(	$main::nod{$mcvl}{na},
+					&misc::Ip2Dec($main::nod{$mcvl}{ip}),
+					$mcvl,
+					$main::nod{$mcvl}{nv},
+					$main::nod{$mcvl}{fs},
+					$main::nod{$mcvl}{ls},
+					$main::nod{$mcvl}{dv},
+					$main::nod{$mcvl}{if},
+					$main::nod{$mcvl}{vl},
+					$main::nod{$mcvl}{im},
+					$main::nod{$mcvl}{iu},
+					$main::nod{$mcvl}{ic},
+					$main::nod{$mcvl}{au},
+					$main::nod{$mcvl}{ac},
+					$main::nod{$mcvl}{al},
+					$main::nod{$mcvl}{av},
+					$main::nod{$mcvl}{i6},
+					$main::nod{$mcvl}{tp},
+					$main::nod{$mcvl}{up},
+					$main::nod{$mcvl}{os},
+					$main::nod{$mcvl}{ty},
+					$main::nod{$mcvl}{ou},
+					$main::nod{$mcvl}{us} );
+			$inod++;
 		}else{
-			RRDs::update "$misc::nedipath/rrd/top.rrd","N:$tet[0]:$tet[1]:$twe[0]:$twe[1]:$nodl[0]:$nodf[0]:$pwr[0]:$ifstat[3]:$ifstat[1]:$ifstat[0]:$mok[0]:$msl[0]:$mal[0]:$m50:$m100:$m150:$m200:$m250";
-			$err = RRDs::error;
-			if($err){
-				&misc::Prt("TRRD:Update error!\n");
-			}else{
-				&misc::Prt("TRRD:Update OK\n");
-			}
+			$stu->execute(	$main::nod{$mcvl}{na},
+					&misc::Ip2Dec($main::nod{$mcvl}{ip}),
+					$mcvl,
+					$main::nod{$mcvl}{nv},
+					$main::nod{$mcvl}{fs},
+					$main::nod{$mcvl}{ls},
+					$main::nod{$mcvl}{dv},
+					$main::nod{$mcvl}{if},
+					$main::nod{$mcvl}{vl},
+					$main::nod{$mcvl}{im},
+					$main::nod{$mcvl}{iu},
+					$main::nod{$mcvl}{ic},
+					$main::nod{$mcvl}{au},
+					$main::nod{$mcvl}{ac},
+					$main::nod{$mcvl}{al},
+					$main::nod{$mcvl}{av},
+					$main::nod{$mcvl}{i6},
+					$main::nod{$mcvl}{tp},
+					$main::nod{$mcvl}{up},
+					$main::nod{$mcvl}{os},
+					$main::nod{$mcvl}{ty},
+					$main::nod{$mcvl}{ou},
+					$main::nod{$mcvl}{us},
+					$mcvl );
+
+			$unod++;
 		}
+
 	}
-}
-
-
-=head2 FUNCTION WlanUp()
-
-Update WLAN table.
-
-B<Options> -
-
-B<Globals> -
-
-B<Returns> -
-
-=cut
-sub WlanUp {
-
-	use File::Find;
-
-	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
-	my $sth = $dbh->prepare("SELECT * FROM wlan");
-	$sth->execute();
-
-	while ((my @wrow) = $sth->fetchrow_array) {
-			my $mc = $wrow[0];
-			$ap{$mc} = $main::now;
-	}
-	my $wprev = keys %ap;
-	print "WLAN:$wprev old Wlan entries read.\n";
-
-	find(\&misc::GetAp, $main::opt{w});								# Calls GetAp() in libmisc.pl
-
-	$dbh->do("TRUNCATE wlan");
-	$sth = $dbh->prepare("INSERT INTO wlan(mac,time) VALUES ( ?,? )");
-	for my $mc (sort keys %ap ){ $sth->execute ( $mc,$ap{$mc} ) }
 	$dbh->commit;
-	$sth->finish if $sth;
 	$dbh->disconnect;
-
-	my $wnew = scalar keys %ap;
-	print "WLAN:$wnew new entries written.\n";
+	&misc::Prt("WNOD:$dnod nodes retired, $inod inserted and $unod updated in $misc::dbname.nodes\n");
 }
-
 
 =head2 FUNCTION ReadMon()
 
@@ -1339,11 +1016,11 @@ sub ReadMon {
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
 
 	if($_[0] =~ /^[0-9]+$/){									# For single dev (used in trap.pl)
-		$sth = $dbh->prepare("SELECT monitoring.name,devip,class,alert,eventfwd,eventdel FROM monitoring LEFT OUTER JOIN devices ON (monitoring.name = devices.device ) WHERE devip = $_[0]");
+		$sth = $dbh->prepare("SELECT * FROM monitoring WHERE monip = $_[0]");
 	}elsif($_[0] eq "dev"){
-		$sth = $dbh->prepare("SELECT monitoring.name,devip,class,snmpversion & 3,readcomm,test,status,lost,ok,latmax,latavg,uptime,alert,eventfwd,eventdel,depend,monitoring.device FROM monitoring LEFT OUTER JOIN devices ON (monitoring.name = devices.device ) WHERE class = \"dev\"");
+		$sth = $dbh->prepare("SELECT monitoring.*,type,snmpversion & 3,readcomm FROM monitoring LEFT OUTER JOIN devices ON (monitoring.name = devices.device ) WHERE class = \"dev\"");
 	}elsif($_[0] eq "node"){
-		$sth = $dbh->prepare("SELECT monitoring.name,monip,class,class,class,test,status,lost,ok,latmax,latavg,uptime,alert,eventfwd,eventdel,depend,device FROM monitoring WHERE class = \"node\"");
+		$sth = $dbh->prepare("SELECT * FROM monitoring WHERE class = \"node\"");
 	}else{
 		die "no ReadMon class!";
 	}
@@ -1354,28 +1031,43 @@ sub ReadMon {
 		my $ip = &misc::Dec2Ip($f[1]);
 		$main::srcna{$ip} = $na;
 		$main::mon{$na}{ip} = $ip;
-		$main::mon{$na}{cl} = $f[2];# Consider devp,devh for printers,hypervisors OR syslog,traps to distinguish event icon?
-		$main::mon{$na}{rv} = $f[3];
-		$main::mon{$na}{rc} = $f[4];
-		$main::mon{$na}{te} = $f[5];
-		$main::mon{$na}{st} = $f[6];
-		$main::mon{$na}{lo} = $f[7];
-		$main::mon{$na}{ok} = $f[8];
-		$main::mon{$na}{lm} = $f[9];
-		$main::mon{$na}{la} = $f[10];
-		$main::mon{$na}{up} = $f[11];
-		$main::mon{$na}{al} = $f[12];
-		$main::mon{$na}{ef} = $f[13];
-		$main::mon{$na}{ed} = $f[14];
-		$main::mon{$na}{dy} = $f[15];
-		$main::mon{$na}{dv} = $f[16];								# Used for viewdev
+		$main::mon{$na}{cl} = $f[2];
+		$main::mon{$na}{te} = $f[3];
+		$main::mon{$na}{to} = $f[4];
+		$main::mon{$na}{tr} = $f[5];
+		$main::mon{$na}{lk} = $f[6];
+		$main::mon{$na}{st} = $f[7];
+		$main::mon{$na}{lo} = $f[8];
+		$main::mon{$na}{ok} = $f[9];
+		$main::mon{$na}{ly} = $f[10];
+		$main::mon{$na}{lm} = $f[11];
+		$main::mon{$na}{la} = $f[12];
+		$main::mon{$na}{up} = $f[13];
+		$main::mon{$na}{al} = $f[14];
+		$main::mon{$na}{ef} = $f[15];
+		$main::mon{$na}{el} = $f[16];
+		$main::mon{$na}{ed} = $f[17];
+		$main::mon{$na}{dy} = $f[18];
+		$main::mon{$na}{dv} = $f[19];								# Used for viewdev
+		$main::mon{$na}{no} = $f[20];								# Per Target notify string
+		$main::mon{$na}{nr} = $f[21];								# Per Target no-reply threshold
+		$main::mon{$na}{lw} = $f[22];
+		$main::mon{$na}{ca} = $f[23];
+		$main::mon{$na}{ma} = $f[24];
+		$main::mon{$na}{ta} = $f[25];
+		$main::mon{$na}{pw} = $f[26];
+		$main::mon{$na}{ap} = $f[27];
+		$main::mon{$na}{sa} = $f[28];
 		$main::mon{$na}{dc} = 0;								# Dependendant count
 		$main::mon{$na}{ds} = 'up';								# Dependency status
+		$main::mon{$na}{ty} = ($f[2] eq 'dev')?$f[29]:0;
+		$main::mon{$na}{rv} = ($f[2] eq 'dev')?$f[30]:0;
+		$main::mon{$na}{rc} = ($f[2] eq 'dev')?$f[31]:'';
 		$nmon++;
 	}
 	$sth->finish if $sth;
 	$dbh->disconnect;
-	&misc::Prt("RMON:$nmon entries read from $misc::dbname.monitoring\n");
+	&misc::Prt("RMON:$nmon entries ($_[0]) read from $misc::dbname.monitoring\n");
 	return $nmon;
 }
 
@@ -1425,36 +1117,17 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub Insert {
+sub Insert {# TODO consider using hashref as argument, with that this can be used for writing stuff with ' and " (like configs)
 
-	my $nag_event_service = 'Events';
-
-	if ($_[0] eq 'events') {
-		if ($misc::nagpipe) {
-			if (-p $misc::nagpipe) {							# Nagios Handler by S.Neuser
-				my ($level_str,$time,$source,$msg) = split /,/, $_[2];
-				$level_str =~ s/\"//g;
-				my $level = int $level_str;
-				my $status = 3;
-				if (! defined $level) { $status = 3; }
-				elsif ($level < 0) { $status = 3; }					# UNKNOWN
-				elsif ($level < 100) { $status = 0; }					# OK
-				elsif ($level < 200) { $status = 1; }					# WARN
-				else { $status = 2; }							# CRIT
-				my $lsource = lc ($source);
-				$lsource =~ s/\"//g;
-				$time =~ s/\"//g;
-				$msg =~ s/\"//g;
-				$msg =~ s/\n/;/g;
-				open (NPIPE, ">>$misc::nagpipe");
-				print NPIPE "[$time] PROCESS_SERVICE_CHECK_RESULT;$lsource;$nag_event_service;$status;NeDi:$msg\n";
-				close NPIPE;
-			}
-		}
+	&misc::NagPipe($_[2]) if $_[0] eq 'events' and $misc::nagpipe;
+	
+	my $r = 0;
+	unless($main::opt{'t'}){
+		my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
+		$r = $dbh->do("INSERT INTO $_[0] ($_[1]) VALUES ($_[2])") || die "ERR :INSERT INTO $_[0] ($_[1]) VALUES ($_[2])\n";
+		$dbh->disconnect;
 	}
-	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
-	my $r = $dbh->do("INSERT INTO $_[0] ($_[1]) VALUES ($_[2])") || die "ERR :INSERT INTO $_[0] ($_[1]) VALUES ($_[2])\n";
-	$dbh->disconnect;
+	&misc::Prt("INS :$r ROWS INTO $_[0] ($_[1]) VALUES ($_[2])\n") if $main::opt{'d'};
 
 	return $r;
 }
@@ -1474,12 +1147,12 @@ B<Returns> -
 sub Delete {
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
-	my $r = $dbh->do("DELETE FROM  $_[0] WHERE $_[1]") || die "DB-ERR: DELETE FROM  $_[0] WHERE $_[1]\n";
+	my $r = $dbh->do("DELETE FROM  $_[0] WHERE $_[1]") || die "ERR : DELETE FROM  $_[0] WHERE $_[1]\n";
 
-	print "ERR :$dbh->errstr" if (!$r);								# Something went wrong
-	$r = 0 if ($r eq '0E0');									# 0E0 actually means 0
-
+	&misc::Prt("ERR :$dbh->errstr\n") if(!$r);							# Something went wrong
+	$r = 0 if($r eq '0E0');									# 0E0 actually means 0
 	$dbh->disconnect;
+	&misc::Prt("DEL :$r ROWS FROM $_[0] WHERE $_[1]\n") if $main::opt{'d'};
 
 	return $r;
 }
@@ -1501,40 +1174,52 @@ sub Update {
 	my ($table, $set, $match) = @_;
 
 	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
-	my $r = $dbh->do("UPDATE $table SET $set WHERE $match") || die "DB-ERR: UPDATE $table SET $set WHERE $match\n";
+	my $r = $dbh->do("UPDATE $table SET $set WHERE $match") || die "ERR : UPDATE $table SET $set WHERE $match\n";
 	$dbh->disconnect;
-	&misc::Prt("UPDT:$table SET $set WHERE $match\n");
+	&misc::Prt("UPDT:$r ROWS FROM $table SET $set WHERE $match\n") if $main::opt{'d'};
 
 	return $r;
 }
 
-
 =head2 FUNCTION Select()
 
-Select 1 row of values from a table.
+Select values from a table.
 
-B<Options> table, columns, match statement
+B<Options> table, [hashkey], columns, match statement, join, using column(s)
 
 B<Globals> -
 
-B<Returns> array (if multiple columns) or value
+B<Returns> value if only 1 row and column is the result, hashref (if key provided) or arrayref otherwhise
 
 =cut
-sub Select {
+sub Select{
 
-	my ($table, $col, $match) = @_;
+	my ($t, $key, $c, $m, $j, $u) = @_;
 
-	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 1});
-	my $sth = $dbh->prepare("SELECT $col FROM $table WHERE $match") || die "DB-ERR: SELECT $col FROM $table WHERE $match\n";
-	$sth->execute()|| die "DB-ERR: SELECT $col FROM $table WHERE $match\n";
-	my @val = $sth->fetchrow_array;
-	$sth->finish if $sth;
-	$dbh->disconnect;
-	if($col =~ /,/ ){
-		return @val;
+	my $qry = ($c)?"SELECT $c FROM $t":"SELECT * FROM $t";
+	$qry   .= ($j and $u)?" LEFT JOIN $j USING ($u)":"";
+	$qry   .= ($m)?" WHERE $m":"";
+	&misc::Prt("SEL :> $qry; ") if $main::opt{'d'};
+
+	my $dbh = DBI->connect("DBI:mysql:$misc::dbname:$misc::dbhost", "$misc::dbuser", "$misc::dbpass", { RaiseError => 1, AutoCommit => 0});
+	my $res = "";
+	my $nre = 0;
+	if($key){
+		$res = $dbh->selectall_hashref($qry, $key);
+		$nre = scalar keys %$res;
 	}else{
-		return $val[0];
+		my $a = $dbh->selectall_arrayref($qry);
+		$nre = scalar @$a;
+		if($c !~ /[,*]/ and $nre == 1){								# dereference single values
+			$res =  $$a[0][0];
+		}else{
+			$res = $a;
+		}
 	}
+	$dbh->disconnect;
+
+	&misc::Prt(" yields $nre rows\n") if $main::opt{'d'};
+	return $res;
 }
 
 1;

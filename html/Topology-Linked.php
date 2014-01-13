@@ -1,8 +1,10 @@
-<?
+<?php
 # Program: Topology-Linked.php
 # Programmer: Remo Rickli
 
+$calendar  = 0;
 $printable = 1;
+$exportxls = 0;
 
 include_once ("inc/header.php");
 
@@ -20,29 +22,29 @@ $nvl = isset($_GET['nvl']) ? $_GET['nvl'] : "";
 $dbw = isset($_GET['dbw']) ? $_GET['dbw'] : "";
 $nbw = isset($_GET['nbw']) ? $_GET['nbw'] : "";
 $typ = isset($_GET['typ']) ? $_GET['typ'] : "";
+$lde = isset($_GET['lde']) ? $_GET['lde'] : "";
 
-$lde = "Added $now by $_SESSION[user]";
 $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if ( $add and $dv and $if and $nb and $ni){
-	$query	= GenQuery('links','i','','','',array('device','ifname','neighbor','nbrifname','bandwidth','linktype','linkdesc','nbrduplex','nbrvlanid'),'',array($dv,$if,$nb,$ni,$dbw,'STAT',$lde,$ndu,$nvl) );
+	$query	= GenQuery('links','i','','','',array('device','ifname','neighbor','nbrifname','bandwidth','linktype','linkdesc','nbrduplex','nbrvlanid','time'),'',array($dv,$if,$nb,$ni,$dbw,'STAT',$lde,$ndu,$nvl,time() ) );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Link $dv - $nb $updlbl OK</h5>";}
-	$query	= GenQuery('links','i','','','',array('device','ifname','neighbor','nbrifname','bandwidth','linktype','linkdesc','nbrduplex','nbrvlanid'),'',array($nb,$ni,$dv,$if,$nbw,'STAT',$lde,$ddu,$dvl) );
+	$query	= GenQuery('links','i','','','',array('device','ifname','neighbor','nbrifname','bandwidth','linktype','linkdesc','nbrduplex','nbrvlanid','time'),'',array($nb,$ni,$dv,$if,$nbw,'STAT',$lde,$ddu,$dvl,time() ) );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Link $nb - $dv $updlbl OK</h5>";}
 }elseif($del){
 	$query	= GenQuery('links','d','','','',array('id'),array('='),array($del) );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Link $_GET[del] $dellbl OK</h5>";}
 }
 ?>
-<h1>Link Editor</h1>
+<h1>Topology Link Editor</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" action="<?=$self?>.php" name="li">
-<table class="content" ><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<form method="get" action="<?= $self ?>.php" name="li">
+<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th valign="top"><h3>Device</h3>
 <select size="6" name="dv" onchange="this.form.submit();">
-<?
+<?php
 $dquery	= GenQuery('devices','s','*','device','',array('snmpversion'),array('!='),array('0') );
 $res	= @DbQuery($dquery,$link);
 if($res){
@@ -57,14 +59,14 @@ if($res){
 }
 ?>
 </select>
-<?
+<?php
 if ($dv) {
 	$query	= GenQuery('interfaces','s','*','ifname','',array('device'),array('='),array($dv) );
 	$res	= @DbQuery($query,$link);
 	if($res){
 ?>
 <select size="6" name="if" onchange="this.form.submit();">
-<?
+<?php
 		while( ($i = @DbFetchRow($res)) ){
 			echo "<OPTION VALUE=\"$i[1]\" ";
 			if($if == $i[1]){
@@ -73,7 +75,7 @@ if ($dv) {
 				$ddu=$i[10];
 				$dvl=$i[11];
 			}
-			echo " >$i[1]  " . substr("$i[7] $i[20]\n",0,30);
+			echo " >$i[1]  " . substr("$i[7] $i[28]\n",0,30);
 		}
 		@DbFreeResult($res);
 		echo "</select>";
@@ -83,10 +85,10 @@ if ($if) {
 ?>
 <hr>
 Duplex/Vlan
-<input type="text" name="ddu" size="4" value="<?=$ddu?>">
-<input type="text" name="dvl" size="4" value="<?=$dvl?>">
+<input type="text" name="ddu" size="4" value="<?= $ddu ?>">
+<input type="text" name="dvl" size="4" value="<?= $dvl ?>">
 <select size="1" name="dbs" onchange="document.li.dbw.value=document.li.dbs.options[document.li.dbs.selectedIndex].value">
-<option value=""><?=$bwdlbl?> ->
+<option value=""><?= $bwdlbl ?> ->
 <option value="1544000">T1
 <option value="2048000">E1
 <option value="10000000">10M
@@ -96,14 +98,14 @@ Duplex/Vlan
 <option value="10000000000">10G
 
 </select>
-<input type="text" name="dbw" size=12 value="<?=$dbw?>">
+<input type="text" name="dbw" size=12 value="<?= $dbw ?>">
 </th>
-<?
+<?php
 }
 ?>
-<th valign="top"><h3><?=$neblbl?></h3>
+<th valign="top"><h3><?= $neblbl ?></h3>
 <select size="6" name="nb" onchange="this.form.submit();">
-<?
+<?php
 $res	= @DbQuery($dquery,$link);
 if($res){
 	while( ($d = @DbFetchRow($res)) ){
@@ -117,14 +119,14 @@ if($res){
 }
 ?>
 </select>
-<?
+<?php
 if ($nb) {
 	$query	= GenQuery('interfaces','s','*','ifname','',array('device'),array('='),array($nb) );
 	$res	= @DbQuery($query,$link);
 	if($res){
 ?>
 <select size="6" name="ni" onchange="this.form.submit();">
-<?
+<?php
 		while( ($i = @DbFetchRow($res)) ){
 			echo "<OPTION VALUE=\"$i[1]\" ";
 			if($ni == $i[1]){
@@ -133,7 +135,7 @@ if ($nb) {
 				$ndu=$i[10];
 				$nvl=$i[11];
 			}
-			echo " >$i[1]  " . substr("$i[7] $i[20]\n",0,30);
+			echo " >$i[1]  " . substr("$i[7] $i[28]\n",0,30);
 		}
 		@DbFreeResult($res);
 		echo "</select>";
@@ -143,10 +145,10 @@ if ($ni) {
 ?>
 <hr>
 Duplex/Vlan
-<input type="text" name="ndu" size="4" value="<?=$ndu?>">
-<input type="text" name="nvl" size="4" value="<?=$nvl?>">
+<input type="text" name="ndu" size="4" value="<?= $ndu ?>">
+<input type="text" name="nvl" size="4" value="<?= $nvl ?>">
 <select size="1" name="nbs" onchange="document.li.nbw.value=document.li.nbs.options[document.li.nbs.selectedIndex].value">
-<option value=""><?=$bwdlbl?> ->
+<option value=""><?= $bwdlbl ?> ->
 <option value="1544000">T1
 <option value="2048000">E1
 <option value="10000000">10M
@@ -154,43 +156,44 @@ Duplex/Vlan
 <option value="1000000000">1G
 <option value="10000000000">10G
 </select>
-<input type="text" name="nbw" size="12" value="<?=$nbw?>">
-<?
+<input type="text" name="nbw" size="12" value="<?= $nbw ?>"><br>
+<?= $deslbl ?> <input type="text" name="lde" size="40" value="<?= $lde ?>">
+<?php
 }
 ?>
 </th>
 <th width="80">
 <select size="1" name="typ" onchange="this.form.submit();">
-<option value=""><?=$sholbl?> ->
+<option value=""><?= $sholbl ?> ->
 <option value="STAT">Static
 <option value="LLDP">LLDP
 <option value="CDP">CDP
 <option value="FDP">FDP
 <option value="NDP">NDP
-<option value="ISO"><?=$isolbl?>
+<option value="ISO"><?= $isolbl ?>
 </select>
 <p>
-<input type="submit" name="add" value="<?=$addlbl?>">
+<input type="submit" name="add" value="<?= $addlbl ?>">
 </th>
 </tr></table></form><p>
-<?
+<?php
 }
 if ($dv or $typ){
 ?>
-<h2><?=($typ)?$typ:$dv?> - Links</h2>
-<table class="content" ><tr class="<?=$modgroup[$self]?>2">
+<h2><?= ($typ)?$typ:$dv ?> - Links</h2>
+<table class="content" ><tr class="<?= $modgroup[$self] ?>2">
 <th><img src="img/16/dev.png"><br>Device</th>
 <th><img src="img/16/port.png"><br>Interface</th>
-<th><img src="img/16/abc.png" title="D=Discovery Protocol,O=Oui,V=VoIP,S=static"><br><?=$typlbl?></th>
-<th><img src="img/16/tap.png"><br><?=$bwdlbl?></th>
-<th><img src="img/16/dev.png"><br><?=$neblbl?></th>
+<th><img src="img/16/abc.png" title="D=Discovery Protocol,O=Oui,V=VoIP,S=static"><br><?= $typlbl ?></th>
+<th><img src="img/16/tap.png"><br><?= $bwdlbl ?></th>
+<th><img src="img/16/dev.png"><br><?= $neblbl ?></th>
 <th><img src="img/16/port.png"><br>Interface</th>
-<th><img src="img/16/say.png"><br><?=$cmtlbl?></th>
-<th width="80"><img src="img/16/cog.png"><br><?=$cmdlbl?></th></tr>
+<th><img src="img/16/say.png"><br><?= $cmtlbl ?></th>
+<th width="80"><img src="img/16/cog.png"><br><?= $cmdlbl ?></th>
 </tr>
-<?
+<?php
 	if ($typ == "ISO"){
-		$query	= GenQuery('links','s','links.*','ifname','',array('devices.device'),array('COL IS'),array('NULL'),'','LEFT JOIN devices USING (device)');
+		$query	= GenQuery('links','s','links.*','ifname','',array('devices.device'),array('COL IS'),array('NULL'),array(),'LEFT JOIN devices USING (device)');
 	}elseif ($typ){
 		$query	= GenQuery('links','s','*','ifname','',array('linktype'),array('='),array($typ));
 	}else{
@@ -205,14 +208,14 @@ if ($dv or $typ){
 			$un = rawurlencode($l[3]);
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
-			echo "<td><a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>\n";
-			echo " <a href=?dv=$ud>$l[1]</a></td><td>$l[2]</td>\n";
+			TblRow($bg);
+			TblCell($l[1],"?dv=$ud","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
+			echo "<td>$l[2]</td>\n";
 			echo "<th>$l[6]</th>\n";
 			echo "<td align=right>" . DecFix($l[5]) . "</td>\n";
-			echo "<td><a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a>\n";
-			echo " <a href=?dv=$un>$l[3]</a></td><td>$l[4] (Vlan$l[9] $l[8])</td><td>$l[7]</td>\n";
-			echo "<th><a href=?del=$l[0]&dv=$ud><img src=\"img/16/bcnl.png\" onclick=\"return confirm('Link $l[0] $dellbl?');\" title=\"$l[0] $dellbl\"></a></th></tr>\n";
+			TblCell($l[3],"?dv=$un","nowrap","<a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a>");
+			echo "<td>$l[4] (Vlan$l[9] $l[8])</td><td>$l[7]</td>\n";
+			echo "<th><a href=\"?del=$l[0]&dv=$ud\"><img src=\"img/16/bcnl.png\" onclick=\"return confirm('Link $l[0] $dellbl?');\" title=\"$l[0] $dellbl\"></a></th></tr>\n";
 			$nli++;
 		}
 		@DbFreeResult($res);
@@ -222,9 +225,9 @@ if ($dv or $typ){
 	?>
 </table>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Links</td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Links</td></tr>
 </table>
-	<?
+	<?php
 }
 include_once ("inc/footer.php");
 ?>

@@ -1,19 +1,25 @@
-<?
+<?php
 # Program: System-Services.php
 # Programmer: Remo Rickli
 
 $printable = 1;
+$exportxls = 1;
 
 include_once ("inc/header.php");
 
 $mysrv['Moni']['cmd'] = "$nedipath/moni.pl -D";
 $mysrv['Moni']['ico'] = "bino";
 
+if( array_key_exists('Master', $mod['Monitoring']) ){
+	$mysrv['Master']['cmd'] = "$nedipath/master.pl -D";
+	$mysrv['Master']['ico'] = "hat3";
+}
+
 $mysrv['Syslog']['cmd'] = "$nedipath/syslog.pl -Dp 1514";
 $mysrv['Syslog']['ico'] = "bell";
 
 $mysrv['Trap']['cmd'] = "snmptrapd -c /etc/snmp/snmptrapd.conf 1162";
-$mysrv['Trap']['ico'] = "flag";
+$mysrv['Trap']['ico'] = "warn";
 
 $mysrv['Radius']['cmd'] = "/usr/local/sbin/radiusd";
 $mysrv['Radius']['ico'] = "key";
@@ -72,9 +78,9 @@ if($start and $isadmin){
 		echo "<h4>$stop not running!</h4>";
 	}
 }elseif($clear and $isadmin){
-	$query	= GenQuery('system','u',"name=\"threads\"",'','',array('value'),'',array('0') );
+	$query	= GenQuery('system','u','name','=','threads',array('value'),array(),array('0') );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl threads OK</h5>";}
-	$query	= GenQuery('system','u',"name=\"nodlock\"",'','',array('value'),'',array('0') );
+	$query	= GenQuery('system','u','name','=','nodlock',array('value'),array(),array('0') );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$reslbl nodlock OK</h5>";}
 
 	if( $pid = GetPID('nedi.pl') ){
@@ -100,30 +106,30 @@ while( $s = @DbFetchRow($res) ){
 
 ob_end_flush();
 ?>
-<h1>NeDi <?=$srvlbl?></h1>
+<h1>NeDi <?= $srvlbl ?></h1>
 <p>
-<form name="form" action="<?=$self?>.php" method="post">
+<form name="form" action="<?= $self ?>.php" method="post">
 <table class="content">
-<tr class="<?=$modgroup[$self]?>1">
-<th width="50" class="<?=$modgroup[$self]?>1"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
+<tr class="<?= $modgroup[$self] ?>1">
+<th width="50" class="<?= $modgroup[$self] ?>1"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
-<?foreach (array_keys($mysrv) as $p ){?>
-<th><img src="img/32/<?=$mysrv[$p]['ico']?>.png" title="<?=$p?>"><p>
-<a href="<?=( GetPID($mysrv[$p]['cmd']) )?"?stop=$p\"><img src=\"img/32/walk.png\" title=\"$endlbl\">":"?start=$p\"><img src=\"img/32/bcls.png\" title=\"$cmdlbl\">"?></a>
+<?php  foreach (array_keys($mysrv) as $p ) { ?>
+<th><img src="img/32/<?= $mysrv[$p]['ico'] ?>.png" title="<?= $p ?>"><p>
+<a href="<?= ( GetPID($mysrv[$p]['cmd']) )?"?stop=$p\"><img src=\"img/32/walk.png\" title=\"$endlbl\">":"?start=$p\"><img src=\"img/32/bcls.png\" title=\"$cmdlbl\">" ?></a>
 </th>
 <?}?>
 
 <th><img src="img/32/radr.png" title="NeDi"><p>
-<?=$sys['threads']?"<img src=\"img/32/walk.png\" ":"<img src=\"img/32/bcls.png\" "?> title="<?=$sys['threads']?> threads, 1st:<?=(date($datfmt,$sys['first']))?>">
-<?
+<?= $sys['threads']?"<img src=\"img/32/walk.png\" ":"<img src=\"img/32/bcls.png\" " ?> title="<?= $sys['threads'] ?> threads, 1st:<?= (date($datfmt,$sys['first'])) ?>">
+<?php
 if ($sys['nodlock']){
-	echo "<img src=\"img/32/lokc.png\" title=\" Nodes Locked on ".date($datfmt,$sys['nodlock'])."\">";
+	echo "<img src=\"img/32/lokc.png\" title=\"Nodes locked by PID $sys[nodlock]\">";
 }else{
-	echo "<img src=\"img/32/loko.png\" title=\"Nodes Unlocked\">";
+	echo "<img src=\"img/32/loko.png\" title=\"Nodes unlocked\">";
 }
 if ($sys['threads'] and $isadmin){
 ?>
-<a href="?clear=1"><img src="img/16/bcnl.png" align="right" onclick="return confirm('<?=$reslbl?>, <?=$cfmmsg?>?')" title="<?=$reslbl?>!"></a>
+<a href="?clear=1"><img src="img/16/bcnl.png" align="right" onclick="return confirm('<?= $reslbl ?>, <?= $cfmmsg ?>?')" title="<?= $reslbl ?>!"></a>
 <?}?>
 </th>
 </tr>
@@ -131,13 +137,13 @@ if ($sys['threads'] and $isadmin){
 
 <h2>Processes</h2>
 <div class="textpad code txta">
-<?=$procs?>
+<?= $procs ?>
 </div>
 <br><p>
 
-<h2><?=$lodlbl?></h2>
+<h2><?= $lodlbl ?></h2>
 <div class="textpad code txta">
-<?
+<?php
 	if(PHP_OS == "OpenBSD"){
 		system("/usr/bin/top -d1");
 	}elseif(PHP_OS == "Linux"){
@@ -151,7 +157,7 @@ if ($sys['threads'] and $isadmin){
 
 <h2>Disks</h2>
 <div class="textpad code txta">
-<?
+<?php
 	if(preg_match("/OpenBSD|Linux/",PHP_OS) ){
 		system("df -h");
 	}elseif( strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ){
@@ -161,9 +167,9 @@ if ($sys['threads'] and $isadmin){
 </div>
 <br><p>
 
-<h2><?=$netlbl?></h2>
+<h2><?= $netlbl ?></h2>
 <div class="textpad code txta">
-<?
+<?php
 	if(PHP_OS == "OpenBSD"){
 		system("/usr/bin/systat -b netstat");
 	}elseif(PHP_OS == "Linux"){
@@ -177,7 +183,7 @@ if ($sys['threads'] and $isadmin){
 
 <h2>Sensors</h2>
 <div class="textpad code txta">
-<?
+<?php
 	if(PHP_OS == "OpenBSD"){
 		system("/usr/bin/systat -b sensors");
 	}elseif(PHP_OS == "Linux"){
@@ -187,9 +193,9 @@ if ($sys['threads'] and $isadmin){
 </div>
 <br><p>
 
-<h2>SMS <?=$oublbl?></h2>
+<h2>SMS <?= $oublbl ?></h2>
 <div class="textpad code txta">
-<?
+<?php
 	if(PHP_OS == "OpenBSD"){
 		system("cat /var/spool/sms/outgoing/*");
 	}
@@ -197,6 +203,6 @@ if ($sys['threads'] and $isadmin){
 </div>
 
 <br><p>
-<?
+<?php
 include_once ("inc/footer.php");
 ?>

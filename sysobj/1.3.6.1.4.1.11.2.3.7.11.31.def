@@ -2,21 +2,24 @@
 
 # General
 SNMPv	2HC
-Type	HP-2824
+Type	HP2824
 OS	ProCurve
 Icon	w3gn
+Size	1
 Bridge	normal
+ArpND	old
 Dispro	LLDP
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
 Bimage	1.3.6.1.4.1.11.2.14.11.5.1.1.3.0
 
 # Vlan Specific
 VLnams	1.3.6.1.2.1.17.7.1.4.3.1.1
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3

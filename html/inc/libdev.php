@@ -35,17 +35,53 @@ function Syssrv($sv){
 }
 
 //===================================================================
-// Return VTP mode
-function VTPmod($vn){
+// Return Physical Class
+function ModClass($cl){
 
-	global $errlbl, $nonlbl;
+	global $mlvl, $nonlbl, $stco;
 
-	if 	($vn == 1)	{return "Client"; }
-	elseif	($vn == 2)	{return "Server"; }
-	elseif	($vn == 3)	{return "Transparent"; }
-	elseif	($vn == 4)	{return "Off"; }
-	elseif	($vn == 9)	{return "$errlbl"; }
-	else			{return "$nonlbl"; }
+	if 	($cl == 1) {return array($mlvl['10'],"ugrp");}
+	elseif	($cl == 2) {return array($stco['250'],"bbox");}
+	elseif	($cl == 3) {return array("Chassis","dev");}
+	elseif	($cl == 4) {return array("Backplane","cinf");}
+	elseif	($cl == 5) {return array("Container","pkg");}
+	elseif	($cl == 6) {return array("Power Supply","flas");}
+	elseif	($cl == 7) {return array("Fan","fan");}
+	elseif	($cl == 8) {return array("Sensor","radr");}
+	elseif	($cl == 9) {return array("Module","pcm");}
+	elseif	($cl == 10){return array("Port","port");}
+	elseif	($cl == 11){return array("Stack","db");}
+	elseif	($cl == 12){return array("CPU","cpu");}
+
+	elseif	($cl == 30){return array("Printsupply","file");}
+	elseif	($cl == 40){return array("Virtual Machine","node");}
+	elseif	($cl == 50){return array("Controlled AP","wlan");}
+	elseif	($cl == 60){return array("Server","nhdd");}
+
+	else	{return array("?","find");}
+}
+
+//===================================================================
+// Return Device mode (VTP mode for Cisco switches)
+function DevMode($m){
+
+	global $errlbl, $notlbl;
+
+	if 	($m == 0)	{ return "-"; }
+	elseif	($m == 1)	{ return "Client"; }
+	elseif	($m == 2)	{ return "Server"; }
+	elseif	($m == 3)	{ return "Transparent"; }
+	elseif	($m == 4)	{ return "Off"; }
+	elseif	($m == 9)	{ return $errlbl; }
+	elseif 	($m == 10)	{ return "$notlbl SNMP"; }
+	elseif	($m == 11)	{ return "VoIP Phone"; }
+	elseif	($m == 12)	{ return "VoIP Box"; }
+	elseif	($m == 15)	{ return "Wlan AP"; }
+	elseif	($m == 16)	{ return "Controlled AP"; }
+	elseif	($m == 17)	{ return "Wlan Bridge"; }
+	elseif	($m == 18)	{ return "Virtual Bridge"; }
+	elseif	($m == 99)	{ return $errlbl; }
+	else			{ return $m; }
 }
 
 //===================================================================
@@ -65,19 +101,21 @@ function CtyImg($nd){
 
 //===================================================================
 // Returns link for CLI access based on IP and port
-function DevCli($ip,$p){
+function DevCli($ip,$p,$t=0){
 
-	global $noiplink;
+	global $nipl;
 
-	if(!$ip or $ip == "0.0.0.0" or !$p or $noiplink){
-		return "$ip";
+	if(!$ip or $ip == "0.0.0.0" or !$p or $nipl){
+		if($t != 2){
+			return "$ip";
+		}
 	}else{
 		if($p == 22){
-			return "<a href=\"ssh://$ip\">$ip</a>";
+			return "<a href=\"ssh://$ip\">".(($t)?"<img src=\"img/16/lokc.png\"  title=\"SSH $ip\">":$ip)."</a>";
 		}elseif($p == 23){
-			return "<a href=\"telnet://$ip\">$ip</a>";
+			return "<a href=\"telnet://$ip\">".(($t)?"<img src=\"img/16/loko.png\" title=\"Telnet  $ip\">":$ip)."</a>";
 		}else{
-			return "<a href=\"telnet://$ip:$p\">$ip</a>";
+			return "<a href=\"telnet://$ip:$p\">".(($t)?"<img src=\"img/16/loko.png\" title=\"Telnet $ip Port $p\">":$ip)."</a>";
 		}
 	}
 }
@@ -155,40 +193,23 @@ function Iftype($it){
 
 //===================================================================
 // Return IF status from DB value:
-// 128=adm just went down , 8=opr skipped, 4=adm skipped, 2=opr up, 1=adm up
+// bit2=oper stat, bit1=admin stat
 function Ifdbstat($s){
 
-	if($s == 12){
-			return array("","Link ?/Admin ?");
-	}elseif($s & 8){
-		if($s & 1){
-			return array("noti","Link ?/Admin up");
-		}else{
-			return array("alrm","Link ?/Admin down");
-		}
-	}elseif($s & 4){
-		if($s & 2){
-			return array("good","Link up/Admin ?");
-		}else{
-			return array("alrm","Link down/Admin ?");
-		}
+	if(($s & 3) == 3){									# & 3 in case more values will be added to status field
+		return array("good","Link up/Admin up");
+	}elseif($s & 1){
+		return array("warn","Link down/Admin up");
+	}elseif($s & 2){
+		return array("noti","Link up/Admin down?");
 	}else{
-		if(($s & 3) == 3){
-			return array("good","Link up/Admin up");
-		}elseif($s & 1){
-			return array("warn","Link down/Admin up");
-		}elseif($s & 2){
-			return array("crit","Link up/Admin down?");
-		}else{
-			return array("alrm","Link down/Admin down");
-		}
-
+		return array("alrm","Link down/Admin down");
 	}
 }
 
 //===================================================================
 // Generate location string for DB query
-function TopoLoc($reg="",$cty="",$bld=""){
+function TopoLoc($reg="",$cty="",$bld="",$flr="",$rom=""){
 
 	global $locsep;
 
@@ -199,6 +220,8 @@ function TopoLoc($reg="",$cty="",$bld=""){
 		$l  = "^$reg$locsep";								# Start at region level
 		$l .= ($cty)?"$cty$locsep":"";							# Append city if set
 		$l .= ($bld)?"$bld$locsep":"";							# Append building if set
+		$l .= ($flr)?"$flr$locsep":"";							# Append floor if set
+		$l .= ($rom)?"$rom$locsep":"";							# Append room if set
 	}
 	return $l;
 }
@@ -206,15 +229,16 @@ function TopoLoc($reg="",$cty="",$bld=""){
 //===================================================================
 // Find best map using a nice recursive function
 function TopoMap($reg="",$cty=""){
+
 	if($reg){
 		if($cty){
-			if (file_exists("log/map-$reg-$cty.png")) {
+			if (file_exists("map/map-$reg-$cty.png")) {
 				return "map-$reg-$cty.png";
 			}else{
 				return TopoMap($reg);
 			}
 		}else{
-			if (file_exists("log/map-$reg.png")) {
+			if (file_exists("map/map-$reg.png")) {
 				return "map-$reg.png";
 			}
 		}
@@ -231,7 +255,7 @@ function Devshape($ico="xxan"){
 	$shd = substr($ico,3,1);
 
 	if($shd == "d"){
-		$siz = 24;
+		$siz = 16;
 	}elseif($shd == "n"){
 		$siz = 12;
 	}elseif($shd == "p"){
@@ -240,14 +264,12 @@ function Devshape($ico="xxan"){
 		$siz = 8;
 	}
 
-	if($typ == "c"){
+	if($typ == "c" or $typ == "w"){
 		$shp = 'square';
 	}elseif($typ == "r"){
 		$shp = 'circle';
-	}elseif($typ == "w"){
-		$shp = 'triangle';
 	}else{
-		$shp = 'star';
+		$shp = 'triangle';
 	}
 
 	if($col == "b"){
@@ -268,8 +290,26 @@ function Devshape($ico="xxan"){
 }
 
 //===================================================================
+// Show a device panel TODO consider returning a dynamic stack-image?
+function DevPanel($t,$i){
+
+	if( file_exists("img/panel/$t.jpg") ){
+		return "img/panel/$t.jpg";
+	}elseif( preg_match('/^wa/',$i) ){
+		return "img/panel/otherap.jpg";
+	}elseif( preg_match('/^ph/',$i) ){
+		return "img/panel/otherphon.jpg";
+	}elseif( preg_match('/^(wc|cs|vm|vp)/',$i) ){
+		return "img/panel/HPMSM760.jpg";
+	}else{
+		return "img/panel/other.jpg";
+	}
+}
+
+//===================================================================
 // Show a configuration
 function Shoconf($l,$smo,$lnr){
+
 	if($smo)
 		$l = preg_replace("/(\^)([\w])$/","$1",$l);
 	if( preg_match("/^\s*([!#;])|description/",$l) )
@@ -280,13 +320,13 @@ function Shoconf($l,$smo,$lnr){
 		$l = "<span class='red'>$l</span>";
 	elseif( preg_match("/user|login|password|inspect|network-object|port-object/i",$l) )
 		$l = "<span class='prp'>$l</span>";
-	elseif( preg_match("/^\s*(service|snmp|telnet|ssh|logging|boot|ntp|clock|http)/i",$l) )
+	elseif( preg_match("/^\s*(service|snmp|telnet|ssh|logging|boot|ntp|clock|http)| log /i",$l) )
 		$l = "<span class='mrn'>$l</span>";
 	elseif( preg_match("/root|cost|spanning-tree|stp|failover/i",$l) )
 		$l = "<span class='grn'>$l</span>";
 	elseif( preg_match("/passive-interface|default-gateway|redistribute|bgp/i",$l) )
 		$l = "<span class='olv'>$l</span>";
-	elseif( preg_match("/network|ip cef|neighbor|route/i",$l) )
+	elseif( preg_match("/network|ip cef|neighbor|route|lldp/i",$l) )
 		$l = "<span class='blu'>$l</span>";
 	elseif( preg_match("/interface|vlan|line|\Wport/i",$l) )
 		$l = "<span class='sbu'>$l</span>";
@@ -295,9 +335,11 @@ function Shoconf($l,$smo,$lnr){
 	elseif( preg_match("/^ standby.*|trunk|channel|access/i",$l) )
 		$l = "<span class='sna'>$l</span>";
 	elseif( preg_match("/^\s?aaa|radius|authentication|policy|crypto/i",$l) )
-		$l = "<span class='sbu'>$l</span>";
-	elseif( preg_match("/capabilities|vrf|mpls|vpn/i",$l) )
 		$l = "<span class='drd'>$l</span>";
+	elseif( preg_match("/ (mld|igmp|pim) /i",$l) )
+		$l = "<span class='olv'>$l</span>";
+	elseif( preg_match("/capabilities|vrf|mpls|vpn/i",$l) )
+		$l = "<span class='sbu'>$l</span>";
 	if($lnr)
 		return sprintf("<span class='txtb'>%3d</span>",$lnr) . " $l<br>";
 	else
@@ -308,40 +350,77 @@ function Shoconf($l,$smo,$lnr){
 // Return Printer Supply Type
 function PrintSupply($t){
 
-	if 	($t == 1)	{return "<img src=\"img/16/paint.png\" title=\"other\">";}
-	elseif	($t == 2)	{return "<img src=\"img/16/paint.png\" title=\"unknown\">";}
-	elseif	($t == 3)	{return "<img src=\"img/16/paint.png\" title=\"toner\">";}
+	if 	($t == 1)	{return "<img src=\"img/16/ugrp.png\" title=\"other\">";}
+	elseif	($t == 2)	{return "<img src=\"img/16/bbox.png\" title=\"unknown\">";}
+	elseif	($t == 3)	{return "<img src=\"img/16/pcm.png\" title=\"toner\">";}
 	elseif	($t == 4)	{return "<img src=\"img/16/bdis.png\" title=\"wasteToner\">";}
-	elseif	($t == 5)	{return "<img src=\"img/16/hlth.png\" title=\"ink\">";}
-	elseif	($t == 6)	{return "<img src=\"img/16/pcm.png\" title=\"inkCartridge\">";}
-	elseif	($t == 7)	{return "<img src=\"img/16/pcm.png\" title=\"inkRibbon\">";}
+	elseif	($t == 5)	{return "<img src=\"img/16/mark.png\" title=\"ink\">";}
+	elseif	($t == 6)	{return "<img src=\"img/16/mark.png\" title=\"inkCartridge\">";}
+	elseif	($t == 7)	{return "<img src=\"img/16/mark.png\" title=\"inkRibbon\">";}
 	elseif	($t == 8)	{return "<img src=\"img/16/bdis.png\" title=\"wasteInk\">";}
-	elseif	($t == 9)	{return "opc";}
-	elseif	($t == 10)	{return "<img src=\"img/16/geom.png\" title=\"developer\">";}
-	elseif	($t == 11)	{return "<img src=\"img/16/tap.png\" title=\"fuserOil\">";}
-	elseif	($t == 12)	{return "solidWax";}
-	elseif	($t == 13)	{return "<img src=\"img/16/pcm.png\" title=\"ribbonWax\">";}
+	elseif	($t == 9)	{return "<img src=\"img/16/bbox.png\" title=\"opc\">";}
+	elseif	($t == 10)	{return "<img src=\"img/16/foto.png\" title=\"developer\">";}
+	elseif	($t == 11)	{return "<img src=\"img/16/bomb.png\" title=\"fuserOil\">";}
+	elseif	($t == 12)	{return "<img src=\"img/16/3d.png\" title=\"solidWax\">";}
+	elseif	($t == 13)	{return "<img src=\"img/16/3d.png\" title=\"ribbonWax\">";}
 	elseif	($t == 14)	{return "<img src=\"img/16/bdis.png\" title=\"wasteWax\">";}
-	elseif	($t == 15)	{return "<img src=\"img/16/tap.png\" title=\"fuser\">";}
-	elseif	($t == 16)	{return "coronaWire";}
-	elseif	($t == 17)	{return "fuserOilWick";}
-	elseif	($t == 18)	{return "cleanerUnit";}
-	elseif	($t == 19)	{return "transferUnit";}
+	elseif	($t == 15)	{return "<img src=\"img/16/bomb.png\" title=\"fuser\">";}
+	elseif	($t == 16)	{return "<img src=\"img/16/clip.png\" title=\"coronaWire\">";}
+	elseif	($t == 17)	{return "<img src=\"img/16/bomb.png\" title=\"fuserOilWick\">";}
+	elseif	($t == 18)	{return "<img src=\"img/16/tap.png\" title=\"cleanerUnit\">";}
+	elseif	($t == 19)	{return "<img src=\"img/16/bbr2.png\" title=\"transferUnit\">";}
 	elseif	($t == 20)	{return "<img src=\"img/16/pcm.png\" title=\"tonerCartridge\">";}
 	elseif	($t == 21)	{return "<img src=\"img/16/pcm.png\" title=\"tonerCartridge\">";}
-	elseif	($t == 22)	{return "<img src=\"img/16/tap.png\" title=\"fuserOiler\">";}
-	elseif	($t == 23)	{return "<img src=\"img/16/tap.png\" title=\"water\">";}
+	elseif	($t == 22)	{return "<img src=\"img/16/bomb.png\" title=\"fuserOiler\">";}
+	elseif	($t == 23)	{return "<img src=\"img/16/drop.png\" title=\"water\">";}
 	elseif	($t == 24)	{return "<img src=\"img/16/bdis.png\" title=\"wasteWater\">";}
 	elseif	($t == 25)	{return "<img src=\"img/16/tap.png\" title=\"glueWaterAdditive\">";}
-	elseif	($t == 26)	{return "<img src=\"img/16/bcnl.png\" title=\"wastePaper\">";}
+	elseif	($t == 26)	{return "<img src=\"img/16/bdis.png\" title=\"wastePaper\">";}
 	elseif	($t == 27)	{return "<img src=\"img/16/clip.png\" title=\"bindingSupply\">";}
 	elseif	($t == 28)	{return "<img src=\"img/16/clip.png\" title=\"bandingSupply\">";}
 	elseif	($t == 29)	{return "<img src=\"img/16/clip.png\" title=\"stitchingWire\">";}
-	elseif	($t == 30)	{return "<img src=\"img/16/news.png\" title=\"shrinkWrap\">";}
-	elseif	($t == 31)	{return "<img src=\"img/16/news.png\" title=\"paperWrap\">";}
+	elseif	($t == 30)	{return "<img src=\"img/16/pkg.png\" title=\"shrinkWrap\">";}
+	elseif	($t == 31)	{return "<img src=\"img/16/pkg.png\" title=\"paperWrap\">";}
 	elseif	($t == 32)	{return "<img src=\"img/16/clip.png\" title=\"staples\">";}
 	elseif	($t == 33)	{return "<img src=\"img/16/icon.png\" title=\"inserts\">";}
 	elseif	($t == 34)	{return "<img src=\"img/16/fobl.png\" title=\"covers\">";}
 	else			{return "-";}
 }
+
+//===================================================================
+// Print IF RDD graphs and provide appropriate links
+// Tiny graphs don't show y-axis, thus scale traffic to bw and bcast to 100
+// Err and discards are bad enough to show any of them...
+// If graphs are disabled in User-Profile, they're not drawn at all
+function IfGraphs($ud,$ui,$opt,$sz){
+
+	global $trflbl,$errlbl,$stalbl, $inblbl, $maxlbl;
+	
+	if($_SESSION['gsiz']){
+?>
+<a href="Devices-Graph.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&it%5B%5D=t">
+<img src="inc/drawrrd.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&s=<?= $sz ?>&t=trf&o=<?= $opt ?>" title="<?= $trflbl ?> <?= ($sz == 1)?" $maxlbl ".DecFix($opt):"" ?>">
+</a>
+
+<a href="Devices-Graph.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&it%5B%5D=e">
+<img src="inc/drawrrd.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&s=<?= $sz ?>&t=err&o=1" title="<?= $errlbl ?>">
+</a>
+
+<a href="Devices-Graph.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&it%5B%5D=d">
+<img src="inc/drawrrd.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&s=<?= $sz ?>&t=dsc" title="Discards">
+</a>
+
+<a href="Devices-Graph.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&it%5B%5D=b">
+<img src="inc/drawrrd.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&s=<?= $sz ?>&t=brc&o=100"title="Broadcast <?=$inblbl?> <?= ($sz == 1)?" $maxlbl 100":"" ?>">
+</a>
+
+<a href="Devices-Graph.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&it%5B%5D=s">
+<img src="inc/drawrrd.php?dv=<?= $ud ?>&if%5B%5D=<?= $ui ?>&s=<?= $sz ?>&t=sta"title="<?= $stalbl ?>">
+</a>
+<?PHP
+	}else{
+		echo "---";
+	}
+}
+
 ?>

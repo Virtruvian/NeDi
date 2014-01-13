@@ -18,7 +18,6 @@ use vars qw($lwpok);
 
 eval 'use LWP::UserAgent;';
 if ($@){
-	$lwpok = 0;
 	&misc::Prt("LWP :Not available\n");
 }else{
 	$lwpok = 1;

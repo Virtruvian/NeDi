@@ -5,18 +5,21 @@ SNMPv	2HC
 Type	2526T-PWR
 OS	Nortel
 Icon	w3on
+Size	1
 Bridge	normal
+ArpND	old
 Dispro	LLDP
 Serial	1.3.6.1.4.1.45.1.6.3.1.6.0
 Bimage	1.3.6.1.4.1.45.1.6.3.1.5.0
 
 # Vlan Specific
 VLnams	1.3.6.1.4.1.2272.1.3.2.1.2
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3

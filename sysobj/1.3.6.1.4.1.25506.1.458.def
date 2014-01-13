@@ -2,12 +2,14 @@
 
 # General
 SNMPv	2HC
-Type	HP-WX3010
+Type	HPWX3010
 Typoid	
 Sysdes	
 OS	other
 Icon	csgn
+Size	1
 Bridge	
+ArpND	old
 Dispro	
 Serial	
 Bimage	
@@ -15,11 +17,12 @@ Bimage
 # Vlan Specific
 VLnams	1.3.6.1.4.1.25506.2.75.2.1.7.1.2
 VLnamx	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.9

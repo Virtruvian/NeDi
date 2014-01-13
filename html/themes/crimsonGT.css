@@ -56,17 +56,37 @@ h3   {
 }
 
 h4   {
-	color: #ff8800;
+	color: #ffaa88;
 	font-size: 12px;
 	font-weight: bold;
 	text-align: center;
+	width: 200px;
+	border: 1px solid #ffaa88;
+	margin-left: auto;
+  	margin-right: auto;
+	padding: 3px;
+	background-color: #663300;
+	border-radius: 1em;
+	-moz-border-radius: 1em;
+	-webkit-border-radius: 1em;
+	-khtml-border-radius: 1em;
 }
 
 h5   {
-	color: #88ff88;
+	color: #aaff88;
 	font-size: 12px;
 	font-weight: bold;
 	text-align: center;
+	width: 200px;
+	border: 1px solid #aaff88;
+	margin-left: auto;
+  	margin-right: auto;
+	padding: 3px;
+	background-color: #336600;
+	border-radius: 1em;
+	-moz-border-radius: 1em;
+	-webkit-border-radius: 1em;
+	-khtml-border-radius: 1em;
 }
 
 /* Input Fields */

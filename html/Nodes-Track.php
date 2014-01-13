@@ -1,4 +1,4 @@
-<?
+<?php
 # Program: Nodes-Track.php
 # Programmer: Remo Rickli
 
@@ -8,6 +8,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 $calendar  = 1;
 $printable = 1;
+$exportxls = 0;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
@@ -26,11 +27,11 @@ $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
-	if($_SESSION['olic']){$_SESSION['ntrcol'] = $col;}
+	if($_SESSION['opt']){$_SESSION['ntrcol'] = $col;}
 }elseif( isset($_SESSION['ntrcol']) ){
 	$col = $_SESSION['ntrcol'];
 }else{
-	$col = array('nodetrack.device','nodetrack.ifname','value','source','alias','name');
+	$col = array('tgtNS','nodetrack.device','nodetrack.ifname','value','source','alias','name');
 }
 
 $del = isset($_GET['del']) ? $_GET['del'] : "";
@@ -40,7 +41,8 @@ $ifn = isset($_GET['ifn']) ? $_GET['ifn'] : "";
 $val = isset($_GET['val']) ? $_GET['val'] : "";
 $src = isset($_GET['src']) ? $_GET['src'] : "";
 
-$cols = array(	"nodetrack.device"=>"Device",
+$cols = array(	"tgtNS"=>"$tgtlbl",
+		"nodetrack.device"=>"Device",
 		"nodetrack.ifname"=>"IF $namlbl",
 		"value"=>"$vallbl",
 		"source"=>$srclbl,
@@ -51,75 +53,79 @@ $cols = array(	"nodetrack.device"=>"Device",
 		"nodes.vlanid"=>"Vlan",
 		"oui"=>"OUI $venlbl",
 		"user"=>$usrlbl,
-		"time"=>$timlbl
+		"time"=>$timlbl,
+		"cfgNS"=>"$cfglbl"
 		);
 
 ?>
 <h1>Node Tracker</h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) ) { ?>
 
-<form method="get" action="<?=$self?>.php" name="track">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
+<form method="get" action="<?= $self ?>.php" name="track">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50">
-<a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a>
+<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
 
 </th>
-<th valign="top"><?=$cndlbl?> A<p>
+<th valign="top"><?= $cndlbl ?> A<p>
 <select size="1" name="ina">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+	if( !preg_match('/(BL|IG|NS)$/',$k) ){
+		echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
+	}
 }
 ?>
 </select>
 <select size="1" name="opa">
-<? selectbox("oper",$opa);?>
+<?php selectbox("oper",$opa) ?>
 </select>
 <p><a href="javascript:show_calendar('track.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?=$sta?>" size="20">
+<input type="text" name="sta" value="<?= $sta ?>" size="20">
 </th>
-<th valign="top"><?=$cmblbl?><p>
+<th valign="top"><?= $cmblbl ?><p>
 <select size="1" name="cop">
-<? selectbox("comop",$cop);?>
+<?php selectbox("comop",$cop) ?>
 </select>
 </th>
-<th valign="top"><?=$cndlbl?> B<p>
+<th valign="top"><?= $cndlbl ?> B<p>
 <select size="1" name="inb">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($inb == $k)?"selected":"").">$v\n";
+	if( !preg_match('/(BL|IG|NS)$/',$k) ){
+		echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
+	}
 }
 ?>
 </select>
 <select size="1" name="opb">
-<? selectbox("oper",$opb);?>
+<?php selectbox("oper",$opb) ?>
 </select>
 <p><a href="javascript:show_calendar('track.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?=$stb?>" size="20">
+<input type="text" name="stb" value="<?= $stb ?>" size="20">
 </th>
  
- <th valign="top"><?=$dislbl?><p>
+ <th valign="top"><?= $dislbl ?><p>
 <select multiple name="col[]" size="4">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".((in_array($k,$col))?"selected":"").">$v\n";
+       echo "<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
 }
 ?>
-<option value="cfg" <?=(in_array("cfg",$col))?"selected":""?> ><?=$cfglbl?>
 </select>
 </th>
 
 </th>
 <th width="80">
 
-<input type="submit" value="<?=$sholbl?>">
+<input type="submit" value="<?= $sholbl ?>">
 <p>
-<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('Tracker <?=$dellbl?>?')" >
+<input type="submit" name="del" value="<?= $dellbl ?>" onclick="return confirm('Tracker <?= $dellbl ?>?')" >
 
 </th>
 </tr></table></form><p>
-<?
+<?php
 }
 $link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if($del){
@@ -132,22 +138,11 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 
 ?>
 
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th width="20"></th>
-<?
-	foreach($col as $h){
-		if($h != 'cfg'){
-			ColHead($h);
-		}
-	}
-	$shocol = $col;
-	if( in_array("cfg",$col) )	{
-		echo "<th>$cfglbl</th>";
-		array_pop($shocol);
-	}
+<?php
+	TblHead("$modgroup[$self]2",1);
 ?>
 </tr>
-<?
+<?php
 	$query	= GenQuery('nodetrack','s','nodetrack.device as device,nodetrack.ifname as ifname,value,source,alias,comment,name,nodes.mac as mac,oui,nodes.vlanid as vlanid,user,time',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop), 'JOIN interfaces USING (device,ifname) LEFT JOIN nodes USING (device,ifname)');
 	$res	= @DbQuery($query,$link);
 	if($res){
@@ -199,19 +194,21 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 			}else{
 				if($trk['value'] != $trk[$trk['source']]){$bst = 'warn';}
 			}
-			echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\"><th class=\"$bst\">\n";
-			if($trk['mac']){
-				$img = Nimg("$trk[mac];$trk[oui]");
-?>
-<a href="Nodes-Status.php?mac=<?=$trk['mac']?>&vid=<?=$trk['vlanid']?>"><img src="img/oui/<?=$img?>.png" title=""<?=$trk['mac']?> (<?=$trk['oui']?>)"></a>
-</th>
-<?
-			}else{
-				echo "<img src=\"img/p45.png\">";
-			}
-			foreach ($shocol as $c){
+			TblRow($bg);
+			foreach ($col as $c){
 				if( $p = strpos($c,".") ){$c = substr($c,$p+1);}
-				if($c == 'value'){
+				if($c == 'tgtNS'){
+					echo "<th class=\"$bst\" width=\"50\">";
+					if($trk['mac']){
+						$img = Nimg("$trk[mac];$trk[oui]");
+?>
+<a href="Nodes-Status.php?mac=<?= $trk['mac'] ?>&vid=<?= $trk['vlanid'] ?>"><img src="img/oui/<?= $img ?>.png" title=""<?= $trk['mac'] ?> (<?= $trk['oui'] ?>)"></a>
+<?php
+					}else{
+						echo "<img src=\"img/p45.png\">";
+					}
+					echo "</th>";
+				}elseif($c == 'value'){
 					echo "<td class=\"blu\"><b>$trk[$c]</b></td>";
 				}elseif($c == 'device'){
 					echo "<td nowrap>\n";
@@ -223,38 +220,37 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 					echo "<td class=\"blu\">$trk[$c]</td>";
 				}elseif($c == "time"){
 					echo "<td bgcolor=\"#$cc\">".date($datfmt, $trk[$c])."</td>";
+				}elseif($c == 'cfgNS'){
+?>
+<td>
+<form method="get">
+<input type="hidden" name="ina" value="<?= $ina ?>">
+<input type="hidden" name="opa" value="<?= $opa ?>">
+<input type="hidden" name="sta" value="<?= $sta ?>">
+<input type="hidden" name="cop" value="<?= $cop ?>">
+<input type="hidden" name="inb" value="<?= $inb ?>">
+<input type="hidden" name="opb" value="<?= $opb ?>">
+<input type="hidden" name="stb" value="<?= $stb ?>">
+
+<input type="hidden" name="dev" value="<?= $trk['device'] ?>">
+<input type="hidden" name="ifn" value="<?= $trk['ifname'] ?>">
+<input type="text" name="val" size="15" value="<?= $trk['value'] ?>" onfocus="select();"  onchange="this.form.submit();" title="<?= $wrtlbl ?> <?= $namlbl ?>">
+<select size="1" name="src" onchange="this.form.submit();" title="<?= $namlbl ?> <?= $srclbl ?>">
+<option value=""><?= $sellbl ?>
+<option value="-">-
+<option value="name"><?= $namlbl ?>
+<option value="mac">MAC <?= $adrlbl ?>
+<option value="alias">IF Alias
+<option value="comment">IF <?= $cmtlbl ?>
+</select> <?= $cfgst ?>
+</form>
+</td>
+<?php
 				}else{
 					echo "<td>$trk[$c]</td>";
 				}
 			}
-			if(in_array("cfg",$col)){
-?>
-<td>
-<form method="get">
-<input type="hidden" name="ina" value="<?=$ina?>">
-<input type="hidden" name="opa" value="<?=$opa?>">
-<input type="hidden" name="sta" value="<?=$sta?>">
-<input type="hidden" name="cop" value="<?=$cop?>">
-<input type="hidden" name="inb" value="<?=$inb?>">
-<input type="hidden" name="opb" value="<?=$opb?>">
-<input type="hidden" name="stb" value="<?=$stb?>">
-
-<input type="hidden" name="dev" value="<?=$trk['device']?>">
-<input type="hidden" name="ifn" value="<?=$trk['ifname']?>">
-<input type="text" name="val" size="15" value="<?=$trk['value']?>" onfocus="select();"  onchange="this.form.submit();" title="<?=$wrtlbl?> <?=$namlbl?>">
-<SELECT size="1" name="src" onchange="this.form.submit();" title="<?=$namlbl?> <?=$srclbl?>">
-<OPTION VALUE=""><?=$sellbl?>
-<OPTION VALUE="-">-
-<OPTION VALUE="name"><?=$namlbl?>
-<OPTION VALUE="mac">MAC <?=$adrlbl?>
-<OPTION VALUE="alias">IF Alias
-<OPTION VALUE="comment">IF <?=$cmtlbl?>
-</select> <?=$cfgst?>
-</form>
-</td>
-<?
-			}
-echo "</tr>\n";
+			echo "</tr>\n";
 		}
 		@DbFreeResult($res);
 	}else{
@@ -263,9 +259,9 @@ echo "</tr>\n";
 ?>
 </table>
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> <?=$vallbl?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
-<?
+<?php
 }
 include_once ("inc/footer.php");
 ?>

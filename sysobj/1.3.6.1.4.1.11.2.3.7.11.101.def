@@ -2,21 +2,24 @@
 
 # General
 SNMPv	2HC
-Type	HP-6600-24G-4XG
+Type	HP6600-24G-4XG
 OS	ProCurve
 Icon	w3gn
+Size	1
 Bridge	normal
+ArpND	phy
 Dispro	LLDP
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
 Bimage	1.3.6.1.4.1.11.2.14.11.5.1.1.3.0
 
 # Vlan Specific
 VLnams	1.3.6.1.2.1.17.7.1.4.3.1.1
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	adr
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3
@@ -42,6 +45,6 @@ Momodl	1.3.6.1.2.1.47.1.1.1.1.13
 
 # RRD Graphing
 CPUutl	1.3.6.1.4.1.11.2.14.11.5.1.9.6.1.0
-Temp	1.3.6.1.2.1.99.1.1.1.4.11
+Temp	1.3.6.1.2.1.99.1.1.1.4.19
 MemCPU	1.3.6.1.4.1.11.2.14.11.5.1.1.2.1.1.1.6.1
 Custom	

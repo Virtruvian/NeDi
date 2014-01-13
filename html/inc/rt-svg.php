@@ -41,13 +41,13 @@ $debug  = isset($_GET['debug']) ? $_GET['debug'] : "";
 
 
 /********** HTTP GET Based Conf ***********/
-$ifnum=@$_GET["i"];
-$ifname=@$_GET["in"]?$_GET["in"]:"Interface $ifnum";  //Interface name that will be showed on top right of graph
-$ifnum=@$_GET["i"];
+$ifnum=@$_GET['i'];
+$ifname=@$_GET['in']?$_GET["in"]:"Interface $ifnum";  //Interface name that will be showed on top right of graph
+$ifnum=@$_GET['i'];
+$time_interval=@$_GET['ti'];	//Refresh time Interval
 /********* Other conf *******/
 $scale_type="up";               //Autoscale default setup : "up" = only increase scale; "follow" = increase and decrease scale according to current graphed datas
 $nb_plot=200;                   //NB plot in graph
-$time_interval=3;		//Refresh time Interval
 $fetch_link = "rt-traffic.php?ip=$_GET[ip]&v=$_GET[v]&c=$_GET[c]&i=$ifnum";
 
 //SVG attributes
@@ -72,30 +72,30 @@ $height=100;            //SVG internal height : do not modify
 $width=200;             //SVG internal width : do not modify
 
 /********* Graph DATA **************/
-print('<?xml version="1.0" encoding="iso-8859-1"?>' . "\n");?>
-<svg width="100%" height="100%" viewBox="0 0 <?=$width?> <?=$height?>" preserveAspectRatio="none" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" onload="init(evt)">
+print('<?php xml version="1.0" encoding="iso-8859-1" ?>' . "\n") ?>
+<svg width="100%" height="100%" viewBox="0 0 <?= $width ?> <?= $height ?>" preserveAspectRatio="none" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" onload="init(evt)">
   <g id="graph">
     <rect id="bg" x1="0" y1="0" width="100%" height="100%" fill="white"/>
-    <line id="axis_x" x1="0" y1="0" x2="0" y2="100%" <?=$attribs['axis']?>/>
-    <line id="axis_y" x1="0" y1="100%" x2="100%" y2="100%" <?=$attribs['axis']?>/>
-    <path id="graph_out" d="M0 <?=$height?> L 0 <?=$height?>" <?=$attribs['graph_out']?>/>
-    <path id="graph_in"  d="M0 <?=$height?> L 0 <?=$height?>" <?=$attribs['graph_in']?>/>
-    <path id="grid"  d="M0 <?=$height/4*1?> L <?=$width?> <?=$height/4*1?> M0 <?=$height/4*2?> L <?=$width?> <?=$height/4*2?> M0 <?=$height/4*3?> L <?=$width?> <?=$height/4*3?>" <?=$attribs['grid']?>/>
-    <text id="grid_txt1" x="<?=$width?>" y="<?=$height/4*1?>" <?=$attribs['grid_txt']?> text-anchor="end"> </text>
-    <text id="grid_txt2" x="<?=$width?>" y="<?=$height/4*2?>" <?=$attribs['grid_txt']?> text-anchor="end"> </text>
-    <text id="grid_txt3" x="<?=$width?>" y="<?=$height/4*3?>" <?=$attribs['grid_txt']?> text-anchor="end"> </text>
-    <text id="graph_in_lbl" x="5" y="8" <?=$attribs['in']?>>In</text>
-    <text id="graph_out_lbl" x="5" y="16" <?=$attribs['out']?>>Out</text>
-    <text id="graph_in_txt" x="20" y="8" <?=$attribs['in']?>> </text>
-    <text id="graph_out_txt" x="20" y="16" <?=$attribs['out']?>> </text>
-    <text id="ifname" x="<?=$width?>" y="8" <?=$attribs['graphname']?> text-anchor="end"><?=$ifname?></text>
-    <text id="switch_unit" x="<?=$width*0.55?>" y="5" <?=$attribs['switch_unit']?>>Switch to bytes/s</text>
-    <text id="switch_scale" x="<?=$width*0.55?>" y="11" <?=$attribs['switch_scale']?>>AutoScale (<?=$scale_type?>)</text>
-    <text id="datetime" x="<?=$width*0.33?>" y="5" <?=$attribs['legend']?>> </text>
-    <text id="graphlast" x="<?=$width*0.55?>" y="17" <?=$attribs['legend']?>>Graph shows last <?=$time_interval*$nb_plot?> seconds</text>
-    <polygon id="axis_arrow_x" <?=$attribs['axis']?> points="<?=($width) . "," . ($height)?> <?=($width-2) . "," . ($height-2)?> <?=($width-2) . "," . $height?>"/>
-    <text id="error" x="<?=$width*0.5?>" y="<?=$height*0.5?>"  visibility="hidden" <?=$attribs['error']?> text-anchor="middle"><?=$error_text?></text>
-    <text id="collect_initial" x="<?=$width*0.5?>" y="<?=$height*0.5?>"  visibility="hidden" <?=$attribs['collect_initial']?> text-anchor="middle">Collecting initial data, please wait...</text>
+    <line id="axis_x" x1="0" y1="0" x2="0" y2="100%" <?= $attribs['axis'] ?>/>
+    <line id="axis_y" x1="0" y1="100%" x2="100%" y2="100%" <?= $attribs['axis'] ?>/>
+    <path id="graph_out" d="M0 <?= $height ?> L 0 <?= $height ?>" <?= $attribs['graph_out'] ?>/>
+    <path id="graph_in"  d="M0 <?= $height ?> L 0 <?= $height ?>" <?= $attribs['graph_in'] ?>/>
+    <path id="grid"  d="M0 <?= $height/4*1?> L <?= $width ?> <?= $height/4*1?> M0 <?= $height/4*2?> L <?= $width ?> <?= $height/4*2?> M0 <?= $height/4*3?> L <?= $width ?> <?= $height/4*3?>" <?= $attribs['grid'] ?>/>
+    <text id="grid_txt1" x="<?= $width ?>" y="<?= $height/4*1?>" <?= $attribs['grid_txt'] ?> text-anchor="end"> </text>
+    <text id="grid_txt2" x="<?= $width ?>" y="<?= $height/4*2?>" <?= $attribs['grid_txt'] ?> text-anchor="end"> </text>
+    <text id="grid_txt3" x="<?= $width ?>" y="<?= $height/4*3?>" <?= $attribs['grid_txt'] ?> text-anchor="end"> </text>
+    <text id="graph_in_lbl" x="5" y="8" <?= $attribs['in'] ?>>In</text>
+    <text id="graph_out_lbl" x="5" y="16" <?= $attribs['out'] ?>>Out</text>
+    <text id="graph_in_txt" x="20" y="8" <?= $attribs['in'] ?>> </text>
+    <text id="graph_out_txt" x="20" y="16" <?= $attribs['out'] ?>> </text>
+    <text id="ifname" x="<?= $width ?>" y="8" <?= $attribs['graphname'] ?> text-anchor="end"><?= $ifname ?></text>
+    <text id="switch_unit" x="<?= $width*0.55?>" y="5" <?= $attribs['switch_unit'] ?>>Switch to bytes/s</text>
+    <text id="switch_scale" x="<?= $width*0.55?>" y="11" <?= $attribs['switch_scale'] ?>>AutoScale (<?= $scale_type ?>)</text>
+    <text id="datetime" x="<?= $width*0.33?>" y="5" <?= $attribs['legend'] ?>> </text>
+    <text id="graphlast" x="<?= $width*0.55?>" y="17" <?= $attribs['legend'] ?>>Graph shows last <?= $time_interval*$nb_plot ?> seconds</text>
+    <polygon id="axis_arrow_x" <?= $attribs['axis'] ?> points="<?= ($width) . "," . ($height) ?> <?= ($width-2) . "," . ($height-2) ?> <?= ($width-2) . "," . $height ?>"/>
+    <text id="error" x="<?= $width*0.5?>" y="<?= $height*0.5?>"  visibility="hidden" <?= $attribs['error'] ?> text-anchor="middle"><?= $error_text ?></text>
+    <text id="collect_initial" x="<?= $width*0.5?>" y="<?= $height*0.5?>"  visibility="hidden" <?= $attribs['collect_initial'] ?> text-anchor="middle">Collecting initial data, please wait...</text>
   </g>
   <script type="text/ecmascript">
     <![CDATA[
@@ -152,10 +152,10 @@ var max = 0;
 var plot_in = new Array();
 var plot_out = new Array();
 
-var max_num_points = <?=$nb_plot?>;  // maximum number of plot data points
-var step = <?=$width?> / max_num_points ;
+var max_num_points = <?= $nb_plot ?>;  // maximum number of plot data points
+var step = <?= $width ?> / max_num_points ;
 var unit = 'bits';
-var scale_type = '<?=$scale_type?>';
+var scale_type = '<?= $scale_type ?>';
 
 function init(evt) {
   SVGDoc = evt.target.ownerDocument;
@@ -178,7 +178,7 @@ function switch_scale(event)
 }
 
 function fetch_data() {
-  getURL('<?=$fetch_link?>', plot_data);
+  getURL('<?= $fetch_link ?>', plot_data);
 }
 
 function plot_data(obj) {
@@ -217,7 +217,7 @@ function plot_data(obj) {
   		SVGDoc.getElementById("collect_initial").setAttributeNS(null, 'visibility', 'visible');
 		plot_in[0] = diff_ifin / diff_ugmt;
 		plot_out[0] = diff_ifout / diff_ugmt;
-		setTimeout('fetch_data()',<?=1000*$time_interval?>);
+		setTimeout('fetch_data()',<?=1000*$time_interval ?>);
 		return;
 	case 1:
     	SVGDoc.getElementById("collect_initial").setAttributeNS(null, 'visibility', 'hidden');
@@ -290,20 +290,20 @@ function plot_data(obj) {
     }
   }
 
-  scale = <?=$height?> / rmax;
+  scale = <?= $height ?> / rmax;
 
   /* change labels accordingly */
   SVGDoc.getElementById('grid_txt1').firstChild.data = formatSpeed(3*rmax/4,unit);
   SVGDoc.getElementById('grid_txt2').firstChild.data = formatSpeed(2*rmax/4,unit);
   SVGDoc.getElementById('grid_txt3').firstChild.data = formatSpeed(rmax/4,unit);
 
-  var path_in = "M 0 " + (<?=$height?> - (plot_in[0] * scale));
-  var path_out = "M 0 " + (<?=$height?> - (plot_out[0] * scale));
+  var path_in = "M 0 " + (<?= $height ?> - (plot_in[0] * scale));
+  var path_out = "M 0 " + (<?= $height ?> - (plot_out[0] * scale));
   for (i = 1; i < plot_in.length; i++)
   {
     var x = step * i;
-    var y_in = <?=$height?> - (plot_in[i] * scale);
-    var y_out = <?=$height?> - (plot_out[i] * scale);
+    var y_in = <?= $height ?> - (plot_in[i] * scale);
+    var y_out = <?= $height ?> - (plot_out[i] * scale);
     path_in += " L" + x + " " + y_in;
     path_out += " L" + x + " " + y_out;
   }
@@ -312,12 +312,12 @@ function plot_data(obj) {
   SVGDoc.getElementById('graph_in').setAttributeNS(null, 'd', path_in);
   SVGDoc.getElementById('graph_out').setAttributeNS(null, 'd', path_out);
 
-  setTimeout('fetch_data()',<?=1000*$time_interval?>);
+  setTimeout('fetch_data()',<?=1000*$time_interval ?>);
 }
 
 function handle_error() {
   SVGDoc.getElementById("error").setAttributeNS(null, 'visibility', 'visible');
-  setTimeout('fetch_data()',<?=1000*$time_interval?>);
+  setTimeout('fetch_data()',<?=1000*$time_interval ?>);
 }
 
 function isNumber(a) {

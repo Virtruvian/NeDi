@@ -1,4 +1,4 @@
-<?php
+<?php 
 function get_all_env_var($example=FALSE) {
        foreach($_SERVER as $env => $value) {
              if($example == TRUE) {

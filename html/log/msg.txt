@@ -15,7 +15,7 @@ Getting started:
 </form>
 
 <form method="post" action="System-NeDi.php">
-<input type="hidden" name="mod" value="d">
+<input type="hidden" name="mde" value="d">
 <input type="hidden" name="dip" value="1">
 <input type="hidden" name="vrb" value="1">
 <input type="image" src="img/32/radr.png" value="Submit" title="Run NeDi" hspace="4">
@@ -30,13 +30,18 @@ Getting started:
 
 <a href="Devices-List.php?ina=snmpversion&opa=>&sta=0&mon=1">
 <img src="img/32/bino.png" value="Submit" title="Monitor Devices"></a> Monitor SNMP devices
+<p>
+<a href="Other-Invoice.php">
+<img src="img/32/cash.png" value="Submit" title="Support NeDi"></a> Pay annual contribution, if youre happy (or consider Paypal link on NeDis download page, if youre on a tight budget).
 
-<div style=background-color:yellow><h4>Don't forget to change the admin password!</h4></div>
+<div style=background-color:yellow><h4>Dont forget to change the admin password!</h4></div>
 
 Further steps:
 <ul>
 <li>Find documentation <a href="http://www.nedi.ch" target="window">here</a>.
 <li>Join our <a href="http://forum.nedi.ch" target="window">community</a>.
+<li>Watch <a href="https://www.youtube.com/user/NetworkDiscovery" target="window">tutorials</a>.
+<li>Make a <a href="http://www.nedi.ch/download/" target="window">donation</a> 
 <li>Or just have a <a href="irc://irc.freenode.net/nedi">chat</a>.
 </ul>
-<center>Then edit this message to fit your needs (by clicking the notepad above)</center>
+<center>Then edit this message to fit your needs (by clicking the notepad above)</center><br>

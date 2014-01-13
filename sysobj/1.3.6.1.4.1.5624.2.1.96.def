@@ -9,6 +9,7 @@ Sysdes
 OS	other
 Icon	Enterasys
 Bridge	normal
+ArpND	
 Dispro	LLDP
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.11
 Bimage	1.3.6.1.2.1.47.1.1.1.1.10.11
@@ -16,11 +17,12 @@ Bimage	1.3.6.1.2.1.47.1.1.1.1.10.11
 # Vlan Specific
 VLnams
 VLnamx
-VTPdom
-VTPmod
+Group
+Mode
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix
 InBcast	1.3.6.1.2.1.31.1.1.1.9
@@ -41,8 +43,8 @@ Moclas	1.3.6.1.2.1.47.1.1.1.1.5
 Movalu	3|9|11
 Moslot	1.3.6.1.2.1.47.1.1.1.1.7
 Modhw	1.3.6.1.2.1.47.1.1.1.1.8
-Modsw	1.3.6.1.2.1.47.1.1.1.1.9
-Modfw	1.3.6.1.2.1.47.1.1.1.1.10
+Modsw	1.3.6.1.2.1.47.1.1.1.1.10
+Modfw	1.3.6.1.2.1.47.1.1.1.1.9
 Modser	1.3.6.1.2.1.47.1.1.1.1.11
 Momodl	1.3.6.1.2.1.47.1.1.1.1.13
 

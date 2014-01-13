@@ -2,17 +2,16 @@
 body {
 	font: 12px Courier New, monospace; 
 	background-color: #ffffff;
+	color: #000000;
 }
 
 td{
 	padding: 4px;
-	color: #000000;
 }
 
 th{
 	padding: 6px;
 	font-weight: bold;
-	color: #000000;
 }
 
 /* Headings */
@@ -99,13 +98,13 @@ img.smallbar{
 #header{
 	width: 100%;
 	border-spacing: 1px;
-	background-color: #222222;
+	background-color: #888888;
 }
 
 #footer{
 	margin: 10px auto;
 	width: 90%;
-	border: 1px solid #222222;
+	border: 1px solid #888888;
 	padding: 8px;
 	text-align: right;
 	font-style: italic;
@@ -115,7 +114,7 @@ img.smallbar{
 table.content{
 	width: 100%;
 	border-spacing: 1px;
-	background-color: #444444;
+	background-color: #888888;
 }
 
 /* Helper td */
@@ -139,9 +138,8 @@ table.full{
 	padding: 10px;
 	border-spacing: 1px;
 	border: 2px solid #dddddd;
-	box-shadow:10px 10px 10px #000;
-	-moz-box-shadow: #666 10px 10px 10px;
-	-webkit-box-shadow: 10px 10px 10px rgba(6,6,6,0.6);
+	-webkit-box-shadow: 10px 10px 10px #666;
+	box-shadow:10px 10px 10px #666;
 }
 
 /* Font Properties */

@@ -1,4 +1,4 @@
-<?php
+<?php 
 //===============================
 // Browse Device Icon
 //===============================
@@ -14,7 +14,7 @@ $_GET = sanitize($_GET);
 ?>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html;charset=<?=$charset?>">
+<meta http-equiv="Content-Type" content="text/html;charset=<?= $charset ?>">
 <script language="JavaScript">
 <!--
 function update(img){
@@ -25,7 +25,7 @@ function update(img){
 </script>
 </head>
 <body>
-Icon <a href="http://www.nedi.ch/the-gui/icons" target="Window"><?=$sumlbl?></a>
+Icon <a href="http://www.nedi.ch/expand" target="Window"><?= $sumlbl ?></a>
 <?
 
 if ( $handle = opendir("../img/dev") ){

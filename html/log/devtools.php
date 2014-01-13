@@ -1,6 +1,6 @@
-<?
+<?php
 # This file can be used to add links from Device-Status, with the following variables available for linking:
-# $ip		Devices IP address
+# $ip		Device IP address
 # $ud		URL encoded device name
 # $os		Operating system
 # $rcomm	SNMP read community
@@ -10,8 +10,8 @@
 # $wasup	device was seen in last discovery
 # $isadmin	current user is in admin group
 
-# Usage example for  http link on port 8001 of non IOS devices:
-#if($os != "IOS"){
-#	echo "<a href=\"http://$ip:8001\"><img src=\"img/16/glob.png\"></a>";
-#}
+# Usage example for Cisco-WLC and HP-MSMs to list all controlled APs (using custom value as reference to controller's IP):
+if($os == "ArubaOS" or $os == "IOS-wlc" or $os == "MSM"){
+	echo "<a href=\"Devices-List.php?ina=login&opa=%3D&sta=$ud\"><img src=\"img/16/wlan.png\" title=\"AP $lstlbl\"></a>";
+}
 ?>

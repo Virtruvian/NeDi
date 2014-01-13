@@ -1,25 +1,28 @@
-# Definition for 1.3.6.1.4.1.25506.1.462 created by Defgen 1.8 on 19.Dec 11 14:20 (admin)
+# Definition for 1.3.6.1.4.1.25506.1.462 created by Defgen 1.8 on 6.Mar 2012 (admin)
 
 # General
 SNMPv	2HC
-Type	HP A5120-24G-SI
+Type	HP5120-24G-SI
 Typoid	
 Sysdes	
 OS	Comware
 Icon	w3gn
+Size	1
 Bridge	qbriX
+ArpND	
 Dispro	LLDPXN
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.2
-Bimage	1.3.6.1.4.1.25506.2.5.1.1.4.2.1.1.2.1.1.5
+Bimage	1.3.6.1.4.1.25506.2.3.1.4.2.1.2.1966081
 
 # Vlan Specific
 VLnams	1.3.6.1.2.1.17.7.1.4.3.1.1
 VLnamx	
-VTPdom	
-VTPmod	
+Group	
+Mode	
 
 # Interfaces
 IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	oldip6
 IFalia	1.3.6.1.2.1.31.1.1.1.18
 IFalix	
 InBcast	1.3.6.1.2.1.31.1.1.1.3
@@ -40,8 +43,8 @@ Moclas	1.3.6.1.2.1.47.1.1.1.1.5
 Movalu	3|10
 Moslot	1.3.6.1.2.1.47.1.1.1.1.7
 Modhw	1.3.6.1.2.1.47.1.1.1.1.8
-Modsw	1.3.6.1.2.1.47.1.1.1.1.9
-Modfw	1.3.6.1.2.1.47.1.1.1.1.10
+Modsw	1.3.6.1.2.1.47.1.1.1.1.10
+Modfw	1.3.6.1.2.1.47.1.1.1.1.9
 Modser	1.3.6.1.2.1.47.1.1.1.1.11
 Momodl	1.3.6.1.2.1.47.1.1.1.1.13
 

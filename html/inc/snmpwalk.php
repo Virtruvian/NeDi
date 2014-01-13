@@ -1,4 +1,4 @@
-<?php
+<?php 
 //===============================
 // SNMPwalk utility.
 //===============================
@@ -20,13 +20,13 @@ $_GET = sanitize($_GET);
 ?>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html;charset=<?=$charset?>">
-<link href="../themes/<?=$_SESSION['theme']?>.css" type="text/css" rel="stylesheet">
+<meta http-equiv="Content-Type" content="text/html;charset=<?= $charset ?>">
+<link href="../themes/<?= $_SESSION['theme'] ?>.css" type="text/css" rel="stylesheet">
 </head>
 <body>
-<h1><?=$_GET['ip']?> <?=$_GET['c']?> v<?=$_GET['v']?></h1>
+<h1><?= $_GET['ip'] ?> <?= $_GET['c'] ?> v<?= $_GET['v'] ?></h1>
 <div class="net1">
-<h2><img src="../img/32/bdwn.png" hspace="10"> <?=$_GET['oid']?></h2>
+<h2><img src="../img/32/bdwn.png" hspace="10"> <?= $_GET['oid'] ?></h2>
 </div>
 <div class="net2 code">
 <?

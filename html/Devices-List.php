@@ -1,9 +1,10 @@
-<?
+<?php
 # Program: Devices-List.php
 # Programmer: Remo Rickli
 
-$printable = 1;
 $calendar  = 1;
+$printable = 1;
+$exportxls = 1;
 
 error_reporting(1);
 snmp_set_quick_print(1);
@@ -24,11 +25,16 @@ $opb = isset($_GET['opb']) ? $_GET['opb'] : "";
 $cop = isset($_GET['cop']) ? $_GET['cop'] : "";
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 
-$mon = isset($_GET['mon']) ? $_GET['mon'] : "";
+$map = isset($_GET['map']) ? "checked" : "";
+$lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
+$mon = isset($_GET['mon']) ? 1 : 0;
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
-	if($_SESSION['olic']){$_SESSION['devcol'] = $col;}
+	if($_SESSION['opt']){
+		$_SESSION['devcol'] = $col;
+		if(!$ord and $ina){$ord = $ina;}
+	}
 }elseif( isset($_SESSION['devcol']) ){
 	$col = $_SESSION['devcol'];
 }else{
@@ -36,6 +42,7 @@ if( isset($_GET['col']) ){
 }
 
 $cols = array(	"device"=>"Device",
+		"panel"=>$imglbl,
 		"devip"=>"$manlbl IP",
 		"origip"=>"$orilbl IP",
 		"serial"=>"$serlbl",
@@ -46,222 +53,308 @@ $cols = array(	"device"=>"Device",
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
-		"vtpdomain"=>"VTP Domain",
-		"vtpmode"=>"VTP Mode",
+		"devgroup"=>$grplbl,
+		"devmode"=>$modlbl,
 		"snmpversion"=>"SNMP $verlbl",
 		"readcomm"=>"$realbl Community",
 		"writecomm"=>"$wrtlbl Community",
 		"login"=>"Login",
-		"cliport"=>"CLI port",
+		"cliport"=>"CLI $porlbl",
 		"firstdis"=>"$fislbl $dsclbl",
 		"lastdis"=>"$laslbl $dsclbl",
-		"cpu"=>"% CPU",
+		"cpu"=>"CPU $lodlbl",
 		"memcpu"=>"$memlbl $frelbl",
 		"temp"=>$tmplbl,
-		"cusvalue"=>"$cuslbl Value",
-		"cuslabel"=>"$cuslbl Label",
-		"sysobjid"=>"SysObjID"
+		"cusvalue"=>"$cuslbl $vallbl",
+		"cuslabel"=>"$cuslbl $titlbl",
+		"sysobjid"=>"SysObjID",
+		"devopts"=>$opolbl,
+		"size"=>$sizlbl,
+		"stack"=>"Stack",
+		"maxpoe"=>"$maxlbl PoE",
+		"totpoe"=>"$totlbl PoE",
+		"stpNS"=>"$rltlbl STP",
+		"gfNS"=>"$gralbl"
 		);
 
 $link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
-$listalert = "";
-if($listwarn){
-	$cnr  = @DbFetchRow(DbQuery(GenQuery('devices','s','count(*)'), $link));
-	if($cnr[0] > $listwarn){
-		$listalert = "onclick=\"if(document.list.sta.value == ''){return confirm('".(($verb1)?"$sholbl $alllbl $cnr[0]":"$alllbl $cnr[0] $sholbl")."?');}\"";
-	}
-}
 ?>
-<h1>Device <?=$lstlbl?></h1>
+<h1>Device <?= $lstlbl ?></h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 
-<form method="get" name="list" action="<?=$self?>.php">
-<table class="content"><tr class="<?=$modgroup[$self]?>1">
-<th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
-<th valign="top"><?=$cndlbl?> A<p>
+<form method="get" name="list" action="<?= $self ?>.php">
+<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+
+</th>
+<th valign="top">
+
+<?= $cndlbl ?> A<p>
 <select size="1" name="ina">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+	if( !preg_match('/(BL|IG|NS)$/',$k) ){
+		echo "<option value=\"$k\"".( ($ina == $k)?" selected":"").">$v\n";
+	}
 }
 ?>
 </select>
 <select size="1" name="opa">
-<? selectbox("oper",$opa);?>
+<?php selectbox("oper",$opa) ?>
 </select>
 <p><a href="javascript:show_calendar('list.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?=$sta?>" size="20">
+<input type="text" name="sta" value="<?= $sta ?>" size="20">
+
 </th>
-<th valign="top"><?=$cmblbl?><p>
+<th valign="top">
+
+<?= $cmblbl ?><p>
 <select size="1" name="cop">
-<? selectbox("comop",$cop);?>
+<?php selectbox("comop",$cop) ?>
 </select>
+
 </th>
-<th valign="top"><?=$cndlbl?> B<p>
+<th valign="top">
+
+<?= $cndlbl ?> B<p>
 <select size="1" name="inb">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($inb == $k)?"selected":"").">$v\n";
+	if( !preg_match('/(BL|IG|NS)$/',$k) ){
+		echo "<option value=\"$k\"".( ($inb == $k)?" selected":"").">$v\n";
+	}
 }
 ?>
 </select>
 <select size="1" name="opb">
-<? selectbox("oper",$opb);?>
+<?php selectbox("oper",$opb) ?>
 </select>
 <p><a href="javascript:show_calendar('list.stb');"><img src="img/16/date.png"></a>
-<input type="text" name="stb" value="<?=$stb?>" size="20">
+<input type="text" name="stb" value="<?= $stb ?>" size="20">
+
 </th>
-<th valign="top"><?=$collbl?><p>
+<th valign="top">
+
+<?= $collbl ?><p>
 <select multiple name="col[]" size="4">
-<?
+<?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".((in_array($k,$col))?"selected":"").">$v\n";
+       echo "<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
 }
 ?>
-<option value="stp" <?=(in_array("stp",$col))?"selected":""?> ><?=$rltlbl?> STP
-<option value="graphs" <?=(in_array("graphs",$col))?"selected":""?> ><?=$gralbl?>
+
 </select>
+
+</th>
+<th valign="top">
+
+<?= $optlbl ?><p>
+<div align="left">
+<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
+<input type="checkbox" name="map" <?= $map ?>><br>
+<img src="img/16/form.png" title="<?= $limlbl ?>"> 
+<select size="1" name="lim">
+<?php selectbox("limit",$lim) ?>
+</select>
+</div>
+
 </th>
 <th width="80">
-<input type="submit" value="<?=$sholbl?>" <?=$listalert?>>
 
-<?if($isadmin){?>
+<input type="submit" value="<?= $sholbl ?>">
+
+<?php  if($isadmin) { ?>
 <p>
-<input type="submit" name="mon" value="Monitor" onclick="return confirm('Monitor <?=$addlbl?>?')" >
+<input type="submit" name="mon" value="<?= $monlbl ?>" onclick="return confirm('<?= $monlbl ?> <?= $addlbl ?>?')" >
 <?}?>
 </th>
 </tr></table></form>
 <p>
-<?
+<?php
 }
 
 if($ina){
-	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
-?>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<?
-	ColHead('device',80);
-	foreach($col as $h){
-		if($h != 'graphs' and $h != 'stp' and $h != 'device'){
-			ColHead($h);
-		}
+	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
+		echo "<center><h2>$netlbl Map</h2>\n";
+		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
 	}
-	if( in_array("stp",$col) ){echo "<th>STP $stalbl</th>";}
-	if( in_array("graphs",$col) ){echo "<th>$gralbl</th>";}
-	echo "</tr>\n";
+	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+	TblHead("$modgroup[$self]2",1);
 
-	$query	= GenQuery('devices','s','*',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop) );
+	$query	= GenQuery('devices','s','*',$ord,$lim,array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop) );
 	$res	= @DbQuery($query,$link);
 	if($res){
 		$row   = 0;
 		$most = '';
 		while( ($dev = @DbFetchRow($res)) ){
-
-			if($isadmin and $mon){
-				if($dev[14]){
+			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+			$row++;
+			if($isadmin and $mon and $dev[1]){
+				if($dev[14] & 3){
 					$most = AddRecord('monitoring',"name=\"$dev[0]\"","name,monip,test,device","\"$dev[0]\",\"$dev[1]\",\"uptime\",\"$dev[0]\"");
 				}else{
 					$most = AddRecord('monitoring',"name=\"$dev[0]\"","name,monip,test,device","\"$dev[0]\",\"$dev[1]\",\"ping\",\"$dev[0]\"");
 				}
 			}
-
-			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
-			$row++;
 			$ip  = long2ip($dev[1]);
 			$oi  = long2ip($dev[19]);
 			$ud  = urlencode($dev[0]);
-			if($dev[21] > 100){
-				$mem = DecFix($dev[21])."Bytes";
-			}elseif($dev[21] > 0){
-				$mem = "$dev[21]%";
-			}else{
-				$mem = "";
-			}
-			$tmp = ($_SESSION['gfar'])?($dev[22]*1.8+32)."F":"$dev[22]C";
+			$stk = ($dev[29] > 1)?"<img src=\"img/$dev[29].png\" title=\"Stack\">":"";
 			list($fc,$lc) = Agecol($dev[4],$dev[5],$row % 2);
-			echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\"><th class=\"$bi\">\n";
-			if(in_array("device",$col)){
-				echo "<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/$dev[18].png\" title=\"$dev[3]\" vspace=4></a>$most<br>\n";
-				}
-			echo "<b>$dev[0]</b>\n";
+
+			TblRow($bg);
+			if( in_array("device",$col) ){
+				TblCell($dev[0],"","class=\"$bi\" width=\"100px\"","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/$dev[18].png\" title=\"$dev[3]\"></a>$stk $most<br>","th-img");
+			}
+			if( in_array("panel",$col) ){
+				TblCell('','',"bgcolor=\"white\"","<a href=\"Devices-Status.php?dev=$ud\"><img width=\"100\" src=\"".DevPanel($dev[3],$dev[18])."\" title=\"$dev[3]\"></a>$stk $most","th-img");
+			}
 			if(in_array("devip",$col)){
-				echo "<td>".Devcli($ip,$dev[16])."</td>";
+				$dvip = Devcli( $ip, $dev[16] );
+				if( !in_array("device",$col) ){$dvip .= " ($dev[0])";}
+				TblCell($dvip);
 			}
 			if(in_array("origip",$col)){
-				echo "<td>".Devcli($oi,$dev[16])."</td>";
+				TblCell( Devcli($oi,$dev[16]) );
 			}
-			if(in_array("serial",$col)){ echo "<td>$dev[2]</td>";}
-			if(in_array("type",$col)){   echo "<td><a href=\"?ina=type&opa==&sta=".urlencode($dev[3])."\">$dev[3]</a></td>";}
+			if(in_array("serial",$col)){
+				TblCell($dev[2]);
+			}
+			if(in_array("type",$col)){
+				TblCell( $dev[3],"?ina=type&opa==&sta=".urlencode($dev[3]),'',"<a href=\"http://www.google.com/search?q=".urlencode($dev[3])."&btnI=1\" target=\"window\"><img src=\"img/16/find.png\" title=\"Google IT\"></a>
+");
+			}
 			if(in_array("services",$col)){
-				$sv = Syssrv($dev[6]);
-				echo "<td>$sv ($dev[6])</td>";
+				TblCell( Syssrv($dev[6])." ($dev[6])","?ina=services&opa==&sta=$dev[6]");
 			}
-			if(in_array("description",$col)){echo "<td>$dev[7]</td>";}
-			if(in_array("devos",$col))	{echo "<td><a href=\"?ina=devos&opa==&sta=".urlencode($dev[8])."\">$dev[8]</a></td>";}
-			if(in_array("bootimage",$col))	{echo "<td><a href=\"?ina=bootimage&opa==&sta=".urlencode($dev[9])."\">$dev[9]</a></td>";}
-			if(in_array("location",$col))	{echo "<td><a href=\"?ina=location&opa==&sta=".urlencode($dev[10])."\">$dev[10]</a></td>";}
-			if(in_array("contact",$col))	{echo "<td><a href=\"?ina=contact&opa==&sta=".urlencode($dev[11])."\">$dev[11]</a></td>";}
-			if(in_array("vtpdomain",$col))	{echo "<td><a href=\"?ina=vtpdomain&opa==&sta=".urlencode($dev[12])."\">$dev[12]</a></td>";}
-			if(in_array("vtpmode",$col))	{echo "<td><a href=\"?ina=vtpmode&opa==&sta=$dev[13]\">$dev[13]".VTPmod($dev[13])."</a></td>";}
-			if(in_array("snmpversion",$col)){echo "<td>Read:". ($dev[14] & 3) . (($dev[14] & 128)?"-HC ":" ") . (($dev[14] & 12)?" Write:".($dev[14] & 12 >> 2):"")."</td>";}
-			if(in_array("readcomm",$col))	{echo "<td>".(($guiauth != 'none')?$dev[15]:"***")."</td>";}
-			if(in_array("writecomm",$col))	{echo "<td>".(($isadmin and $guiauth != 'none')?$dev[26]:"***")."</td>";}
-			if(in_array("login",$col))	{echo "<td><a href=\"?ina=location&opa==&sta=".urlencode($dev[17])."\">$dev[17]</a></td>";}
-			if(in_array("cliport",$col))	{echo "<td>$dev[16]</td>";}
+			if(in_array("description",$col)){
+				TblCell($dev[7]);
+			}
+			if(in_array("devos",$col)){
+				TblCell( $dev[8],"?ina=devos&opa==&sta=".urlencode($dev[8]) );
+			}
+			if(in_array("bootimage",$col)){
+				TblCell( $dev[9],"?ina=bootimage&opa==&sta=".urlencode($dev[9]) );
+			}
+			if(in_array("location",$col)){
+				TblCell( $dev[10],"?ina=location&opa==&sta=".urlencode($dev[10]) );
+			}
+			if(in_array("contact",$col)){
+				TblCell( $dev[11],"?ina=contact&opa==&sta=".urlencode($dev[11]) );
+			}
+			if(in_array("devgroup",$col)){
+				TblCell( $dev[12],"?ina=devgroup&opa==&sta=".urlencode($dev[12]) );
+			}
+			if(in_array("devmode",$col)){
+				TblCell( DevMode($dev[13]),"?ina=devmode&opa==&sta=".urlencode($dev[13]) );
+			}
+			if(in_array("snmpversion",$col)){
+				TblCell( "Read:". ($dev[14] & 3) . (($dev[14] & 128)?"-HC ":" ") . (($dev[14] & 12)?" Write:".($dev[14] & 12 >> 2):"") );
+			}
+			if(in_array("readcomm",$col)){
+				TblCell( (($guiauth != 'none')?$dev[15]:"***") );
+			}
+			if(in_array("writecomm",$col)){
+				TblCell( (($isadmin and $guiauth != 'none')?$dev[26]:"***") );
+			}
+			if(in_array("login",$col)){
+				TblCell( $dev[17],"?ina=login&opa==&sta=".urlencode($dev[17]) );
+			}
+			if(in_array("cliport",$col)){
+				TblCell( $dev[16],"?ina=cliport&opa==&sta=".urlencode($dev[16]) );
+			}
 			if( in_array("firstdis",$col) ){
-				$fs       = date($datfmt,$dev[4]);
-				echo "<td bgcolor=\"#$fc\">$fs</td>";
+				TblCell( date($datfmt,$dev[4]),"?ina=firstdis&opa==&sta=$dev[4]","bgcolor=\"#$fc\"" );
 			}
 			if( in_array("lastdis",$col) ){
-				$ls       = date($datfmt,$dev[5]);
-				echo "<td bgcolor=\"#$lc\">$ls</td>";
+				TblCell( date($datfmt,$dev[5]),"?ina=lastdis&opa==&sta=$dev[5]","bgcolor=\"#$lc\"" );
 			}
-			if(in_array("cpu",$col))	{echo "<td align=right>$dev[20]</td>";}
-			if(in_array("memcpu",$col))	{echo "<td align=right>$mem</td>";}
-			if(in_array("temp",$col))	{echo "<td align=right>$tmp</td>";}
-			if(in_array("cusvalue",$col)){echo "<td align=right>$dev[23]</td>";}
-			if(in_array("cuslabel",$col))	{echo "<td align=right>$dev[24]</td>";}
-			if(in_array("sysobjid",$col))	{
-				echo "<td><a href=Other-Defgen.php?so=$dev[25]&ip=$ip&co=$dev[15]>$dev[25]</a></td>";
+			if(in_array("cpu",$col)){
+				TblCell("$dev[20]%",'','',Bar($dev[20],$cpua/2,'si')." ");
 			}
-			if(in_array("stp",$col)){
-				echo "<td>";
+			if(in_array("memcpu",$col)){
+				if($dev[21] > 100){
+					$mem = DecFix($dev[21])."Bytes";
+				}elseif($dev[21] > 0){
+					$mem = "$dev[21]%";
+				}else{
+					$mem = "";
+				}
+				TblCell( $mem,"","align=\"right\"" );
+			}
+			if(in_array("temp",$col)){
+				TblCell( ($_SESSION['far'])?($dev[22]*1.8+32)."F":"$dev[22]C",'','',Bar($dev[22],$tmpa/2,'si')." " );
+			}
+			if(in_array("cusvalue",$col)){
+				TblCell( $dev[23],"","align=\"right\"" );
+			}
+			if(in_array("cuslabel",$col)){
+				TblCell( $dev[24],"","align=\"right\"" );
+			}
+			if(in_array("sysobjid",$col)){
+				if( strstr($dev[25],'1.3.6.1.4.1.') ){
+					TblCell($dev[25],"Other-Defgen.php?so=$dev[25]&ip=$ip&co=$dev[15]");
+				}else{
+					TblCell($dev[25],"?ina=sysobjid&opa==&sta=$dev[25]");
+				}
+			}
+			if(in_array("devopts",$col)){
+				TblCell($dev[27]);
+			}
+			if(in_array("size",$col)){
+				TblCell($dev[28],"?ina=size&opa==&sta=$dev[28]","align=\"right\"");
+			}
+			if(in_array("stack",$col)){
+				TblCell($dev[29],"?ina=stack&opa==&sta=$dev[29]","align=\"right\"");
+			}
+			if(in_array("maxpoe",$col)){
+				TblCell($dev[30],"?ina=maxpoe&opa==&sta=$dev[30]","align=\"right\"");
+			}
+			if(in_array("totpoe",$col)){
+				TblCell($dev[31]);
+			}
+
+			if( in_array("stpNS",$col) and !isset($_GET['xls']) ){
 				if($dev[14] and $dev[5] > time() - $rrdstep*2){
 					$stppri	= str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.2.2.0") );
 					if( preg_match("/^No Such|^$/",$stppri) ){
-						echo "-";
+						TblCell("?");
 					}else{
-						echo "<a href=\"Topology-Spanningtree.php?dev=$ud\"><img src=\"img/16/traf.png\" title=\"Topology-Spanningtree\"></a>";
 						$numchg	= str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.2.4.0") );
-						$laschg	= str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.2.3.0") );
-						sscanf($laschg, "%d:%d:%0d:%0d.%d",$tcd,$tch,$tcm,$tcs,$ticks);
-						$tcstr  = sprintf("%dD-%d:%02d:%02d",$tcd,$tch,$tcm,$tcs);
-						$rport	= str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.2.7.0") );
-						if($rport){
-							$rootif	 = str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.1.4.1.2.$rport") );
-							$ifquery = GenQuery('interfaces','s','*','','',array('device','ifidx'),array('=','='),array($dev[0],$rootif),array('AND') );
-							$ifres	 = @DbQuery($ifquery,$link);
-							if(@DbNumRows($ifres) == 1){
-								$if = @DbFetchRow($ifres);
-								$it = "RP:<span class=\"grn\">$if[1] <i>$if[7]</i></span>";
-							}else{
-								$it = "Rootport n/a!";
-							}
+						if( preg_match("/^No Such|^$/",$numchg) ){
+							TblCell("TC:?");
 						}else{
-							$it = "<span class=\"drd\">Root</span>";
+							$laschg	= str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.2.3.0") );
+							sscanf($laschg, "%d:%d:%0d:%0d.%d",$tcd,$tch,$tcm,$tcs,$ticks);
+							$tcstr  = sprintf("%dD-%d:%02d:%02d",$tcd,$tch,$tcm,$tcs);
+							$rport	= str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.2.7.0") );
+							if($rport){
+								$rootif	 = str_replace('"','', Get($ip, $dev[14] & 3, $dev[15], "1.3.6.1.2.1.17.1.4.1.2.$rport") );
+								$ifquery = GenQuery('interfaces','s','*','','',array('device','ifidx'),array('=','='),array($dev[0],$rootif),array('AND') );
+								$ifres	 = @DbQuery($ifquery,$link);
+								if(@DbNumRows($ifres) == 1){
+									$if = @DbFetchRow($ifres);
+									$it = "RP:<span class=\"grn\">$if[1] <i>$if[7]</i></span>";
+								}else{
+									$it = "Rootport n/a!";
+								}
+							}else{
+								$it = "<span class=\"drd\">Root</span>";
+							}
+							TblCell("$prilbl:<span class=\"prp\">$stppri</span> $it TC:<span class=\"blu\">$numchg</span> $tcstr","","","<a href=\"Topology-Spanningtree.php?dev=$ud\"><img src=\"img/16/traf.png\" title=\"Topology-Spanningtree\"></a>");
 						}
-						echo "$prilbl:<span class=\"prp\">$stppri</span> $it TC:<span class=\"blu\">$numchg</span> $tcstr";
 					}
+				}else{
+					TblCell("-");
 				}
-				echo "</td>";
 			}
-			if(in_array("graphs",$col)){
+			if( in_array("gfNS",$col) and !isset($_GET['xls']) ){
 				echo "<td>";
 				$gsiz = ($_SESSION['gsiz'] == 4)?2:1;
-				if($dev[14]){echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=cpu\"><img src=\"inc/drawrrd.php?dv=$ud&t=cpu&s=$gsiz\" title=\"$dev[20]% CPU $lodlbl\">\n";}
-				if($dev[21]){echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=mem\"><img src=\"inc/drawrrd.php?dv=$ud&t=mem&s=$gsiz\" title=\"$mem $memlbl $frelbl\">\n";}
-				if($dev[22]){echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=tmp\"><img src=\"inc/drawrrd.php?dv=$ud&t=tmp&s=$gsiz\" title=\"$tmplbl $tmp\">\n";}
+				if( substr($dev[27],1,1) == "C" ) echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=cpu\"><img src=\"inc/drawrrd.php?dv=$ud&t=cpu&s=$gsiz\" title=\"$dev[20]% CPU $lodlbl\">\n";
+				if($dev[21]) echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=mem\"><img src=\"inc/drawrrd.php?dv=$ud&t=mem&s=$gsiz\" title=\"$mem $memlbl $frelbl\">\n";
+				if($dev[22]) echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=tmp\"><img src=\"inc/drawrrd.php?dv=$ud&t=tmp&s=$gsiz\" title=\"$tmplbl $tmp\">\n";
 				if($dev[23]){
 					if($dev[24] and $dev[24] != 'MemIO'){
 						list($ct,$cy,$cu) = explode(";", $dev[24]);
@@ -281,10 +374,11 @@ if($ina){
 	}
 	?>
 </table>
+
 <table class="content">
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Devices<?=($ord)?", $srtlbl: $ord":""?></td></tr>
+<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Devices<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?></td></tr>
 </table>
-	<?
+<?php
 }
 include_once ("inc/footer.php");
 ?>
