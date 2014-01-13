@@ -1,13 +1,6 @@
 <?
-/*
-#============================================================================
 # Program: indexm.php
 # Programmer: Remo Rickli
-#
-# DATE		COMMENT
-# -----------------------------------------------------------
-# 01/08/10	Refer to NeDi Forum for changes...
-*/
 
 error_reporting(E_ALL ^ E_NOTICE);
 
@@ -17,8 +10,9 @@ $printable = 0;
 $_SESSION['lim']  = 3;
 $_SESSION['col']  = 4;
 $_SESSION['gsiz'] = 6;
-
-$datfmt     = 'j.M y G:i';
+$_SESSION['lsiz'] = 8;
+$_SESSION['view'] = "";
+$_SESSION['date'] = 'j.M y G:i';
 
 require_once ("inc/libmisc.php");
 ReadConf('mon');
@@ -37,16 +31,17 @@ $cty = isset($_GET['cty']) ? $_GET['cty'] : "";
 $bld = isset($_GET['bld']) ? $_GET['bld'] : "";
 $loc = TopoLoc($reg,$cty,$bld);
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-$query	= GenQuery('monitoring','s','name,lastok,status,latency','name','',array('test','location'),array('regexp','regexp'),array('.',$loc),array('AND'),'LEFT JOIN devices USING (device)');
+$slow  = array();
+$link  = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$query = GenQuery('monitoring','s','name,lastok,status,latency','name','',array('test','location'),array('regexp','regexp'),array('.',$loc),array('AND'),'LEFT JOIN devices USING (device)');
 #TODO optmize to only use what's needed -> several queries?
 $res	= @DbQuery($query,$link);
 if($res){
 	$nmon= 0;
 	$mal = 0;
-	$lck = 0;
+	$lok = 0;
 	while( ($m = @DbFetchRow($res)) ){
-		if($m[1] > $lck){$lck = $m[1];}
+		if($m[1] > $lok){$lok = $m[1];}
 		$deval[$m[0]] = $m[2];
 		if($m[2]){$mal++;}
 		if($m[3] > $latw){$slow[$m[0]] = $m[3];}
@@ -56,6 +51,9 @@ if($res){
 }else{
 	print @DbError($link);
 }
+
+$monok = 0;
+if( time() < (2*$pause + $lok) ){$monok = 1;}
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
@@ -74,20 +72,27 @@ if($res){
 <table width="640"><tr class="<?=$modgroup[$self]?>2">
 <td valign="top" align="center">
 <p>
-<a href="mh.php"><img src="img/32/dev.png" title="Checking <?=$nmon?> <?=$totlbl?>"></a>
+<a href="mh.php"><img src="img/32/dev.png" title="<?=$nmon?> <?=$tgtlbl?> Monitored"></a>
 <?
 
 if($mal == 0){
-	if( time() < (2*$pause + $lck) ){
-		echo "<img src=\"img/32/bchk.png\" title=\"moni.pl OK $laslbl ".date($datfmt,$lck)."\">";
+	if($monok){
+		echo "<img src=\"img/32/bchk.png\" title=\"moni.pl OK\">";
 	}else{
-		echo "<img src=\"img/32/bcls.png\" title=\"moni.pl $laslbl ".date($datfmt,$lck)."\">";
+		echo "<img src=\"img/32/bcls.png\" title=\"moni.pl Down!\">";
 	}
 }else{
 	if($mal == 1){
 		echo "<img src=\"img/32/foye.png\" title=\"1 $mlvl[200]\">";
 	}elseif($mal < 10){
-		echo "<img src=\"img/32/foor.png\" title=\"$mal $mlvl[200]\">";
+		if($ni[0] < 3){
+			$ico = "fovi";
+		}elseif($ni[0] < 5){
+			$ico = "foye";
+		}else{
+			$ico = "foor";
+		}
+		echo "<img src=\"img/32/$ico.png\" title=\"$mal $mlvl[200]\">";
 	}else{
 		echo "<img src=\"img/32/ford.png\" title=\"$mal $mlvl[200]!\">";
 	}
@@ -102,8 +107,7 @@ if($mal == 0){
 		if($deval[$d]){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$t    = substr($d,0,strpos($d,'.') );
-			$t    = (strlen($t) < 4)?$d:$t;
+			$t = substr($d,0,$_SESSION['lsiz']);					# Shorten targets
 			list($statbg,$stat) = StatusBg(1,1,$deval[$d],$bi);
 			echo "<tr class=\"$bg\"><td>\n";
 			echo "<b>$t</b></a></td><td class=\"$statbg\">$stat</td></tr>\n";
@@ -113,7 +117,7 @@ if($mal == 0){
 </table>
 <?
 }
-StatusIncidents($loc,$_SESSION['gsiz']);
+StatusIncidents($loc);
 
 if( count($slow) ){
 ?>
@@ -125,9 +129,8 @@ if( count($slow) ){
 	foreach(array_keys($slow) as $d){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
-		$t    = substr($d,0,strpos($d,'.') );
-		$t    = (strlen($t) < 4)?$d:$t;
-		$dbar = Bar($slow[$d],$latw,1);
+		$t    = substr($d,0,$_SESSION['lsiz']);						# Shorten targets
+		$dbar = Bar($slow[$d],$latw,'si');
 		echo "<tr class=\"$bg\"><td><b>$t</b></td><td>$dbar $slow[$d]ms</td></tr>\n";
 	}
 ?>
@@ -141,8 +144,8 @@ if( count($slow) ){
 
 <?
 
-StatusIf($loc,'bbup',$inblbl,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusIf($loc,'bbdn',$oublbl,$_SESSION['lim'],$_SESSION['gsiz']);
+StatusIf($loc,'bbup',$inblbl);
+StatusIf($loc,'bbdn',$oublbl);
 
 $query	= GenQuery('interfaces','s','count(*),round(sum(poe)/1000)','','',array('poe','location'),array('>','regexp'),array('0',$loc),array('AND'),'JOIN devices USING (device)');
 $res	= @DbQuery($query,$link);
@@ -159,18 +162,18 @@ if($res){
 <td valign="top" align="center">
 
 <?
-StatusIf($loc,'brup',$inblbl,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusIf($loc,'brdn',$oublbl,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusIf($loc,'bdis',"Disabled IF $tim[n]",$_SESSION['lim'],$_SESSION['gsiz']);
+StatusIf($loc,'brup',$inblbl);
+StatusIf($loc,'brdn',$oublbl);
+StatusIf($loc,'bdis',"Disabled IF $tim[n]");
 ?>
 
 </td>
 <td valign="top" align="center">
 
 <?
-StatusCpu($loc,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusMem($loc,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusTmp($loc,$_SESSION['lim'],$_SESSION['gsiz']);
+StatusCpu($loc);
+StatusMem($loc);
+StatusTmp($loc);
 ?>
 
 </td></tr>
@@ -178,13 +181,13 @@ StatusTmp($loc,$_SESSION['lim'],$_SESSION['gsiz']);
 
 <h2><?=$mlvl[200]?> & <?=$mlvl[250]?> <?=$tim['t']?></h2>
 <?
-
-	Events($_SESSION['lim'],array('level','time','location'),array('>=','>','regexp'),array(200,$firstmsg,$loc),array('AND','AND'),1);
+	$firstmsg = time() - 86400;
+	Events($_SESSION['lim'],array('level','time','location'),array('>=','>','regexp'),array(200,$firstmsg,$loc),array('AND','AND'),2);
 
 TopoTable($reg,$cty,$bld);
 
 if(!$reg and count($dreg) > 1){
-	TopoRegs();
+	TopoRegs(1);
 }elseif(!$cty){
 	TopoCities($reg,1);
 }elseif(!$bld){

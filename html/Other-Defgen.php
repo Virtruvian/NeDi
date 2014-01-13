@@ -11,10 +11,11 @@ include_once ("inc/header.php");
 $_GET = sanitize($_GET);
 $co = isset($_GET['co']) ? $_GET['co'] : "public";
 $so = isset($_GET['so']) ? $_GET['so'] : "1.3.6.1.4.1.?";
+$sc = isset($_GET['sc']) ? $_GET['sc'] : "";
 $ip = isset($_GET['ip']) ? $_GET['ip'] : "";
 $wr = isset($_POST['wr']) ? $_POST['wr'] : "";
 
-$def = "1) Adjust the fields above first, then customize the resulting text, if necessary.\n2) Click generate when you're done and the .def file will be saved.\n3) Copy the generated file from the log to your sysobj folder (will be done automatically, if sysobj is linked in html/log).\n4) If they're accurate, you can email them to be included in the distribution.\n\nThe icons to the left of a section title are templates. An OID can be tested on the fly, if a target and a community is specified with the green buttons. Please only define indexes if the numbers don't match in the output. Hovering over the fields should provide some hints. Please add a comment, if you define an alternative value for an unused (e.g. memory or temperature) value.";
+$def = "";
 $dis = "";																	# 0 is not working with javascript!
 
 $typ = "";
@@ -71,18 +72,35 @@ $os  = "";
 $bfd = "";
 $dpr = "";
 
+$wrw = "";
+
+
 $defpath = "$nedipath/sysobj";
+
+if ($isadmin and $so and $sc){
+	if( copy("$defpath/$sc.def", "$defpath/$so.def") ){
+		echo "<h5>$wrtlbl $defpath/$so.def OK</h5>\n";
+	}else{
+		echo "<h4>$errlbl $wrtlbl $defpath/$so.def!</h4>\n";
+	}
+}
 if ($so){
 	if( file_exists("$defpath/$so.def") ){
 		$deffile = file("$defpath/$so.def");
-	}elseif( file_exists("log/$so.def") ){
+		$wrw = "onclick=\"return confirm('$coplbl Def -> $dellbl $so.def, $cfmmsg')";
+	}elseif( file_exists("log/$so.def") ){				# TODO remove obsolete html/log idea...
 		$deffile = file("log/$so.def");
 		$defpath = "log";
 	}else{
 		$deffile = "";
 	}
 	if ($deffile){
-		$def = "Definition loaded from $defpath:\n\n" . array_shift($deffile);
+		$def = "$realbl $defpath/$so.def OK\n\n";
+		do {
+			$defhead = array_shift($deffile);
+			$def .= $defhead;
+		}while(preg_match('/^[#;]/',$defhead) );
+
 		foreach ($deffile as $l) {
 			if( !preg_match('/^[#;]/', $l) ){
 				$d = preg_split('/\t+/',rtrim($l) );
@@ -167,7 +185,7 @@ function update() {
 		alert('Controls disabled!');
 	}else{
 		document.gen.so.value = document.bld.so.value;
-		document.gen.def.value = "# Definition for " + document.bld.so.value + " created by Defgen 1.8 on <?=$now?> (<?=$_SESSION['user']?>)\n" +
+		document.gen.def.value = "# Definition for " + document.bld.so.value + " created by Defgen 1.8 on <?=date('j.M Y')?> (<?=$_SESSION['user']?>)\n" +
 		"\n# General\n" +
 		"SNMPv\t" + document.bld.ver.options[document.bld.ver.selectedIndex].value + "\n" +
 		"Type\t" + document.bld.typ.value + "\n" +
@@ -324,9 +342,9 @@ function setmod(typ) {
 
 function setrrd(typ) {
 	if ('1' == typ){
-		document.bld.cpu.value = "1.3.6.1.4.1.11.2.14.11.5.1.9.6.1.0";
+		document.bld.cpu.value = "1.3.6.1.4.1.2021.10.1.3.3";
 		document.bld.tmp.value = "1.3.6.1.2.1.99.1.1.1.4.11";
-		document.bld.mcp.value = "1.3.6.1.4.1.11.2.14.11.5.1.1.2.1.1.1.6.1";
+		document.bld.mcp.value = "1.3.6.1.4.1.2021.4.11.0";
 		document.bld.cul.value = "";
 		document.bld.cuv.value = "";
 	}else{
@@ -363,26 +381,52 @@ function walk(oid) {
 
 <tr class="<?=$modgroup[$self]?>1"><th colspan="4">
 <img src="img/16/bcnl.png" align="right" onClick="setgen();" title="<?=$reslbl?>">
-<img src="img/16/idea.png" align="right" onClick="setgen('1');" title="Standard OIDs">
+<img src="img/16/idea.png" align="right" onClick="setgen('1');" title="Standard System OIDs">
 <img src="img/16/dev.png" align="left" >
 General
 </th></tr>
 
 <tr><th align="right">
 SysObjId</th><td>
-<input type="text" name="so" value="<?=$so?>" size="30" title="Enter the sysobj id, which will be used as filename" onfocus="select();" onchange="update();">
-<img src="img/16/brld.png" title="Reload with current IP,Communtiy and Sysobjid" onClick="document.location.href='?ip='+document.bld.ip.value+'&co='+document.bld.co.value+'&so='+document.bld.so.value;">
+<input type="text" name="so" value="<?=$so?>" size="30" title="SysObj ID -> <?=$fillbl?> <?=$namlbl?>" onfocus="select();" onchange="update();">
+<br>
+<?
+$mybase = substr($so, 0, -strlen(strrchr($so, ".")));
+$mytyp  = substr(strrchr($so, "."), 1);
+
+foreach (glob("$defpath/$mybase*") as $f){
+	$defoid  = substr($f, strlen($defpath)+1,-4);
+	$defbase = substr($defoid, 0, -strlen(strrchr($defoid, ".")));
+	$deftyp  = substr(strrchr($defoid, "."), 1);
+	if( $mybase == $defbase and $deftyp > ($mytyp-10) and $deftyp < ($mytyp+10) ){
+		$df[] = "$defbase.$deftyp";
+	}
+}
+sort($df);
+foreach ($df as $f){
+	if($f == $so){
+?>
+<img src="img/16/brld.png" title="<?=$reslbl?> Form" onClick="document.location.href='?ip='+document.bld.ip.value+'&co='+document.bld.co.value+'&so='+document.bld.so.value;">
+<?			
+	}else{
+?>
+<a href="<?=$self?>.php?ip=<?=$ip?>&co=<?=$co?>&so=<?=$so?>&sc=<?=$f?>"><img src="img/16/geom.png" title="<?=$coplbl?> <?=$srclbl?> <?=$f?>" <?=$wrw?>"></a>
+<?
+	}
+}
+
+?>
 </td><th align="right">
 Typeoid</th><td>
-<input type="text" name="to" value="<?=$to?>" size="30" title="More specific device type" onfocus="select();" onchange="update();">
+<input type="text" name="to" value="<?=$to?>" size="30" title="<?=$altlbl?> device <?=$typlbl?>" onfocus="select();" onchange="update();">
 <img src="img/16/brgt.png" onClick="get(document.bld.to.value);">
 </td></tr>
 <tr><th align="right">
 <?=$typlbl?></th><td>
-<input type="text" name="typ" value="<?=$typ?>" size="30" title="Use the most official type specification as possible" onfocus="select();" onchange="update();">
+<input type="text" name="typ" value="<?=$typ?>" size="30" title="SNMP Sysobj <?=$typlbl?>" onfocus="select();" onchange="update();">
 </td><th align="right">
 OS</th><td>
-<select size="1" name="os" title="Choose operating system for your new device" onchange="update();">
+<select size="1" name="os" title="Operating System" onchange="update();">
 <option value="other">other
 <option value="Printer"<?=($os == "Printer")?"selected":""?>>Printer
 <option value="">--------
@@ -409,30 +453,36 @@ OS</th><td>
 <option value="Baystack"<?=($os == "Baystack")?" selected":""?>>Nortel Legacy
 <option value="Nortel"<?=($os == "Nortel")?" selected":""?>>Nortel (CLI)
 <option value="">--------
+<option value="Omnistack"<?=($os == "Omnistack")?" selected":""?>>Omnistack
+<option value="">--------
 <option value="Ironware"<?=($os == "Ironware")?" selected":""?>>Ironware
+<option value="">--------
+<option value="HuaweiVRP"<?=($os == "HuaweiVRP")?" selected":""?>>Huawei VRP
 <option value="">--------
 <option value="ESX"<?=($os == "ESX")?" selected":""?>>VMware ESX
 <option value="">--------
 <option value="XOS"<?=($os == "XOS")?" selected":""?>>Extreme OS
 <option value="Xware"<?=($os == "Xware")?" selected":""?>>ExtremeWare
+<option value="">--------
+<option value="LANCOM"<?=($os == "LANCOM")?" selected":""?>>LANCOM
 </select>
 
-SNMP <select size="1" name="ver" title="HC=64-bit, MC=64-bit & 32-bit" onchange="update();">
+SNMP <select size="1" name="ver" title="HC=64bit, MC=64bit & 32bit" onchange="update();">
 <option value="1">v1
 <option value="2"<?=$ver['2']?>>v2
 <option value="2MC"<?=$ver['2MC']?>>v2MC
 <option value="2HC"<?=$ver['2HC']?>>v2HC
 </select>
-<img src="img/16/walk.png" title="Check HC counters" onClick="walk('1.3.6.1.2.1.31.1.1.1.6');">
+<img src="img/16/walk.png" title="Test 64bit Counters" onClick="walk('1.3.6.1.2.1.31.1.1.1.6');">
 
 </td></tr>
 <tr><th align="right">
 Icon</th><td>
 <input type="text" name="ico" value="<?=$ico?>" size="24" onfocus="select();" onchange="update();">
- <img src="img/16/file.png" onClick="window.open('inc/browsedev.php','Icons','scrollbars=1,menubar=0,resizable=1,width=600,height=800');" title="Browse available icons">
+<img src="img/16/icon.png" onClick="window.open('inc/browse-icon.php','Icons','scrollbars=1,menubar=0,resizable=1,width=600,height=800');" title="<?=$sellbl?> <?=$imglbl?>">
 </td><th align="right">
 Bridge</th><td>
-<select size="1" name="brg" title="Specify how to read forwarding MIBs, if it's a switch" onchange="bridgeset(document.bld.brg.selectedIndex);" >
+<select size="1" name="brg" title="<?=$fwdlbl?> <?=$lstlbl?>" onchange="bridgeset(document.bld.brg.selectedIndex);" >
 <option value=""> none
 <option value="normal"<?=($bfd == "normal")?" selected":""?>>Normal
 <option value="normalX"<?=($bfd == "normalX")?" selected":""?>>Normal, IF indexed
@@ -452,7 +502,7 @@ Bridge</th><td>
 <img src="img/16/brgt.png" onClick="get(document.bld.sn.value);">
 </td><th align="right">
 Discovery</th><td>
-<input type="text" name="dpr" value="<?=$dpr?>" size="10" title="CDP, FDP, NDP LLDP or LLDPX to index on IFdesc or LLDPXN for IFname" onfocus="select();" onchange="update();">
+<input type="text" name="dpr" value="<?=$dpr?>" size="10" title="CDP, FDP, NDP LLDP or LLDPX to index on IFdesc, LLDPXN on IFname or LLDPXA on IFalias" onfocus="select();" onchange="update();">
 <img src="img/16/walk.png" title="Use LLDPX in case of IF problems" onClick="document.bld.dpr.value = 'LLDP';walk('1.0.8802.1.1.2.1.4.1.1');update();"> LLDP
 <img src="img/16/walk.png" title="Cisco discovery protocol" onClick="document.bld.dpr.value = 'CDP';walk('1.3.6.1.4.1.9.9.23.1.2.1.1');update();"> CDP
 <img src="img/16/walk.png" title="Foundry discovery protocol" onClick="document.bld.dpr.value = 'FDP';walk('1.3.6.1.4.1.1991.1.1.3.20.1.2.1.1');update();"> FDP
@@ -602,7 +652,7 @@ Model</th><td>
 
 <tr class="<?=$modgroup[$self]?>1"><th colspan="4">
 <img src="img/16/bcnl.png" align="right" onClick="setrrd('0');" title="<?=$reslbl?>">
-<img src="img/16/idea.png" align="right" onClick="setrrd('1');" title="Possible ProCurve OIDs">
+<img src="img/16/idea.png" align="right" onClick="setrrd('1');" title="Possible Standard OIDs">
 <img src="img/16/grph.png" align="left">
 RRD Graphing</th></tr>
 

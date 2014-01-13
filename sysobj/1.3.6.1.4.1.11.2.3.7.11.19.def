@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	E2524
+Type	HP-2524
 OS	ProCurve
 Icon	w2gn
 Bridge	normal

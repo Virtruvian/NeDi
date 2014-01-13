@@ -62,7 +62,7 @@ if($res){
 		$time = date($datfmt,$m[0]);
 		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],1);
 		echo "</th>\n";
-		echo "<td bgcolor=#$fc>$time</td><td>$m[2]</td></tr>\n";
+		echo "<td bgcolor=#$fc>$time</td><td>".preg_replace('/(http[s]?:\/\/[^\s]*)/',"<a href=\"$1\" target=\"window\">$1</a>",$m[2])."</td></tr>\n";
 	}
 	echo "</table>\n";
 }

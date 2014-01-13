@@ -25,7 +25,7 @@ function ReadConf($group){
 		die;
 	}
 
-	$locsep	= ";";
+	$locsep	= " ";
 	foreach ($conf as $cl) {
 		if ( !preg_match("/^#|^$/",$cl) ){
 			$v =  preg_split('/[\t\s]+/', rtrim($cl,"\n\r\0") );
@@ -86,13 +86,14 @@ function ReadConf($group){
 }
 
 //===================================================================
-// Avoid directory traversal attacks (../ or ..\) and explicit quotes
-// Recursive because array elemnts can be array as well (e.g. columns)
+// Avoid directory traversal attacks (../ or ..\)
+// Avoid condition exclusion (e.g. attacking viewdev) with mysql comment --
+// Recursive because array elements can be array as well
 function sanitize( $arr ){
 	if ( is_array($arr) ){
 		return array_map( 'sanitize', $arr );
 	}
-	return preg_replace( "/\.\.[\/]|\'|\"/","", $arr );
+	return preg_replace( "/\.\.[\/]|--/","", $arr );
 }
 
 //===================================================================
@@ -159,14 +160,14 @@ function Masker($nm){
 
 //===================================================================
 // Replace ridiculously big numbers with readable ones
-function ZFix($n){
+function DecFix($n){
 
 	if($n >= 1000000000){
-		return sprintf("%.3gG",$n/1000000000);
+		return round($n/1000000000,1)."G";
 	}elseif($n >= 1000000){
-		return sprintf("%.3gM",$n/1000000);
+		return round($n/1000000,1)."M";
 	}elseif($n >= 1000){
-		return sprintf("%.3gK",$n/1000);
+		return round($n/1000,1)."K";
 	}else{
 		return $n;
 	}
@@ -200,27 +201,34 @@ function Agecol($fs, $ls,$row){
 }
 
 //===================================================================
-// Generate column headers with sorting
+// Generate column headers with sorting (obsolete soon)
 function ColHead($n,$w=0){
 
 	global $ord,$cols,$altlbl,$srtlbl;
 
 	$wi="nowrap ";
-	if($w){$wi .="width=$w";}
-	if (!$ord){
-		echo "<th $wi>$cols[$n]<a href=?$_SERVER[QUERY_STRING]&ord=$n+desc><img src=img/dwn.png title=\"Sort by $n\"></a></th>";
-	}elseif($ord == $n){
-		echo "<th $wi class=mrn>$cols[$n] <a href=?";
-		echo preg_replace('/&ord=(.*)/',"&ord=$n+desc",$_SERVER['QUERY_STRING']);
-		echo "><img src=img/up.png title=\"$srtlbl\"></a></th>";
-	}elseif($ord == "$n desc"){
-		echo "<th $wi class=olv>$cols[$n] <a href=?";
-		echo preg_replace('/&ord=(.*)/',"&ord=$n",$_SERVER['QUERY_STRING']);
-		echo "><img src=img/dwn.png title=\"$altlbl $srtlbl\"></a></th>";
+	if( isset($_GET['xls']) ){
+		echo "<th>$cols[$n]</th>";
 	}else{
-		echo "<th $wi>$cols[$n] <a href=?";
-		echo preg_replace('/&ord=(.*)/',"&ord=$n+desc",$_SERVER['QUERY_STRING']);
-		echo "><img src=img/dwn.png title=\"$srtlbl $n\"></a></th>";
+		if($w){
+			$wi .="width=$w";
+		}
+
+		if (!$ord){
+			echo "<th $wi>$cols[$n]<a href=?$_SERVER[QUERY_STRING]&ord=$n+desc><img src=img/dwn.png title=\"Sort by $n\"></a></th>";
+		}elseif($ord == $n){
+			echo "<th $wi class=mrn>$cols[$n] <a href=?";
+			echo preg_replace('/&ord=(.*)/',"&ord=$n+desc",$_SERVER['QUERY_STRING']);
+			echo "><img src=img/up.png title=\"$srtlbl\"></a></th>";
+		}elseif($ord == "$n desc"){
+			echo "<th $wi class=olv>$cols[$n] <a href=?";
+			echo preg_replace('/&ord=(.*)/',"&ord=$n",$_SERVER['QUERY_STRING']);
+			echo "><img src=img/dwn.png title=\"$altlbl $srtlbl\"></a></th>";
+		}else{
+			echo "<th $wi>$cols[$n] <a href=?";
+			echo preg_replace('/&ord=(.*)/',"&ord=$n+desc",$_SERVER['QUERY_STRING']);
+			echo "><img src=img/dwn.png title=\"$srtlbl $n\"></a></th>";
+		}
 	}
 }
 
@@ -231,7 +239,7 @@ function selectbox($type,$sel=""){
 	global $cndlbl;
 	
 	if($type == "oper"){
-		$options = array("regexp"=>"regexp","not regexp"=>"!regexp","regexpCI"=>"reg CI","not regexpCI"=>"!reg CI","like"=>"like",">"=>">","="=>"=","!="=>"!=",">="=>">=","<"=>"<","&"=>"and","||"=>"or","NOQ IS"=>"is","NOQ IS NOT"=>"is not");
+		$options = array("regexp"=>"regexp","not regexp"=>"!regexp","regexpCI"=>"reg CI","not regexpCI"=>"!reg CI","like"=>"like",">"=>">","="=>"=","!="=>"!=",">="=>">=","<"=>"<","&"=>"and","||"=>"or","COL IS"=>"is","COL IS NOT"=>"is not");
 	}elseif($type == "comop"){
 		$options = array(""=>"$cndlbl A","AND"=>"A and B","OR"=>"A or B",">"=>"colA > colB","="=>"colA = colB","!="=>"colA != colB","<"=>"colA < colB");
 	}elseif($type == "limit"){
@@ -263,6 +271,63 @@ function ConHead($ina, $opa, $sta, $cop="", $inb="", $opb="", $stb=""){
 }
 
 //===================================================================
+// Generate table row
+function TblHead($stl,$srt = 0){
+
+	global $ord,$cols,$col,$altlbl,$srtlbl;
+
+	echo "<table class=\"content\"><tr class=\"$stl\">";
+
+	foreach($col as $n){
+		if( !array_key_exists($n,$cols) or isset($_GET['xls']) or !$srt){
+			echo "<th>$cols[$n]</th>";
+		}else{
+			if (!$ord){
+				echo "<th nowrap>$cols[$n]<a href=?$_SERVER[QUERY_STRING]&ord=$n+desc><img src=img/dwn.png title=\"Sort by $n\"></a></th>";
+			}elseif($ord == $n){
+				echo "<th nowrap class=mrn>$cols[$n] <a href=?";
+				echo preg_replace('/&ord=(.*)/',"&ord=$n+desc",$_SERVER['QUERY_STRING']);
+				echo "><img src=img/up.png title=\"$srtlbl\"></a></th>";
+			}elseif($ord == "$n desc"){
+				echo "<th nowrap class=olv>$cols[$n] <a href=?";
+				echo preg_replace('/&ord=(.*)/',"&ord=$n",$_SERVER['QUERY_STRING']);
+				echo "><img src=img/dwn.png title=\"$altlbl $srtlbl\"></a></th>";
+			}else{
+				echo "<th nowrap>$cols[$n] <a href=?";
+				echo preg_replace('/&ord=(.*)/',"&ord=$n+desc",$_SERVER['QUERY_STRING']);
+				echo "><img src=img/dwn.png title=\"$srtlbl $n\"></a></th>";
+			}
+		}
+	}
+
+	echo "</tr>\n";
+}
+
+//===================================================================
+// Generate table row
+function TblRow($over=0){
+
+	global $bg;
+
+	if($over and !isset($_GET['print']) and !isset($_GET['xls']) ){
+		echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">";
+	}else{
+		echo "<tr class=\"$bg\">";
+	}
+}
+
+//===================================================================
+// Generate table cell
+function TblCell($val,$href="",$class="",$img=""){
+
+	$cval = ( !isset($_GET['print']) and !isset($_GET['xls']) and $href)?"<a href=\"$href\">$val</a>":$val;
+	$cimg = ( !isset($_GET['print']) and !isset($_GET['xls']) and $img)?$img:"";
+	$ccla = ($class)?"class=\"$class\"":"";
+
+	echo "<td $ccla>$cimg $cval</td>";
+}
+
+//===================================================================
 // Generate coloured bar for html
 // mode determines color (threshold, if numeric)
 // style si=small icon, ms=medium shape, li=large icon (default)
@@ -273,7 +338,7 @@ function Bar($val=1,$mode=0,$style="",$title=""){
 	if($tresh == "lvl250"){
 			$img = "red";
 			$bg = "crit";
-	}elseif($tresh == "lvl200"){
+	}elseif( preg_match('/lvl(200|cfge|trfe|usrd)/',$tresh) ){
 			$img = "org";
 			$bg = "alrm";
 	}elseif($tresh == "lvl150"){
@@ -282,7 +347,7 @@ function Bar($val=1,$mode=0,$style="",$title=""){
 	}elseif($tresh == "lvl100"){
 			$img = "blu";
 			$bg = "noti";
-	}elseif($tresh == "lvl50"){
+	}elseif( preg_match('/lvl(50|cfgn)/',$tresh) ){
 			$img = "grn";
 			$bg = "good";
 	}elseif($tresh == "lvl10"){
@@ -338,7 +403,7 @@ function Bar($val=1,$mode=0,$style="",$title=""){
 		$length = round($val / 10 - 10);		
 		return "<img src=\"img/$img.png\" width=\"100\" class=\"bigbar\" title=\">100\" ><img src=\"img/$img.png\" width=\"$length\" class=\"bigbar\" title=\"$val\">";
 	}else{
-		$length = round($val);
+		$length = round($val) + 3;
 		return "<img src=\"img/$img.png\" width=\"$length\" class=\"bigbar\" title=\"$val\">";
 	}
 }
@@ -400,6 +465,7 @@ function Fimg($f) {
 	elseif(stristr($f,".log"))				{$i = "note";$t = "$hislbl";}
 	elseif(stristr($f,".js"))				{$i = "dbmb";$t = "Javascript";}
 	elseif(stristr($f,".php"))				{$i = "php"; $t = "PHP Script";}
+	elseif(stristr($f,".reg"))				{$i = "cog";  $t = "Registry $fillbl";}
 	elseif(stristr($f,".sql"))				{$i = "db";  $t = "DB $fillbl";}
 	elseif(stristr($f,".txt"))				{$i = "abc"; $t = "TXT $fillbl";}
 	elseif(stristr($f,".xml"))				{$i = "dcub";$t = "XML $fillbl";}
@@ -407,7 +473,7 @@ function Fimg($f) {
 	elseif(preg_match("/\.(exe)$/i",$f))			{$i = "cbox";$t = "$cmdlbl";}
 	elseif(preg_match("/\.(pcm|raw)$/i",$f))		{$i = "bell";$t = "Ringtone";}
 	elseif(preg_match("/\.(bin|loads|img|sbn|swi)$/i",$f))	{$i = "cog"; $t = "Binary Image";}
-	elseif(preg_match("/\.(bmp|gif|png|jpg)$/i",$f))	{$i = "img";$t = "$imglbl";}
+	elseif(preg_match("/\.(bmp|gif|jpg|png|svg)$/i",$f))	{$i = "img";$t = "$imglbl";}
 	elseif(preg_match("/\.(zip|tgz|tar|gz|7z|bz2|rar)$/i",$f)){$i = "pkg"; $t = "Archive";}
 	else							{$i = "bbox";$t = "$mlvl[10]";}
 	

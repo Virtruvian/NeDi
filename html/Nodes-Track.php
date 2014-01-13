@@ -1,5 +1,5 @@
 <?
-# Program: Nodes-Tracker.php
+# Program: Nodes-Track.php
 # Programmer: Remo Rickli
 
 # load data local infile '/home/rickli/Downloads/switchprot_delta_report2010-08-18 21-10-33.csv' into table nodetrack fields terminated by ',' enclosed by '"' lines terminated by '\n' IGNORE 1 LINES (device,Ifname,Realname,alias,Name,@dip,preferred,manual,switchport,finalname) SET IP = INET_ATON(@dip)
@@ -54,7 +54,6 @@ $cols = array(	"nodetrack.device"=>"Device",
 		"time"=>$timlbl
 		);
 
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 ?>
 <h1>Node Tracker</h1>
 
@@ -113,6 +112,7 @@ foreach ($cols as $k => $v){
 
 </th>
 <th width="80">
+
 <input type="submit" value="<?=$sholbl?>">
 <p>
 <input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('Tracker <?=$dellbl?>?')" >
@@ -121,6 +121,7 @@ foreach ($cols as $k => $v){
 </tr></table></form><p>
 <?
 }
+$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if($del){
 	$query	= GenQuery('nodetrack','d','','','',array($ina),array($opa),array($sta) );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl $ina $opa $sta OK</h5>";}

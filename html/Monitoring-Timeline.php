@@ -68,7 +68,7 @@ foreach ($cols as $k => $v){
 <option value="source" <?=($det == "source")?"selected":""?>><?=$srclbl?>
 <option value="class" <?=($det == "class")?"selected":""?>><?=$clalbl?>
 </select>
-<img src="img/16/paint.png" title="<?=$gralbl?> <?=$typlbl?>">
+<img src="img/16/abc.png" title="<?=$typlbl?>">
 <select size="1" name="bsz">
 <option value="si"><?=(($verb1)?"$siz[s] $imglbl":"$imglbl $siz[s]")?>
 <option value="mi" <?=($bsz == "mi")?"selected":""?>><?=(($verb1)?"$siz[m] $imglbl":"$imglbl $siz[m]")?>
@@ -124,7 +124,7 @@ while($istart < $to){
 	echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\"><th class=\"$bi\" nowrap>\n";
 	echo "<a href=\"Monitoring-Events.php?ina=time&opa=%3E=&sta=$fs&cop=AND&inb=time&opb=%3C&stb=$fe&lim=0\">".date("j.M G:i",$istart)."</a></th><td>\n";
 	if($det){
-		$query	= GenQuery('events','g',$det,'','',array('time','time',$ina),array('>=','<',$opa),array($istart,$iend,$sta),array('AND','AND'),'LEFT JOIN devices USING (device)');
+		$query	= GenQuery('events','g',"$det;icon",'','',array('time','time',$ina),array('>=','<',$opa),array($istart,$iend,$sta),array('AND','AND'),'LEFT JOIN devices USING (device)');
 		$res	= @DbQuery($query,$link);
 		if($res){
 			$nmsg = 0;
@@ -139,11 +139,16 @@ while($istart < $to){
 					}
 				}else{
 					$um = urlencode($m[0]);
-					$ei = EvImg($m[0]);
 					if($bsz == 'ms'){
 						echo "<a href=\"Monitoring-Events.php?ina=$det&opa==&sta=$um&cop=AND&inb=time&opb=%3C&stb=$fe\">$mbar</a>\n";
 					}else{
-						echo "<a href=\"Monitoring-Events.php?ina=$det&opa==&sta=$um&cop=AND&inb=time&opb=%3C&stb=$fe\"><img src=\"img/16/$ei.png\" title=\"$m[1] $m[0]\"></a>$mbar\n";
+						if($det == 'source'){
+							$icon = "<img src=\"img/".(($m[2])?"dev/$m[2]":"16/say").".png\" width=\"".(($bsz == 'li')?"24":"16")."\" title=\"$m[0]: $m[1]\">";
+						}else{
+							list($ei,$et) = EvClass($m[0]);
+							$icon = "<img src=\"img/16/$ei.png\" title=\"$et, $m[1]\">";
+						}
+						echo "<a href=\"Monitoring-Events.php?ina=$det&opa==&sta=$um&cop=AND&inb=time&opb=%3C&stb=$fe\">$icon</a>$mbar\n";
 					}
 				}
 				$nmsg += $m[1];

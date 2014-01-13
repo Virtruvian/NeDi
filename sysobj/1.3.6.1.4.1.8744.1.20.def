@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	MSM310
+Type	HP-MSM310
 OS	MSM
 Icon	wagn
 Bridge	normal

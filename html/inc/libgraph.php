@@ -141,7 +141,7 @@ function GraphOpts($siz,$sta,$end,$tit,$opt){
 		}elseif($opt){					# >1 traffic graph
 			return "-w50 -h30 -u$opt -j -c CANVAS#ccddee";
 		}else{						# discardsm broadcast
-			return "-w50 -h30 -j -c CANVAS#eebbdd";
+			return "-w50 -h30 -j -c CANVAS#eeeeee";
 		}
 	}elseif($siz == '2'){
 		$dur = (($sta)?"-s${sta}":"-s-1d").(($end)?" -e${end} ":"");
@@ -153,7 +153,7 @@ function GraphOpts($siz,$sta,$end,$tit,$opt){
 		$dur = (($sta)?"-s${sta}":"-s-5d").(($end)?" -e${end} ":"");
 		return "--title=\"$tit\" -w250 -h100 $dur -L6";
 	}else{
-		$sta = ($sta)?$sta:(date - 7 * 86400);
+		$sta = ($sta)?$sta:('date' - 7 * 86400);
 		$dur = "-s${sta}".(($end)?" -e${end} ":"");
 		return "--title=\"$tit ". date($datfmt,$sta)."\" -w800 -h200 $dur -L6";
 	}

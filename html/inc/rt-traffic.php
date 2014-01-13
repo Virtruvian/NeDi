@@ -11,8 +11,8 @@ $_GET = sanitize($_GET);
 $debug  = isset($_GET['debug']) ? $_GET['debug'] : "";
 
 if($_GET['ip'] and $_GET['v'] and $_GET['c'] and $_GET['i']){
-	$ioctO = ($_GET['v'] & 128)?'1.3.6.1.2.1.31.1.1.1.6':'1.3.6.1.2.1.2.2.1.10';
-	$ooctO = ($_GET['v'] & 128)?'1.3.6.1.2.1.31.1.1.1.10':'1.3.6.1.2.1.2.2.1.16';
+	$ioctO = ($_GET['v'] & 192 == 128)?'1.3.6.1.2.1.31.1.1.1.6':'1.3.6.1.2.1.2.2.1.10';	# 128=HC, 64=Merge with 32bit thus resort to 32bit as a view seconds intervall won't be a problem, even on 10G!
+	$ooctO = ($_GET['v'] & 192 == 128)?'1.3.6.1.2.1.31.1.1.1.10':'1.3.6.1.2.1.2.2.1.16';
 # I don't understand why PHP sometimes returns the types as well....only sometimes?!??!?
 	$io = preg_replace("/Counter[0-9]{2}: /","",Get($_GET['ip'], $_GET['v'] & 3, $_GET['c'], "$ioctO.$_GET[i]",3000000));
 	$oo = preg_replace("/Counter[0-9]{2}: /","",Get($_GET['ip'], $_GET['v'] & 3, $_GET['c'], "$ooctO.$_GET[i]",3000000));

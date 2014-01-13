@@ -11,7 +11,7 @@
 # $isadmin	current user is in admin group
 
 # Usage example for  http link on port 8001 of non IOS devices:
-#if($os != IOS){
-#	echo <a href=\http://$ip:8001\><img src=\img/16/glob.png\></a>;
+#if($os != "IOS"){
+#	echo "<a href=\"http://$ip:8001\"><img src=\"img/16/glob.png\"></a>";
 #}
 ?>

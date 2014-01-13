@@ -65,7 +65,7 @@ if($mod == "i"){
 }else{
 	$cmd .= " --help";
 }
-$cmd = escapeshellcmd($cmd);
+
 ?>
 <script language="JavaScript">
 <!--
@@ -102,7 +102,7 @@ function UpCmd(){
 		if(document.nedi.sed.selectedIndex){arg += " -" + document.nedi.sed.options[document.nedi.sed.selectedIndex].value + document.nedi.opt.value}
 	}else if(document.nedi.mod[1].checked){
 		if(document.nedi.vrb.checked){arg = "-v"}
-		arg += " -s ip=" + document.nedi.opt.value;
+		arg += " -s TUFip=" + document.nedi.opt.value;
 	}else if(document.nedi.mod[2].checked){
 		arg = "-y";
 	}else if(document.nedi.mod[3].checked){
@@ -147,7 +147,7 @@ function UpCmd(){
 
 <tr>
 <td>
-<input type="text" name="opt" value="<?=$opt?>" size="15" title="seed/scan IP" onfocus="select();" onchange="UpCmd();">
+<input type="text" name="opt" value="<?=htmlspecialchars($opt)?>" size="15" title="seed/scan IP" onfocus="select();" onchange="UpCmd();">
 </td>
 <td><input type="checkbox" name="dip" <?=$dip?> title="LLDP, CDP, FDP, NDP..." onchange="UpCmd();"> Protocol</td>
 <td><input type="checkbox" name="rte" <?=$rte?> title="<?=(($verb1)?"$dsclbl Routes":"Routes $dsclbl")?>" onchange="UpCmd();"> Route</td>
@@ -188,7 +188,7 @@ function UpCmd(){
 <div class="textpad code txta" name="out">
 <?
 ob_end_flush();
-system("$cmd 2>&1");
+system(addslashes($cmd)." 2>&1");
 ?>
 </div><br>
 

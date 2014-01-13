@@ -23,7 +23,7 @@ if( isset($_GET['col']) ){
 }elseif( isset($_SESSION['modcol']) ){
 	$col = $_SESSION['modcol'];
 }else{
-	$col = array('device','slot','model','moddesc','serial');
+	$col = array('device','slot','model','moddesc','modules.serial');
 }
 
 $cols = array(	"device"=>"Device $namlbl",
@@ -33,13 +33,21 @@ $cols = array(	"device"=>"Device $namlbl",
 		"slot"=>"Slot",
 		"model"=>$mdllbl,
 		"moddesc"=>$deslbl,
-		"serial"=>$serlbl,
+		"modules.serial"=>$serlbl,
 		"hw"=>"Hardware",
 		"fw"=>"Firmware",
 		"sw"=>"Software",
 		"modidx"=>"Index"
 		);
 
+$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
+$listalert = "";
+if($listwarn){
+	$cnr  = @DbFetchRow(DbQuery(GenQuery('modules','s','count(*)','','','','','','','LEFT JOIN devices USING (device)'), $link));
+	if($cnr[0] > $listwarn){
+		$listalert = "onclick=\"if(document.list.sta.value == ''){return confirm('".(($verb1)?"$sholbl $alllbl $cnr[0]":"$alllbl $cnr[0] $sholbl")."?');}\"";
+	}
+}
 ?>
 <h1>Module <?=$lstlbl?></h1>
 
@@ -90,11 +98,13 @@ foreach ($cols as $k => $v){
 ?>
 </select>
 </th>
-<th width="80"><input type="submit" value="<?=$sholbl?>"></th>
+<th width="80">
+<input type="submit" value="<?=$sholbl?>" <?=$listalert?>>
+</th>
 </tr></table></form><p>
 <?
 }
-if ($ina){
+if($ina){
 ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 	?>
 <table class="content"><tr class="<?=$modgroup[$self]?>2">
@@ -104,7 +114,6 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 	}
 	echo "</tr>\n";
 
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	$query	= GenQuery('modules','s','modules.*,type,location,contact',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device)');
 	$res	= @DbQuery($query,$link);
 	if($res){
@@ -127,7 +136,7 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 			if(in_array("slot",$col)){echo "<td><a href=?ina=slot&opa==&sta=".urlencode($m[1]).">$m[1]</a>";}
 			if(in_array("model",$col)){echo "<td><a href=?ina=model&opa==&sta=".urlencode($m[2]).">$m[2]</a>";}
 			if(in_array("moddesc",$col)){echo "<td>$m[3]</td>";}
-			if(in_array("serial",$col)){ echo "<td>$m[4]</td>";}
+			if(in_array("modules.serial",$col)){ echo "<td>$m[4]</td>";}
 			if(in_array("hw",$col)){echo "<td><a href=?ina=hw&opa==&sta=".urlencode($m[5]).">$m[5]</a>";}
 			if(in_array("fw",$col)){echo "<td><a href=?ina=fw&opa==&sta=".urlencode($m[6]).">$m[6]</a>";}
 			if(in_array("sw",$col)){echo "<td><a href=?ina=sw&opa==&sta=".urlencode($m[7]).">$m[7]</a>";}

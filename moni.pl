@@ -26,7 +26,7 @@ the Free Software Foundation, either version 3 of the License, or
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU General Public License for details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
@@ -39,17 +39,15 @@ Visit http://www.nedi.ch for more information.
 
 =cut
 
-$VERSION = "1.2";
-
 use strict;
 use warnings;
 
 use Getopt::Std;
 use Net::SNMP qw(ticks_to_time);
 
-use vars qw($now $warn $p %opt %dev %usr %mon %depdevs %depdown %depcount);
+use vars qw($now $warn $p $mq %opt %dev %usr %mon %depdevs %depdown %depcount %msgq);
 
-getopts('Dt:vV',\%opt) || &HELP_MESSAGE;
+getopts('Dt:v',\%opt) || &HELP_MESSAGE;
 
 BEGIN{													# To avoid perl thinking var is used once
 	$now = time;
@@ -64,13 +62,17 @@ BEGIN{													# To avoid perl thinking var is used once
 }
 
 if ($opt{'t'}) {											# Creates incidents and bails
-	my $msg = "moni.pl test message";
-	&db::Insert('events','level,time,source,info,class',"\"$opt{t}\",\"$now\",\"Test\",\"$msg\",\"moni\"");
-	&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{t}\",\"Test\",\"0\",\"$now\",\"0\",\"\",\"0\",\"1\",\"\",\"Testdev\"");
-	&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{t}\",\"Test\",\"0\",\"$now\",\"".($now+$misc::pause)."\",\"\",\"0\",\"1\",\"\",\"Testdev\"");
-	my $nsms  = &mon::SendSMS($msg);
-	my $nmail = &mon::SendMail("moni.pl Test",$msg);
-	die "1 Message, 2 Incidents, $nsms SMS and $nmail mail created\n";
+	my $ntgt = &mon::InitMon();
+	my @tgts = keys %mon;
+	my $t  = pop @tgts;
+	my $msg = "moni.pl test using first monitored device: $t";
+	&db::Insert('events','level,time,source,info,class,device',"\"$opt{t}\",\"$now\",\"$mon{$t}{dv}\",\"$msg\",\"moni\",\"$mon{$t}{dv}\"");
+	&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{t}\",\"$t\",\"0\",\"$now\",\"0\",\"\",\"0\",\"1\",\"\",\"$mon{$t}{dv}\"");
+	&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$opt{t}\",\"$t\",\"0\",\"$now\",\"".($now+$misc::pause)."\",\"\",\"0\",\"1\",\"\",\"$mon{$t}{dv}\"");
+
+	my ($mq,$sq) = &mon::AlertQ("$msg\n","$msg ",$mon{$t}{al},$mon{$t}{dv});
+	my $af = &mon::AlertFlush("moni.pl Test",$mq,$sq);
+	exit;
 }elsif ($opt{'D'}) {											# Daemonize or...
 	&misc::Daemonize;
 }else{
@@ -79,12 +81,10 @@ if ($opt{'t'}) {											# Creates incidents and bails
 
 while(1) {# TODO support dependency aware threading for better scalability!
 
-	%mon   = ();											# Remove potential "leftovers"
-	$now   = time;
+	$now = time;
+	$mq  = 0;
 
-	my $ndev  = &db::ReadMon('dev');
-	my $nnod  = &db::ReadMon('node');
-
+	my $ntgt = &mon::InitMon();
 	&misc::Prt("\nInitializing " . localtime($now) . " --------------\n");
 	foreach my $d (keys %mon){
 		&misc::Prt(sprintf ("DEPS:%-10.10s = %-8.8s ", $d, $mon{$d}{dy}) );
@@ -107,7 +107,7 @@ while(1) {# TODO support dependency aware threading for better scalability!
 		&misc::Prt(" Deps=$mon{$d}{dc}\n");
 	}
 
-	&misc::Prt("\nChecking ".($ndev+$nnod)." targets in total, Pause ${misc::pause}s ---------------\n");
+	&misc::Prt("\nChecking $ntgt targets in total, Pause ${misc::pause}s ---------------\n");
 	foreach my $d (sort { $mon{$b}{dc} <=> $mon{$a}{dc} } keys %mon){				# Check sorted by # of dependants to optimize checks
 		my $latency = my $uptime = 0;
 		&misc::Prt(sprintf ("\nTRGT:%-12.12s Deps=%-4.4s Chk=%-6.6s\n", $d, $mon{$d}{dc}, $mon{$d}{te}) );
@@ -127,10 +127,9 @@ while(1) {# TODO support dependency aware threading for better scalability!
 					($latency, $uptime) = &mon::GetUptime($mon{$d}{'ip'},$mon{$d}{'rv'},$mon{$d}{'rc'});
 					if($latency and $mon{$d}{up} > $uptime and $mon{$d}{up} < 4294900000){	# Ignore alledged reboot, due to 32bit overflow
 						my $wup = ticks_to_time($mon{$d}{up});
-						&misc::Prt("BOOT:Rebooted was up for $wup\n");
+						&misc::Prt("BOOT:Rebooted! Was up for $wup\n");
 						&db::Insert('events','level,time,source,info,class,device',"'150',\"$now\",\"$d\",\"Rebooted (was up for $wup)!\",\"moni\",\"$mon{$d}{dv}\"");
-						&mon::SendMail("$d rebooted!","Was up for $wup") if ($mon{$d}{al} & 1);
-						&mon::SendSMS("$d rebooted!") if ($mon{$d}{al} & 2);
+						$mq += &mon::AlertQ("- $d rebooted! Was up for $wup\n","$d rebooted! ",$mon{$d}{al},$mon{$d}{dv});
 					}
 				}
 				if($latency){
@@ -142,12 +141,12 @@ while(1) {# TODO support dependency aware threading for better scalability!
 					&misc::Prt("UP  :");
 					&MarkDep($d,'up',0);							# Mark everytime to avoid errors when moni is restarted
 					if($mon{$d}{st} >= $misc::chka){
-						&misc::Prt("Recovered affects $mon{$d}{dc} targets\n");
-						my $dt = sprintf("%.0f", $mon{$d}{st} * $misc::pause / 3600);
-						&db::Insert('events','level,time,source,info,class,device',"'50',\"$now\",\"$d\",\"Recovered, Latency ${latency}ms, was down for ${dt}h\",\"moni\",\"$mon{$d}{dv}\"");
+						my $msg = "$d recovered".(($mon{$d}{dc})?", affects $mon{$d}{dc} more targets!":"");
+						my $dnt  = sprintf("was down for %.1fh", $mon{$d}{st}*$misc::pause/3600);
+						&misc::Prt("$msg\n");
+						&db::Insert('events','level,time,source,info,class,device',"'50',\"$now\",\"$d\",\"$msg, $dnt\",\"moni\",\"$mon{$d}{dv}\"");
 						&db::Update('incidents',"end=\"$now\"","name =\"$d\" AND end=0");
-						&mon::SendMail("$d recovered","Latency ${latency}ms, was down for ${dt}h")  if ($mon{$d}{al} & 1);
-						&mon::SendSMS("$d recovered, down for ${dt}h") if ($mon{$d}{al} & 2);
+						$mq += &mon::AlertQ("- $msg, latency ${latency}ms, $dnt\n","$msg ",$mon{$d}{al},$mon{$d}{dv});
 					}else{
 						&misc::Prt("Last status=$mon{$d}{st}\n");
 					}
@@ -160,17 +159,16 @@ while(1) {# TODO support dependency aware threading for better scalability!
 					&MarkDep($d,'down',0);							# Mark everytime to avoid errors when moni is restarted
 					if($mon{$d}{st} == $misc::chka){
 						my $lvl = 200;
-						my $downmsg = "Is down, not affecting any other targets";
+						my $downmsg = "$d is down";
 						if($mon{$d}{dc}){
 							$lvl = 250;
-							$downmsg = "Is down, affects $mon{$d}{dc} targets!";
+							$downmsg .= ", affects $mon{$d}{dc} more targets!";
 						}
 						&misc::Prt("$downmsg\n");
 						&db::Insert('events','level,time,source,info,class,device',"\"$lvl\",\"$now\",\"$d\",\"$downmsg\",\"moni\",\"$mon{$d}{dv}\"");
 						&db::Insert('incidents','level,name,deps,start,end,user,time,grp,comment,device',"\"$lvl\",\"$d\",\"$mon{$d}{dc}\",\"$now\",\"0\",\"\",\"0\",\"1\",\"\",\"$mon{$d}{dv}\"");
-						&mon::SendMail("$d went down", $downmsg) if ($mon{$d}{al} & 1);
-						&mon::SendSMS("$d $downmsg") if ($mon{$d}{al} & 2);
-					}elsif( !($mon{$d}{st} % 10) ){						# Notify every 10th time
+						$mq += &mon::AlertQ("- $downmsg!\n","$downmsg ",$mon{$d}{al},$mon{$d}{dv});
+					}elsif( $mon{$d}{st} == 1 or !($mon{$d}{st} % 10) ){			# Notify 1st and every 10th time
 						&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$now\",\"$d\",\"Is unreachable for $mon{$d}{st} time".(($mon{$d}{st} > 1)?"s":"")."\",\"moni\",\"$mon{$d}{dv}\"");
 					}
 
@@ -181,8 +179,9 @@ while(1) {# TODO support dependency aware threading for better scalability!
 			&misc::Prt("SKIP:No check configured...\n");
 		}
 	}
-	my $took = time - $now;
+	&mon::AlertFlush("NeDi Monitoring Alert",$mq);
 	&misc::Prt("===============================================================================\n");
+	my $took = time - $now;
 	if ($misc::pause > $took){
 		my $sl = $misc::pause - $took;
 		&misc::Prt("Took ${took}s, sleeping ${sl}s\n\n");
@@ -208,7 +207,7 @@ sub MarkDep {
 
 	my ($d, $stat, $iter) = @_;
 
-	if($iter < 100 and exists $mon{$d}{da} ){
+	if($iter < 90 and exists $mon{$d}{da} ){
 		foreach my $d (@{$mon{$d}{da}}){
 #			&misc::Prt(" $d");
 			$mon{$d}{ds} = $stat;
@@ -236,16 +235,22 @@ sub CountDep {
 
 	my ($d, $iter) = @_;
 
-	if($iter < 100 and exists $mon{$d}{da} ){
-		my $c = scalar @{$mon{$d}{da}};
-		&misc::Prt(" I=$iter:$d+$c");
-		foreach my $d (@{$mon{$d}{da}}){
-			$c += &CountDep($d,$iter+1);
+	if($iter < 90){
+		if(exists $mon{$d}{da} ){
+			my $c = scalar @{$mon{$d}{da}};
+			&misc::Prt(" I=$iter:$d+$c");
+			foreach my $d (@{$mon{$d}{da}}){
+				$c += &CountDep($d,$iter+1);
+			}
+			return $c;
+		}else{
+			return 0;
 		}
-		return $c;
 	}else{
+		&misc::Prt(" Dependency Loop ","DL ");
 		return 0;
 	}
+
 }
 
 =head2 FUNCTION HELP_MESSAGE()
@@ -267,6 +272,6 @@ sub HELP_MESSAGE{
 	print "-t <lev>	test with level (creates mail (on msgxxx match), SMS, message and incident)\n";
 	print "-v	verbose output\n";
 	print "-D	daemonize moni.pl\n\n";
-	print "Moni $main::VERSION (C) 2001-2011 Remo Rickli (and contributors)\n\n";
+	print "(C) 2001-2011 Remo Rickli (and contributors)\n\n";
 	die;
 }

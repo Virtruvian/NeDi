@@ -2,7 +2,9 @@
 
 # General
 SNMPv	2HC
-Type	E2810-24G
+Type	HP-2810-24G
+Typoid	
+Sysdes	
 OS	ProCurve
 Icon	w2gn
 Bridge	normal

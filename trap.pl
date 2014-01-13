@@ -42,7 +42,7 @@ Visit http://www.nedi.ch for more information.
 
 use strict;
 
-use vars qw($p $now %mon);
+use vars qw($p $now %mon %srcna);
 $now = time;
 
 $p = $0;
@@ -59,22 +59,28 @@ my $src = <STDIN>;
 chomp($src);
 my $ip = <STDIN>;
 chomp($ip);
+$ip =~ s/UDP: \[([0-9.]+)\]:161.*/$1/;
+
 my $info = <STDIN>;
-$info = <STDIN>;
-$info = <STDIN>;
-chomp($info);
+$info .= <STDIN>;
+$info .= <STDIN>;
+$info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=',.:<>? \E]//g;
 
 my $level = 10;
 my $src = $ip;
 &db::ReadMon( &misc::Ip2Dec($ip) );
+&db::ReadUser("groups & 8 AND (phone != \"\" OR email != \"\")");
 
-if(exists $mon{$src}){
-	$src = $src;
+if(exists $srcna{$src}){
+	$src = $srcna{$src};
 	$level = 50;
 
 	if($info =~ s/IF-MIB::ifIndex/Ifchange/){
+		$level = 150;
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.45.1.6.4.3.5.1.0/Baystack Auth/){
+		$level = 150;
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.9.2.9.3.1.1.1.1/Cisco Auth/){
+		$level = 150;
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.9.2.1.5.0/Cisco Auth Failure!/){
 		$level = 150;
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.9.2.9.3.1.1.2.1/Cisco TCPconnect/){
@@ -85,13 +91,12 @@ if(exists $mon{$src}){
 	}elsif($info =~ s/SNMPv2-SMI::enterprises.9.9.46/Cisco VTP/){
 	}
 	if($mon{$src}{ef} ne "" and $info =~ /$mon{$src}{ef}/){
-		&mon::SendMail("$src SNMP trap","$info") if ($mon{$src}{fw} & 1);
-		&mon::SendSMS("$src: $info") if ($mon{$src}{fw} & 2);
+		my $mq = &mon::AlertQ($info,"",$mon{$src}{dv}) if ($mon{$src}{al} & 1);
+		my $sq = &mon::AlertQ("","$src: $info",$mon{$src}{dv}) if ($mon{$src}{al} & 2);
+		my $af = &mon::AlertFlush("$src SNMP trap",$mq,$sq);
 	}
 }
 
-if( $mon{$src}{ed} ne "" and $info =~ /$mon{$src}{ed}/ ){					# insert only if drop doesn't match
-	#print "$src ($_[0])\t dropped, matches /$mon{$src}{ed}/\n"  if $opt{'v'};
-}else{
+unless($mon{$src}{ed} ne "" and $info =~ /$mon{$src}{ed}/){					# insert only if drop doesn't match
 	&db::Insert('events','level,time,source,info,class,device',"\"$level\",\"$now\",\"$src\",\"$info\",\"trap\",\"$src\"");
 }

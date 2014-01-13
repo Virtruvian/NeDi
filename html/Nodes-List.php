@@ -62,6 +62,14 @@ $cols = array(	"name"=>$namlbl,
 		);
 
 $link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$listalert = "";
+if($listwarn){
+	$cnr  = @DbFetchRow(DbQuery(GenQuery('nodes','s','count(*)','','','','','','','LEFT JOIN devices USING (device)'), $link));
+	if($cnr[0] > $listwarn){
+		$listalert = "onclick=\"if(document.list.sta.value == ''){return confirm('".(($verb1)?"$sholbl $alllbl $cnr[0]":"$alllbl $cnr[0] $sholbl")."?');}\"";
+	}
+}
+
 if( isset($_GET['del']) ){
 	if($isadmin){
 		$query	= GenQuery('nodes','d','*','','',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop));
@@ -127,19 +135,19 @@ foreach ($cols as $k => $v){
 </select>
 </th>
 <th width="80">
-<input type="submit" value="<?=$sholbl?>">
+<input type="submit" value="<?=$sholbl?>" <?=$listalert?>>
 
 <?if($isadmin){?>
 <p>
 <input type="submit" name="mon" value="Monitor" onclick="return confirm('Monitor <?=$addlbl?>?')" >
 <p>
-<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('<?=$dellbl?> Nodes (<?=$cndlbl?>)?')" >
+<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('<?=$dellbl?>, <?=$cfmmsg?>')" >
 <?}?>
 </th>
 </tr></table></form><p>
 <?
 }
-if ($ina){
+if($ina){
 ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 ?>
 <table class="content"><tr class="<?=$modgroup[$self]?>2">
@@ -196,7 +204,7 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 			$ui = urlencode($n[7]);
 
 			if($isadmin and $mon and $n[1]){
-				$mona  = ($n[0])?$n[0]:$ip;
+				$mona = ($n[0])?$n[0]:$ip;
 				$most = AddRecord('monitoring',"name=\"$mona\"","name,monip,class,test,device,depend","\"$mona\",\"$n[1]\",\"node\",\"ping\",\"$n[6]\",\"$n[6]\"");
 			}
 
@@ -245,7 +253,7 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 			if(in_array("ifchanges",$col))	{echo "<td align=\"right\">$n[11]</td>";}
 			if(in_array("ifdesc",$col))	{echo "<td>$n[25]</td>";}
 			if(in_array("alias",$col))	{echo "<td>$n[26]</td>";}
-			if(in_array("speed",$col))	{echo "<td align=\"right\">".Zfix($n[28])."</td>";}
+			if(in_array("speed",$col))	{echo "<td align=\"right\">".DecFix($n[28])."</td>";}
 			if(in_array("duplex",$col))	{echo "<td>$n[29]</td>";}
 			if(in_array("vlanid",$col))	{echo "<td><a href=\"?ina=vlanid&opa==&sta=$n[8]\">$n[8]</a></td>";}
 			if(in_array("tcpports",$col))	{echo "<td>$n[16]</td>";}

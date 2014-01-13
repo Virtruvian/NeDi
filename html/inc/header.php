@@ -5,19 +5,22 @@
 
 ini_set("memory_limit","64M");										# Enterprise network support
 
-session_start();
-$self     = preg_replace("/.*\/(.+).php/","$1",$_SERVER['SCRIPT_NAME']);
+$noiplink  = 0;												# Disables telnet:// and ssh:// links (to allow browser add-ons) TODO move to Profile?
+$exportxls = 0;
+$listwarn  = 500;
+$maxbread  = 5;
+$self      = preg_replace("/.*\/(.+).php/","$1",$_SERVER['SCRIPT_NAME']);
 #$uripath  = preg_replace("/^(.*\/).+.php/","$1",$_SERVER['SCRIPT_NAME']);				# HTML path on the webserver
 #$guipath  = preg_replace( "/^(\/.+)\/.+.php/","$1",$_SERVER['SCRIPT_FILENAME']);			# Path to PHP scripts
-$nedipath = preg_replace( "/^(\/.+)\/ht\w+\/.+.php/","$1",$_SERVER['SCRIPT_FILENAME']);			# Guess NeDi path for nedi.conf
-$noiplink = 0;												# Disables telnet:// and ssh:// links (to allow browser add-ons) TODO move to Profile?
+$nedipath  = preg_replace( "/^(\/.+)\/ht\w+\/.+.php/","$1",$_SERVER['SCRIPT_FILENAME']);			# Guess NeDi path for nedi.conf
 
+session_start();
 if( isset($_SESSION['group']) ){
 	require_once ("libmisc.php");
 	ReadConf($_SESSION['group']);
-	$mos   = split("-", $self);
+	$mos   = explode("-", $self);
 	$selfi = $mod[$mos[0]][$mos[1]];
-
+	date_default_timezone_set($_SESSION['tz']);
 }else{
 	echo "<script>document.location.href='index.php?goto=".rawurlencode($_SERVER["REQUEST_URI"])."';</script>\n";
 	die;
@@ -25,21 +28,26 @@ if( isset($_SESSION['group']) ){
 include_once ("./languages/$_SESSION[lang]/gui.php");							# Don't require, GUI still works if missing
 include_once ("libdb-" . strtolower($backend) . ".php");
 
-$datfmt = $_SESSION['date'];										# TODO replace datfmt with Session...
-$now    = date($_SESSION['date']);
-$isadmin= (preg_match("/adm/",$_SESSION['group']) )?1:0;
-$debug  = (isset($_GET['debug']) and $isadmin)? $_GET['debug'] : "";
+$datfmt  = $_SESSION['date'];										# TODO replace datfmt with Session...
+$now     = date($_SESSION['date']);
+$isadmin = (preg_match("/adm/",$_SESSION['group']) )?1:0;
+$debug   = (isset($_GET['debug']) and $isadmin)?1:0;
 
-if( isset($_GET['print']) ){
+if( isset($_GET['xls']) ){
+	header("Content-type: application/vnd.ms-excel; name='excel'");
+	header("Content-Disposition: filename=$self.xls");
+	header("Pragma: no-cache");
+	header("Expires: 0");
+}elseif( isset($_GET['print']) ){
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <link href="inc/print.css" type="text/css" rel="stylesheet">
 
 <body>
 <div id="header" class="<?=$modgroup[$self]?>1">
-<div style="float:right"><img src="img/32/<?=$selfi?>.png"></div>
+<div style="float:right"><img src="<?=(( file_exists("themes/custom.png") )?"themes/custom":"img/nedi")?>.png" height="32"></div>
 
-<img src="img/n.png" onClick="window.print();">
+<img src="img/32/<?=$selfi?>.png" onClick="window.print();">
 <?=$_SERVER['SERVER_NAME']?>
 </div>
 <?
@@ -49,6 +57,7 @@ if( isset($_GET['print']) ){
 <html>
 <head>
 <title>NeDi <?=$self?></title>
+<meta name="generator" content="NeDi 1.0.7">
 <meta http-equiv="Content-Type" content="text/html;charset=<?=$charset?>">
 <link href="themes/<?=$_SESSION['theme']?>.css" type="text/css" rel="stylesheet">
 <link rel="shortcut icon" href="img/favicon.ico">
@@ -97,22 +106,47 @@ function stop_countdown(id){
 <tr class="<?=$modgroup[$self]?>1">
 <th width="50"><a href="http://www.nedi.ch"><img src="img/n.png"></a></th>
 <td ID="MainMenuID"></td>
+
+<?
+if($_SESSION['olic']){
+
+	echo "<th>";
+	$bc = 0;
+	foreach ($_SESSION['bread'] as $prv) {
+		$bc++;
+		if($bc == $maxbread){
+			$bim = "";
+		}else{
+			$boc = intval(10 * $bc / $maxbread);
+			$bim = "style=\"opacity:0.$boc;filter:alpha(opacity=${boc}0);}\"";
+		}
+		$bas = substr($prv,strrpos($prv,'/')+1);
+		$ico = explode('-',substr($bas,0,strpos($bas,'.php')));
+		echo "<a href=\"$prv\"><img $bim src=\"img/16/".$mod[$ico[0]][$ico[1]].".png\" title=\"$prv\"></a>\n";
+	}
+	echo "</th>";
+	$_SESSION['bread'][] = $_SERVER['REQUEST_URI'];
+	if(count($_SESSION['bread']) > $maxbread){
+		array_shift($_SESSION['bread']);
+	}
+}
+?>
+
 <th width="100">
 <img src="img/16/ring.png" title="Help" onclick="window.open('<?="languages/$_SESSION[lang]/$self.html"?>','Help','width=640,height=480,scrollbars');">
 <?if($printable){?>
-<img src="img/dev/pgan.png" width="16" title="Print" onclick="window.open('?<?=$_SERVER['QUERY_STRING']?>&print','Help','width=1000,height=800,scrollbars');">
-<?}
-if($isadmin){?>
-<img src="img/16/cog.png" onclick="document.location.href='?<?=$_SERVER['QUERY_STRING']?>&debug=1';" title="Debug Info">
+<img src="img/dev/pgan.png" width="16" title="Print" onclick="window.open('?<?=$_SERVER['QUERY_STRING']?>&print=1','Print','width=1000,height=800,scrollbars');">
 <?}?>
-</th>
+<?if($exportxls){?>
+<img src="img/16/chrt.png" width="16" title="XLS" onclick="document.location.href='?<?=$_SERVER['QUERY_STRING']?>&xls=1';">
+<?}?>
 
 <th width="80">
 <?
 if($isadmin){
-	#echo "<img src=\"img/16/loko.png\" title=\"Administrator\">";
+	echo "<img src=\"img/16/loko.png\" onclick=\"document.location.href='?$_SERVER[QUERY_STRING]&debug=1';\"  title=\"Administrator (Debug Info)\">";
 }elseif($_SESSION['view']){
-	#echo "<img src=\"img/16/lokc.png\" title=\"$seclbl $stco[100]\">";
+	echo "<img src=\"img/16/lokc.png\" title=\"$seclbl $stco[100]\">";
 }?>
 <?=$_SESSION['user']?></th></tr></table>
 <script language="JavaScript"><!--
@@ -136,6 +170,12 @@ function pop(URL,LBL){
 --></script>
 <p>
 <?
+
+	if( strpos($_SESSION['group'],$modgroup[$self]) === false){
+		echo $nokmsg;
+		die;
+	}
+
 	if($debug){
 		echo "<div class=\"textpad code good\">Self:	$self\n";
 		echo "Npath:	$nedipath\n";
@@ -147,11 +187,6 @@ function pop(URL,LBL){
 		echo "<div class=\"textpad code alrm\">SERVER:";
 		print_r($_SERVER);
 		echo "</div>\n";
-	}
-
-	if( strpos($_SESSION['group'],$modgroup[$self]) === false){
-		echo $nokmsg;
-		die;
 	}
 }
 ?>

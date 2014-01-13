@@ -7,8 +7,8 @@ $printable = 1;
 // Header.php contains the navigation and general settings for the UI
 include_once("inc/header.php");
 
-if(!$isadmin){
-	$_GET = sanitize($_GET);
+if(!$isadmin){#TODO investigate more effective sanitization
+	$_GET = stripslashes(sanitize($_GET));
 }
 
 // This is used later in the HTML form to ensure that there is always something selected,
@@ -16,7 +16,7 @@ if(!$isadmin){
 $sqltbl = isset($_GET['sqltbl']) ? $_GET['sqltbl'] : array("configs");
 $action = isset($_GET['action']) ? $_GET['action'] : "";
 $exptbl = isset($_GET['exptbl']) ? $_GET['exptbl'] : "";
-$query  = isset($_GET['query']) ? stripslashes($_GET['query']) : "";
+$query  = isset($_GET['query']) ? $_GET['query'] : "";
 $sep    = isset($_GET['sep']) ? $_GET['sep'] : "";
 $quotes = isset($_GET['quotes']) ? "checked" : "";
 $colhdr = isset($_GET['colhdr']) ? "checked" : "";
@@ -62,18 +62,18 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='eventret') {
 					document.forms['export'].query.value='DELETE FROM events where time < <?=(time() - $retire * 86400)?>';
-					document.forms['export'].sep.disabled=true;
-					document.forms['export'].quotes.disabled=true;
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='iftrkret') {
 					document.forms['export'].query.value='DELETE FROM iftrack where ifupdate < <?=(time() - $retire * 86400)?>';
-					document.forms['export'].sep.disabled=true;
-					document.forms['export'].quotes.disabled=true;
 				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='iptrkret') {
 					document.forms['export'].query.value='DELETE FROM iptrack where ipupdate < <?=(time() - $retire * 86400)?>';
-					document.forms['export'].sep.disabled=true;
-					document.forms['export'].quotes.disabled=true;
+				}
+				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='devret') {
+					document.forms['export'].query.value='DELETE FROM devices where lastdis < <?=(time() - $retire * 86400)?>';
+				}
+				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='resetlog') {
+					document.forms['export'].query.value='FLUSH LOGS;RESET MASTER';
 				}
 				else {
 					document.forms['export'].query.value='SELECT * FROM '+document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value;
@@ -90,10 +90,12 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 					echo "<option value=\"".$n[0]."\"".($n[0]==$exptbl?" selected":"").">".$n[0]."</option>\n";
 				}
 				echo "<option value=\"none\">--- Maintenance ---</option>";
-				echo "<option value=\"cfgfiles\"".($exptbl=="cfgfiles"?" selected":"").">Archive Configs</option>\n";
-				echo "<option value=\"eventret\"".($exptbl=="eventret"?" selected":"").">Retire $msglbl</option>\n";
-				echo "<option value=\"iftrkret\"".($exptbl=="iftrkret"?" selected":"").">Retire IF track</option>\n";
-				echo "<option value=\"iptrkret\"".($exptbl=="iptrkret"?" selected":"").">Retire IP track</option>\n";
+				echo "<option value=\"cfgfiles\"".($exptbl=="cfgfiles"?" selected":"").">$cfglbl $buplbl</option>\n";
+				echo "<option value=\"eventret\"".($exptbl=="eventret"?" selected":"").">$dellbl $msglbl $agelbl > $retire $tim[d]</option>\n";
+				echo "<option value=\"iftrkret\"".($exptbl=="iftrkret"?" selected":"").">$dellbl IFtrack $agelbl > $retire $tim[d]</option>\n";
+				echo "<option value=\"iptrkret\"".($exptbl=="iptrkret"?" selected":"").">$dellbl IPtrack $agelbl > $retire $tim[d]</option>\n";
+				echo "<option value=\"devret\"".($exptbl=="devret"?" selected":"").">$dellbl Devices $laslbl $dsclbl > $retire $tim[d]</option>\n";
+				echo "<option value=\"resetlog\"".($exptbl=="resetlog"?" selected":"").">$reslbl SQL bin-logs</option>\n";
 			?>
 			</select>
 			Separator:
@@ -141,7 +143,7 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 				<option value="tar" <?=($type=="tar")?"selected":""?>>Tar</option>
 			</select>
 			<p>
-			<input type="checkbox" name="timest" <?=$timest?>><img src="img/16/clock.png" title="<?=$addlbl?> <?=$timlbl?>">
+			<input type="checkbox" name="timest" <?=$timest?>><img src="img/16/form.png" title="<?=(($verb1)?"$addlbl $timlbl":"$timlbl $addlbl")?>/<?=$frmlbl?> IP">
 			<p>
 			<input type="submit" value="<?=$cmdlbl?>">
 		</th>
@@ -163,7 +165,7 @@ if($action == "export") {
 	// Execute and return status, if the query is not an SELECT query
 	elseif(!preg_match ('/^(SELECT|EXPLAIN)/i',$query) ) {
 		if($isadmin){
-			if( $res = DbQuery($query, $dblink) ) {
+			if( !$res = DbQuery($query, $dblink) ) {
 				echo "<h4>$query $errlbl</h4>";
 			}else{
 				echo "<h5>$query OK</h5>";
@@ -184,7 +186,6 @@ if($action == "export") {
 		echo "Retrieving data from database<br>\n";
 
 		//The query from the text box is executed
-		#$res = DbQuery($query, $dblink); Not needed as it's been done already...
 		$row = array();
 		$configs = array();
 
@@ -226,11 +227,7 @@ if($action == "export") {
 	}
 	// HTML Override
 	elseif($type == "htm") {
-		if($timest){
-			echo "<h2>$query, $now</h2>";
-		}else{
-			echo "<h2>$query</h2>";
-		}
+		echo "<h2>$query</h2>";
 		echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\">";
 		for ($i = 0; $i < @DbNumFields($res); ++$i) {
 			$field = @DbFieldName($res, $i);
@@ -243,9 +240,9 @@ if($action == "export") {
 			$row++;
 			echo  "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">";
 			foreach($l as $id => $field) {
-				if( preg_match("/^(origip|ip|\w+\.ip)$/",$id) ){
+				if($timest and  preg_match("/^(origip|dev|if|nod)ip$|^mask$/",$id) ){
 					echo "<td>".long2ip($field)."</td>";
-				}elseif( preg_match("/^(first|last|time|(if|ip|os)?update)/",$id) ){
+				}elseif($timest and preg_match("/^(first|last|time|(if|ip|os)?update)/",$id) ){
 					echo "<td>".date($_SESSION['date'],$field)."</td>";
 				}else{
 					echo "<td>$field</td>";
@@ -654,7 +651,6 @@ function CreateArchive($outfile, $type, $infiles, $timest) {
 	switch($type) {
 		case "gz":
 			// The previously created .tar archive is opened for reading
-		echo "<script language=\"JavaScript\">alert('$tarname');</script>";
 			$archive = fopen($tarname, "r");
 			
 			// This is the new gzip archive that is going to be created

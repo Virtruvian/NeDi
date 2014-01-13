@@ -76,9 +76,10 @@ foreach ($cols as $k => $v){
 <select multiple name="rep[]" size="4">
 <option value="sum" <? if(in_array("sum",$rep)){echo "selected";} ?> ><?=$sumlbl?>
 <option value="dis" <? if(in_array("dis",$rep)){echo "selected";} ?> >Node <?=$dislbl?>
+<option value="dup" <? if(in_array("dup",$rep)){echo "selected";} ?> ><?=$duplbl?> Nodes
 <option value="nos" <? if(in_array("nos",$rep)){echo "selected";} ?> >OS <?=$stslbl?>
 <option value="nom" <? if(in_array("nom",$rep)){echo "selected";} ?> ><?=$nomlbl?>
-<option value="vem" <? if(in_array("vem",$rep)){echo "selected";} ?> >Vlans <?=$emplbl?>
+<option value="vem" <? if(in_array("vem",$rep)){echo "selected";} ?> ><?=(($verb1)?"$emplbl Vlans":"Vlans $emplbl")?>
 <option value="nhs" <? if(in_array("nhs",$rep)){echo "selected";} ?> ><?=$dsclbl?> <?=$hislbl?>
 </select>
 
@@ -109,6 +110,9 @@ if($rep){
 
 	if ( in_array("sum",$rep) ){
 		NodSum($ina,$opa,$sta,$lim,$ord);
+	}
+	if ( in_array("dup",$rep) ){
+		NodDup($ina,$opa,$sta,$lim,$ord);
 	}
 	if ( in_array("dis",$rep) ){
 		NodDist($ina,$opa,$sta,$lim,$ord);

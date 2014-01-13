@@ -11,7 +11,7 @@ include_once ("../languages/$_SESSION[lang]/gui.php");							# Don't require, GU
 $_GET = sanitize($_GET);
 $debug  = isset($_GET['debug']) ? $_GET['debug'] : "";
 
-$graph = "rt-svg.php?ip=$_GET[ip]&c=$_GET[c]&v=$_GET[v]&i=$_GET[i]&in=".urlencode($_GET[in]);
+$graph = "rt-svg.php?ip=$_GET[ip]&c=$_GET[c]&v=$_GET[v]&i=$_GET[i]&in=".urlencode($_GET['in']);
 ?>
 <html>
 <head>

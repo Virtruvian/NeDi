@@ -31,6 +31,7 @@ $dpt = isset($_GET['dpt']) ? $_GET['dpt'] : "";
 $dps = isset($_GET['dps']) ? $_GET['dps'] : "";
 
 $cols = array(	"name"=>"Name",
+		"monip"=>"IP $adrlbl",
 		"class"=>$clalbl,
 		"depend"=>$deplbl,
 		"test"=>"Test",
@@ -87,7 +88,7 @@ foreach ($cols as $k => $v){
 <img src="img/16/bchk.png" title="Test">
 <select size="1" name="tst">
 <option value=""><?=$sellbl?>->
-<option value="-">-
+<option value="-">(<?=$nonlbl?>)
 <option value="uptime">uptime
 <option value="ping">ping
 <option value="http">http
@@ -131,7 +132,7 @@ foreach ($cols as $k => $v){
 <p>
 <input type="submit" name="upd" value="<?=$updlbl?>">
 <p>
-<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('Monitor <?=$dellbl?>?')" >
+<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('Monitor <?=$dellbl?>, <?=$cfmmsg?>')" >
 
 </th>
 </tr></table></form><p>
@@ -313,7 +314,7 @@ ConHead($ina, $opa, $sta);
 <input type="text" name="dpt" size="12" value="<?=$mon[15]?>" onfocus="select();"  onchange="this.form.submit();" title="<?=$wrtlbl?> <?=$namlbl?>">
 <select size="1" name="dps" onchange="this.form.submit();" title="<?=$namlbl?>">
 <option value=""><?=$sellbl?>
-<option value="-">-
+<option value="-">(<?=$nonlbl?>)
 <?
 			if($neb){
 				foreach ($neb as $nen => $nif){
@@ -326,7 +327,7 @@ ConHead($ina, $opa, $sta);
 </td>
 
 <th>
-<a href="?ina=test&opa=regexp&sta=<?=($mon[3])?$mon[3]:"^$"?>"><?=TEimg($mon[3])?> <?=$testst?></a>
+<a href="?ina=test&opa=regexp&sta=<?=($mon[3])?$mon[3]:"^$"?>"><?=TestImg($mon[3])?> <?=$testst?></a>
 </th>
 
 <td>

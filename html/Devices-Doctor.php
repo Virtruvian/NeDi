@@ -22,23 +22,26 @@ $log   = array();
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
-$_POST = sanitize($_POST);
-$sln = isset( $_POST['sln']) ? $_POST['sln'] : "";
-$bcw = isset( $_POST['bcw']) ? $_POST['bcw'] : 10;
-$dev = isset( $_POST['dev']) ? $_POST['dev'] : "";
+$_GET  = sanitize($_GET);
+$dev = isset( $_GET['dev']) ? $_GET['dev'] : "";
+if(!$dev){
+	$_POST = sanitize($_POST);
+	$sln = isset( $_POST['sln']) ? $_POST['sln'] : "";
+	$bcw = isset( $_POST['bcw']) ? $_POST['bcw'] : 10;
+	$dev = isset( $_POST['dev']) ? $_POST['dev'] : "";
+}
 
-#$debug=1;
-
+$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 ?>
 <h1>Device Doctor</h1>
 
-<?if( !isset($_POST['print']) ){?>
+<?if( !isset($_GET['print']) ){?>
 
 <form method="POST" action="<?=$self?>.php" enctype="multipart/form-data">
- <table class="content"><tr class="<?=$modgroup[$self]?>1">
+<table class="content"><tr class="<?=$modgroup[$self]?>1">
 <th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
 <th>Cfg #<br>
-<INPUT type="checkbox" name="sln" <?=($sln)?"checked":""?> ></td>
+<input type="checkbox" name="sln" <?=($sln)?"checked":""?> ></td>
 
 <th>Bcast <?=$mlvl[150]?><br>
 <input type="text" name="bcw" value="<?=$bcw?>" size="2"> %</th>
@@ -52,15 +55,12 @@ Tech file<br>
 <select size="1" name="dev" onchange="this.form.submit();">
 <option value=""><?=$sellbl?> ->
 <?
-
-$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-$query	= GenQuery('configs','s','device,config','device','','','','','','LEFT JOIN devices USING (device)');
+$query	= GenQuery('configs','s','device','device','','','','','','LEFT JOIN devices USING (device)');
 $res	= @DbQuery($query,$link);
 if($res){
 	while( ($c = @DbFetchRow($res)) ){
 		echo "<option value=\"$c[0]\"";
 		if($c[0] == $dev){
-			$devcfg = $c[1];
 			echo "selected";
 		}
 		echo ">$c[0]\n";
@@ -81,64 +81,98 @@ if($res){
 <?
 }
 if($dev){
-	if($debug){echo "$devcfg\n";}
+	$query	= GenQuery('configs','s','config','','',array('device'),array('='),array($dev),'','LEFT JOIN devices USING (device)');
+	$res	= @DbQuery($query,$link);
+	if (@DbNumRows($res) != 1) {
+		echo "<h4>$dev: $nonlbl</h4>";
+		@DbFreeResult($res);
+		die;
+	}
+	$cfg	= @DbFetchRow($res);
+	@DbFreeResult($res);
+	if($debug){	echo "<div class=\"textpad code warn\">$cfg[0]</div>\n";}
 ?>
-<h2><?=$dev?> <?=$cfglbl?> <?=$sumlbl?> (experimental)</h2>
-<div class="textpad code txta">
+<h2>
+<a href="Devices-Config.php?shc=<?=urlencode($dev)?>"><img src="img/16/conf.png" title="<?=$cfglbl?>"></a>
+<?=$dev?> <?=$cfglbl?> <?=$sumlbl?></h2>
 <?
-	echo "<h2></h2>";
-	foreach ( explode("\n",$devcfg) as $l ){
+	foreach ( explode("\n",$cfg[0]) as $l ){
 		if( preg_match("/^interface /",$l) ){
 			$i = preg_replace("/^interface\s*(.*)$/",'$1',$l);
 			$if[] = $i;
 		}
-		if( preg_match("/^ ip address/",$l) ){
-			$ipadd[$i] = preg_replace("/ ip address\s*(.*)$/",'$1',$l);
+		if( preg_match("/^\s+ip address/",$l) ){
+			$ipadd[$i] = preg_replace("/^\s+ip address\s+(.*)$/",'$1',$l);
 		}
-		if( preg_match("/description/",$l) ){
-			$ifdsc[$i] = preg_replace("/description\s*(.*)$/",'$1',$l);
+		if( preg_match("/^\s+(description|name)/",$l) ){
+			$ifdsc[$i] = preg_replace("/^\s+(description|name)\s+(.*)$/",'$2',$l);
 		}
-		if( preg_match("/ip helper-address/",$l) ){
-			$iphlp[$i] = preg_replace("/ip helper-address\s*(.*)$/",'$1',$l);
+		if( preg_match("/^\s+ip helper-address/",$l) ){
+			$iphlp[$i] = preg_replace("/^\s+ip helper-address\s+(.*)$/",'$1',$l);
 		}
-		if( preg_match("/switchport mode/",$l) ){
-			$ifmod[$i] = preg_replace("/switchport mode\s*(.*)$/",'$1',$l);
+		if( preg_match("/^\s+(switchport mode|port link-type)/",$l) ){
+			$ifmod[$i] = preg_replace("/^\s+(switchport mode|port link-type)\s+(.*)$/",'$2',$l);
+		}
+		if( preg_match("/vrf forwarding|vpn-instance/",$l) ){
+			$l = preg_replace("/.*(vrf forwarding|vpn-instance)\s*(.*)$/",'$2',$l);
+			$ifvpn[$i] = "<a href=\"Topology-Networks.php?ina=vrfname&opa==&sta=".urlencode($l)."\">$l</a>";
 		}
 		
 		
-		if( preg_match("/^logging/",$l) ){
-			$log[] = preg_replace("/^logging\s*(.*)$/",'$1',$l);
+		if( preg_match("/^logging|info-center loghost/",$l) ){
+			$log[] = $l;
 		}
-		if( preg_match("/^snmp-server/",$l) ){
-			$snmp[] = preg_replace("/^snmp-server\s*(.*)$/",'$1',$l);
+		if( preg_match("/^\s?snmp-(agent|server)/",$l) ){
+			$snmp[] = $l;
 		}
-		if( preg_match("/^service/",$l) ){
-			$srv[] = preg_replace("/^service\s*(.*)$/",'$1',$l);
+		if( preg_match("/^service|server enable/",$l) ){
+			$srv[] = $l;
 		}
-		if( preg_match("/^ip http server$/",$l) ){
-			$srv[] = "http";
+		if( preg_match("/^ip http server/",$l) ){
+			$srv[] = $l;
+		}
+		if( preg_match("/^(no )?spanning-tree|^ stp/",$l) ){
+			$stp[] = $l;
 		}
 	}
 	echo "<h3>Interfaces</h3>";
+	echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\"><td>$namlbl</td><td>IP $adrlbl</td><td>Alias</td><td>$typlbl</td><td>IP Helper</td><td>VRF</td></tr>";
 	foreach($if as $i){
-		echo "<b>$i</b>";
-		if(array_key_exists($i,$ifmod) ){echo "	<span class=\"grn\">$ifmod[$i]</span>";}
-		if(array_key_exists($i,$ipadd) ){echo "	<span class=\"blu\">$ipadd[$i]</span>";}
-		if(array_key_exists($i,$ifdsc) ){echo "	<span class=\"gry\">$ifdsc[$i]</span>";}
-		echo "	<br>";
+		$row++;
+		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+		echo "<tr class=\"$bg\" onmouseover=\"this.className='$bi'\" onmouseout=\"this.className='$bg'\">";
+		echo "<td>$i</td><td class=\"blu\">$ipadd[$i]</td><td class=\"gry\">$ifdsc[$i]</td>";
+		echo "<td class=\"grn\">$ifmod[$i]</td><td class=\"gry\">$ifhlp[$i]</td><td>$ifvpn[$i]</td></tr>";
 	}
+	echo "</table>";
+
+	echo "<h3>Spanning-Tree</h3>";
+	echo "<div class=\"textpad code txta\">\n";
+	foreach($stp as $i){
+		echo "$i\n";
+	}
+	echo "</div>\n";
+
 	echo "<h3>SNMP</h3>";
+	echo "<div class=\"textpad code txta\">\n";
 	foreach($snmp as $i){
 		echo "$i\n";
 	}
+	echo "</div>\n";
+
 	echo "<h3>$srvlbl</h3>";
+	echo "<div class=\"textpad code txta\">\n";
 	foreach($srv as $i){
 		echo "$i\n";
 	}
+	echo "</div>\n";
+
 	echo "<h3>Logging</h3>";
+	echo "<div class=\"textpad code txta\">\n";
 	foreach($log as $i){
 		echo "$i\n";
 	}
+	echo "</div>\n";
 
 }elseif (array_key_exists('tef',$_FILES) and file_exists($_FILES['tef']['tmp_name'])) {
 	$lines = file($_FILES['tef']['tmp_name']);

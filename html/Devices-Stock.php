@@ -6,7 +6,7 @@ $printable = 1;
 $calendar  = 1;
 
 $cico['10']  = "star";
-$cico['100'] = "exit";
+$cico['100'] = "flas";
 $cico['150'] = "warn";
 $cico['200'] = "bstp";
 
@@ -65,7 +65,7 @@ $wint = strtotime( preg_replace("/\s.*$/", "", $wty) );					# Forget the hour on
 <th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
 
 <th align="right">
-<?=$serlbl?> <input type="text" name="ser" value="<?=$ser?>" size="20" OnFocus="select();" <?=(($chg)?"readonly":"")?>><br>
+<?=$serlbl?> <input type="text" autofocus name="ser" value="<?=$ser?>" size="20" OnFocus="select();" <?=(($chg)?"readonly":"")?>><br>
 <?=$typlbl?> <input type="text" name="typ" value="<?=$typ?>" size="20" OnFocus="select();"><br>
 <?=$loclbl?> <input type="text" name="loc" value="<?=$loc?>" size="20" OnFocus="select();"><br>
 <?=$srclbl?> <input type="text" name="src" value="<?=$src?>" size="20" OnFocus="select();"><br>
@@ -118,7 +118,7 @@ if ($add and $ser and $typ and $loc){
 }elseif($del ){
 	$query	= GenQuery('stock','d','','','',array('serial'),array('='),array($del) );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$serlbl $del $dellbl OK</h5>";}
-	$query = GenQuery('events','i','','','',array('level','time','source','info','type'),'',array('100',time(),$del,"User $_SESSION[user] deleted stock item",'usrs') );
+	$query = GenQuery('events','i','','','',array('level','time','source','info','class'),'',array('100',time(),$del,"User $_SESSION[user] deleted stock item",'usrs') );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$msglbl $updlbl OK</h5>";}
 }
 

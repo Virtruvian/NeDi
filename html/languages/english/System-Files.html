@@ -18,6 +18,7 @@ This modules provides 3 major features:
 <li> Edit/View system and configuration files.
 <li> Import SQL data or update NeDi itself.
 <li> Manage html/log files and tftp boot images.
+<li> Delete RRDs (apparently broken) which haven't been updated for more days than retire is set to.
 </ol>
 
 <h2>Editor/Viewer</h2>
@@ -28,7 +29,7 @@ This modules provides 3 major features:
 </ul>
 
 <h2>Import/Update</h2>
-<li> Upload a .sql.gz (packed) file and will replace the DB data. You can dumps created with System-Export.
+<li> Upload a .sql.gz (packed) file which will replace the DB data. You can restore dumps created with System-Export.
 <ul> Upload a nedi.tgz archive and choose whether you whish to backup your existing config (check for compatibilty!).
 </ul>
 
@@ -39,4 +40,3 @@ This modules provides 3 major features:
 
 <div id="footer">Remo Rickli 2011</div>
 </body>
-

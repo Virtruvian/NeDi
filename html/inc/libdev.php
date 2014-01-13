@@ -125,6 +125,7 @@ function Iftype($it){
 	}elseif ($it == "50"){$img = "fibr";$tit="sonetPath";
 	}elseif ($it == "51"){$img = "fibr";$tit="sonetVT";
 	}elseif ($it == "53"){$img = "chip";$tit="Virtual Interface";
+	}elseif ($it == "54"){$img = "lag";$tit="propMultiplexor";
 	}elseif ($it == "56"){$img = "fibr";$tit="fibreChannel";
 	}elseif ($it == "58"){$img = "cell";$tit="frameRelayInterconnect";
 	}elseif ($it == "63"){$img = "tel";$tit="isdn";

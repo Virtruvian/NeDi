@@ -26,15 +26,16 @@ if(isset($_POST['up']) ){
 		}
 	}
 	$graphs = $_POST['gsiz'] + ($_POST['gbit']?8:0) + ($_POST['gfar']?16:0) + ($_POST['olic']?32:0) + ($_POST['gmap']?64:0);
-	$query	= GenQuery('users','u',"user=\"$name\"",'','',array('email','phone','comment','language','theme','volume','columns','msglimit','graphs','dateformat'),array(''),array($_POST['email'],$_POST['phone'],$_POST['cmt'],$_POST['lang'],$_POST['theme'],$_POST['vol'],$_POST['col'],$_POST['lim'],$graphs,$_POST['date']) );
+	$query	= GenQuery('users','u',"user=\"$name\"",'','',array('email','phone','comment','language','theme','volume','columns','msglimit','graphs','dateformat'),array(''),array($_POST['email'],$_POST['phone'],$_POST['cmt'],$_POST['lang'],$_POST['theme'],$_POST['vol'] + $_POST['lsiz']*4,$_POST['col'],$_POST['lim'],$graphs,$_POST['date']) );
 	if( !@DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$name $updlbl OK</h5>";}
 	$_SESSION['lang'] = $_POST['lang'];
 	$_SESSION['theme']= $_POST['theme'];
-	$_SESSION['vol']  = $_POST['vol'];
+	$_SESSION['vol']  = $_POST['vol']*33;
 	$_SESSION['col']  = $_POST['col'];
 	$_SESSION['olic']  = $_POST['olic'];
 	$_SESSION['lim']  = $_POST['lim'];
 	$_SESSION['gsiz'] = $_POST['gsiz'];
+	$_SESSION['lsiz'] = $_POST['lsiz'];
 	$_SESSION['gbit'] = $_POST['gbit'];
 	$_SESSION['gfar'] = $_POST['gfar'];
 	$_SESSION['gmap'] = $_POST['gmap'];
@@ -83,7 +84,7 @@ if ($uok == 1) {
 <input type="text" name="phone" size="20" value="<?=$usr[4]?>" >
 <p>
 <img src="img/16/mail.png" title="Email <?=$adrlbl?>">
-<input type="text" name="email" size="20" value="<?=$usr[3]?>" >
+<input type="email" name="email" size="20" value="<?=$usr[3]?>" >
 <p>
 <img src="img/16/say.png" title="<?=$cmtlbl?>">
 <input type="text" name="cmt" size="20" value="<?=$usr[7]?>" >
@@ -92,17 +93,20 @@ if ($uok == 1) {
 <td valign="top">
 
 <h3><?=$frmlbl?></h3>
-<img src="img/16/list.png"  title="<?=$collbl?> <?=$optlbl?>">
+<img src="img/16/list.png"  title="<?=$lstlbl?> <?=$optlbl?> / <?=$hislbl?>">
 <input type="checkbox" name="olic" <?=($_SESSION['olic'])?"checked":""?>>
 <br>
 <img src="img/16/map.png"  title="Google Maps">
 <input type="checkbox" name="gmap" <?=($_SESSION['gmap'])?"checked":""?>>
 <p>
-<img src="img/16/form.png" title="# <?=$msglbl?>, Vlans, Modules...">
-<input type="text" name="lim" size="2" value="<?=$_SESSION['lim']?>">
-<p>
-<img src="img/16/icon.png" title="# <?=$collbl?>">
-<input type="text" name="col" size="2" value="<?=$_SESSION['col']?>">
+<img src="img/16/form.png" title="# <?=$msglbl?>, Vlans, Modules etc. (0-31)">
+<input type="number" min="0" max="31" name="lim" size="3" value="<?=$_SESSION['lim']?>">
+<br>
+<img src="img/16/icon.png" title="# <?=$collbl?> (0-31)">
+<input type="number" min="0" max="31" name="col" size="3" value="<?=$_SESSION['col']?>">
+<br>
+<img src="img/16/abc.png" title="<?=$namlbl?> <?=$sizlbl?> (3-31)">
+<input type="number" min="3" max="31" name="lsiz" size="3" value="<?=$_SESSION['lsiz']?>">
 
 </td>
 <td valign="top">
@@ -147,11 +151,10 @@ foreach (glob("themes/*.css") as $f) {
 <p>
 <img src="img/16/bell.png" title="Volume">
 <select size="1" name="vol">
-<option value="0"> -
-<option value="5"<?=( ($_SESSION['vol'] == "5")?" selected":"")?>>5 %
-<option value="10"<?=( ($_SESSION['vol'] == "10")?" selected":"")?>>10 %
-<option value="50"<?=( ($_SESSION['vol'] == "50")?" selected":"")?>>50 %
-<option value="100"<?=( ($_SESSION['vol'] == "100")?" selected":"")?>>100 %
+<option value="0"><?=$nonlbl?>
+<option value="1"<?=( ($_SESSION['vol'] == "33")?" selected":"")?>><?=$qutlbl?>
+<option value="2"<?=( ($_SESSION['vol'] == "66")?" selected":"")?>><?=$siz['m']?>
+<option value="3"<?=( ($_SESSION['vol'] == "99")?" selected":"")?>><?=$maxlbl?>
 </select>
 <p>
 <img src="img/16/grph.png"  title="<?=$gralbl?>">
@@ -240,7 +243,7 @@ if($nchat){
 		$time = date($datfmt,$m[0]);
 		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],1);
 		echo "</th>\n";
-		echo "<td bgcolor=#$fc>$time</td><td>$m[2]</td></tr>\n";
+		echo "<td bgcolor=#$fc>$time</td><td>".preg_replace('/(http[s]?:\/\/[^\s]*)/',"<a href=\"$1\" target=\"window\">$1</a>",$m[2])."</td></tr>\n";
 	}
 	echo "</table>\n";
 }

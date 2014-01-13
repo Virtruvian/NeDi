@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	E6108
+Type	HP-6108
 OS	ProCurve
 Icon	w2gp
 Bridge	normal

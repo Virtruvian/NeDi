@@ -1,7 +1,7 @@
 <?
 # Program: Devices-Graph.php
 # Programmer: Remo Rickli
-#TODO decide on JS framework and add slider widgets
+#TODO decide on JS framework and add slider widgets -> or wait for HTML5 <input type="range"> (and datetime)!!!!
 
 error_reporting(E_ALL ^ E_NOTICE);
 
@@ -46,7 +46,7 @@ $query	= GenQuery('devices','s','device,devip,snmpversion,readcomm,memcpu,temp,c
 $res	= @DbQuery($query,$link);
 if($res){
 	echo "<option value=\"Totals\"".(($dv == "Totals")?" selected":"")."> Network Totals";
-	echo "<option value=\"\">-- Dev ------------";
+	echo "<option value=\"\" style=\"color: blue\">- Devices -";
 	while( ($d = @DbFetchRow($res)) ){
 		echo "<option value=\"$d[0]\"";
 		if($dv == $d[0]){
@@ -78,41 +78,41 @@ if($res){
 <?
 if ($dv == "Totals") {
 ?>
-<OPTION VALUE="msg"<?=(in_array("msg",$if))?" selected":"";?>> <?=$msglbl?> <?=$sumlbl?>
-<OPTION VALUE="mon"<?=(in_array("mon",$if))?" selected":"";?>> <?=$tgtlbl?> <?=$avalbl?>
-<OPTION VALUE="nod"<?=(in_array("nod",$if))?" selected":"";?>> <?=$totlbl?> Nodes
-<OPTION VALUE="tpw"<?=(in_array("tpw",$if))?" selected":"";?>> <?=$totlbl?> PoE
-<OPTION VALUE="ttr"<?=(in_array("ttr",$if))?" selected":"";?>> <?=$totlbl?> non-link <?=$trflbl?>
-<OPTION VALUE="ter"<?=(in_array("ter",$if))?" selected":"";?>> <?=$totlbl?> non-Wlan <?=$errlbl?>
-<OPTION VALUE="ifs"<?=(in_array("ifs",$if))?" selected":"";?>> IF <?=$stalbl?>  <?=$sumlbl?>
+<option value="msg"<?=(in_array("msg",$if))?" selected":"";?>> <?=$msglbl?> <?=$sumlbl?>
+<option value="mon"<?=(in_array("mon",$if))?" selected":"";?>> <?=$tgtlbl?> <?=$avalbl?>
+<option value="nod"<?=(in_array("nod",$if))?" selected":"";?>> <?=$totlbl?> Nodes
+<option value="tpw"<?=(in_array("tpw",$if))?" selected":"";?>> <?=$totlbl?> PoE
+<option value="ttr"<?=(in_array("ttr",$if))?" selected":"";?>> <?=$totlbl?> non-link <?=$trflbl?>
+<option value="ter"<?=(in_array("ter",$if))?" selected":"";?>> <?=$totlbl?> non-Wlan <?=$errlbl?>
+<option value="ifs"<?=(in_array("ifs",$if))?" selected":"";?>> IF <?=$stalbl?>  <?=$sumlbl?>
 <?
 }elseif ($dv) {
 ?>
-<OPTION VALUE="cpu"<?=(in_array("cpu",$if))?" selected":"";?>> CPU
+<option value="cpu"<?=(in_array("cpu",$if))?" selected":"";?>> CPU
 <?
 if($mem){
 ?>
-<OPTION VALUE="mem"<?=(in_array("mem",$if))?" selected":"";?>> Mem
+<option value="mem"<?=(in_array("mem",$if))?" selected":"";?>> Mem
 <?
 }
 if($tmp){
 ?>
-<OPTION VALUE="tmp"<?=(in_array("tmp",$if))?" selected":"";?>> <?=$tmplbl?>
+<option value="tmp"<?=(in_array("tmp",$if))?" selected":"";?>> <?=$tmplbl?>
 <?
 }
 if($ct != "-"){
 ?>
-<OPTION VALUE="cuv"<?=(in_array("cuv",$if))?" selected":"";?>> <?=$ct?>
+<option value="cuv"<?=(in_array("cuv",$if))?" selected":"";?>> <?=$ct?>
 <?
 }
 ?>
-<OPTION VALUE="">-- IF ------------
+<option value="" style="color: blue">- Interfaces -
 <?
 	$query	= GenQuery('interfaces','s','ifname,alias,comment','ifidx','',array('device'),array('='),array($dv) );
 	$res	= @DbQuery($query,$link);
 	if($res){
 		while( ($i = @DbFetchRow($res)) ){
-			echo "<OPTION VALUE=\"$i[0]\" ";
+			echo "<option value=\"$i[0]\" ";
 			if(in_array($i[0],$if)){echo "selected";}
 			echo " >$i[0] " . substr("$i[1] $i[2]\n",0,30);
 		}
@@ -230,8 +230,8 @@ if($sta > $end){
 	echo ( in_array("ifs",$if) )?"<img src=\"inc/drawrrd.php?&s=$sze&t=ifs&a=$sta&e=$end\" title=\"IF $stalbl $sumlbl\">\n":"";
 }else{
 	if( in_array("cpu",$if) ){echo "<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=cpu&a=$sta&e=$end\" title=\"% CPU\">\n";}
-	echo ( in_array("mem",$if) )?"<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=mem&a=$sta&e=$end\" title=\"Memory\">\n":"";
-	echo ( in_array("tmp",$if) )?"<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=tmp&a=$sta&e=$end\" title=\"Temp\">\n":"";
+	echo ( in_array("mem",$if) )?"<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=mem&a=$sta&e=$end\" title=\"Mem $frelbl\">\n":"";
+	echo ( in_array("tmp",$if) )?"<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=tmp&a=$sta&e=$end\" title=\"$tmplbl\">\n":"";
 	echo ( in_array("cuv",$if) )?"<img src=\"inc/drawrrd.php?dv=$ud&&if[]=".urlencode($ct)."&if[]=".urlencode($cu)."&s=$sze&t=cuv&a=$sta&e=$end\" title=\"$ct [$cu]\">\n":"";
 	if( isset($if[0]) ){
 		$uif = "";

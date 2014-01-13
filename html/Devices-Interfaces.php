@@ -33,11 +33,11 @@ $cols = array(	"device"=>"Device $namlbl",
 		"type"=>"Device $typlbl",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
-		"ifname"=>"IF $namlbl",
 		"ifidx"=>"IF Index",
+		"ifname"=>"IF $namlbl",
 		"linktype"=>"Link $typlbl",
-		"iftype"=>$typlbl,
-		"mac"=>"MAC $adrlbl",
+		"iftype"=>"IF $typlbl",
+		"ifmac"=>"MAC $adrlbl",
 		"ifdesc"=>$deslbl,
 		"alias"=>"Alias",
 		"ifstat"=>$stalbl,
@@ -55,6 +55,15 @@ $cols = array(	"device"=>"Device $namlbl",
 		"comment"=>$cmtlbl,
 		"poe"=>"PoE"
 		);
+
+$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
+$listalert = "";
+if($listwarn){
+	$cnr  = @DbFetchRow(DbQuery(GenQuery('interfaces','s','count(*)','','','','','','','LEFT JOIN devices USING (device)'), $link));
+	if($cnr[0] > $listwarn){
+		$listalert = "onclick=\"if(document.list.sta.value == ''){return confirm('".(($verb1)?"$sholbl $alllbl $cnr[0]":"$alllbl $cnr[0] $sholbl")."?');}\"";
+	}
+}
 
 ?>
 <h1>Interface <?=$lstlbl?></h1>
@@ -109,14 +118,14 @@ foreach ($cols as $k => $v){
 </select>
 </th>
 <th width="80">
-<input type="submit" value="<?=$sholbl?>">
+<input type="submit" value="<?=$sholbl?>" <?=$listalert?>>
 <p>
-<input type="submit" name="trk" value="Track" onclick="return confirm('<?=$cfmmsg?>')" >
+<input type="submit" name="trk" value="Track" onclick="return confirm('<?=$cfmmsg?>')">
 </th>
 </tr></table></form><p>
 <?
 }
-if ($ina){
+if($ina){
 ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 	?>
 <table class="content"><tr class="<?=$modgroup[$self]?>2">
@@ -132,7 +141,6 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 	if( in_array("graph",$col) ){echo "<th>IF $gralbl</th>";}
 	echo "</tr>\n";
 
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	$query	= GenQuery('interfaces','s','*',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device)');
 	$res	= @DbQuery($query,$link);
 	if($res){
@@ -155,7 +163,6 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 				echo "<th class=\"".(($ifbg)?$ifbg:$bi)."\"><img src=\"img/$ifimg\" title=\"$iftyp - $ifst\"></th>";
 			}
 			echo "<td><a href=?ina=ifname&opa==&sta=$ui>$if[1]</a> $trkst</td>\n";
-			if(in_array("ifidx",$col)){echo "<td align=\"right\">$if[2]</td>";}
 			if(in_array("device",$col)){
 				echo "<td nowrap>\n";
 				if( !isset($_GET['print']) and strpos($_SESSION['group'],$modgroup['Devices-Status']) !== false ){
@@ -163,27 +170,28 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 				}
 				echo "<a href=?ina=device&opa==&sta=$ud&ord=ifname>$if[0]</a></td>\n";
 			}
-			if(in_array("type",$col)){echo "<td><a href=?ina=type&opa==&sta=\"$if[24]\">$if[24]</a>";}
+			if(in_array("type",$col)){echo "<td><a href=\"?ina=type&opa==&sta=$if[24]\">$if[24]</a>";}
 			if(in_array("location",$col)){echo "<td><a href=\"?ina=location&opa==&sta=".urlencode($if[31])."\">$if[31]</a></td>";}
 			if(in_array("contact",$col)){echo "<td><a href=\"?ina=contact&opa==&sta=".urlencode($if[32])."\">$if[32]</a></td>";}
-			if(in_array("linktype",$col)){echo "<td><a href=?ina=linktype&opa==&sta=\"$if[3]\">$if[3]</a>";}
+			if(in_array("ifidx",$col)){echo "<td align=\"right\">$if[2]</td>";}
+			if(in_array("linktype",$col)){echo "<td><a href=\"?ina=linktype&opa==&sta=$if[3]\">$if[3]</a>";}
 			if(in_array("iftype",$col)){echo "<td align=\"right\"><a href=?ina=iftype&opa==&sta=\"$if[4]\">$if[4]</a></td>";}
-			if(in_array("mac",$col)){echo "<td class=\"mrn\">$if[5]</td>";}
+			if(in_array("ifmac",$col)){echo "<td class=\"mrn\">$if[5]</td>";}
 			if(in_array("ifdesc",$col)){echo "<td>$if[6]</td>";}
 			if(in_array("alias",$col)){echo "<td>$if[7]</td>";}
 			if(in_array("ifstat",$col)){echo "<td align=\"right\">$if[8]</td>";}
-			if(in_array("speed",$col)){echo "<td align=\"right\">".ZFix($if[9])."</td>";}
+			if(in_array("speed",$col)){echo "<td align=\"right\">".DecFix($if[9])."</td>";}
 			if(in_array("duplex",$col)){echo "<td>$if[10]</td>";}
 			if(in_array("pvid",$col)){echo "<td align=\"right\">$if[11]</td>";}
 
-			if(in_array("inoct",$col)){echo "<td align=\"right\">".ZFix($if[12])."B</td>";}
-			if(in_array("inerr",$col)){echo "<td align=\"right\">".ZFix($if[13])."</td>";}
-			if(in_array("outoct",$col)){echo "<td align=\"right\">".ZFix($if[14])."B</td>";}
-			if(in_array("outerr",$col)){echo "<td align=\"right\">".ZFix($if[15])."</td>";}
-			if(in_array("dinoct",$col)){echo "<td align=\"right\">".ZFix($if[16])."B</td>";}
-			if(in_array("dinerr",$col)){echo "<td align=\"right\">".ZFix($if[17])."</td>";}
-			if(in_array("doutoct",$col)){echo "<td align=\"right\">".ZFix($if[18])."B</td>";}
-			if(in_array("douterr",$col)){echo "<td align=\"right\">".ZFix($if[19])."</td>";}
+			if(in_array("inoct",$col)){echo "<td align=\"right\">".DecFix($if[12])."B</td>";}
+			if(in_array("inerr",$col)){echo "<td align=\"right\">".DecFix($if[13])."</td>";}
+			if(in_array("outoct",$col)){echo "<td align=\"right\">".DecFix($if[14])."B</td>";}
+			if(in_array("outerr",$col)){echo "<td align=\"right\">".DecFix($if[15])."</td>";}
+			if(in_array("dinoct",$col)){echo "<td align=\"right\">".DecFix($if[16])."B</td>";}
+			if(in_array("dinerr",$col)){echo "<td align=\"right\">".DecFix($if[17])."</td>";}
+			if(in_array("doutoct",$col)){echo "<td align=\"right\">".DecFix($if[18])."B</td>";}
+			if(in_array("douterr",$col)){echo "<td align=\"right\">".DecFix($if[19])."</td>";}
 
 			if(in_array("comment",$col)){echo "<td>$if[20]</td>";}
 			if(in_array("poe",$col)){echo "<td>$if[21]</td>";}

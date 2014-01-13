@@ -73,7 +73,7 @@ $nho	= $dbc - $dnet - 1;
 ?>
 <h2>Base Info</h2>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>1"><th width=80>&nbsp;</th><th width=30%>Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
+<tr class="<?=$modgroup[$self]?>1"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
 <tr class="txta"><th class="<?=$modgroup[$self]?>2"><?=$adrlbl?></th><td class="blu code"><?=$ip?> = <?=sprintf("%u", ip2long($ip));?></td><td class="blu code"><?=$bip?></td><td class="blu code"><?=$hip?></td></tr>
 <tr class="txtb"><th class="<?=$modgroup[$self]?>2"><?=$msklbl?></th><td class="grn code"><?=$mask?> = <?=$pfix?></td><td class="grn code"><?=$bmsk?></td><td class="grn code"><?=$hmsk?></td></tr>
 <tr class="txta"><th class="<?=$modgroup[$self]?>2">Wildcard</th><td class="grn code"><?=$wmsk?></td><td class="grn code"><?=$bwmsk?></td><td class="grn code"><?=$hwmsk?></td></tr>
@@ -85,7 +85,7 @@ $nho	= $dbc - $dnet - 1;
 <?
 
 if ($getsub){
-	list($spfix,$smask,$bsmsk)	= masker($getsub);
+	list($spfix,$smask,$bsmsk) = Masker($getsub);
 
 	$hsmsk	= "0x".str_pad(ip2hex($smask),8,0);
 	$dsmsk	= ip2long($smask);
@@ -99,14 +99,14 @@ if ($getsub){
 ?>
 <h2>Subnet <?=$sumlbl?></h2>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>1"><th width=80>&nbsp;</th><th width=30%>Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
+<tr class="<?=$modgroup[$self]?>1"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
 <tr class="txta"><th class="<?=$modgroup[$self]?>1">Mask</th><td class="grn code"><?=$smask?> = <?=$spfix?></td><td class="grn code"><?=$bsmsk?></td><td class="grn code"><?=$hsmsk?></td></tr>
 <tr class="txtb"><th class="<?=$modgroup[$self]?>1">Wildcard</th><td class="grn code"><?=$wsmsk?></td><td class="grn code"><?=$bwsmsk?></td><td class="grn code"><?=$hwsmsk?></td></tr>
 </table>
 <p>
 <h2>Subnets</h2>
 <table class="content" >
-<tr class="<?=$modgroup[$self]?>1"><th width=80 colspan=2>Subnet</th><th>Subnet IP/Prefix</th><th>1. Host</th><th>n. Host</th><th>Broadcast</th><th width=80>Total Hosts</th></tr>
+<tr class="<?=$modgroup[$self]?>1"><th width="80" colspan="2">Subnet</th><th>Subnet IP/Prefix</th><th>1. Host</th><th>n. Host</th><th>Broadcast</th><th>Total Hosts</th></tr>
 
 <?
 		$nsnets = pow(2, ($spfix-$pfix) );
@@ -117,13 +117,13 @@ if ($getsub){
 			if ($s % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$dsnet	= $dnet + $s * $snoff;
 			$snet	= long2ip($dsnet);
-			list($ntimg,$ntit)	= Nettype($snet);
+			list($ntimg,$ntit) = Nettype($snet);
 			$fsho	= long2ip($dsnet + 1);
 			$sbc	= long2ip($dsnet + $dwsmsk);
 			$lsho	= long2ip($dsnet + $dwsmsk - 1);
 			$nsho	+= $snoff - 2;
 			echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-  			echo "<img src=\"img/16/$ntimg\" title=\"$ntit\"></th><th>$s</th>\n";
+  			echo "<img src=\"img/$ntimg\" title=\"$ntit\"></th><th>$s</th>\n";
 			echo "<td class=\"prp code\">$snet/$spfix</td><td class=\"drd code\">$fsho</td>\n";
 			echo "<td class=\"drd code\">$lsho</td><td class=\"prp code\">$sbc</td>\n";
 			echo "<td align=center class=\"blu code\">$nsho</td></tr>";

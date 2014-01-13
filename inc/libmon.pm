@@ -16,6 +16,30 @@ use warnings;
 
 use Time::HiRes;
 
+=head2 FUNCTION InitMon()
+
+Read monitoring targets and users
+
+B<Options> -
+
+B<Globals> -
+
+B<Returns> -
+
+=cut
+sub InitMon{
+
+	%srcna = ();
+	%mon   = ();
+	%usr   = ();
+	my $nt = 0;
+
+	$nt  = &db::ReadMon("dev");
+	$nt += &db::ReadMon("node");
+
+	&db::ReadUser("groups & 8 AND (phone != \"\" OR email != \"\")");
+}
+
 
 =head2 FUNCTION GetUptime()
 
@@ -28,7 +52,7 @@ B<Globals> -
 B<Returns> array with (latency, uptime) or (0,0) upon timeout
 
 =cut
-sub GetUptime {
+sub GetUptime{
 
 	my ($ip, $ver, $comm) = @_;
 
@@ -66,16 +90,17 @@ B<Globals> -
 B<Returns> latency or nothing upon timeout
 
 =cut
-sub PingService {
+sub PingService{
 
 	use Net::Ping;
 
-	my ($ip, $proto, $srv) = @_;
+	my ($ip, $proto, $srv, $tout) = @_;
 
+	$tout = ($tout)?$tout:$misc::timeout;
 	my $p = Net::Ping->new($proto);
 	$p->hires();
 	&misc::Prt("TEST:");
-	if ($proto){
+	if ($proto and $proto ne 'icmp'){
 		$srv = "microsoft-ds" if $srv eq "cifs";
 		$p->tcp_service_check(1);
 		$p->{port_num} = getservbyname($srv, $proto);
@@ -83,7 +108,7 @@ sub PingService {
 	}else{
 		&misc::Prt("$ip tcp echo ");
 	}
-	(my $ret, my $latency, my $rip) = $p->ping($ip, $misc::timeout);
+	(my $ret, my $latency, my $rip) = $p->ping($ip, $tout);
 	$p->close();
 
 	if($ret){
@@ -96,96 +121,146 @@ sub PingService {
 	}
 }
 
+=head2 FUNCTION AlertQ()
 
-=head2 FUNCTION SendSMS()
+Queues alerts for delivery within a single SMS or Mail
 
-Sends SMS (must use some non-blocking service like smsd)
+B<Options> mailmsg, smsmsg, service, device
 
-B<Options> message
+B<Globals> main::usr
 
-B<Globals> -
-
-B<Returns> number of SMS successfully sent
+B<Returns> # of mails queued
 =cut
-sub SendSMS {
+sub AlertQ{
+	
+	my ($mail, $sms, $srv, $dev) = @_;
 
-	undef (%main::usr);
-	&db::ReadUser("groups & 8 AND phone != \"\"");
+	return (0,0) if !$srv;										# No service no queue...
 
-	&misc::Prt("SMS :Sendng \"$_[0]\" to:");
-
-	my $m = 0;
+	my $nm = 0;
 	foreach my $u ( keys %main::usr ){
-		$main::usr{$u}{ph} =~ s/\D//g;
-		&misc::Prt(" $u/$main::usr{$u}{ph}");
 
-		#1. Spooling to smsd:
-		$m++ if open(SMS, ">/var/spool/sms/outgoing/$u");					# user is filename to avoid flooding
-		print SMS "To:$main::usr{$u}{ph}\n\n$_[0]\n";
-		close(SMS);
+		my $viewdev = ($main::usr{$u}{vd})?&db::Select('devices','device',"device=\"$dev\" AND $main::usr{$u}{vd}"):$dev;
+		if(defined $viewdev and $viewdev eq $dev){						# Send mail only to those who can see the associated device
 
-		#2. Calling gammu server:
-		#$m++ if !system "gammu-smsd-inject TEXT $main::usr{$u}{ph} -text \"$_[0]\" >/dev/null";
+			if($main::usr{$u}{ml} and $mail and $srv & 1){
+				$main::usr{$u}{mail} .= $mail;
+				&misc::Prt("MLQ :$u+ $mail");
+				$nm++;
+			}
 
-		#3.My lab setup:
-		#$m++ if !system "/usr/local/bin/svdrpsend.pl -d argus MESG \"$_[0]\" >/dev/null";
+			if($main::usr{$u}{ph} and $sms and $srv & 2){
+				$main::usr{$u}{sms} .= $sms;
+				&misc::Prt("SMSQ:$u+ $sms");
+			}
+
+		}
+
 	}
-	&misc::Prt(" done\n");
 
-	return $m;
+	return $nm;
 }
 
+=head2 FUNCTION AlertFlush()
 
-=head2 FUNCTION SendMail()
+Sends Mails and SMS. If there are no queued mails, the SMTP connection won't be established. Look at commented lines to adjust SMS part...
 
-Sends Mails to configured smtp server.
-
-B<Options> subject, message
+B<Options> subject for mails, #mails queued
 
 B<Globals> -
 
-B<Returns> number of mails successfully sent
+B<Returns> -
 =cut
-sub SendMail {
+
+sub AlertFlush{
+
+	my ($sub,$mq) = @_;
 
 	use Net::SMTP;
 
-	undef (%main::usr);
-	&db::ReadUser("groups & 8 AND email != \"\"");
-
-	my $m   = 0;
 	my $err = 0;
+	my $nm  = 0;
+	my $ns  = 0;
+	
+	if($mq){
+		my $smtp = Net::SMTP->new($misc::smtpserver, Timeout => $misc::timeout) || ($err = 1);
+		if($err){
+			&misc::Prt("ERR :Connecting to SMTP server $misc::smtpserver\n");
+		}else{
+			foreach my $u ( keys %main::usr ){
+				if($main::usr{$u}{mail}){
+					&misc::Prt("MAIL:$u/$main::usr{$u}{ml}\n");
+					$smtp->mail($misc::mailfrom) || &ErrSMTP($smtp,"From");
+					$smtp->to($main::usr{$u}{ml}) || &ErrSMTP($smtp,"To");
+					$smtp->data();
+					$smtp->datasend("To: $main::usr{$u}{ml}\n");
+					$smtp->datasend("From: $misc::mailfrom\n");
+					$smtp->datasend("Subject: $sub\n");
+					#$smtp->datasend("MIME-Version: 1.0\n"); 			# Some need it, Exchange doesn't?
+					$smtp->datasend("\n");
+					$smtp->datasend("Hello $u\n");
+					$smtp->datasend("\n");
+					foreach my $l (split /\\n/,$main::usr{$u}{mail}){
+						$smtp->datasend("$l\n");
+					}
+					if($misc::mailfoot){
+						foreach my $l (split /\\n/,$misc::mailfoot){
+							$smtp->datasend("$l\n");
+						}
+					}
+					$smtp->dataend() || &ErrSMTP($smtp,"End");
 
-	my $smtp = Net::SMTP->new($misc::smtpserver, Timeout => $misc::timeout) || ($err = 1);
-	if($err){
-		&misc::Prt("ERR :Connecting to SMTP server $misc::smtpserver\n");
-		return $m;
-	}
-	&misc::Prt("MAIL:Sending \"$_[0]\" from $misc::mailfrom via ".$smtp->domain."\n");
-	foreach my $u ( keys %main::usr ){
-		&misc::Prt("MAIL:Sending to $u <$main::usr{$u}{ml}>\n");
-		$smtp->mail($misc::mailfrom);
-		$smtp->to($main::usr{$u}{ml}) || return "failed to send to $main::usr{$u}{ml}!";
-		$smtp->data();
-		$smtp->datasend("To: $main::usr{$u}{ml}\n");
-		$smtp->datasend("From: $misc::mailfrom\n");
-		$smtp->datasend("Subject: $_[0]\n");
-		$smtp->datasend("MIME-Version: 1.0\n");
-		$smtp->datasend("$_[1]\n\n");
-		&misc::Prt("MBOD:$_[1]\n");
-		if($misc::mailfoot){
-			foreach my $l (split /\\n/,$misc::mailfoot){
-				&misc::Prt("MFOT:$l\n");
-				$smtp->datasend("$l\n");
+					$main::usr{$u}{mail} = "";
+					$nm++;
+				}
 			}
+			$smtp->quit;
 		}
-		$smtp->dataend();
-		$m++;
 	}
-	$smtp->quit;
-	&misc::Prt("MAIL:$m Mails sent\n");
 
-	return $m;
+	foreach my $u ( keys %main::usr ){
+
+		if($main::usr{$u}{sms}){
+			&misc::Prt("SMS :$u/$main::usr{$u}{ph}\n");
+			#1. Spooling to smsd:
+			$ns++ if open(SMS, ">/var/spool/sms/outgoing/$u");			# User is filename to avoid flooding
+			print SMS "To:$main::usr{$u}{ph}\n\n$main::usr{$u}{sms}\n";
+			close(SMS);
+
+			#2. Calling gammu server:
+			#$ns++ if !system "gammu-smsd-inject TEXT $main::usr{$u}{ph} -text \"$main::usr{$u}{sms}\" >/dev/null";
+
+			#3.My lab setup:
+			#$ns++ if !system "/usr/local/bin/svdrpsend.pl -d argus MESG \"$main::usr{$u}{sms}\" >/dev/null";
+
+			$main::usr{$u}{sms} = "";
+		}
+	}
+
+	&misc::Prt("ALRT:$nm mails from $mq events and $ns SMS sent\n");
+	
+	return $nm;
+}
+
+=head2 FUNCTION ErrSMTP()
+
+Handle SMTP errors
+
+B<Options> SMTP code, Step of delivery
+
+B<Globals> -
+
+B<Returns> -
+=cut
+
+sub ErrSMTP{
+
+	my ($smtp,$step) = @_;
+
+	my $m = &misc::Strip(($smtp->message)[-1]);						# Avoid uninit with Strip()
+	my $c = $smtp->code;
+	chomp $m;
+	&misc::Prt("ERR :$c, $m\n");
 }
 
 1;

@@ -25,9 +25,9 @@ $res	= @DbQuery($query,$link);
 if($res){
 	$nmon= 0;
 	$mal = 0;
-	$lck = 0;
+	$lok = 0;
 	while( ($m = @DbFetchRow($res)) ){
-		if($m[1] > $lck){$lck = $m[1];}
+		if($m[1] > $lok){$lok = $m[1];}
 		$deval[$m[0]] = $m[2];
 		if($m[2]){$mal++;}
 		if($m[3] > $latw){$slow[$m[0]] = $m[3];}
@@ -37,6 +37,18 @@ if($res){
 }else{
 	print @DbError($link);
 }
+
+$query	= GenQuery('devices','g','lastdis','','',array('lastdis'),array('>'),array(time() - $rrdstep));
+$res	= @DbQuery($query,$link);
+if($res){
+	$ndis = @DbFetchRow($res);
+	@DbFreeResult($res);
+}else{
+	print @DbError($link);
+}
+
+$monok = 0;
+if( time() < (2*$pause + $lok) ){$monok = 1;}
 ?>
 <h1>Monitoring Health</h1>
 <form method="get" name="dynfrm" action="<?=$self?>.php">
@@ -45,15 +57,24 @@ if($res){
 <input type="hidden" name="bld" value="<?=$bld?>">
 <table class="content"><tr class="<?=$modgroup[$self]?>1">
 <th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
-<td valign="top" align="center"><h3>
-<a href="Reports-Monitoring.php?rep[]=mav"><img src="img/16/bchk.png" title="<?=$tgtlbl?> <?=$cfglbl?>"></a>
-<a href="Monitoring-Timeline.php?det=level&bsz=si"><img src="img/16/news.png" title="<?=$msglbl?> <?=$hislbl?>"></a>
-Monitoring</h3><p>
+<td valign="top" align="center">
+<h3>
+
+<?
+if($monok){
+	echo "<a href=\"Reports-Monitoring.php?rep[]=mav\"><img src=\"img/16/bchk.png\" title=\"$avalbl $stslbl ($nmon $tgtlbl Monitored, $ndis[1] Device $laslbl $dsclbl)\"></a>\n";
+}else{
+	echo "<a href=\"System-Services.php\"><img src=\"img/16/bdis.png\" title=\"System $srvlbl (Monitoring $stco[100]?)\"></a>\n";
+}
+?>
+<a href="Monitoring-Timeline.php?det=level&bsz=si"><img src="img/16/news.png" title="<?=$msglbl?> <?=$hislbl?>"></a> <?=$stalbl?>
+
+</h3><p>
 <?
 if($_SESSION['gsiz']){
 
 ?>
-<a href="Devices-Graph.php?dv=Totals&if[]=mon"><img src="inc/drawrrd.php?t=mon&s=<?=$_SESSION['gsiz']?>" title="<?=$tgtlbl?> <?=$avalbl?>"></a>
+<a href="Devices-Graph.php?dv=Totals&if[]=mon"><img src="inc/drawrrd.php?t=mon&s=<?=$_SESSION['gsiz']?>" title="<?=$avalbl?> <?=$gralbl?>"></a>
 <a href="Devices-Graph.php?dv=Totals&if[]=msg"><img src="inc/drawrrd.php?t=msg&s=<?=$_SESSION['gsiz']?>" title="<?=$msglbl?> <?=$sumlbl?>"></a>
 <?
 }else{
@@ -62,18 +83,25 @@ if($_SESSION['gsiz']){
 <?
 }
 if($mal == 0){
-	if( time() < (2*$pause + $lck) ){
-		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/bchk.png\" title=\"moni.pl OK $laslbl ".date($datfmt,$lck)."\">";}
+	if($monok){
+		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/bchk.png\" title=\"$nmon $tgtlbl Monitored, $ndis[1] Device $laslbl $dsclbl\">";}
 	}else{
-		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/bcls.png\" title=\"moni.pl $laslbl ".date($datfmt,$lck)."\">";}
+		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/bcls.png\" title=\"$nonlbl Monitored, $ndis[1] Device $laslbl $dsclbl\">";}
 		if($_SESSION['vol']){echo "<embed src=\"inc/enter2.mp3\" volume=\"$_SESSION[vol]\" hidden=\"true\">\n";}
 	}
 }else{
 	if($mal == 1){
-		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/foye.png\" title=\"1 $mlvl[200]\">";}
+		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/fobl.png\" title=\"1 $mlvl[200]\">";}
 		if($_SESSION['vol']){echo "<embed src=\"inc/alarm1.mp3\" volume=\"$_SESSION[vol]\" hidden=\"true\">\n";}
 	}elseif($mal < 10){
-		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/foor.png\" title=\"$mal $mlvl[200]\">";}
+		if($ni[0] < 3){
+			$ico = "fovi";
+		}elseif($ni[0] < 5){
+			$ico = "foye";
+		}else{
+			$ico = "foor";
+		}
+		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/$ico.png\" title=\"$mal $mlvl[200]\">";}
 		if($_SESSION['vol']){echo "<embed src=\"inc/alarm2.mp3\" volume=\"$_SESSION[vol]\" hidden=\"true\">\n";}
 	}else{
 		if(!$_SESSION['gsiz']){echo "<img src=\"img/32/ford.png\" title=\"$mal $mlvl[200]!\">";}
@@ -90,8 +118,7 @@ if($mal == 0){
 		if($deval[$d]){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$t    = substr($d,0,strpos($d,'.') );
-			$t    = (strlen($t) < 4)?$d:$t;
+			$t = substr($d,0,$_SESSION['lsiz']);					# Shorten targets
 			list($statbg,$stat) = StatusBg(1,1,$deval[$d],$bi);
 			echo "<tr class=\"$bg\"><td>\n";
 			echo "<a href=\"Monitoring-Setup.php?ina=name&opa=%3D&sta=".urlencode($d)."\"><b>$t</b></a></td><td class=\"$statbg\">$stat</td></tr>\n";
@@ -114,8 +141,7 @@ if( count($slow) ){
 	foreach(array_keys($slow) as $d){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
-		$t    = substr($d,0,strpos($d,'.') );
-		$t    = (strlen($t) < 4)?$d:$t;
+		$t    = substr($d,0,$_SESSION['lsiz']);						# Shorten targets
 		$dbar = Bar($slow[$d],$latw,'si');
 		echo "<tr class=\"$bg\"><td>\n";
 		echo "<a href=\"Monitoring-Setup.php?ina=name&opa==&sta=".urlencode($d)."\"><b>$t</b></a></td><td>$dbar $slow[$d]ms</td></tr>\n";
@@ -170,9 +196,9 @@ if($_SESSION['gsiz']){
 <a href="Devices-Graph.php?dv=Totals&if[]=ifs"><img src="inc/drawrrd.php?t=ifs&s=<?=$_SESSION['gsiz']?>" title="IF <?=$stalbl?> <?=$sumlbl?>"></a>
 <?
 }
-StatusIf($loc,'brup',$inblbl,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusIf($loc,'brdn',$oublbl,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusIf($loc,'bdis',"Disabled IF $tim[n]",$_SESSION['lim'],$_SESSION['gsiz']);
+StatusIf($loc,'brup',$inblbl);
+StatusIf($loc,'brdn',$oublbl);
+StatusIf($loc,'bdis',"Disabled IF $tim[n]");
 ?>
 </td>
 
@@ -182,11 +208,11 @@ StatusIf($loc,'bdis',"Disabled IF $tim[n]",$_SESSION['lim'],$_SESSION['gsiz']);
 <img src="img/16/exit.png" title="Stop" onClick="stop_countdown(interval);">
 </h3>
 <?
-StatusCpu($loc,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusMem($loc,$_SESSION['lim'],$_SESSION['gsiz']);
-StatusTmp($loc,$_SESSION['lim'],$_SESSION['gsiz']);
+StatusCpu($loc);
+StatusMem($loc);
+StatusTmp($loc);
 
-if($_SESSION['gsiz']){StatusIncidents($loc,$_SESSION['gsiz']);}
+if($_SESSION['gsiz']){StatusIncidents($loc);}
 
 ?>
 </td></tr></table>
@@ -251,10 +277,10 @@ if($_SESSION['lim']){
 			while( ($m = @DbFetchRow($res)) ){
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
-				$ei   = EvImg($m[0]);
-				$mbar = Bar($m[1],0,'si');
+				list($ei,$et)   = EvClass($m[0]);
+				$mbar = Bar($m[1],"lvl$m[0]",'si');
 				echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-				echo "<img src=\"img/16/$ei.png\" title=\"$m[0]\"></th><td nowrap>$mbar <a href=Monitoring-Events.php?ina=class&opa==&sta=$m[0]$evloc>$m[1]</a></td></tr>\n";
+				echo "<img src=\"img/16/$ei.png\" title=\"$et\"></th><td nowrap>$mbar <a href=Monitoring-Events.php?ina=class&opa==&sta=$m[0]$evloc>$m[1]</a></td></tr>\n";
 			}
 			echo "</table>\n";
 		}else{
@@ -278,14 +304,14 @@ if($_SESSION['lim']){
 		if($nlev){
 ?>
 <table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th><img src="img/16/dev.png"><br><?=$srclbl?></th>
+<th><img src="img/16/say.png"><br><?=$srclbl?></th>
 <th><img src="img/16/bell.png"><br><?=$msglbl?></th>
 <?
 			$row = 0;
 			while( ($r = @DbFetchRow($res)) ){
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
-				$s    = substr($r[0],0,8);		# Shorten source names
+				$s    = substr($r[0],0,$_SESSION['lsiz']);		# Shorten sources
 				$mbar = Bar($r[1],0,'si');
 				echo "<tr class=\"$bg\"><th class=\"$bi\" align=\"left\" nowrap><img src=\"img/16/say.png\" title=\"$r[0]\">$s</th>\n";
 				echo "<td nowrap>$mbar <a href=Monitoring-Events.php?ina=source&opa==&sta=".urlencode($r[0])."$evloc>$r[1]</a></td></tr>\n";

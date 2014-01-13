@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	MSM313
+Type	HP-MSM313
 OS	MSM
 Icon	wagn
 Bridge	MSM

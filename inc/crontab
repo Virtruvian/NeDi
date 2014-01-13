@@ -4,8 +4,8 @@
 
 # or 5 min interval (for very small networks)
 */5 * * * *   /var/nedi/nedi.pl -vp > /tmp/nedi-`date +\%H\%M`.run 2>&1
-#3   0 * * *   /var/nedi/nedi.pl -vBA login !=  -SsmgrfpitedobwaOA > /tmp/nedi-0003.bup 2>&1
+#3   0 * * *   /var/nedi/nedi.pl -vBA 'login !=""'  -SsmgrfpitedobwaOA > /tmp/nedi-0003.bup 2>&1
 
 
 # scan nodes for open ports during working hours
-#0 11 * * 1-5 /var/nedi/nedi.pl -vs update > /tmp/nedi-1100.scan 2>&1
+#0 11 * * 1-5 /var/nedi/nedi.pl -vs TUFupdate > /tmp/nedi-1100.scan 2>&1

@@ -51,15 +51,13 @@ Visit http://www.nedi.ch for more information.
 
 =cut
 
-$VERSION = "1.1";
-
 use strict;
 use warnings;
 
 use IO::Socket;
 use Getopt::Std;
 
-use vars qw($p $warn $now %opt %mon %dip %usr);
+use vars qw($p $warn $now %opt %mon %srcna %usr);
 $misc::pause = "";											# Avoid 'used only once:' warning without breaking evals (like LWP in libweb)
 
 getopts('Dvp:',\%opt)  || &HELP_MESSAGE;
@@ -81,11 +79,11 @@ if ($opt{'D'}) {
 my $maxlen	= 512;
 my $port	= ($opt{'p'})?$opt{'p'}:514;
 my $desup	= time;
-&TargetUp();
+my $ntgt	= &mon::InitMon();
 
 my $sock = IO::Socket::INET->new(LocalPort => $port, Proto => 'udp') or die "socket: $@";
 &misc::Prt("Awaiting syslog events on port $port\n");
-while ($sock->recv(my $info, $maxlen)) {
+while($sock->recv(my $info, $maxlen)) {
 	$now = time;
 	my($client_port, $client_ip) = sockaddr_in($sock->peername);
 	my $ip = inet_ntoa($client_ip);
@@ -95,35 +93,10 @@ while ($sock->recv(my $info, $maxlen)) {
 
 	if($now - $misc::pause > $desup){								# update targets if older than a monitoring cycle, after processing current event
 		$desup = $now;
-		&TargetUp();
+		my $ntgt = &mon::InitMon();
 	}
 }
 die "recv: $!";
-
-
-=head2 FUNCTION TargetUp()
-
-Read Monitoring Targets
-
-B<Options> -
-
-B<Globals> -
-
-B<Returns> -
-
-=cut
-sub TargetUp {
-
-	undef (%mon);
-	undef (%dip);
-
-	&db::ReadMon("dev");
-	&db::ReadMon("node");
-	foreach my $d (keys %mon){
-		$dip{$mon{$d}{'ip'}} = $d;
-	}
-}
-
 
 =head2 FUNCTION Process()
 
@@ -138,17 +111,22 @@ B<Returns> -
 =cut
 sub Process {
 
-	my ($src,$pri) = @_;
-	my $info  = $pri;
+	my ($src,$raw) = @_;
+	my $info = $raw;
+	my $pri  = $raw;
 	my $level = 10;
 
 	$info =~ s/<(\d+)>(.*)/$2/;
 	$info =~ s/[^\w\t\/\Q(){}[]!@#$%^&*-+=',.:<>? \E]//g;
 	$info = substr($info,0,255);
 
-	if(exists $dip{$src}){
-		$src = $dip{$src};
+	if(exists $srcna{$src}){
+		$src = $srcna{$src};
 		$pri =~ s/<(\d+)>.*/$1/;
+		if($pri !~ /^\d+$/){
+			&misc::Prt("PRI : Is $pri in $raw\n");
+			$pri = 7;
+		}
 		my $sev = ($pri & 7);
 		if   ($sev == 4)	{$level = 100}
 		elsif($sev == 3)	{$level = 150}
@@ -156,15 +134,15 @@ sub Process {
 		else			{$level = 50}
 
 		if($mon{$src}{ed} =~ /^\d+$/ and $mon{$src}{ed} > $level){					# skip if eventdel is number & higher than level
-			&misc::Prt("DROP:$src ($_[0])\teventdel $mon{$src}{ed} higher than $level\n");
+			&misc::Prt("DROP:$src	$mon{$src}{ed}>$level in $raw\n");
 		}elsif($mon{$src}{ed} !~ /^\d+$|^$/ and $info =~ /$mon{$src}{ed}/){				# skip if eventdel matches info
-			&misc::Prt("DROP:$src ($_[0])\tmatches eventdel /$mon{$src}{ed}/\n");
+			&misc::Prt("DROP:$src	/$mon{$src}{ed}/ in $raw\n");
 		}else{
 			&misc::Prt("PROC:$src ($_[0])\tL:$level ($pri)\nMESG:$info\n");
 			&db::Insert('events','level,time,source,info,class,device',"\"$level\",\"$now\",\"$src\",\"$info\",\"$mon{$src}{cl}\",\"$mon{$src}{dv}\"");
 			if($mon{$src}{ef} ne "" and $info =~ /$mon{$src}{ef}/){
-				&mon::SendMail("$src syslog event","$info") if ($mon{$src}{al} & 1);
-				&mon::SendSMS("$src: $info") if ($mon{$src}{al} & 2);
+				my $mq = &mon::AlertQ("Event: $info\n","$src: $info",$mon{$src}{al},$mon{$src}{dv});
+				my $af = &mon::AlertFlush("$src syslog alert",$mq);
 			}
 		}
 	}else{
@@ -193,6 +171,6 @@ sub HELP_MESSAGE {
 	print "-D		daemonize moni.pl\n";
 	print "-v		verbose output\n";
 	print "-p x		listen on port x (default 514)\n\n";
-	print "syslog $main::VERSION (C) 2001-2011 Remo Rickli (and contributors)\n\n";
+	print "syslog (C) 2001-2011 Remo Rickli (and contributors)\n\n";
 	die;
 }

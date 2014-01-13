@@ -34,7 +34,7 @@ $tabs['dev'] = array(	'devices'	=> array ('device','type','serial','description'
 $tabs['node'] = array(	'nodes'		=> array ('name','mac','oui','device','ifname','nodos'),
 			'events'	=> array ('source','info'),
 			'nodetrack'	=> array ('device','ifname','destination','user'),
-			'iptrack'	=> array ('mac','name','nodip','device'),
+			'iptrack'	=> array ('mac','name','device'),
 			'monitoring'	=> array ('name','depend','test','eventfwd','eventdel')
 			);
 
@@ -56,7 +56,7 @@ $ico = array(	'devices'	=> 'dev',
 		'incidents'	=> 'bomb',
 		'links'		=> 'ncon',
 		'locations'	=> 'home',
-		'modules'	=> 'pcm',
+		'modules'	=> 'cubs',
 		'monitoring'	=> 'bino',
 		'nodes'		=> 'nods',
 		'nodetrack'	=> 'note',
@@ -96,7 +96,7 @@ $lnk = array(	'device'	=> 'Devices-Status.php?dev=',
 <option value="node"<?=($mod == "node")?"selected":""?>>Node
 <option value="usr" <?=($mod == "usr")?"selected":""?>><?=$usrlbl?>
 </select> ~
-<input type="text" name="str" value="<?=$str?>" size="40">
+<input type="search" name="str" value="<?=$str?>" size="40">
 
 </th>
 <th valign="top"><?=$limlbl?><p>

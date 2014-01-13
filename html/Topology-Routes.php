@@ -256,7 +256,7 @@ if($trc){
 	foreach (array_keys($r) as $rd){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
-		$spd	= ZFix($isp[$r[$rd]['ifx']]);
+		$spd	= DecFix($isp[$r[$rd]['ifx']]);
 		$rp	= RteProtoNumToText($r[$rd]['pro']);
 		$rpimg	= RteProto($rp);
 		$unh    = rawurlencode($netif[$r[$rd]['nho']]);
@@ -268,7 +268,7 @@ if($trc){
 		echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
 		echo "<th class=\"$bi\" width=\"20\"><img src=\"img/$ntimg\" title=$ntit></th>\n";
 		echo "<td><a href=\"Topology-Networks.php?ina=ifip&opa==&sta=$rd%2F$pfix&draw=png\">$rd/$pfix</a></td>\n";
-		echo "<td>".$r[$rd]['nho']." <a href=?rtr=$unh>".$netif[$r[$rd]['nho']]."</a></td><td><img src=\"img/$ifimg\" title=$iftit> ";
+		echo "<td>".$r[$rd]['nho']." <a href=?rtr=$unh&vrf=$uvn>".$netif[$r[$rd]['nho']]."</a></td><td><img src=\"img/$ifimg\" title=$iftit> ";
 		echo "<b>".$ina[$r[$rd]['ifx']]."</b> <i>".$ial[$r[$rd]['ifx']]."</i> ".$icm[$r[$rd]['ifx']]."</td>\n";
 		echo "<td align=right>$spd</td><td align=center>".$r[$rd]['me1']."</td>\n";
 		echo "<td><img src=\"img/16/$rpimg.png\"> $rp</td><td align=right>".$r[$rd]['age']."</td>\n";
@@ -293,15 +293,13 @@ function DevRoutes($ip,$rv,$rc,$vrfname){
 	global $toumsg, $nonlbl;
 	
 	if(!empty($vrfname) ){
-		$suffix=strlen($vrfname);
-		$arr1=str_split($vrfname);
+		$suffix = strlen($vrfname);
+		$sufarr = str_split($vrfname);
 		
-		foreach ($arr1 as $char) {
-			$suffix.=".";
-			$suffix .= ord ($char);
+		foreach ($sufarr as $char) {
+			$suffix .= ".".ord ($char);
 		}
-		
-		foreach( Walk($ip,$rv,$rc,"1.3.6.1.3.118.1.4.1.1.8") as $ix => $val){
+		foreach( Walk($ip,$rv,$rc,"1.3.6.1.3.118.1.4.1.1.8.$suffix") as $ix => $val){
 			$r = preg_replace('/.*\.4\.(\d+\.\d+\.\d+\.\d+)\.4\.(\d+\.\d+\.\d+\.\d+)\.\d+\.4\.(\d+\.\d+\.\d+\.\d+)$/','$1',$ix);
 			$nho = preg_replace('/.*\.4\.(\d+\.\d+\.\d+\.\d+)\.4\.(\d+\.\d+\.\d+\.\d+)\.\d+\.4\.(\d+\.\d+\.\d+\.\d+)$/','$3',$ix);
 			$msk = preg_replace('/.*\.4\.(\d+\.\d+\.\d+\.\d+)\.4\.(\d+\.\d+\.\d+\.\d+)\.\d+\.4\.(\d+\.\d+\.\d+\.\d+)$/','$2',$ix);

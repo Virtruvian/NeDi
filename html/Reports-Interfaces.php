@@ -20,6 +20,7 @@ $sta = (isset($_GET['sta']) && $ina != "") ? $_GET['sta'] : "";
 $lim = isset($_GET['lim']) ? $_GET['lim'] : 10;
 
 $ord = isset($_GET['ord']) ? "checked" : "";
+$opt = isset($_GET['opt']) ? "checked" : "";
 
 $cols = array(	"device"=>"Device",
 		"devip"=>"IP $adrlbl",
@@ -72,6 +73,8 @@ foreach ($cols as $k => $v){
 <option value="poe" <? if(in_array("poe",$rep)){echo "selected";} ?> >PoE <?=$stslbl?>
 <option value="trf" <? if(in_array("trf",$rep)){echo "selected";} ?> ><?=$trflbl?>
 <option value="err" <? if(in_array("err",$rep)){echo "selected";} ?> ><?=$errlbl?>
+<option value="net" <? if(in_array("net",$rep)){echo "selected";} ?> ><?=$netlbl?> <?=$dislbl?>
+<option value="pop" <? if(in_array("pop",$rep)){echo "selected";} ?> ><?=$netlbl?> <?=$poplbl?>
 </select>
 
 </th>
@@ -86,6 +89,7 @@ foreach ($cols as $k => $v){
 <th align="left">
 
 <input type="checkbox" name="ord" <?=$ord?>> <?=$altlbl?> <?=$srtlbl?><br>
+<input type="checkbox" name="opt" <?=$opt?>> <?=$optlbl?>
 
 </th>
 <th width="80">
@@ -114,6 +118,13 @@ if($rep){
 	}
 	if ( in_array("err",$rep) ){
 		IntErr($ina,$opa,$sta,$lim,$ord);
+	}
+	if ( in_array("net",$rep) ){
+		NetDist($ina,$opa,$sta,$lim,$ord);
+	}
+
+	if ( in_array("pop",$rep) ){
+		NetPop($ina,$opa,$sta,$lim,$ord);
 	}
 }
 

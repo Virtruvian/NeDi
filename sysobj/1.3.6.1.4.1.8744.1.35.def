@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	HP MSM710
+Type	HP-MSM710
 OS	MSM
 Icon	csgn
 Bridge	MSM

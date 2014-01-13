@@ -32,7 +32,7 @@ $opa = isset($_GET['opa']) ? $_GET['opa'] : "regexp";
 $fmt = isset($_GET['fmt']) ? $_GET['fmt'] : "";
 
 $dim = isset($_GET['dim']) ? $_GET['dim'] : "800x600";
-list($xm,$ym) = split("x",$dim);
+list($xm,$ym) = explode("x",$dim);
 
 $fsz = isset($_GET['fsz']) ? $_GET['fsz'] : intval($xm)/8;
 $len = isset($_GET['len']) ? $_GET['len'] : intval($xm)/4;
@@ -49,17 +49,19 @@ $cro = isset($_GET['cro']) ? $_GET['cro'] : 0;
 $bro = isset($_GET['bro']) ? $_GET['bro'] : 0;
 
 $ifi = isset($_GET['ifi']) ? "checked" : "";
+$ifa = isset($_GET['ifa']) ? "checked" : "";
 $ipi = isset($_GET['ipi']) ? "checked" : "";
+$ipd = isset($_GET['ipd']) ? "checked" : "";
 $loi = isset($_GET['loi']) ? "checked" : "";
 $coi = isset($_GET['coi']) ? "checked" : "";
 
 $lis = isset($_GET['lis']) ? $_GET['lis'] : "";
 $lit = isset($_GET['lit']) ? $_GET['lit'] : "";
 $lil = isset($_GET['lil']) ? $_GET['lil'] : 0;
-$lal = isset($_GET['lal']) ? $_GET['lal'] : 5;
+$lal = isset($_GET['lal']) ? $_GET['lal'] : 50;
 $pos = isset($_GET['pos']) ? $_GET['pos'] : "";
 $pwt = isset($_GET['pwt']) ? $_GET['pwt'] : 10;
-$lsf = isset($_GET['lsf']) ? $_GET['lsf'] : 1.3;
+$lsf = isset($_GET['lsf']) ? $_GET['lsf'] : 30;
 $fco = isset($_GET['fco']) ? $_GET['fco'] : 6;
 
 if($pos == "d"){
@@ -69,6 +71,15 @@ if($pos == "d"){
 	$imas = 18;
 }
 
+$oc = "";
+$oi = "";
+$dyn= "";
+if($_GET['dyn']){
+	# $oi = 'oninput="this.form.submit();"'; deactivated cauz Safari goes haywire
+	$oi = $oc = 'onchange="this.form.submit();"';
+	$dyn = "checked";
+}
+
 $cols = array(	"device"=>"Device",
 		"devip"=>"IP $adrlbl",
 		"type"=>"Device $typlbl",
@@ -76,7 +87,7 @@ $cols = array(	"device"=>"Device",
 		"lastdis"=>$laslbl,
 		"services"=>$srvlbl,
 		"description"=>$deslbl,
-		"devos"=>"OS",
+		"devos"=>"Device OS",
 		"bootimage"=>"Bootimage",
 		"contact"=>$conlbl,
 		"location"=>$loclbl,
@@ -109,10 +120,9 @@ $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 <h3><?=$namlbl?> & <?=$fltlbl?></h3>
 <img src="img/16/say.png" title="Map <?=$namlbl?>">
-<input type="text" name="tit" value="<?=$tit?>" size="18">
+<input type="text" <?=$oc?> name="tit" value="<?=$tit?>" size="18">
 <p>
 <select size="1" name="ina">
-<option value=""><?=$fltlbl?>->
 <?
 foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
@@ -125,14 +135,14 @@ foreach ($cols as $k => $v){
 </select>
 <p>
 <a href="javascript:show_calendar('dynfrm.sta');"><img src="img/16/date.png"></a>
-<input type="text" name="sta" value="<?=$sta?>" size="18">
+<input type="text" <?=$oc?> name="sta" placeholder="<?=$fltlbl?>" value="<?=$sta?>" size="18">
 
 </th>
 <td valign="top">
 
 <h3><?=$manlbl?></h3>
 <img src="img/16/img.png" title="<?=$sizlbl?> & <?=$frmlbl?>">
-<select size="1" name="dim">
+<select size="1" <?=$oc?> name="dim">
 <?=($dim)?"<option value=\"$dim\">$dim</option>":""?>
 <option value="320x200">320x200
 <option value="320x240">320x240
@@ -146,7 +156,7 @@ foreach ($cols as $k => $v){
 <option value="1600x1200">1600x1200
 <option value="1920x1200">1920x1200
 </select>
-<select size="1" name="fmt">
+<select size="1" <?=$oc?> name="fmt">
 <option value="png">png
 <option value="png8" <?=($fmt == "png8")?"selected":""?>>8bit
 <option value="svg" <?=($fmt == "svg")?"selected":""?>>svg
@@ -154,91 +164,97 @@ foreach ($cols as $k => $v){
 </select>
 <p>
 <img src="img/16/abc.png" title="Map <?=$typlbl?>">
-<select size="1" name="lev" title="<?=$levlbl?>">
-<option value="1">region
-<option value="2" <?=($lev == "2")?"selected":""?>>city
-<option value="3" <?=($lev == "3")?"selected":""?>>building
-<option value="4" <?=($lev == "4")?"selected":""?>>snmp dev
-<option value="5" <?=($lev == "5")?"selected":""?>>all  dev
-<option value="6" <?=($lev == "6")?"selected":""?>>node
+<select size="1" <?=$oc?> name="lev" title="<?=$levlbl?>">
+<option value="1"><?=$place['r']?>
+<option value="2" <?=($lev == "2")?"selected":""?>><?=$place['c']?>
+<option value="3" <?=($lev == "3")?"selected":""?>><?=$place['b']?>
+<option value="4" <?=($lev == "4")?"selected":""?>>SNMP Devs
+<option value="5" <?=($lev == "5")?"selected":""?>><?=$alllbl?>  Devs
+<option value="6" <?=($lev == "6")?"selected":""?>>Nodes
 </select>
-<select size="1" name="mod" title="Map <?=$typlbl?>">
+<select size="1" <?=$oc?> name="mod" title="Map <?=$typlbl?>">
 <option value="c">circle
 <option value="g" <?=($mod == "g")?"selected":""?>>geo
 <option value="f" <?=($mod == "f")?"selected":""?>>flat
 </select>
 <p>
 <img src="img/16/geom.png" title="Map <?=$loclbl?>">
-<input type="text" name="xo" value="<?=$xo?>" size="2" title="X <?=$loclbl?>">X
-<input type="text" name="yo" value="<?=$yo?>" size="2" title="Y <?=$loclbl?>">Y
-<input type="text" name="rot" value="<?=$rot?>" size="3" title="<?=$place['r']?> <?=$rotlbl?>">R
+<input type="number" min="-1000" max="1000" step="10" <?=$oi?> name="xo" value="<?=$xo?>" size="3" title="X <?=$loclbl?>">X
+<input type="number" min="-1000" max="1000" step="10" <?=$oi?> name="yo" value="<?=$yo?>" size="3" title="Y <?=$loclbl?>">Y
+<input type="number" min="-180" max="180" <?=$oi?> name="rot" value="<?=$rot?>" size="4" title="<?=$place['r']?> <?=$rotlbl?>">R
 
 </td>
 <td valign="top"><h3>Layout</h3>
 
 <img src="img/16/ncon.png" title="Link <?=$frmlbl?>">
 
-<select size="1" name="lis">
-<option value="">Line
-<option value="c" <?=($lis == "c")?"selected":""?>>Curve
+<select size="1" <?=$oc?> name="lis">
+<option value=""><?=$strlbl?>
+<option value="a1" <?=($lis == "a1")?"selected":""?>><?=$arclbl?>
+<option value="a2" <?=($lis == "a2")?"selected":""?>><?=$arclbl?> 2
+<option value="a3" <?=($lis == "a3")?"selected":""?>><?=$arclbl?> 3
 </select>
 
-<select size="1" name="lit">
-<option value="">Info
+<select size="1" <?=$oc?> name="lit">
+<option value="">(<?=$nonlbl?>)
 <option value="w" <?=($lit == "w")?"selected":""?>><?=$bwdlbl?>
+<option value="l" <?=($lit == "l")?"selected":""?>>Link <?=$lodlbl?>
 <? if($rrdcmd){ ?>
-<option value="" style="color: DarkBlue"><?=$trflbl?> ->
-<option value="f1" <?=($lit == "f1")?"selected":""?>><?=$siz['t']?>
-<option value="f2" <?=($lit == "f2")?"selected":""?>><?=$siz['s']?>
-<option value="f3" <?=($lit == "f3")?"selected":""?>><?=$siz['m']?>
-<option value="f4" <?=($lit == "f4")?"selected":""?>><?=$siz['l']?>
-<option value="" style="color: DarkRed "><?=$errlbl?> ->
-<option value="e1" <?=($lit == "e1")?"selected":""?>><?=$siz['t']?>
-<option value="e2" <?=($lit == "e2")?"selected":""?>><?=$siz['s']?>
-<option value="e3" <?=($lit == "e3")?"selected":""?>><?=$siz['m']?>
-<option value="e4" <?=($lit == "e4")?"selected":""?>><?=$siz['l']?>
-<option value="" style="color: DarkMagenta">Broadcasts ->
-<option value="b1" <?=($lit == "b1")?"selected":""?>><?=$siz['t']?>
-<option value="b2" <?=($lit == "b2")?"selected":""?>><?=$siz['s']?>
-<option value="b3" <?=($lit == "b3")?"selected":""?>><?=$siz['m']?>
-<option value="b4" <?=($lit == "b4")?"selected":""?>><?=$siz['l']?>
-<option value="" style="color: GoldenRod">Discards ->
-<option value="d1" <?=($lit == "d1")?"selected":""?>><?=$siz['t']?>
-<option value="d2" <?=($lit == "d2")?"selected":""?>><?=$siz['s']?>
-<option value="d3" <?=($lit == "d3")?"selected":""?>><?=$siz['m']?>
-<option value="d4" <?=($lit == "d4")?"selected":""?>><?=$siz['l']?>
+<option value="" style="color: DarkBlue"><?=$trflbl?> <?=$gralbl?>
+<option value="f1" <?=($lit == "f1")?"selected":""?>>- <?=$siz['t']?>
+<option value="f2" <?=($lit == "f2")?"selected":""?>>- <?=$siz['s']?>
+<option value="f3" <?=($lit == "f3")?"selected":""?>>- <?=$siz['m']?>
+<option value="f4" <?=($lit == "f4")?"selected":""?>>- <?=$siz['l']?>
+<option value="" style="color: DarkRed "><?=$errlbl?> <?=$gralbl?>
+<option value="e1" <?=($lit == "e1")?"selected":""?>>- <?=$siz['t']?>
+<option value="e2" <?=($lit == "e2")?"selected":""?>>- <?=$siz['s']?>
+<option value="e3" <?=($lit == "e3")?"selected":""?>>- <?=$siz['m']?>
+<option value="e4" <?=($lit == "e4")?"selected":""?>>- <?=$siz['l']?>
+<option value="" style="color: DarkMagenta">Bcast <?=$gralbl?>
+<option value="b1" <?=($lit == "b1")?"selected":""?>>- <?=$siz['t']?>
+<option value="b2" <?=($lit == "b2")?"selected":""?>>- <?=$siz['s']?>
+<option value="b3" <?=($lit == "b3")?"selected":""?>>- <?=$siz['m']?>
+<option value="b4" <?=($lit == "b4")?"selected":""?>>- <?=$siz['l']?>
+<option value="" style="color: GoldenRod">Discard  <?=$gralbl?>
+<option value="d1" <?=($lit == "d1")?"selected":""?>>- <?=$siz['t']?>
+<option value="d2" <?=($lit == "d2")?"selected":""?>>- <?=$siz['s']?>
+<option value="d3" <?=($lit == "d3")?"selected":""?>>- <?=$siz['m']?>
+<option value="d4" <?=($lit == "d4")?"selected":""?>>- <?=$siz['l']?>
 <?}?>
 </select>
 
-<input type="text" name="lil" value="<?=$lil?>" size="2" title="Link Info <?=$loclbl?>">I
+<input type="number" min="-100" max="100" <?=$oi?> name="lil" <?=(!$lit and $dyn)?"disabled":""?> value="<?=$lil?>" size="3" title="Link Info <?=$loclbl?>">I
 
-<input type="text" name="lal" value="<?=$lal?>" size="2" title="Link IF/IP<?=$loclbl?>">E
+<input type="number" min="0" max="100" <?=$oi?> step="5" name="lal" <?=(!$ifi and !$ifa and !$ipi and $dyn)?"disabled":""?> value="<?=$lal?>" size="4" title="Link IF/IP<?=$loclbl?>">E
 <p>
 <img src="img/16/dev.png" title="<?=$nodlbl?> & Links <?=$cfglbl?>">
-<select size="1" name="pos" title="<?=$nodlbl?> <?=$typlbl?>">
+<select size="1" <?=$oc?> name="pos" title="<?=$nodlbl?> <?=$typlbl?>">
 <option value=""><?=$imglbl?>
-<option value="s" <?=($pos == "s")?"selected":""?>><?=$shplbl?>
-<option value="c" <?=($pos == "c")?"selected":""?>>% CPU
+<option value="s" <?=($pos == "s")?"selected":""?>><?=$shplbl?> <?=$siz['m']?>
+<option value="d" <?=($pos == "d")?"selected":""?>><?=$shplbl?> <?=$siz['t']?>
+<option value="c" <?=($pos == "c")?"selected":""?>>CPU <?=$lodlbl?>
 <option value="h" <?=($pos == "h")?"selected":""?>><?=$tmplbl?>
-<option value="d" <?=($pos == "d")?"selected":""?>><?=$siz['t']?>
+
 </select>
-<input type="text" name="pwt" value="<?=$pwt?>" size="2" title="<?=$nodlbl?> <?=$loclbl?> * #Links">W
-<input type="text" name="len" value="<?=$len?>" size="3" title="Link <?=$lenlbl?>">L
-<input type="text" name="lsf" value="<?=$lsf?>" size="3" title="Link <?=$lenlbl?>/<?=$levlbl?>">F
+<input type="number" min="0" max="100" <?=$oi?> name="pwt" value="<?=$pwt?>" size="3" title="<?=$nodlbl?> <?=$loclbl?> * #Links">W
+<input type="number" min="0" max="1000"  <?=$oi?> step="10" name="len" value="<?=$len?>" size="4" title="Link <?=$lenlbl?>">L
+<input type="number" min="1" max="100"  <?=$oi?> name="lsf" <?=($mod == "f" and $lev < 6 and $dyn)?"disabled":""?> value="<?=$lsf?>" size="3" title="Link <?=$lenlbl?>/<?=$levlbl?>">S
 <p>
 <img src="img/16/home.png" title="<?=$loclbl?> <?=$cfglbl?>">
-<input type="text" name="cro" value="<?=$cro?>" size="3" title="<?=$place['c']?> <?=$rotlbl?>">C
-<input type="text" name="bro" value="<?=$bro?>" size="3" title="<?=$place['b']?> <?=$rotlbl?>">B
-<input type="text" name="fsz" value="<?=$fsz?>" size="3" title="<?=$place['f']?> <?=$sizlbl?>">P
-<input type="text" name="fco" value="<?=$fco?>" size="2" title="<?=$place['o']?> <?=$collbl?>">R
+<input type="number" min="-180" max="180" <?=$oi?> name="cro" <?=($mod == "f" or $lev < 2 and $dyn)?"disabled":""?> value="<?=$cro?>" size="4" title="<?=$place['c']?> <?=$rotlbl?>">C
+<input type="number" min="-180" max="180" <?=$oi?> name="bro" <?=($mod == "f" or $lev < 3 and $dyn)?"disabled":""?> value="<?=$bro?>" size="4" title="<?=$place['b']?> <?=$rotlbl?>">B
+<input type="number" min="6" max="1000" <?=$oi?> name="fsz" <?=($mod == "f" or $lev < 4 and $dyn)?"disabled":""?> value="<?=$fsz?>" size="4" title="<?=$place['f']?> <?=$sizlbl?>">F
+<input type="number" min="1" max="50" <?=$oi?> name="fco" <?=($mod == "f" or $lev < 4 and $dyn)?"disabled":""?> value="<?=$fco?>" size="3" title="<?=$place['o']?> <?=$collbl?>">R
 
 </td>
 <td valign="top"><h3><?=$sholbl?></h3>
 
-<img src="img/16/port.png" title="IF <?=$namlbl?>"> <input type="checkbox" name="ifi" <?=$ifi?>><br>
-<img src="img/16/glob.png" title="IP <?=$adrlbl?>"> <input type="checkbox" name="ipi" <?=$ipi?>><br>
-<img src="img/16/home.png" title="<?=$loclbl?>"> <input type="checkbox" name="loi" <?=$loi?>><br>
-<img src="img/16/user.png" title="<?=$conlbl?>"> <input type="checkbox" name="coi" <?=$coi?>>
+<img src="img/16/port.png" title="IF Info"> 
+<input type="checkbox" title="IF <?=$namlbl?>" <?=$oc?> name="ifi" <?=$ifi?>> <input type="checkbox" title="IF Alias" <?=$oc?> name="ifa" <?=$ifa?>><br>
+<img src="img/16/glob.png" title="IP <?=$adrlbl?>"> 
+<input type="checkbox" title="Device IP" <?=$oc?> name="ipd" <?=$ipd?>> <input type="checkbox" title="IF IP" <?=$oc?> name="ipi" <?=$ipi?>><br>
+<img src="img/16/home.png" title="<?=$loclbl?>"> <input type="checkbox" <?=$oc?> name="loi" <?=$loi?>><br>
+<img src="img/16/user.png" title="<?=$conlbl?>"> <input type="checkbox" <?=$oc?> name="coi" <?=$coi?>>
 
 </td>
 <th width="80" valign="top">
@@ -248,6 +264,8 @@ foreach ($cols as $k => $v){
 <img src="img/16/exit.png" title="Stop" onClick="stop_countdown(interval);">
 </h3>
 <br>
+<img src="img/16/walk.png" title="Dynamic-<?=$edilbl?>"> <input type="checkbox" onchange="this.form.submit();" name="dyn" <?=$dyn?>><br>
+
 <p>
 <input type="submit" value="<?=$cmdlbl?>">
 
@@ -279,7 +297,7 @@ if($fmt == 'json'){
 	}
 	if (file_exists("log/map_$_SESSION[user].php")) {
 ?>
-<img usemap="#net" src="log/map_<?=$_SESSION[user]?>.php" style="border:1px solid black">
+<img usemap="#net" src="log/map_<?=$_SESSION['user']?>.php" style="border:1px solid black">
 <map name="net">
 <?=$imgmap?>
 </map>
@@ -297,15 +315,14 @@ include_once ("inc/footer.php");
 
 function WritePNG($usr,$nd) {
 
-	global $trflbl,$errlbl,$inblbl,$tim, $now;
-	global $xm,$ym,$mod,$fmt,$tit,$ina,$sta;
+	global $xm,$ym,$mod,$fmt,$tit,$ina,$opa,$sta,$now;
 	global $mapbg,$mapinfo,$mapframes,$maplinks,$mapitems;
 
 	$maphdr   = array();
 	$mapftr   = array();
 
        	$map  = "<?PHP\n";
-	$map .= "# PNG Map for $nd devices created on $now by NeDi (visit http://www.nedi.ch for more info)\n";
+	$map .= "# PNG Map for $nd devices created on $now by $_SESSION[user] using NeDi (visit http://www.nedi.ch for more info)\n";
 	$map .= "ini_set(\"memory_limit\",\"64M\");\n";
 	$map .= "header(\"Content-type: image/png\");\n";
 	$map .= "error_reporting(0);\n";
@@ -340,8 +357,8 @@ function WritePNG($usr,$nd) {
 	$map .= "\$gray      = ImageColorAllocate(\$image, 100, 100, 100);\n";
 	$map .= "\$black     = ImageColorAllocate(\$image, 0, 0, 0);\n";
 	$map .= "ImageString(\$image, 5, 8, 8, \"$tit\", \$black);\n";
-	$map .= "ImageString(\$image, 1, 8, 26, \"$nd devices ($ina ~ /$sta/)\", \$gray);\n";
-	$map .= "ImageString(\$image, 1, ".($xm - 120).",".($ym - 10).", \"NeDi $now\", \$gray);\n";
+	$map .= "ImageString(\$image, 1, 8, 26, \"$nd devices ".(($sta)?"($ina $opa /$sta/)":"")."\", \$gray);\n";
+	$map .= "ImageString(\$image, 1, ".($xm - 120).",".($ym - 10).", \"$usr $now\", \$gray);\n";
 
 	$map .= $mapinfo . $mapframes . $maplinks . "imagesetthickness(\$image,1);\n" . $mapitems;
 
@@ -359,7 +376,7 @@ function WritePNG($usr,$nd) {
 
 function WriteSVG($usr,$nd) {
 
-	global $xm,$ym,$mod,$tit,$ina,$sta,$mapinfo,$mapframes,$maplinks,$mapitems;
+	global $xm,$ym,$mod,$tit,$ina,$sta,$now,$mapinfo,$mapframes,$maplinks,$mapitems;
 
        	$map  = "<?xml version=\"1.0\" encoding=\"iso-8859-1\" standalone=\"no\"?>\n";
 	$map .= "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/SVG/DTD/svg10.dtd\">\n";
@@ -368,8 +385,8 @@ function WriteSVG($usr,$nd) {
 	$map .= "<rect id=\"canvas\" width=\"$xm\" height=\"$ym\" x=\"0\" y=\"0\" stroke=\"black\" fill=\"white\" />\n";
 	$map .= "<g id=\"title\">\n";
 	$map .= "	<text x=\"8\" y=\"20\" font-size=\"16\" font-weight=\"bold\">$tit</text>\n";
-	$map .= "	<text x=\"8\" y=\"32\" style=\"fill:gray;\">$nd devices for $ina ~ /$sta/</text>\n";
-	$map .= "	<text x=\"".($xm - 120)."\" y=\"".($ym - 5)."\" style=\"fill:gray;\">NeDi $now</text>\n";
+	$map .= "	<text x=\"8\" y=\"32\" style=\"fill:gray;\">$nd Devices ".(($sta)?"($ina $opa /$sta/)":"")."</text>\n";
+	$map .= "	<text x=\"".($xm - 120)."\" y=\"".($ym - 5)."\" style=\"fill:gray;\">$usr $now</text>\n";
 	$map .= "</g>\n";
 
 	$map .= "<g id=\"info\">\n";
@@ -565,13 +582,13 @@ EOD;
 
 #===================================================================
 # Draws a link.
-function DrawLink($x1,$y1,$x2,$y2,$fb,$rb,$fif,$rif) {
+function DrawLink($x1,$y1,$x2,$y2,$opt) {
 
-	global $fmt,$lev,$lix,$liy,$lis,$lit,$lil,$lal,$ipi,$ifi,$xm,$ym,$debug;
-	global $dev,$maplinks,$mapitems,$errlbl,$trflbl,$rrdcmd,$nedipath,$liy;
-
-	$liy["$x1,$y1,$y2"] = ($liy["$x1,$y1,$y2"])?0:8;				# offset coherent if/ip info on start of links from a node where link end is same y
-	$liy["$x2,$y2,$y1"] = ($liy["$x2,$y2,$y1"])?0:8;				# offset coherent if/ip info on end of links from a node where link end is same y
+	global $fmt,$lev,$lix,$liy,$lis,$lit,$lil,$lal,$ipi,$ifi,$ifa,$pos,$xm,$ym,$debug;
+	global $dev,$maplinks,$mapitems,$errlbl,$trflbl,$rrdcmd,$rrdstep,$nedipath,$liy;
+	
+	$liy["$x1,$y1,$y2"] = ($liy["$x1,$y1,$y2"])?0:9;				# offset coherent if/ip info on start of links from a node where link end is same y
+	$liy["$x2,$y2,$y1"] = ($liy["$x2,$y2,$y1"])?0:9;				# offset coherent if/ip info on end of links from a node where link end is same y
         if($x1 == $x2){									# offset coherent, horizontal links...
                 $lix[$x1]+= 2;
                 $x1 += $lix[$x1];
@@ -581,13 +598,107 @@ function DrawLink($x1,$y1,$x2,$y2,$fb,$rb,$fif,$rif) {
                 $y1 += $liy[$y1];
                 $y2 = $y1;
         }
+	$xlm = intval($x1 + $x2) / 2;							# middle of link
+	$ylm = intval($y1 + $y2) / 2;
 
-	$xlm   = intval($x1  + $x2) / 2;						# middle of link
-	$ylm   = intval($y1  + $y2) / 2;
+	$dctr1 = sqrt( pow(($x1 - $xm/2),2) + pow(($y2 - $ym/2),2) );			# Pythagoras tells distance to map center of either possible arc centerpoint
+	$dctr2 = sqrt( pow(($x2 - $xm/2),2) + pow(($y1 - $ym/2),2) );
 
-	if( is_array($fif) ){
-		$yof = 0 + $liy["$x1,$y1,$y2"];
-		foreach ($fif as $fi){
+	if($dctr1 < $dctr2){
+		$xctr = $x1;
+		$yctr = $y2;
+		$xedg = $x2;
+		$yedg = $y1;
+	}else{
+		$xctr = $x2;
+		$yctr = $y1;
+		$xedg = $x1;
+		$yedg = $y2;
+	}
+	#$maplinks .= "ImageString(\$image, 3, $xctr,$yctr,\"C\", \$blue);\n";
+	#$maplinks .= "ImageString(\$image, 3, $xedg,$yedg,\"E\", \$blue);\n";
+
+	list($t,$cf) = LinkStyle($opt['fbw'],$opt['ftr']);
+	list($t,$cr) = LinkStyle($opt['rbw'],$opt['rtr']);
+	#$maplinks .= "ImageString(\$image, 3, $x1,$y1,\"Start\", \$blue);\n";
+
+	$maplinks .= "\$stylarr = array(\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,
+					\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf, 
+					\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf, 
+					\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf,\$$cf, 
+					\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,
+					\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,
+					\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,
+					\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr,\$$cr);\n";
+	$maplinks .= "imagesetstyle(\$image,\$stylarr);\n";
+	$lsty = 'IMG_COLOR_STYLED';
+
+	#$maplinks .= "\$bru = imagecreatefrompng('../img/netr.png');\n";
+	#$maplinks .= "imagesetbrush(\$image, \$bru);\n";
+	#$lsty = 'IMG_COLOR_BRUSHED';
+
+	if($lis == "a1"){
+		$w = 2*abs($x2-$x1);
+		$h = 2*abs($y2-$y1);
+		$l = sqrt($w*$h)/10;
+		if($xctr > $xedg){							# Left half
+			if($yctr > $yedg){						# Upper Quadrant
+				$s = 180;$e = 270;$ylm -= $l;
+			}else{
+				$s = 90;$e = 180;$ylm += $l;
+			}
+			$xlm -= $l;
+		}else{
+			if($yctr > $yedg){
+				$s = 270;$e = 0;$ylm -= $l;
+			}else{
+				$s = 0;$e = 90;$ylm += $l;
+			}
+			$xlm += $l;
+		}
+		if($fmt == "svg"){
+			$maplinks .= "<path d=\"M $x1 $y1 A $w $h 0 0 1 $x2 $y2\" stroke=\"$cf\" stroke-width=\"$t\" fill = \"none\"/>\n";
+		}else{
+			$maplinks .= "imagesetthickness(\$image,$t);\n";
+			$maplinks .= "imagearc(\$image, $xctr, $yctr, $w, $h, $s, $e, $lsty);\n";
+		}
+	}elseif($lis == "a2"){
+		$xlm = $xedg;
+		$ylm = $yedg;
+		if($fmt == "svg"){
+			$maplinks .= "<line x1=\"$x1\" y1=\"$y1\" x2=\"$xlm\" y2=\"$ylm\" stroke=\"$cf\" stroke-width=\"$t\"/>\n";
+			$maplinks .= "<line x1=\"$xlm\" y1=\"$ylm\" x2=\"$x2\" y2=\"$y2\" stroke=\"$cf\" stroke-width=\"$t\"/>\n";
+		}else{
+			$maplinks .= "imagesetthickness(\$image,$t);\n";
+			$maplinks .= "imageline(\$image,$x1,$y1,$xlm,$ylm,$lsty);\n";
+			$maplinks .= "imageline(\$image,$xlm,$ylm,$x2,$y2,$lsty);\n";
+		}
+	}elseif($lis == "a3"){
+		$xlm = $xedg-intval(($xedg-$xctr)/5);
+		$ylm = $yedg-intval(($yedg-$yctr)/5);
+		if($fmt == "svg"){
+			$maplinks .= "<line x1=\"$x1\" y1=\"$y1\" x2=\"$xlm\" y2=\"$ylm\" stroke=\"$cf\" stroke-width=\"$t\"/>\n";
+			$maplinks .= "<line x1=\"$xlm\" y1=\"$ylm\" x2=\"$x2\" y2=\"$y2\" stroke=\"$cf\" stroke-width=\"$t\"/>\n";
+		}else{
+			$maplinks .= "imagesetthickness(\$image,$t);\n";
+			$maplinks .= "imageline(\$image,$x1,$y1,$xlm,$ylm,$lsty);\n";
+			$maplinks .= "imageline(\$image,$xlm,$ylm,$x2,$y2,$lsty);\n";
+		}
+	}else{
+		if($fmt == "svg"){
+			$maplinks .= "<line x1=\"$x1\" y1=\"$y1\" x2=\"$x2\" y2=\"$y2\" stroke=\"$cf\" stroke-width=\"$t\"/>\n";
+		}else{
+			$maplinks .= "imagesetthickness(\$image,$t);\n";
+			$maplinks .= "imageline(\$image,$x1,$y1,$x2,$y2,$lsty);\n";
+		}
+	}
+
+	$xlm = $xlm + $lil/10*intval($xm/($xlm - $xm/2.1));				# move info on a ray from the center
+	$ylm = $ylm + $lil/10*intval($ym/($ylm - $ym/2.1));				# .1 to avoid div 0
+
+	if( is_array($opt['fif']) ){
+		$yof = 2 + $liy["$x1,$y1,$y2"];
+		foreach ($opt['fif'] as $fi){
 			$f = explode(';;', $fi);
 			if( preg_match("/^[febd]/",$lit) and $rrdcmd ){
 				$rrd = "$nedipath/rrd/" . rawurlencode($f[0]) . "/" . rawurlencode($f[1]) . ".rrd";
@@ -598,20 +709,21 @@ function DrawLink($x1,$y1,$x2,$y2,$fb,$rb,$fif,$rif) {
 				}
 			}
 			if($lev > 3){
-				$ifl = ($ifi)?$f[1]:"";
+				$ifl = (($ifi)?$f[1]:"").(($ifa)?" ".$dev[$f[0]]['ifal'][$f[1]]:"");#.(($lit == 'l')?" ".$opt['ftr']:"");
 			}else{
 				$ifl = ($ifi)?"$f[0] $f[1]":"";
 			}
 			$ipl = ($ipi)?$dev[$f[0]]['ifip'][$f[1]]:"";
-			$mapitems .= DrawLabel(	intval($x2+($x1-$x2)/(1 + abs($lal)/20)),
-						intval($y2+($y1-$y2)/(1 + abs($lal)/20))+$yof,
+			$alpha = atan2( ($ylm-$y1),($xlm-$x1) );
+			$mapitems .= DrawLabel(	$x1+cos($alpha)*$lal,
+						$y1+sin($alpha)*$lal+$yof,
 						Safelabel("$ifl$ipl"),1,"gray");
-			$yof += 8;
+			$yof += 9;
 		}
 	}
-	if( is_array($rif) ){
-		$yof = 0 + $liy["$x2,$y2,$y1"];
-		foreach ($rif as $ri){
+	if( is_array($opt['rif']) ){
+		$yof = 2 + $liy["$x2,$y2,$y1"];
+		foreach ($opt['rif'] as $ri){
 			$r = explode(';;', $ri);
 			if($lev > 3){
 				$ifl = ($ifi)?$r[1]:"";
@@ -619,26 +731,30 @@ function DrawLink($x1,$y1,$x2,$y2,$fb,$rb,$fif,$rif) {
 				$ifl = ($ifi)?"$r[0] $r[1]":"";
 			}
 			$ipl = ($ipi)?$dev[$r[0]]['ifip'][$r[1]]:"";
-			$mapitems .= DrawLabel(	intval($x1+($x2-$x1)/(1 + abs($lal)/20)),
-						intval($y1+($y2-$y1)/(1 + abs($lal)/20))+$yof,
+			$alpha = atan2( ($ylm-$y2),($xlm-$x2) );
+			$mapitems .= DrawLabel(	$x2+cos($alpha)*$lal,
+						$y2+sin($alpha)*$lal+$yof,
 						Safelabel("$ifl$ipl"),1,"gray");
-			$yof += 8;
+			$yof += 9;
 		}
 	}
 
-	list($t,$c) = LinkStyle($fb);
-
-	$xlm = $xlm + $lil*intval($xm/($xlm - $xm/2.2));				# .2 to avoid div 0 and less sensitive to $lal
-	$ylm = $ylm + $lil*intval($ym/($ylm - $ym/2.2));
 	if($lit == 'w'){
-		$mapitems .= DrawLabel($xlm,$ylm-8,ZFix($fb) . "/" . ZFix($rb),1,"green");
+		$mapitems .= DrawLabel($xlm,$ylm-8,DecFix($opt['fbw']) . "/" . DecFix($opt['rbw']),1,"green");
+	}elseif($lit == 'l' and $pos != "d"){
+		if($_SESSION['gbit']){
+			$linklbl = DecFix(intval($opt['ftr']/$rrdstep*8))."/".DecFix(intval($opt['rtr']/$rrdstep*8));
+		}else{
+			$linklbl = DecFix(intval($opt['ftr']/$rrdstep))."/".DecFix(intval($opt['rtr']/$rrdstep));
+		}
+		$mapitems .= DrawLabel($xlm,$ylm-8,$linklbl,2,"black");
 	}elseif( is_array($rrdif) ){
 		if( preg_match("/^f/",$lit) ){
-			$opts = GraphOpts(substr($lit,1),0,0,$trflbl,$fb);
+			$opts = GraphOpts(substr($lit,1),0,0,$trflbl,$opt['fbw']);
 			list($draw,$tit) = GraphTraffic($rrdif,'trf');
-			$mapitems .= DrawLabel($xlm,$ylm-25,ZFix($fb) . "/" . ZFix($rb),1,"green");
+			$mapitems .= DrawLabel($xlm,$ylm-25,DecFix($opt['fbw']) . "/" . DecFix($opt['rbw']),1,"green");
 		}elseif( preg_match("/^e/",$lit) ){
-			$opts = GraphOpts(substr($lit,1),0,0,$errlbl,0);
+			$opts = GraphOpts(substr($lit,1),0,0,$errlbl,1);
 			list($draw,$tit) = GraphTraffic($rrdif,'err');
 		}elseif( preg_match("/^d/",$lit) ){
 			$opts = GraphOpts(substr($lit,1),0,0,"Discards",0);
@@ -658,42 +774,6 @@ function DrawLink($x1,$y1,$x2,$y2,$fb,$rb,$fif,$rif) {
 			$mapitems .= "Imagecopy(\$image, \$icon,$xlm-\$w/2,$ylm-\$h/2,0,0,\$w,\$h);\n";
 			$mapitems .= "Imagedestroy(\$icon);\n";
 			$mapitems .= "unlink(\"$xlm$ylm.png\");\n";
-		}
-	}
-
-	if($lis == "c"){
-		$w = 2*abs($x2-$x1);
-		$h = 2*abs($y2-$y1);
-		if($x1 > $x2){
-			$x = $x2;
-			$y = $y1;
-			$ya= $y2;
-		}else{
-			$x = $x1;
-			$y = $y2;
-			$ya= $y1;
-		}
-		if($y < $ya){
-			$s = 0;
-			$e = 90;
-		}else{
-			$s = -90;
-			$e = 0;
-		}
-		if($fmt == "json"){
-		}elseif($fmt == "svg"){
-			$maplinks .= "<path d=\"M $x1 $y1 A $w $h 0 0 1 $x2 $y2\" stroke=\"$c\" stroke-width=\"$t\" fill = \"none\"/>\n";
-		}else{
-			$maplinks .= "imagesetthickness(\$image,$t);\n";
-			$maplinks .= "imagearc(\$image, $x, $y, $w, $h, $s, $e, \$$c);\n";
-		}
-	}else{
-		if($fmt == "json"){
-		}elseif($fmt == "svg"){
-			$maplinks .= "<line x1=\"$x1\" y1=\"$y1\" x2=\"$x2\" y2=\"$y2\" stroke=\"$c\" stroke-width=\"$t\"/>\n";
-		}else{
-			$maplinks .= "imagesetthickness(\$image,$t);\n";
-			$maplinks .= "imageline(\$image,$x1,$y1,$x2,$y2,\$$c);\n";
 		}
 	}
 }
@@ -773,7 +853,7 @@ function DrawBuilding($x,$y,$r,$c,$b) {
 
 function DrawItem($x,$y,$opt,$label,$typ) {
 
-	global $fmt,$dev,$nod,$pos,$loi,$coi,$ipi,$redbuild,$cpua,$tmpa;
+	global $fmt,$dev,$nod,$pos,$loi,$coi,$ipd,$redbuild,$cpua,$tmpa;
 
 	$r  = ($opt > 2)?12:6;
 	$lx = intval($x-strlen($label) * 2);
@@ -864,9 +944,9 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 		}
 		if($pos != "d"){
 			$itxt .= DrawLabel($x,$y+18,Safelabel($label),1,"black");
-			if ($loi){$itxt .= DrawLabel($x,$y-28,Safelabel($dev[$label]['rom']),1,"cornflowerblue");}
-			if ($ipi){$itxt .= DrawLabel($x,$y+26,$dev[$label]['ip'],1,"gray");}
-			if ($coi){$itxt .= DrawLabel($x,$y+(($ipi)?34:26),Safelabel($dev[$label]['con']),1,"cornflowerblue");}
+			if ($loi){$itxt .= DrawLabel($x,$y-28,Safelabel($dev[$label]['rom']." ".$dev[$label]['rak']),1,"cornflowerblue");}
+			if ($ipd){$itxt .= DrawLabel($x,$y+26,$dev[$label]['ip'],1,"gray");}
+			if ($coi){$itxt .= DrawLabel($x,$y+(($ipd)?34:26),Safelabel($dev[$label]['con']),1,"cornflowerblue");}
 		}
 	}elseif($typ == "n"){
 		if($pos == "s"){
@@ -878,7 +958,7 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 		}
 		if($pos != "d"){
 			$itxt .= DrawLabel($x,$y+8,Safelabel($nod[$label]['nam']),1,"black");
-			if ($ipi){$itxt .= DrawLabel($x,$y+16,$nod[$label]['ip'],1,"gray");}
+			if ($ipd){$itxt .= DrawLabel($x,$y+16,$nod[$label]['ip'],1,"gray");}
 		}
 	}
 	return $itxt;
@@ -892,11 +972,10 @@ function DrawNodes($dv){
 	global $dev,$nod,$nlnk,$mapframes,$mapitems,$imgmap;
 
 	include_once ('inc/libnod.php');
-	$join = 'LEFT JOIN interfaces USING (device,ifname)';
 	if($ina == "vlanid"){
-		$nquery	= GenQuery('nodes','s','name,nodip,mac,oui,ifname,ifmetric,iftype,speed,duplex,pvid','','',array('device','vlanid'),array('=',$opa),array($dv,$sta),array('AND'),$join);
+		$nquery	= GenQuery('nodes','s','name,nodip,mac,oui,ifname,ifmetric,iftype,speed,duplex,pvid,alias,dinoct,doutoct','','',array('device','vlanid'),array('=',$opa),array($dv,$sta),array('AND'),'LEFT JOIN interfaces USING (device,ifname)');
 	}else{
-		$nquery	= GenQuery('nodes','s','name,nodip,mac,oui,ifname,ifmetric,iftype,speed,duplex,pvid','','',array('device'),array('='),array($dv),'',$join);
+		$nquery	= GenQuery('nodes','s','name,nodip,mac,oui,ifname,ifmetric,iftype,speed,duplex,pvid,alias,dinoct,doutoct','','',array('device'),array('='),array($dv),'','LEFT JOIN interfaces USING (device,ifname)');
 	}
 	$nres	= @DbQuery($nquery,$link);
 	if($nres){
@@ -904,15 +983,18 @@ function DrawNodes($dv){
 		$nn  = @DbNumRows($nres);
 		while( ($n = @DbFetchRow($nres)) ){
 			$nod[$n[2]]['nam'] = $n[0];
-			$nod[$n[2]]['ip'] = long2ip($n[1]);
+			$nod[$n[2]]['ip'] = long2ip($n[1]).(($n[9])?" Vl$n[9]":"");
 			$nod[$n[2]]['ico'] = Nimg("$n[2];$n[3]");
-			list($nod[$n[2]]['x'],$nod[$n[2]]['y']) = CircleCoords($dev[$dv]['x'],$dev[$dv]['y'],$cun,$nn,8*($cun % 2),$len/pow($lsf,3),0,0);
+			list($nod[$n[2]]['x'],$nod[$n[2]]['y']) = CircleCoords($dev[$dv]['x'],$dev[$dv]['y'],$cun,$nn,8*($cun % 2),$len/$lsf*5,0,0);
 			$mapitems .= DrawItem($nod[$n[2]]['x'],$nod[$n[2]]['y'],'0',$n[2],'n');
 			$imgmap .= "<area href=\"Nodes-Status.php?mac=$n[2]\" coords=\"".($nod[$n[2]]['x']-$imas) .",". ($nod[$n[2]]['y']-$imas) .",". ($nod[$n[2]]['x']+$imas) .",". ($nod[$n[2]]['y']+$imas)."\" shape=rect title=\"".$nod[$n[2]]['nam']." ".$nod[$n[2]]['ip']."\">\n";
 			$nlnk["$dv;;$n[2]"]['fbw'] = $n[7];
-			$nlnk["$dv;;$n[2]"]['rbw'] = ($i[8] == "FD")?$n[7]:0;
+			$nlnk["$dv;;$n[2]"]['rbw'] = ($n[8] == "FD")?$n[7]:0;
+			$nlnk["$dv;;$n[2]"]['ftr'] = $n[11];
+			$nlnk["$dv;;$n[2]"]['rtr'] = $n[12];
+			$nlnk["$dv;;$n[2]"]['ifal'][] = $n[10];
 			$nlnk["$dv;;$n[2]"]['fif'][] = "$dv;;$n[4]";
-			$nlnk["$dv;;$n[2]"]['met'][] = ($n[5] < 256)?";;$n[5]db":"";		# Draws SNR...
+			$nlnk["$dv;;$n[2]"]['rif'][] = ($n[5] < 256)?";;$n[5]db":"";		# Draws SNR...
 			@DbFreeResult($ires);
 			$cun++;
 
@@ -999,21 +1081,41 @@ function DrawLabel($x,$y,$t,$s,$c){
 }
 
 //===================================================================
-// Return link style based on forward bandwidth
-function LinkStyle($bw=0){
+// Return link style based on forward bandwidth or utilisation
+function LinkStyle($bw=0,$trf=0){
 
-	if($bw == 11000000 or $bw == 54000000 or $bw == 300000000){			# Most likely Wlan
-		return array('5','gainsboro');
-	}elseif($bw < 10000000){							# Most likely serial links
-		return array(intval($bw/1000000),'limegreen');
-	}elseif($bw < 100000000){							# 10 Mbit Ethernet
-		return array(intval($bw/10000000),'blue');
-	}elseif($bw < 1000000000){							# 100 Mbit Ethernet
-		return array(intval($bw/100000000),'orange');
-	}elseif($bw < 10000000000){							# 1 Gbit Ethernet
-		return array(intval($bw/1000000000),'red');
-	}else{										# 10 Gbit Ethernet
-		return array(($bw < 100000000000)?intval($bw/10000000000):9,'purple');
+	global $lit,$rrdstep;
+
+	if($lit == 'l'){
+		$w = 4;
+		$utl = $trf*800/$bw/$rrdstep;
+		if($utl == 0){									# No traffic
+			return array($w,'gainsboro');
+		}elseif($utl < 25){
+			return array($w,'limegreen');
+		}elseif($utl < 50){
+			return array($w,'blue');
+		}elseif($utl < 75){
+			return array($w,'orange');
+		}else{
+			return array($w,'red');
+		}
+	}else{
+		if($bw == 0){									# No bandwidth
+			return array('1','black');
+		}elseif($bw == 11000000 or $bw == 54000000 or $bw == 300000000){		# Most likely Wlan
+			return array('5','gainsboro');
+		}elseif($bw < 10000000){							# Most likely serial links
+			return array(intval($bw/1000000),'limegreen');
+		}elseif($bw < 100000000){							# 10 Mbit Ethernet
+			return array(intval($bw/10000000),'blue');
+		}elseif($bw < 1000000000){							# 100 Mbit Ethernet
+			return array(intval($bw/100000000),'orange');
+		}elseif($bw < 10000000000){							# 1 Gbit Ethernet
+			return array(intval($bw/1000000000),'red');
+		}else{										# 10 Gbit Ethernet
+			return array(intval($bw/10000000000),'purple');
+		}
 	}
 }
 
@@ -1021,8 +1123,8 @@ function LinkStyle($bw=0){
 # Generate the map.
 function Map() {
 
-	global $debug,$link,$locsep,$vallbl,$sholbl,$sumlbl,$imas,$fmt;
-	global $xm,$ym,$xo,$yo,$rot,$cro,$bro,$len,$lsf,$mod,$ina,$opa,$sta,$lev,$loi,$ipi;
+	global $debug,$link,$locsep,$vallbl,$sholbl,$sumlbl,$imas,$fmt,$lit;
+	global $xm,$ym,$xo,$yo,$rot,$cro,$bro,$len,$lsf,$mod,$ina,$opa,$sta,$lev,$loi,$ipi,$ifa;
 	global $mapbg,$mapitems,$maplinks,$mapinfo,$imgmap,$reg,$cty,$bld,$flr,$dev,$nod,$nlnk;
 
 	$rlnk = array();
@@ -1045,12 +1147,28 @@ function Map() {
 			$reg[$l[0]]['ndv']++;
 			$cty[$l[0]][$l[1]]['ndv']++;
 			$dev[$d[0]]['reg'] = $l[0];
-			if($ipi){								# Get IP info for links
-				$nquery	= GenQuery('networks','s','*','','',array('device'),array('='),array($d[0]) );
+			if($ipi){								# Get IP info for interfaces
+				$nquery	= GenQuery('networks','s','ifname,ifip,vrfname','','',array('device'),array('='),array($d[0]) );
 				$nres	= @DbQuery($nquery,$link);
 				if($nres){
 					while( ($n = @DbFetchRow($nres)) ){
-						$dev[$d[0]]['ifip'][$n[1]] .= " ". long2ip($n[2]);
+						$dev[$d[0]]['ifip'][$n[0]] .= " ". long2ip($n[1]).(($n[2])?" ($n[2])":"");
+					}
+				}else{
+					echo @DbError($nlink);
+				}
+				@DbFreeResult($nres);
+			}
+			if($ifa or $lit == 'l'){								# Get IF alias TODO use iftype to determine links?
+				$nquery	= GenQuery('interfaces','s','ifname,ifidx,iftype,alias,dinoct,doutoct','','',array('device'),array('='),array($d[0]) );
+				$nres	= @DbQuery($nquery,$link);
+				if($nres){
+					while( ($n = @DbFetchRow($nres)) ){
+						$dev[$d[0]]['ifty'][$n[0]] = $n[1];
+						$dev[$d[0]]['ifix'][$n[0]] = $n[2];
+						$dev[$d[0]]['ifal'][$n[0]] = $n[3];
+						$dev[$d[0]]['ifin'][$n[0]] = $n[4];
+						$dev[$d[0]]['ifout'][$n[0]] = $n[5];
 					}
 				}else{
 					echo @DbError($nlink);
@@ -1068,6 +1186,7 @@ function Map() {
 				$flr[$l[0]][$l[1]][$l[2]][$l[3]][] = $d[0];
 				$dev[$d[0]]['ip']  = long2ip($d[1]);
 				$dev[$d[0]]['rom'] = $l[4];
+				$dev[$d[0]]['rak'] = ($l[5])?$l[5]:"";
 				$dev[$d[0]]['con'] = $d[3];
 				$dev[$d[0]]['ico'] = $d[4];
 				$dev[$d[0]]['ver'] = $d[5];
@@ -1091,19 +1210,22 @@ function Map() {
 		$lres	= @DbQuery($lquery,$link);
 		while( ($k = @DbFetchRow($lres)) ){
 			if( isset($dev[$k[3]]['reg']) ){				# Only use, if we have complete devs
-				$rlquery = GenQuery('links','s','*','','',array('device','neighbor'),array('=','='),array($k[3],$k[1]),array('AND') );
+				$rlquery = GenQuery('links','s','*','','',array('device','neighbor'),array('=','='),array($k[3],$k[1]),array('AND'));
 				$rlres	 = @DbQuery($rlquery,$link);
 				$rlnum   = @DbNumRows($rlres);
 				if( array_key_exists("$k[3];;$k[1]",$dlnk) ){
 					$dlnk["$k[3];;$k[1]"]['rbw'] += $k[5];
+					$dlnk["$k[3];;$k[1]"]['rtr'] += $dev[$k[3]]['ifin'][$k[4]];
 					$dlnk["$k[3];;$k[1]"]['rif'][] = "$k[1];;$k[2]";
 				}elseif($dev[$k[1]]['ver']){
 					if(!$rlnum){
 						if($debug){echo "RLNK: Fixing missing link from $k[3] to $k[1]<br>\n";}
 						$dlnk["$k[1];;$k[3]"]['rbw'] += $k[5];
+						$dlnk["$k[1];;$k[3]"]['rtr'] += $dev[$k[1]]['ifin'][$k[2]];
 						$dlnk["$k[1];;$k[3]"]['rif'][] = "$k[3];;$k[4]";
 					}
 					$dlnk["$k[1];;$k[3]"]['fbw'] += $k[5];
+					$dlnk["$k[1];;$k[3]"]['ftr'] += $dev[$k[1]]['ifout'][$k[2]];
 					$dlnk["$k[1];;$k[3]"]['fif'][] = "$k[1];;$k[2]";
 				}
 				$ra = $dev[$k[1]]['reg'];
@@ -1123,15 +1245,18 @@ function Map() {
 					$reg[$ra]['alk'][$rb]++;			# Needed for arranging
 					if( array_key_exists("$rb;;$ra",$rlnk) ){	# Reverse link exists?
 						$rlnk["$rb;;$ra"]['rbw']  += $k[5];
+						$rlnk["$rb;;$ra"]['rtr'] += $dev[$k[1]]['ifin'][$k[2]];
 						$rlnk["$rb;;$ra"]['rif'][] = "$k[1];;$k[2]";
 					}else{
 						if(!$rlnum){
 							$reg[$rb]['nlk']++;
 							$reg[$rb]['alk'][$rb]++;
-							$rlnk["$ra;;$rb"]['rbw']  += $k[5];
+							$rlnk["$ra;;$rb"]['rbw'] += $k[5];
+							$rlnk["$ra;;$rb"]['rtr'] += $dev[$k[1]]['ifin'][$k[2]];
 							$rlnk["$ra;;$rb"]['rif'][] = "$k[3];;$k[4]";
 						}
 						$rlnk["$ra;;$rb"]['fbw']  += $k[5];
+						$rlnk["$ra;;$rb"]['ftr']  += $dev[$k[1]]['ifout'][$k[2]];
 						$rlnk["$ra;;$rb"]['fif'][] = "$k[1];;$k[2]";
 					}
 				}
@@ -1141,15 +1266,18 @@ function Map() {
 						$cty[$ra][$ca]['alk'][$cb]++;
 						if( array_key_exists("$rb;;$cb;;$ra;;$ca",$clnk) ){
 							$clnk["$rb;;$cb;;$ra;;$ca"]['rbw']  += $k[5];
+							$clnk["$rb;;$cb;;$ra;;$ca"]['rtr']  += $dev[$k[1]]['ifin'][$k[2]];
 							$clnk["$rb;;$cb;;$ra;;$ca"]['rif'][] = "$k[1];;$k[2]";
 						}else{
 							if(!$rlnum){
 								$cty[$rb][$cb]['nlk']++;
 								$cty[$rb][$cb]['alk'][$ca]++;
 								$clnk["$ra;;$ca;;$rb;;$cb"]['rbw']  += $k[5];
+								$clnk["$ra;;$ca;;$rb;;$cb"]['rtr']  += $dev[$k[1]]['ifin'][$k[2]];
 								$clnk["$ra;;$ca;;$rb;;$cb"]['rif'][] = "$k[3];;$k[4]";
 							}
 							$clnk["$ra;;$ca;;$rb;;$cb"]['fbw']  += $k[5];
+							$clnk["$ra;;$ca;;$rb;;$cb"]['ftr']  += $dev[$k[1]]['ifout'][$k[2]];
 							$clnk["$ra;;$ca;;$rb;;$cb"]['fif'][] = "$k[1];;$k[2]";
 
 						}
@@ -1161,15 +1289,18 @@ function Map() {
 						$bld[$ra][$ca][$ba]['alk'][$bb]++;
 						if( array_key_exists("$rb;;$cb;;$bb;;$ra;;$ca;;$ba",$blnk) ){
 							$blnk["$rb;;$cb;;$bb;;$ra;;$ca;;$ba"]['rbw']  += $k[5];
+							$blnk["$rb;;$cb;;$bb;;$ra;;$ca;;$ba"]['rtr']  += $dev[$k[1]]['ifin'][$k[2]];
 							$blnk["$rb;;$cb;;$bb;;$ra;;$ca;;$ba"]['rif'][] = "$k[1];;$k[2]";
 						}else{
 							if(!$rlnum){
 								$bld[$rb][$cb][$bb]['nlk']++;
 								$bld[$rb][$cb][$bb]['alk'][$ba]++;
 								$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['rbw']  += $k[5];
+								$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['rtr']  += $dev[$k[1]]['ifin'][$k[2]];
 								$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['rif'][] = "$k[3];;$k[4]";
 							}
 							$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['fbw']  += $k[5];
+							$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['ftr']  += $dev[$k[1]]['ifout'][$k[2]];
 							$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['fif'][] = "$k[1];;$k[2]";
 						}
 					}
@@ -1187,7 +1318,7 @@ function Map() {
 		$cud = 0;
 		$fstnod = 1;
 		$nd = count( array_keys($dev) );
-		foreach( Arrange($dev) as $dv){
+		foreach(Arrange($dev) as $dv){
 			if($fmt == "json"){
 				list($col,$siz,$shp) = Devshape($dev[$dv]['ico']);
 				$mapitems .= ($fstnod)?"":",";
@@ -1223,7 +1354,7 @@ function Map() {
 				$fstnod = 0;
 				$mapitems .= " ]\n}\n";
 			}else{
-				list($dev[$dv]['x'],$dev[$dv]['y']) = CircleCoords(intval($xm/2 + $xo),intval($ym/2 + $yo),$cud,$nd,$dev[$dv]['nlk'],$len,$rot);
+				list($dev[$dv]['x'],$dev[$dv]['y']) = CircleCoords(intval($xm/2 + $xo),intval($ym/2 - $yo),$cud,$nd,$dev[$dv]['nlk'],$len,$rot);
 				$mapitems .= DrawItem($dev[$dv]['x'],$dev[$dv]['y'],'0',$dv,'d');
 				if( $lev == 6){DrawNodes($dv);}
 				$imgmap .= "<area href=\"Devices-Status.php?dev=".rawurlencode($dv)."\" coords=\"".($dev[$dv]['x']-$imas) .",". ($dev[$dv]['y']-$imas) .",". ($dev[$dv]['x']+$imas) .",". ($dev[$dv]['y']+$imas)."\" shape=rect title=\"$dv ".$dev[$dv]['ip']." CPU:".$dev[$dv]['cpu']."% Temp:".$dev[$dv]['tlb']."\">\n";
@@ -1258,7 +1389,7 @@ function Map() {
 				list($reg[$r]['x'],$reg[$r]['y'],$reg[$r]['cmt']) = DbCoords($r);
 			}
 			if(!$reg[$r]['x']){
-				list($reg[$r]['x'],$reg[$r]['y']) = CircleCoords(intval($xm/2 + $xo),intval($ym/2 + $yo),$cur,$nr,$reg[$r]['nlk'],$len,$rot);
+				list($reg[$r]['x'],$reg[$r]['y']) = CircleCoords(intval($xm/2 + $xo),intval($ym/2 - $yo),$cur,$nr,$reg[$r]['nlk'],$len,$rot);
 			}
 			$rnum++;
 			if( $lev == 1){
@@ -1279,7 +1410,7 @@ function Map() {
 						list($cty[$r][$c]['x'],$cty[$r][$c]['y'],$cty[$r][$c]['cmt']) = DbCoords($r,$c);
 					}
 					if(!$cty[$r][$c]['x']){
-						list($cty[$r][$c]['x'],$cty[$r][$c]['y']) = CircleCoords($reg[$r]['x'],$reg[$r]['y'],$cuc,$nc,$cty[$r][$c]['nlk'],$len/$lsf,$cro);
+						list($cty[$r][$c]['x'],$cty[$r][$c]['y']) = CircleCoords($reg[$r]['x'],$reg[$r]['y'],$cuc,$nc,$cty[$r][$c]['nlk'],$len/$lsf*10,$cro);
 					}
 					if( $lev == 2){
 						$mapitems .= DrawItem($cty[$r][$c]['x'],$cty[$r][$c]['y'],$cty[$r][$c]['ndv'],$c,2);
@@ -1299,7 +1430,7 @@ function Map() {
 								list($bld[$r][$c][$b]['x'],$bld[$r][$c][$b]['y'],$bld[$r][$c][$b]['cmt']) = DbCoords($r,$c,$b);
 							}
 							if(!$bld[$r][$c][$b]['x']){
-								list($bld[$r][$c][$b]['x'],$bld[$r][$c][$b]['y']) = CircleCoords($cty[$r][$c]['x'],$cty[$r][$c]['y'],$cub,$nb,$bld[$r][$c][$b]['nlk'],$len/pow($lsf,2),$bro);
+								list($bld[$r][$c][$b]['x'],$bld[$r][$c][$b]['y']) = CircleCoords($cty[$r][$c]['x'],$cty[$r][$c]['y'],$cub,$nb,$bld[$r][$c][$b]['nlk'],$len/$lsf*10,$bro);
 							}
 							if($lev == 3){
 								$mapitems .= DrawItem($bld[$r][$c][$b]['x'],$bld[$r][$c][$b]['y'],$bld[$r][$c][$b]['ndv'],$b,3);
@@ -1325,8 +1456,7 @@ function Map() {
 				$reg[$l[0]]['y'],
 				$reg[$l[1]]['x'],
 				$reg[$l[1]]['y'],
-				$rlnk[$li]['fbw'],$rlnk[$li]['rbw'],
-				$rlnk[$li]['fif'],$rlnk[$li]['rif']);
+				$rlnk[$li]);
 		}
 	}elseif($lev == 2){
 		foreach(array_keys($clnk) as $li){
@@ -1335,8 +1465,7 @@ function Map() {
 				$cty[$l[0]][$l[1]]['y'],
 				$cty[$l[2]][$l[3]]['x'],
 				$cty[$l[2]][$l[3]]['y'],
-				$clnk[$li]['fbw'],$clnk[$li]['rbw'],
-				$clnk[$li]['fif'],$clnk[$li]['rif']);
+				$clnk[$li]);
 		}
 	}elseif($lev == 3){
 		foreach(array_keys($blnk) as $li){
@@ -1345,8 +1474,7 @@ function Map() {
 				$bld[$l[0]][$l[1]][$l[2]]['y'],
 				$bld[$l[3]][$l[4]][$l[5]]['x'],
 				$bld[$l[3]][$l[4]][$l[5]]['y'],
-				$blnk[$li]['fbw'],$blnk[$li]['rbw'],
-				$blnk[$li]['fif'],$blnk[$li]['rif']);
+				$blnk[$li]);
 		}
 	}elseif($lev > 3){
 		foreach(array_keys($dlnk) as $li){
@@ -1355,8 +1483,7 @@ function Map() {
 				$dev[$l[0]]['y'],
 				$dev[$l[1]]['x'],
 				$dev[$l[1]]['y'],
-				$dlnk[$li]['fbw'],$dlnk[$li]['rbw'],
-				$dlnk[$li]['fif'],$dlnk[$li]['rif']);
+				$dlnk[$li]);
 		}
 		if($lev == 6){
 			foreach(array_keys($nlnk) as $li){
@@ -1365,8 +1492,7 @@ function Map() {
 					$dev[$l[0]]['y'],
 					$nod[$l[1]]['x'],
 					$nod[$l[1]]['y'],
-					$nlnk[$li]['fbw'],$nlnk[$li]['rbw'],
-					$nlnk[$li]['fif'],$nlnk[$li]['met']);
+					$nlnk[$li]);
 			}
 		}
 	}
@@ -1392,7 +1518,7 @@ function DbCoords($r='', $c='', $b=''){
 
 	global $mapbg,$link;
 
-	$query	= GenQuery('locations','s','x,y,comment','','',array('region','city','building'),array('=','=','='),array($r,$c,$b),array('AND','AND'));
+	$query	= GenQuery('locations','s','x,y,locdesc','','',array('region','city','building'),array('=','=','='),array($r,$c,$b),array('AND','AND'));
 	$res	= @DbQuery($query,$link);
 	$nloc	= @DbNumRows($res);
 	if(!$c){$r="";}elseif(!$b){$c="";}						# Clear those for Topomap()
@@ -1412,7 +1538,7 @@ function Arrange($circle){
 	$hubweight  = array();
 	$nbrnumber  = array();
 
-	if($debug){echo "Prepare ==============================================<p>";}
+	if($debug){echo "<div align=\"left\" class=\"code\">Prepare:\n";}
 
 	foreach(array_keys($circle) as $node){
 		if( is_array($circle[$node]['alk']) ){
@@ -1437,7 +1563,7 @@ function Arrange($circle){
 		}
 	}
 
-	if($debug){echo "Align Hubs ==========================================<p>";}
+	if($debug){echo "Align Hubs:\n";}
 	arsort($hubweight);
  	foreach($hubweight as $curh => $cw){
 		if($cw < 4){
@@ -1456,7 +1582,7 @@ function Arrange($circle){
 		}
 	}
 
-	if($debug){echo "Arrange ==============================================<p>";}
+	if($debug){echo "Arrange:\n";}
 
 	foreach ($nodcircle as $node => $nbr){
 		if(array_key_exists($node,$hubweight) ){
@@ -1475,10 +1601,48 @@ function Arrange($circle){
 		if($debug){echo "SORT:$sortednod[$node]<br>";}
 	}
 
-	if($debug){echo "Return ==============================================<p>";}
+
+	if($debug){echo "Reposition nodes with 2 links crossing circle:\n";}
 	asort($sortednod);
-	if($debug){echo "<pre>";print_r($sortednod);"</pre>";}
-	return array_keys($sortednod);
+	$sortedkeys = array_keys($sortednod);
+	$csiz =count($sortedkeys);
+	$iter = 0;
+	do{
+		$kpos = 0;
+		foreach ($sortedkeys as $k){
+			if( is_array($circle[$k]['alk']) ){						# Any links?
+				$nbr = array_keys($circle[$k]['alk']);
+				if (count($nbr) == 2){							# We got 2 links?
+					$npos1 = array_search($nbr[0],$sortedkeys);
+					$npos2 = array_search($nbr[1],$sortedkeys);
+					$mpos  = ($npos1 < $npos2)?$npos1:$npos2;
+					$nodst = Dist($kpos,$npos1,$csiz) + Dist($kpos,$npos2,$csiz);
+					$nbdst = Dist($npos1,$npos2,$csiz);
+					if($debug){echo "REPO:$k pos$kpos $nodst/$nbdst";}
+					if($nodst > $nbdst+1){
+						array_splice($sortedkeys,$kpos,1);			# remove it
+						array_splice($sortedkeys,$mpos+intval(abs($nodst - $nbdst)/2),0,$k);	# and put in the middle of the neighbors
+						if($debug){echo " moved to $mpos\n";}
+						break;
+					}
+					if($debug){echo " iter$iter/$csiz\n";}
+				}
+			}
+			$kpos++;
+		}
+		if($kpos == $csiz){$iter = $csiz;}							# Iteration went through whole array lets end
+		$iter++;
+	}while($iter < $csizs);
+	if($debug){echo "<p>Return Sorted Array:\n";print_r($sortedkeys);echo "</div>";}
+	return $sortedkeys;
+	}
+
+#===================================================================
+# Return shorter distance between 2 nodes
+function Dist($a, $b,$s){
+	$d1 = abs($a - $b);
+	$d2 = $s - $d1;
+	return ($d1 < $d2)?$d1:$d2;
 }
 
 #===================================================================

@@ -2,7 +2,7 @@
 # Tweaked by Remo (needs testing)
 # General
 SNMPv	2HC
-Type	E2512
+Type	HP-2512
 OS	ProCurve
 Icon	w2gp
 Bridge	normal

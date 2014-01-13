@@ -23,7 +23,7 @@ if( isset($_GET['col']) ){
 }elseif( isset($_SESSION['netcol']) ){
 	$col = $_SESSION['netcol'];
 }else{
-	$col = array('device','ifname','ifip','vrfname');
+	$col = array('device','ifip','ifname','vrfname');
 }
 
 $cols = array(	"device"=>"Device $namlbl",
@@ -37,6 +37,8 @@ $cols = array(	"device"=>"Device $namlbl",
 		"status"=>$stalbl
 		);
 
+$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
+$cnr  = @DbFetchRow(DbQuery(GenQuery('networks','s','count(*)'), $link));
 ?>
 <h1><?=$netlbl?> <?=$lstlbl?></h1>
 
@@ -87,11 +89,13 @@ foreach ($cols as $k => $v){
 ?>
 </SELECT>
 </th>
-<th width="80"><input type="submit" value="<?=$sholbl?>"></th>
+<th width="80">
+<input type="submit" value="<?=$sholbl?>" <?=($cnr[0] > 100)?"onclick=\"if(document.list.sta.value == ''){return confirm('".(($verb1)?"$sholbl $alllbl $cnr[0]":"$alllbl $cnr[0] $sholbl")."?');}\"":"";?>>
+</th>
 </tr></table></form><p>
 <?
 }
-if ($ina){
+if($ina){
 ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 	?>
 <table class="content"><tr class="<?=$modgroup[$self]?>2">
@@ -102,7 +106,6 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 	}
 	echo "</tr>\n";
 
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	$query	= GenQuery('networks','s','networks.*,type,location,contact',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device)');
 	$res	= @DbQuery($query,$link);
 	if($res){
@@ -112,8 +115,8 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 			$row++;
 			$ip  = long2ip($m[2]);
 			$msk = long2ip($m[3]);
-			$ud  = rawurlencode($m[0]);
-			list($ntimg,$ntit) = Nettype($m[2]);
+			$ud  = urlencode($m[0]);
+			list($ntimg,$ntit) = Nettype($ip);
 			echo "<tr class=\"$bg\" onmouseover=\"this.className='$bi'\" onmouseout=\"this.className='$bg'\">";
 			echo "<th class=\"$bi\" width=20><img src=\"img/$ntimg\" title=$ntit></th>\n";
 			if(in_array("device",$col)){

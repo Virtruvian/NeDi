@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	HP MSM750
+Type	HP-MSM750
 OS	MSM
 Icon	csgn
 Bridge	MSM

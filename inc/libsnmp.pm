@@ -166,10 +166,10 @@ sub Identify {
 			&misc::Prt("MAPN:Name mapped to $misc::map{$ip}{na}\n","Mn");
 		}else{
 			if ($na =~ /^\s*$/){								# Catch really bad SNMP implementations
-			&misc::Prt("IDNT:No name using IP $ip\n","So");
+				&misc::Prt("IDNT:No name using IP $ip\n","So");
 				$na = $ip;
 			}else{
-				$na =~  s/^(.*?)\.(.*)/$1/ if !$main::opt{F};				# FQDN can mess up links
+				$na =~ s/^(.*?)\.(.*)/$1/ if !$main::opt{'F'};				# FQDN can mess up links
 			}
 		}
 
@@ -187,7 +187,7 @@ sub Identify {
 			if(exists $main::dev{$na} and $main::dev{$na}{so} ne $so and $misc::notify =~ /s/i){
 				my $msg = "Sysobjid changed from $main::dev{$na}{so} to $so";
 				&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-				&mon::SendMail("Sysobjid Change on $na",$msg) if $misc::notify =~ /S/;
+				$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /S/;
 			}
 		}
 		&misc::ReadSysobj($so);
@@ -208,7 +208,7 @@ sub Identify {
 					my $msg = "New Device with ID $id and IP $ip found";
 					&misc::Prt("IDNT:$msg\n");
 					&db::Insert('events','level,time,source,info,class,device',"\"100\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"") if $misc::notify =~ /d/i;
-					&mon::SendMail("New Device $na",$msg) if $misc::notify =~ /D/;
+					$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /D/;
 					$main::dev{$na}{fs} = $main::now;
 					$main::dev{$na}{rv} = $ver;					# Only set SNMP readversion upon 1st or re-discovery to avoid v1 fallback in case of communication problems!
 				}
@@ -359,11 +359,11 @@ sub Enterprise {
 				&misc::Prt("ERR :$err\n","Sn");
 			}else{
 				my $sn = substr(&misc::Strip($r->{$misc::sysobj{$so}{sn}}),0,31);
-				$sn = 'n/a' if $sn eq "noSuchObject";
+				$sn = 'err' if $sn eq "noSuchObject";
 				if($main::dev{$na}{sn} and $main::dev{$na}{sn} ne $sn and $misc::notify =~ /s/i){
 					my $msg = "Serial number changed from $main::dev{$na}{sn} to $sn";
 					&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-					&mon::SendMail("SN Change on $na",$msg) if $misc::notify =~ /S/;
+					$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /S/;
 				}
 				$main::dev{$na}{sn} = $sn;
 				&misc::Prt("SERN:Serial number = $sn\n");
@@ -384,9 +384,9 @@ sub Enterprise {
 				$bimg =~ s/.*\/(.*)/$1/;
 				my $bi = substr($bimg,0,63);
 				if($main::dev{$na}{bi} and $main::dev{$na}{bi} ne $bi and $misc::notify =~ /s/i){
-					my $msg = "Boot image changed from $main::dev{$na}{bi} to $bi";
+					my $msg = "Bootimage changed from $main::dev{$na}{bi} to $bi";
 					&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-					&mon::SendMail("BI Change on $na",$msg) if $misc::notify =~ /S/;
+					$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /S/;
 				}
 				$main::dev{$na}{bi} = $bi;
 				&misc::Prt("BOOT:Image = $main::dev{$na}{bi}\n");
@@ -423,7 +423,7 @@ sub Enterprise {
 		}
 
 		if($misc::sysobj{$so}{vn}){
-			$r = $session->get_table($misc::sysobj{$so}{vn});					# Get Vlan names
+			$r = $session->get_table($misc::sysobj{$so}{vn});				# Get Vlan names
 			$err = $session->error;
 			if ($err){
 				&misc::Prt("ERR :Vlans, $err\n","Vn");
@@ -431,7 +431,7 @@ sub Enterprise {
 				my %vna  = %{$r};
 				my %vnx  = ();
 				if($misc::sysobj{$so}{vl}){
-					$r = $session->get_table($misc::sysobj{$so}{vl});			# Get Vlan name to id index (e.g. Extreme)
+					$r = $session->get_table($misc::sysobj{$so}{vl});		# Get Vlan name to id index (e.g. Extreme)
 					$err = $session->error;
 					if ($err){
 						&misc::Prt("ERR :VlanIX, $err\n","Vl");
@@ -443,7 +443,7 @@ sub Enterprise {
 					while ( (my $vO,my $vn) =  each(%vna) ){
 						my $x = substr($vO,rindex($vO,'.') + 1);
 						my $vl = ($misc::sysobj{$so}{vl})?$vnx{"$misc::sysobj{$so}{vl}.$x"}:$x;
-						if($vl =~ /^[0-9]+$/){						# Use if vlanid is number!
+						if($vl =~ /^[0-9]+$/){					# Use if vlanid is number!
 							&misc::Prt(sprintf("VLAN:%4.4s = %s\n",$vl,$vn) );
 							$main::vlan{$na}{$vl} = $vn;
 							$misc::vlid{$na}{$vn} = $vl;
@@ -464,6 +464,8 @@ sub Enterprise {
 			if(!$err and $to and $to !~ /noSuch(Instance|Object)/ ){
 				$main::dev{$na}{ty} = $to;
 				&misc::Prt("TYPE:Using PhysicalModelName $to\n");
+			}else{
+				&misc::Prt("ERR :Type $err, $to\n","Sy");
 			}
 		}
 	}
@@ -480,7 +482,7 @@ sub Enterprise {
 				if($misc::notify =~ /s/i and $main::dev{$na}{cpu} > $misc::cpua){
 					my $msg = "CPU load of $main::dev{$na}{cpu}% exceeds threshold of ${misc::cpua}%";
 					&db::Insert('events','level,time,source,info,class,device',"\"200\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-					&mon::SendMail("High Load on $na",$msg) if $misc::notify =~ /S/;
+					$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /S/;
 				}
 				&misc::Prt("CPU :Utilization = $main::dev{$na}{cpu}%\n");
 			}
@@ -506,16 +508,16 @@ sub Enterprise {
 					$main::dev{$na}{mcp} = $mem;
 					$al = "is below threshold of $mal[1]%" if $main::dev{$na}{mcp} < $mal[1];
 				}else{
-					$un = "Bytes";
+					$un = " Bytes";
 					$main::dev{$na}{mcp} = int($mem * $misc::sysobj{$so}{mmu});
-					$al = "is below threshold of $mal[0] KBytes" if $main::dev{$na}{mcp} < $mal[0]*1024;
+					$al = "is below threshold of $mal[0]KBytes" if $main::dev{$na}{mcp} < $mal[0]*1024;
 				}
 				my $msg = "Available memory $main::dev{$na}{mcp}$un $al";
 				&misc::Prt("MEM :$msg\n");
 
 				if($misc::notify =~ /s/i and $al){
 					&db::Insert('events','level,time,source,info,class,device',"\"200\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-					&mon::SendMail("Low Mem on $na",$msg) if $misc::notify =~ /S/;
+					$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /S/;
 				}
 			}
 		}else{
@@ -547,7 +549,7 @@ sub Enterprise {
 				if($misc::notify =~ /s/i and $main::dev{$na}{tmp} > $misc::tmpa){
 					my $msg = "Temperature of $main::dev{$na}{tmp}C exceeds threshold of ${misc::tmpa}C";
 					&db::Insert('events','level,time,source,info,class,device',"\"200\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-					&mon::SendMail("High Temperature on $na",$msg) if $misc::notify =~ /S/;
+					$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /S/;
 				}
 				&misc::Prt("TEMP:Environment = $main::dev{$na}{tmp} Degrees Celcius\n");
 			}
@@ -574,9 +576,10 @@ sub Interfaces {
 
 	my ($na,$skip) = @_;
 	my ($session, $err, $r);
-	my $warn = my $ni = my $skipall = 0;
+	my $warn = my $ni = 0;
 	my (%ifde, %iftp, %ifsp, %ifhs, %ifmc, %ifas, %ifos, %ifio, %ifie, %ifoo, %ifoe, %ifna, %ifpw, %ifpx, %poe);
 	my (%ifal, %ifax, %alias, %ifvl, %ifvx, %vlid, %ifbr, %ifidi, %ifodi, %ifdp, %ifdx, %duplex, %usedoid);
+	my (@ifx);
 
 	my $ifdesO = '1.3.6.1.2.1.2.2.1.2';
 	my $iftypO = '1.3.6.1.2.1.2.2.1.3';
@@ -605,28 +608,23 @@ sub Interfaces {
 	my $ifduxO = $misc::sysobj{$so}{dx};
 
 	&misc::Prt("\nInterfaces   ------------------------------------------------------------------\n");
-	if(exists $misc::skipif{$main::dev{$na}{ty}}){
-		$skip .= $misc::skipif{$main::dev{$na}{ty}};
-		&misc::Prt("IF  :skipif policy for $main::dev{$na}{ty}=$misc::skipif{$main::dev{$na}{ty}}\n");
-	}elsif(exists $misc::skipif{'default'}){
-		$skip .= $misc::skipif{'default'};
-		&misc::Prt("IF  :default skipif policy=$misc::skipif{'default'}\n");
-	}
+
+	&db::ReadInt("device = \"$na\"");
 	if($skip =~ /i/ and $skip =~ /t/ and $skip =~ /e/ and $skip =~ /d/ and $skip =~ /b/ and $skip =~ /w/ and $skip =~ /A/ and $skip =~ /O/){	# Don't create session, if everything's skipped
-		$skipall = 1;
-		&misc::Prt("IF  :Skipping all IF data\n");
+		&misc::Prt("IF  :Skipping all IF data, no write\n");
+		return 1;
 	}else{
-		($session, $err) = &Connect($main::dev{$na}{ip}, $main::dev{$na}{rv}, $main::dev{$na}{rc}, $misc::timeout + 5, '2048');
-		return unless defined $session;
+		my $maxmsg = ($main::dev{$na}{os} eq "Nortel" or $main::dev{$na}{os} eq "NXOS")?"5500":"2048";					# TODO implement properly, if other OS cause problems too
+		($session, $err) = &Connect($main::dev{$na}{ip}, $main::dev{$na}{rv}, $main::dev{$na}{rc}, $misc::timeout + 5, $maxmsg);
+		return 1 unless defined $session;
 	}
 
 	if($main::dev{$na}{hc} & 128){									# Walk interface HC if set
-		&misc::Prt("IF  :Getting HC counters\n");
 		if($skip !~ /i/){
 			$r = $session->get_table($ifhspO);						# Walk interface high-speed
 			$err = $session->error;
 			if ($err){
-				&misc::Prt("ERR :Highspeed $err\n","IS");
+				&misc::Prt("ERR :64bit $err\n","IS");
 				$warn++
 			}else{
 				while( my($key, $val) = each(%{$r}) ) {
@@ -636,10 +634,11 @@ sub Interfaces {
 		}
 
 		if($skip !~ /t/){
+			&misc::Prt("IF  :Walking 64bit counters\n");
 			$r = $session->get_table($ifhioO);
 			$err = $session->error;
 			if ($err){
-				&misc::Prt("ERR :HC inoct $err\n","II");
+				&misc::Prt("ERR :64bit-in $err\n","II");
 				$warn++;
 			}else{
 				while( my($key, $val) = each(%{$r}) ) {
@@ -648,7 +647,7 @@ sub Interfaces {
 				$r = $session->get_table($ifhooO);					# Walk interface HC out octets
 				$err = $session->error;
 				if ($err){
-					&misc::Prt("ERR :HC Outoct $err\n","IO");
+					&misc::Prt("ERR :64bit-out $err\n","IO");
 					$warn++
 				}else{
 					while( my($key, $val) = each(%{$r}) ) {
@@ -659,7 +658,6 @@ sub Interfaces {
 		}
 	}
 	if($main::dev{$na}{hc} & 64){									# Merge Counters by .def now! Tx for Vasily's RFC2233 fix
-		&misc::Prt("IF  :Getting regular counters\n");
 		if($skip !~ /i/){
 			$r = $session->get_table($ifspdO);						# Walk interface speed
 			$err = $session->error;
@@ -669,16 +667,17 @@ sub Interfaces {
 			}else{
 				while( my($key, $val) = each(%{$r}) ) {
 					my $x = substr($key,rindex($key,'.')+1);
-					$ifsp{$x} = $val if !$ifsp{$x};
+					$ifsp{$x} = $val if !$ifsp{$x};					# Combine 64-bit & 32-bit speeds
 				}
 			}
 		}
 
 		if($skip !~ /t/){
+			&misc::Prt("IF  :Walking 32bit counters\n");
 			$r = $session->get_table($ifinoO);						# Walk interface in octets
 			$err = $session->error;
 			if ($err){
-				&misc::Prt("ERR :Inoct $err\n","Ii");
+				&misc::Prt("ERR :32bit-in $err\n","Ii");
 				$warn++;
 			}else{
 				while( my($key, $val) = each(%{$r}) ) {
@@ -689,7 +688,7 @@ sub Interfaces {
 				$r = $session->get_table($ifotoO);					# Walk interface out octets
 				$err = $session->error;
 				if ($err){
-					&misc::Prt("ERR :Outoct $err\n","Io");
+					&misc::Prt("ERR :32bit-out $err\n","Io");
 					$warn++;
 				}else{
 					while( my($key, $val) = each(%{$r}) ) {
@@ -702,6 +701,7 @@ sub Interfaces {
 	}
 
 	if($skip !~ /e/){
+		&misc::Prt("IF  :Walking errors\n");
 		$r = $session->get_table($ifineO);							# Walk interface in errors
 		$err = $session->error;
 		if ($err){&misc::Prt("ERR :In-errors $err\n","Ie");$warn++}else{ %ifie  = %{$r}}
@@ -712,27 +712,33 @@ sub Interfaces {
 	}
 
 	if($skip !~ /b/ and $ifibrO){
+		&misc::Prt("IF  :Walking in-broadcasts\n");
 		$r = $session->get_table($ifibrO);							# Walk IF inbcasts
 		$err = $session->error;
 		if ($err){&misc::Prt("ERR :In-broadcasts $err\n","Ib");$warn++}else{ %ifbr  = %{$r}}
 	}
 
 	if($skip !~ /d/ and $ifidiO){
+		&misc::Prt("IF  :Walking in-discards\n");
 		$r = $session->get_table($ifidiO);							# Walk IF indiscards
 		$err = $session->error;
 		if ($err){&misc::Prt("ERR :In-discards $err\n","Ic");$warn++}else{ %ifidi  = %{$r}}
 	}
 	if($skip !~ /d/ and $ifodiO){
+		&misc::Prt("IF  :Walking out-discards\n");
 		$r = $session->get_table($ifodiO);							# Walk IF indiscards
 		$err = $session->error;
 		if ($err){&misc::Prt("ERR :Out-discards $err\n","Ic");$warn++}else{ %ifodi  = %{$r}}
 	}
 
-	if($skip !~ /i/){
+	if($skip =~ /i/){
+		@ifx = sort { $a <=> $b } keys %{$main::int{$na}};					# Use Indexes from DB
+	}else{
+		&misc::Prt("IF  :Walking info\n");
 		if($ifnamO){
 			$r = $session->get_table($ifnamO);						# Walk IF name.
 			$err = $session->error;
-			if ($err){&misc::Prt("ERR :IF Name $err\n","In");$warn++}else{ %ifna = %{$r}}
+			if ($err){&misc::Prt("ERR :IF Name $err\n","In");$warn++}else{%ifna = %{$r}}
 		}
 
 		if($ifnamO eq $ifdesO){									# Copy IF desc, if used as name
@@ -742,6 +748,7 @@ sub Interfaces {
 			$err = $session->error;
 			if ($err){&misc::Prt("ERR :IF Desc $err\n","Id");$warn++}else{%ifde  = %{$r}}
 		}
+		@ifx = map(substr($_,20), keys %ifde);							# cut OIDs down to indexes in 1 step (gotta love perl!)
 
 		$r = $session->get_table($iftypO);							# Walk IF type.
 		$err = $session->error;
@@ -896,84 +903,24 @@ sub Interfaces {
 	}
 	$session->close if defined $session;								# Happens if everything was skipped
 
-	if($skip =~ /i/){
-		&db::ReadInt("device = \"$na\"");							# Read IFs since only counters are read from device
-		&misc::Prt("IF  :Name     Inoct    Outoct   Inerr  Outerr Indis  Outdis Inbcst\n");
-		foreach my $i (sort { $a <=> $b } keys %{$main::int{$na}}){
-			$main::int{$na}{$i}{ioc} = &misc::Strip($ifio{"$i"},0) if $skip !~ /t/;
-			$main::int{$na}{$i}{ooc} = &misc::Strip($ifoo{"$i"},0) if $skip !~ /t/;
-			$main::int{$na}{$i}{ier} = &misc::Strip($ifie{"$ifineO.$i"},0) if $skip !~ /e/;
-			$main::int{$na}{$i}{oer} = &misc::Strip($ifoe{"$ifoteO.$i"},0) if $skip !~ /e/;
-			$main::int{$na}{$i}{idi} = &misc::Strip($ifidi{"$ifidiO.$i"},0);# if $skip !~ /d/; # Not in DB (yet?), thus they won't be defined by ReadInt()
-			$main::int{$na}{$i}{odi} = &misc::Strip($ifodi{"$ifodiO.$i"},0);# if $skip !~ /d/;
-			$main::int{$na}{$i}{ibr} = &misc::Strip($ifbr{"$ifibrO.$i"},0);# if $skip !~ /b/;
-			$main::int{$na}{$i}{poe} = &misc::Strip($poe{$i},0) if $skip !~ /p/;
-			my $ast = 4;
-			my $ost = 8;
-			if($skip !~ /A/){$ast = (&misc::Strip($ifas{"$ifadmO.$i"},0) == 1)?1:0}
-			if($skip !~ /O/){$ost = (&misc::Strip($ifos{"$ifoprO.$i"},0) == 1)?2:0}
-			$main::int{$na}{$i}{sta} = $ast + $ost;
-			if($main::int{$na}{$i}{lty}){
-				$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{lnk} = 1;
-			}else{
-				$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{lnk} = 0;
-			}
-			if($main::int{$na}{$i}{ina} =~ /[0-9][-,][0-9]|^(Po|Trk)[0-9]|channel/ and $main::int{$na}{$i}{typ} != 6){	# A channel is not (6)eth
-				$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{chn} = 1;
-			}else{
-				$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{chn} = 0;
-			}
-			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{rtr} = 0;
-			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{nsd} = 0;
-			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{pop} = 0;
-			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{idx} = $i;
-			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{spd} = $main::int{$na}{$i}{spd};
-			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{vid} = $main::int{$na}{$i}{vid};
-			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{typ} = $main::int{$na}{$i}{typ};
-			if($misc::sysobj{$so}{dp} =~ /LLDPXA/){						# Some index on Desc some on Alias!
-				$misc::portdes{$na}{$main::int{$na}{$i}{ali}} = $i;
-			}else{
-				$misc::portdes{$na}{$main::int{$na}{$i}{des}} = $i;
-			}
-			&misc::Prt(sprintf ("IF  :%-8.8s %-8.8s %-8.8s %-6.6s %-6.6s %-6.6s %-6.6s %-6.6s\n",$main::int{$na}{$i}{ina},$main::int{$na}{$i}{ioc},$main::int{$na}{$i}{ooc},$main::int{$na}{$i}{ier},$main::int{$na}{$i}{oer},$main::int{$na}{$i}{idi},$main::int{$na}{$i}{odi},$main::int{$na}{$i}{ibr}) );
-			$ni++;
-		}
-	}else{
-		&misc::Prt("IF  :   ID:Name		Spd Dup St Vl	Description 	Alias		PoE\n");
-		foreach my $dek ( sort { substr($a,20) <=> substr($b,20) } keys %ifde ){
-			my $i = my $ina = substr($dek,20);						# IF index is fallback name
+	&misc::Prt("IF  :Index Name         Spd Dup St Pvid Description      Alias            PoE\n");
+	foreach my $i (@ifx){
+		my $ifex = ($main::int{$na}{$i}{ina})?1:0;
+		if($skip !~ /i/){
+			my $ina = $i;									# strip OID up to index & use as name fallback
 			if ($ifna{"$ifnamO.$i"}){
-				if(exists $misc::portprop{$na}{$ifna{"$ifnamO.$i"}} ){			# IF name used before?
+				if(exists $misc::portprop{$na}{$ifna{"$ifnamO.$i"}}{idx} ){		# IF name used before?
 					$ina = &misc::Shif($ifna{"$ifnamO.$i"} . "-$i");		# Make unique using index
 				}else{
 					$ina = &misc::Shif($ifna{"$ifnamO.$i"});
 				}
 			}
 			$main::int{$na}{$i}{ina} = $ina;
-			$main::int{$na}{$i}{des} = &misc::Strip($ifde{$dek});
+			$main::int{$na}{$i}{des} = &misc::Strip($ifde{"$ifdesO.$i"});
 			$main::int{$na}{$i}{typ} = &misc::Strip($iftp{"$iftypO.$i"},0);
 			$main::int{$na}{$i}{spd} = &misc::Strip($ifsp{"$i"},0);
-			my $ast = 4;
-			my $ost = 8;
-			if($skip !~ /A/){$ast = (&misc::Strip($ifas{"$ifadmO.$i"},0) == 1)?1:0}
-			if($skip !~ /O/){$ost = (&misc::Strip($ifos{"$ifoprO.$i"},0) == 1)?2:0}
-			$main::int{$na}{$i}{sta} = $ast + $ost;
 			$main::int{$na}{$i}{ali} = &misc::Strip($alias{$i});
 			$main::int{$na}{$i}{vid} = &misc::Strip($vlid{$i},0);
-			$main::int{$na}{$i}{ioc} = &misc::Strip($ifio{"$i"},0)  if $skip !~ /t/;
-			$main::int{$na}{$i}{ooc} = &misc::Strip($ifoo{"$i"},0)  if $skip !~ /t/;
-			$main::int{$na}{$i}{ier} = &misc::Strip($ifie{"$ifineO.$i"},0) if $skip !~ /e/;
-			$main::int{$na}{$i}{oer} = &misc::Strip($ifoe{"$ifoteO.$i"},0) if $skip !~ /e/;
-			$main::int{$na}{$i}{poe} = &misc::Strip($poe{$i},0) if $skip !~ /p/;
-			$main::int{$na}{$i}{dio} = 0;
-			$main::int{$na}{$i}{die} = 0;
-			$main::int{$na}{$i}{doo} = 0;
-			$main::int{$na}{$i}{doe} = 0;
-			$main::int{$na}{$i}{com} = "";
-			$main::int{$na}{$i}{idi} = &misc::Strip($ifidi{"$ifidiO.$i"},0);
-			$main::int{$na}{$i}{odi} = &misc::Strip($ifodi{"$ifodiO.$i"},0);
-			$main::int{$na}{$i}{ibr} = &misc::Strip($ifbr{"$ifibrO.$i"},0);
-
 			if($ifmc{"$ifmacO.$i"}){
 				my $imac = unpack('H12', $ifmc{"$ifmacO.$i"});
 				$main::int{$na}{$i}{mac} = $imac;
@@ -984,6 +931,8 @@ sub Interfaces {
 			if(defined $duplex{$i} ){							# Did we get a duplex value?
 				if($duplex{$i} =~ /^[FH]D$/){						# Use if set properly already...
 					$main::int{$na}{$i}{dpx} = $duplex{$i};
+#				}elsif($main::int{$na}{$i}{typ} == 56){					# Use Duplex for port mode (E,N) on FC devices TODO, finish & fetch connected WWN?
+#					$main::int{$na}{$i}{com} = "WWN:$duplex{$i}";
 				}else{									# ...or assign defined HD,FD key
 					if($duplex{$i} eq $misc::sysobj{$so}{fd}){$main::int{$na}{$i}{dpx} = "FD"}
 					elsif($duplex{$i} eq $misc::sysobj{$so}{hd}){$main::int{$na}{$i}{dpx} = "HD"}
@@ -992,36 +941,86 @@ sub Interfaces {
 			}else{
 				$main::int{$na}{$i}{dpx} = "-";
 			}
-			if(exists $main::link{$na} and exists $main::link{$na}{$ina}){			# Use both to avoid defining
-				$main::int{$na}{$i}{lty} = "STAT";
-				$misc::portprop{$na}{$ina}{lnk} = 1;
-			}else{
-				$main::int{$na}{$i}{lty} = "";
-				$misc::portprop{$na}{$ina}{lnk} = 0;
-			}
-			if($main::int{$na}{$i}{ina} =~ /[0-9][-,][0-9]|^(Po|Trk)[0-9]|channel/ and $main::int{$na}{$i}{typ} != 6){	# A channel is not (6)eth
-				$misc::portprop{$na}{$ina}{chn} = 1;
-			}else{
-				$misc::portprop{$na}{$ina}{chn} = 0;
-			}
-			$misc::portprop{$na}{$ina}{rtr} = 0;
-			$misc::portprop{$na}{$ina}{nsd} = 0;
-			$misc::portprop{$na}{$ina}{pop} = 0;
-			$misc::portprop{$na}{$ina}{idx} = $i;
-			$misc::portprop{$na}{$ina}{spd} = $main::int{$na}{$i}{spd};
-			$misc::portprop{$na}{$ina}{vid} = $main::int{$na}{$i}{vid};
-			$misc::portprop{$na}{$ina}{typ} = $main::int{$na}{$i}{typ};
-			if($misc::sysobj{$so}{dp} =~ /LLDPXA/){						# Some index on Desc some on Alias!
-				$misc::portdes{$na}{$main::int{$na}{$i}{ali}} = $i;
-			}else{
-				$misc::portdes{$na}{$main::int{$na}{$i}{des}} = $i;
-			}
-			&misc::Prt(sprintf ("IF  :%5.5s:%-8.8s %5.5sMb  %-2.2s %-2.1d Vl%-4.4s %-15.15s %-15.15s %sW\n",$i,$ina,$main::int{$na}{$i}{spd}/1000000,$main::int{$na}{$i}{dpx},$main::int{$na}{$i}{sta},$main::int{$na}{$i}{vid},$ifde{$dek},$main::int{$na}{$i}{ali},$main::int{$na}{$i}{poe}) );
-			$ni++;
 		}
+		my $ast = 4;
+		my $ost = 8;
+		unless($skip =~ /A/){
+			$ast = (&misc::Strip($ifas{"$ifadmO.$i"},0) == 1)?1:0;
+			$ast += 128 if exists $main::int{$na}{$i}{pst} and $main::int{$na}{$i}{pst} & 1 and !$ast;
+		}
+		unless($skip =~ /O/){
+			$ost = (&misc::Strip($ifos{"$ifoprO.$i"},0) == 1)?2:0;
+			$ost += 64 if exists $main::int{$na}{$i}{pst} and $main::int{$na}{$i}{pst} & 2 and !$ost;
+		}
+		$main::int{$na}{$i}{sta} = $ast + $ost;
+
+		unless($skip =~ /t/){
+			my $ic = &misc::Strip($ifio{"$i"},0);
+			my $oc = &misc::Strip($ifoo{"$i"},0);
+			#if($main::int{$na}{$i}{ioc} or $main::int{$na}{$i}{ooc}){			# Testing whether IF existed before would be more efficient if counters = 0
+			if($ifex){
+				$main::int{$na}{$i}{dio} = $ic - $main::int{$na}{$i}{ioc};
+				$main::int{$na}{$i}{dio} = 0 if $main::int{$na}{$i}{dio} < 0;
+				$main::int{$na}{$i}{doo} = $oc - $main::int{$na}{$i}{ooc};
+				$main::int{$na}{$i}{doo} = 0 if $main::int{$na}{$i}{doo} < 0;
+			}else{
+				$main::int{$na}{$i}{dio} = 0;
+				$main::int{$na}{$i}{doo} = 0;
+			}
+			$main::int{$na}{$i}{ioc} = $ic;
+			$main::int{$na}{$i}{ooc} = $oc;
+		}
+		unless($skip =~ /e/){
+			my $ic = &misc::Strip($ifie{"$i"},0);
+			my $oc = &misc::Strip($ifoe{"$i"},0);
+			if($ifex){
+				$main::int{$na}{$i}{die} = $ic - $main::int{$na}{$i}{ier};
+				$main::int{$na}{$i}{die} = 0 if $main::int{$na}{$i}{die} < 0;
+				$main::int{$na}{$i}{doe} = $oc - $main::int{$na}{$i}{oer};
+				$main::int{$na}{$i}{doe} = 0 if $main::int{$na}{$i}{doe} < 0;
+			}else{
+				$main::int{$na}{$i}{die} = 0;
+				$main::int{$na}{$i}{doe} = 0;
+			}
+			$main::int{$na}{$i}{ier} = $ic;
+			$main::int{$na}{$i}{oer} = $oc;
+		}
+
+		$main::int{$na}{$i}{com} = "";
+		$main::int{$na}{$i}{idi} = &misc::Strip($ifidi{"$ifidiO.$i"},0) if $skip !~ /d/;#TODO add to DB
+		$main::int{$na}{$i}{odi} = &misc::Strip($ifodi{"$ifodiO.$i"},0) if $skip !~ /d/;
+		$main::int{$na}{$i}{ibr} = &misc::Strip($ifbr{"$ifibrO.$i"},0) if $skip !~ /b/;
+
+		$main::int{$na}{$i}{poe} = &misc::Strip($poe{$i},0) if $skip !~ /w/;
+
+		if($main::int{$na}{$i}{ina} =~ /^[0-9]+[-,][0-9]|^(Po|Trk|Bridge-Aggregation)[0-9]|channel/ and $main::int{$na}{$i}{typ} !~ /^(6|7|117)$/){	# A channel is not ethernet
+			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{chn} = 1;
+		}
+		if(exists $main::link{$na} and exists $main::link{$na}{$main::int{$na}{$i}{ina}}){	# Use both to avoid defining
+			$main::int{$na}{$i}{lty} = "STAT";
+			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{lnk} = 1;
+		}elsif($skip =~ /i/ and $main::int{$na}{$i}{lty}){									# Keep existing linktype and set port property if IF info is skipped
+			$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{lnk} = 1;
+		}else{
+			$main::int{$na}{$i}{lty} = "";
+		}
+		$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{idx} = $i;
+		$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{spd} = $main::int{$na}{$i}{spd};
+		$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{vid} = $main::int{$na}{$i}{vid};
+		$misc::portprop{$na}{$main::int{$na}{$i}{ina}}{typ} = $main::int{$na}{$i}{typ};
+
+		if($misc::sysobj{$so}{dp} =~ /LLDPXA/){							# Some index on Desc some on Alias!
+			$misc::portdes{$na}{$main::int{$na}{$i}{ali}} = $i;
+		}else{
+			$misc::portdes{$na}{$main::int{$na}{$i}{des}} = $i;
+		}
+
+		&misc::Prt(sprintf ("IF  :%5.5s %-8.8s  %5.5sM  %-2.2s %2.1d %4.4s %-16.16s %-16.16s  %sW\n",$i,$main::int{$na}{$i}{ina},$main::int{$na}{$i}{spd}/1000000,$main::int{$na}{$i}{dpx},$main::int{$na}{$i}{sta},$main::int{$na}{$i}{vid},$main::int{$na}{$i}{des},$main::int{$na}{$i}{ali},$main::int{$na}{$i}{poe}) );
+		$ni++;
 	}
 	&misc::Prt(""," i$ni".($warn?" ":"\t") );
-	return $skipall;
+	
+	return 0;											# Or noifwrite will be true!
 }
 
 
@@ -1119,12 +1118,11 @@ sub IfAddresses {
 						if(exists $misc::ifip{$iaddr}{$na} and scalar keys %{$misc::ifip{$iaddr}} == 1){
 							$valip = 1;
 						}else{
-							if($misc::notify =~ /u/i){
-								my $msg = "IP $iaddr found on " . join(', ', keys %{$misc::ifip{$iaddr}});
+							if($misc::notify =~ /u/i and $main::int{$na}{$aifx{$k}}{sta}){# Don't notify if IF is shutdown
+								my $msg = "Duplicate IP $iaddr found on " . join(', ', keys %{$misc::ifip{$iaddr}});
 								&misc::Prt("$msg\n");
 								&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-								&mon::SendMail("Duplicate IP on $na",$msg) if($misc::notify =~ /U/);
-
+								$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /U/;
 							}
 						}
 					}else{
@@ -1259,7 +1257,12 @@ sub DisProtocol {
 	my (%lneb, %lix, %neb);
 	my $warn = my $ad = my $dn = my $bd = 0;
 
-	my $maxmsg = ($main::dev{$na}{os} eq "NXOS")?"5500":"4095";					# TODO implement properly, if other OS cause problems too
+	my $maxmsg = "4095";
+	if($main::dev{$na}{os} eq "NXOS"){
+		$maxmsg = "5500";
+	}elsif($main::dev{$na}{os} eq "Ironware"){
+		$maxmsg = "";
+	}												# TODO implement properly, if other OS cause problems too (Foundry)
 	&misc::Prt("\nDisProtocol  ------------------------------------------------------------------\n");
 	($session, $err) = &Connect($main::dev{$na}{ip}, $main::dev{$na}{rv}, $main::dev{$na}{rc}, $misc::timeout + 5, $maxmsg);
 	return unless defined $session;
@@ -1300,8 +1303,8 @@ sub DisProtocol {
 				while( my($key, $val) = each(%{$r}) ) {
 					my @k = split (/\./,$key);
 					if($val){
-						$lix{$k[11]} = $misc::portdes{$na}{$val};
-						&misc::Prt("LLDP:$val index $k[11] is IF index $misc::portdes{$na}{$val}\n");
+						$lix{$k[11]} = &misc::Strip($misc::portdes{$na}{$val});	# Avoid uninit by Strip()
+						&misc::Prt("LLDP:$val index $k[11] is IF index $lix{$k[11]}\n");
 					}
 				}
 			}
@@ -1395,7 +1398,8 @@ sub DisProtocol {
 		if ($err){
 			&misc::Prt("ERR :CDP $err\n","Dc");
 		}else{
-			while( my($key, $val) = each(%{$r}) ) {
+			%lneb = %{$r};
+			while( my($key, $val) = each(%lneb) ) {
 				my @k = split (/\./,$key);
 				$neb{$k[14]}{$k[15]}{'dp'} = 'CDP';
 				if($k[13] == 4){
@@ -1411,7 +1415,11 @@ sub DisProtocol {
 					my $nebid = &misc::Strip($val);
 					$neb{$k[14]}{$k[15]}{'id'} = $nebid;
 					$neb{$k[14]}{$k[15]}{'na'} = $nebid;
-					$neb{$k[14]}{$k[15]}{'na'} =~ s/(.*?)\((.*?)\)/$2/;			# Extract from CatOS
+					if($lneb{"1.3.6.1.4.1.9.9.23.1.2.1.1.8.$k[14].$k[15]" =~ /^WS-C/}){
+						$neb{$k[14]}{$k[15]}{'na'} =~ s/(.*?)\((.*?)\)/$2/;			# Extract from CatOS
+					}else{
+						$neb{$k[14]}{$k[15]}{'na'} =~ s/(.*?)\((.*?)\)/$1/;			# Extract from other (e.g. NxK)
+					}
 					$neb{$k[14]}{$k[15]}{'na'} =~ s/(\xff){1,}/BadCDP-$k[15]/;		# Fixes some phone weirdness
 				}elsif($k[13] == 7){
 					$neb{$k[14]}{$k[15]}{'if'} = &misc::Shif($val);
@@ -1488,15 +1496,14 @@ sub DisProtocol {
 		}else{
 			while( my($key, $val) = each(%{$r}) ) {
 				my @k = split (/\./,$key);
-				$neb{$k[15]}{$k[14]}{'dp'} = 'NDP';
-				$neb{$k[15]}{$k[14]}{'if'} = '-';
 				if($k[15] != 0){								# 0 is me
 					if($k[13] == 5){
-						if($val){
-							$neb{$k[15]}{$k[14]}{'id'} = unpack("H16",$val);
-							$neb{$k[15]}{$k[14]}{'de'} = $neb{$k[15]}{$k[14]}{'id'};
-						}
+						$neb{$k[15]}{$k[14]}{'dp'} = 'NDP';
 						$neb{$k[15]}{$k[14]}{'ip'} = &misc::MapIp("$k[16].$k[17].$k[18].$k[19]");
+						$neb{$k[15]}{$k[14]}{'if'} = int($k[20]/256).'/'.$k[20]%256;
+						$neb{$k[15]}{$k[14]}{'na'} = (exists $misc::snmpini{$neb{$k[15]}{$k[14]}{'ip'}})?$misc::snmpini{$neb{$k[15]}{$k[14]}{'ip'}}{na}:'';
+						$neb{$k[15]}{$k[14]}{'de'} = 'NDP-Device';
+						$neb{$k[15]}{$k[14]}{'id'} = unpack("H16",$val);
 					}elsif($k[13] == 6){
 						$neb{$k[15]}{$k[14]}{'ty'} = $val;
 					}
@@ -1509,165 +1516,173 @@ sub DisProtocol {
 
 	foreach my $i ( keys %neb ){
 		my $lif = "";
-		if(exists $main::int{$na}{$i}){									# Assign interfacename, if IF exists
+		if(!exists $main::int{$na}{$i}){								# Assign interfacename, if IF exists
+			&misc::Prt("DIPR:No IF with index $i (try LLDPX or LLDPXN in .def)!\n","Dx");
+		}else{
 			$lif = $main::int{$na}{$i}{ina};
-
 			foreach my $n ( keys %{$neb{$i}} ){
-				if (exists $neb{$i}{$n}{'ip'}){
-					if(exists $misc::map{$neb{$i}{$n}{'ip'}}{na}){
-						$neb{$i}{$n}{'na'} = $misc::map{$neb{$i}{$n}{'ip'}}{na};	# Map neighbor name if configured
-					}elsif(!$neb{$i}{$n}{'na'}){						# No name? Resolve IP (or use with id if this fails)
-						$neb{$i}{$n}{'na'} = gethostbyaddr(inet_aton($neb{$i}{$n}{'ip'}), AF_INET) or $neb{$i}{$n}{'na'} = $neb{$i}{$n}{'id'};
-					}
+				if(exists $main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}){									# Avoid duplicates (can happen with Cisco phones on ProCurve switches)
+					&misc::Prt("DIPR:Ignoring duplicate neighbor $neb{$i}{$n}{'na'} on $lif\n","Dx");
 				}else{
-					$neb{$i}{$n}{'ip'} = "";
-					&misc::Prt("DIPR:No IP found for $neb{$i}{$n}{'na'}!\n");
-				}
-				$neb{$i}{$n}{'na'} =~ s/^(.*?)\.(.*)/$1/ if !$main::opt{F};			# Strip domain
-				if($neb{$i}{$n}{'ty'} =~ /VMware/){						# Until VMware considers sending the mgmt IP with CDP
-					$neb{$i}{$n}{'ip'} = &misc::ResolveName($neb{$i}{$n}{'na'});
-					$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{bw} = $main::int{$na}{$i}{spd};
-					$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{ty} = $neb{$i}{$n}{'dp'};
-					$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{du} = $main::int{$na}{$i}{dpx};
-					$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{vl} = $main::int{$na}{$i}{vid};
-				}
-				&misc::Prt( sprintf("%-4.4s:%-8.8s %-6.6s on %-6.6s %-15.15s %-10.10s %-15.15s\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'na'},$neb{$i}{$n}{'if'},$lif,$neb{$i}{$n}{'ip'},$neb{$i}{$n}{'ty'},$neb{$i}{$n}{'de'}) );
-				# TODO Check if done already (affects stupid devs with same name)?
-				$main::int{$na}{$i}{com} .= " $neb{$i}{$n}{'dp'}:$neb{$i}{$n}{'na'},$neb{$i}{$n}{'if'}";
-				if($id eq $neb{$i}{$n}{'id'}){							# Seeing myself?
-					&misc::Prt(sprintf ("%-4.4s:Loop on %s\n",$neb{$i}{$n}{'dp'},$lif),"DL");
-					$main::int{$na}{$i}{com} .= " Loop!";
-					$misc::portprop{$na}{$lif}{lnk} = 1;
-					if($misc::notify =~ /d/i){
-						my $msg = "Potential $neb{$i}{$n}{'dp'} loop on $lif!";
-						&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
-						&mon::SendMail("Loop on $na",$msg) if($misc::notify =~ /D/);
-					}
-				}elsif($neb{$i}{$n}{'na'} =~ /$misc::border/){
-					&misc::Prt( sprintf ("%-4.4s:ID %s matches border /%s/\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'id'},$misc::border) );
-					$misc::portprop{$na}{$lif}{lnk} = 1;					# Avoid population
-					$bd++;
-				}else{
-					if($main::int{$na}{$i}{lty} ne "STAT"){					# No DP link if static exists
-						unless($neb{$i}{$n}{'dp'} eq "NDP"){				# Don't create link on NDP (no remote IF)
-							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{bw} = $main::int{$na}{$i}{spd};
-							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{ty} = $neb{$i}{$n}{'dp'};
-							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{du} = $neb{$i}{$n}{'dx'};
-							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{vl} = $neb{$i}{$n}{'vl'};
-						}
-						$main::int{$na}{$i}{lty} = $neb{$i}{$n}{'dp'};
-					}
-					if("$neb{$i}{$n}{'de'}$neb{$i}{$n}{'ty'}" =~ /$misc::nosnmpdev/ or ($neb{$i}{$n}{'na'} =~ /^AV\w/ and $neb{$i}{$n}{'sv'} & 32) ){
-						$misc::portprop{$na}{$lif}{nsd} = 1;				# No-SNMP-Device IF metric
-						$main::dev{$neb{$i}{$n}{'na'}}{ip} = $neb{$i}{$n}{'ip'};
-						$main::dev{$neb{$i}{$n}{'na'}}{sn} = "-";
-						$main::dev{$neb{$i}{$n}{'na'}}{bi} = "-";
-						$main::dev{$neb{$i}{$n}{'na'}}{de} = $neb{$i}{$n}{'de'};
-						$main::dev{$neb{$i}{$n}{'na'}}{sv} = $neb{$i}{$n}{'sv'};
-						$main::dev{$neb{$i}{$n}{'na'}}{ty} = $neb{$i}{$n}{'ty'};
-						$main::dev{$neb{$i}{$n}{'na'}}{os} = "-";
-						$main::dev{$neb{$i}{$n}{'na'}}{lo} = $main::dev{$na}{'lo'};
-						$main::dev{$neb{$i}{$n}{'na'}}{co} = $main::dev{$na}{'co'};
-						$main::dev{$neb{$i}{$n}{'na'}}{vd} = $main::dev{$na}{'vd'};
-						$main::dev{$neb{$i}{$n}{'na'}}{vm} = 0;
-						if (!$main::dev{$neb{$i}{$n}{'na'}}{fs}){$main::dev{$neb{$i}{$n}{'na'}}{fs} = $main::now}
-						$main::dev{$neb{$i}{$n}{'na'}}{ls} = $main::now;
-						push (@misc::doneip,$neb{$i}{$n}{'ip'});
-						if($neb{$i}{$n}{'ty'} =~ /Aastra IP Phone/){
-							if($web::lwpok){
-								&web::AastraPhone($neb{$i}{$n}{'na'});
-							}
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Aastra IP Phone";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phan";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
-						}elsif($neb{$i}{$n}{'na'} =~ /^AV\w/){
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Avaya IP Phone";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phon";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
-						}elsif($neb{$i}{$n}{'ty'} =~ /Cisco IP Phone\s*(.*)$/){
-							if($web::lwpok){
-								&web::CiscoPhone($neb{$i}{$n}{'na'});
-							}
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco $1";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phbn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
-						}elsif($neb{$i}{$n}{'ty'} =~ /ATA/){
-							if($web::lwpok){
-								&web::CiscoAta($neb{$i}{$n}{'na'});
-							}
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco ATA Box";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "atbn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
-						}elsif($neb{$i}{$n}{'ty'} =~ /(MAP-.*)/){
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "HP $1";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wagn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
-						}elsif($neb{$i}{$n}{'ty'} =~ /AP[\s_]Controlled,(.*),(.*),(.*)$/){
-							$main::dev{$neb{$i}{$n}{'na'}}{de} = "HP MSM controlled mode";
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "HP $2";
-							$main::dev{$neb{$i}{$n}{'na'}}{sn} = $1;
-							$main::dev{$neb{$i}{$n}{'na'}}{bi} = $3;
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wagn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
-						}elsif($neb{$i}{$n}{'ty'} =~ /AIR-BR/){
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco Wlan Bridge";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wbbn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
-						}elsif($neb{$i}{$n}{'ty'} =~ /AIR-/){
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco Wlan AP";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wabn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
-						}elsif($neb{$i}{$n}{'ty'} =~ /Linksys IP Phone\s*(.*)$/){
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Linksys $1";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phbn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
-						}elsif($neb{$i}{$n}{'ty'} =~ /Linksys IP Phone\s*(.*)$/){
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Linksys $1";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phbn";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
-						}elsif($neb{$i}{$n}{'ty'} =~ /VMware/){				# Let VMs stay on this link
-							$main::dev{$neb{$i}{$n}{'na'}}{ty} = "vSwitch";
-							$main::dev{$neb{$i}{$n}{'na'}}{ic} = "v2an";
-							$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
-							$misc::portprop{$na}{$lif}{lnk} = 0;
-						}
-						&misc::Prt( sprintf ("%-4.4s:No-SNMP TY:%-15.15s SV:%s\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'ty'},$neb{$i}{$n}{'sv'}) );
-						&db::WriteDev($neb{$i}{$n}{'na'}) unless $main::opt{'t'};
-						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{bw} = $main::int{$na}{$i}{spd};
-						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{ty} = $neb{$i}{$n}{'dp'};
-						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{du} = $main::int{$na}{$i}{dpx};
-						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{vl} = $main::int{$na}{$i}{vid};
-						&db::WriteLink($neb{$i}{$n}{'na'})if !$main::opt{'t'};
-						push (@misc::doneip,$neb{$i}{$n}{'ip'});
-						push (@misc::doneid,$neb{$i}{$n}{'id'});
-					}elsif($neb{$i}{$n}{'ip'} =~ /^$|^0\.0\.0\.0$|^127\.0\.0/){		# Check only SNMP devs for usable IP
-						&misc::Prt( sprintf ("%-4.4s:IP address: %s\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'ip'}) );
-						$misc::portprop{$na}{$lif}{lnk} = 1;
-						if($misc::notify =~ /d/i){
-							&db::Insert('events','level,time,source,info,class,device',"\"100\",\"$main::now\",\"$na\",\"$neb{$i}{$n}{'dp'}:$neb{$i}{$n}{'na'} IP=$neb{$i}{$n}{'ip'} on $neb{$i}{$n}{'if'}\",\"nedi\",\"$na\"");
+					if (exists $neb{$i}{$n}{'ip'}){
+						if(exists $misc::map{$neb{$i}{$n}{'ip'}}{na}){
+							$neb{$i}{$n}{'na'} = $misc::map{$neb{$i}{$n}{'ip'}}{na};	# Map neighbor name if configured
+						}elsif(!$neb{$i}{$n}{'na'}){						# No name? Resolve IP (or use id if this fails)
+							$neb{$i}{$n}{'na'} = gethostbyaddr(inet_aton($neb{$i}{$n}{'ip'}), AF_INET) or $neb{$i}{$n}{'na'} = $neb{$i}{$n}{'id'};
 						}
 					}else{
-						&misc::Prt( sprintf ("%-4.4s:Queueing %s, ",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'na'}) );
-						$misc::portprop{$na}{$lif}{lnk} = 1 unless $neb{$i}{$n}{'ty'} =~ /VMware/;	# Let VMs stay on this link
-						if(grep /^\Q$neb{$i}{$n}{'na'}\E$/,(@misc::doneid,@misc::failid,@misc::todo) or
-						   grep /^\Q$neb{$i}{$n}{'ip'}\E$/,(@misc::doneip,@misc::failip) ){# Don't add if done or already queued... (The \Q \E is to prevent interpreting the CDPid as a regexp)
-							&misc::Prt("already done\n");
-							$dn++;
-						}elsif($main::opt{'p'} and $main::opt{'S'} !~ /s/){			# Only add if protocol discovery set and sysinfo not skipped
-							&misc::Prt("ok\n");
-							push (@misc::todo,"$neb{$i}{$n}{'na'}");
-							$misc::doip{$neb{$i}{$n}{'na'}} = $neb{$i}{$n}{'ip'};
-							$ad++;
+						$neb{$i}{$n}{'ip'} = "";
+						&misc::Prt("DIPR:No IP found for $neb{$i}{$n}{'na'}!\n");
+					}
+					$neb{$i}{$n}{'na'} =~ s/^(.*?)\.(.*)/$1/ if !$main::opt{'F'};			# Strip domain
+					if($neb{$i}{$n}{'ty'} =~ /VMware/){						# Until VMware considers sending the mgmt IP with CDP
+						$neb{$i}{$n}{'ip'} = &misc::ResolveName($neb{$i}{$n}{'na'});
+						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{bw} = $main::int{$na}{$i}{spd};
+						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{ty} = $neb{$i}{$n}{'dp'};
+						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{de} = "Discovered ".localtime($main::now);
+						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{du} = $main::int{$na}{$i}{dpx};
+						$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{vl} = $main::int{$na}{$i}{vid};
+						$misc::portprop{$na}{$lif}{nsd} = 1;					# No-SNMP-Device IF metric to keep VMs on this IF
+					}
+					&misc::Prt( sprintf("%-4.4s:%-10.10s %-6.6s on %-6.6s %-15.15s %-10.10s %-15.15s\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'na'},$neb{$i}{$n}{'if'},$lif,$neb{$i}{$n}{'ip'},$neb{$i}{$n}{'ty'},$neb{$i}{$n}{'de'}) );
+					$main::int{$na}{$i}{com} .= " $neb{$i}{$n}{'dp'}:$neb{$i}{$n}{'na'},$neb{$i}{$n}{'if'}";
+					if($id eq $neb{$i}{$n}{'id'} or $na eq  $neb{$i}{$n}{'na'}){			# Seeing myself?
+						&misc::Prt(sprintf ("%-4.4s:Loop on %s\n",$neb{$i}{$n}{'dp'},$lif),"DL");
+						$main::int{$na}{$i}{com} .= " Loop!";
+						$misc::portprop{$na}{$lif}{lnk} = 1;
+						if($misc::notify =~ /d/i){
+							my $msg = "Potential $neb{$i}{$n}{'dp'} loop on $lif!";
+							&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$na\",\"$msg\",\"nedi\",\"$na\"");
+							$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /D/;
+						}
+					}elsif($neb{$i}{$n}{'na'} =~ /$misc::border/){
+						&misc::Prt( sprintf ("%-4.4s:ID %s matches border /%s/\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'id'},$misc::border) );
+						$misc::portprop{$na}{$lif}{nsd} = 1;					# NoSnmpDev to keep nodes behind IP phones, if set as border, but prevent all unknowns wandering off to this link...
+						$bd++;
+					}else{
+						if($main::int{$na}{$i}{lty} ne "STAT"){					# No DP link if static exists
+							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{bw} = $main::int{$na}{$i}{spd};
+							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{ty} = $neb{$i}{$n}{'dp'};
+							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{de} = "Discovered ".localtime($main::now);
+							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{du} = $neb{$i}{$n}{'dx'};
+							$main::link{$na}{$lif}{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{vl} = $neb{$i}{$n}{'vl'};
+							$main::int{$na}{$i}{lty} = $neb{$i}{$n}{'dp'};
+						}
+						if("$neb{$i}{$n}{'de'}$neb{$i}{$n}{'ty'}" =~ /$misc::nosnmpdev/ or ($neb{$i}{$n}{'na'} =~ /^AV\w/ and $neb{$i}{$n}{'sv'} & 32) ){
+							$misc::portprop{$na}{$lif}{nsd} = 1;				# No-SNMP-Device IF metric
+							$main::dev{$neb{$i}{$n}{'na'}}{ip} = $neb{$i}{$n}{'ip'};
+							$main::dev{$neb{$i}{$n}{'na'}}{sn} = "-";
+							$main::dev{$neb{$i}{$n}{'na'}}{bi} = "-";
+							$main::dev{$neb{$i}{$n}{'na'}}{de} = $neb{$i}{$n}{'de'};
+							$main::dev{$neb{$i}{$n}{'na'}}{sv} = $neb{$i}{$n}{'sv'};
+							$main::dev{$neb{$i}{$n}{'na'}}{ty} = $neb{$i}{$n}{'ty'};
+							$main::dev{$neb{$i}{$n}{'na'}}{os} = "-";
+							$main::dev{$neb{$i}{$n}{'na'}}{lo} = $main::dev{$na}{'lo'};
+							$main::dev{$neb{$i}{$n}{'na'}}{co} = $main::dev{$na}{'co'};
+							$main::dev{$neb{$i}{$n}{'na'}}{vd} = $main::dev{$na}{'vd'};
+							$main::dev{$neb{$i}{$n}{'na'}}{vm} = 0;
+							if (!$main::dev{$neb{$i}{$n}{'na'}}{fs}){$main::dev{$neb{$i}{$n}{'na'}}{fs} = $main::now}
+							$main::dev{$neb{$i}{$n}{'na'}}{ls} = $main::now;
+							push (@misc::doneip,$neb{$i}{$n}{'ip'});
+							if($neb{$i}{$n}{'ty'} =~ /Aastra IP Phone/){
+								if($web::lwpok){
+									&web::AastraPhone($neb{$i}{$n}{'na'});
+								}
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Aastra IP Phone";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phan";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
+							}elsif($neb{$i}{$n}{'na'} =~ /^AV\w/){
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Avaya IP Phone";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phon";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
+							}elsif($neb{$i}{$n}{'ty'} =~ /Nortel IP Telephone\s*(.*)$/){
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Nortel $1";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phon";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
+							}elsif($neb{$i}{$n}{'ty'} =~ /Cisco IP Phone\s*(.*)$/){
+								if($web::lwpok){
+									&web::CiscoPhone($neb{$i}{$n}{'na'});
+								}
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco $1";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phbn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
+							}elsif($neb{$i}{$n}{'ty'} =~ /ATA/){
+								if($web::lwpok){
+									&web::CiscoAta($neb{$i}{$n}{'na'});
+								}
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco ATA Box";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "atbn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
+							}elsif($neb{$i}{$n}{'ty'} =~ /(MAP-.*)/){
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "HP $1";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wagn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
+							}elsif($neb{$i}{$n}{'ty'} =~ /AP[\s_]Controlled,(.*),(.*),(.*)$/){
+								$main::dev{$neb{$i}{$n}{'na'}}{de} = "HP MSM controlled mode";
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "HP $2";
+								$main::dev{$neb{$i}{$n}{'na'}}{sn} = $1;
+								$main::dev{$neb{$i}{$n}{'na'}}{bi} = $3;
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wagn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
+							}elsif($neb{$i}{$n}{'ty'} =~ /AIR-BR/){
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco Wlan Bridge";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wbbn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
+							}elsif($neb{$i}{$n}{'ty'} =~ /AIR-/){
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Cisco Wlan AP";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "wabn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
+							}elsif($neb{$i}{$n}{'ty'} =~ /Linksys IP Phone\s*(.*)$/){
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Linksys $1";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phbn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
+							}elsif($neb{$i}{$n}{'ty'} =~ /Linksys IP Phone\s*(.*)$/){
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "Linksys $1";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "phbn";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 34;
+							}elsif($neb{$i}{$n}{'ty'} =~ /VMware/){				# Let VMs stay on this link
+								$main::dev{$neb{$i}{$n}{'na'}}{ty} = "vSwitch";
+								$main::dev{$neb{$i}{$n}{'na'}}{ic} = "v2an";
+								$main::dev{$neb{$i}{$n}{'na'}}{sv} = 2;
+								$misc::portprop{$na}{$lif}{lnk} = 0;
+							}
+							&misc::Prt( sprintf ("%-4.4s:No-SNMP TY:%-15.15s SV:%s\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'ty'},$neb{$i}{$n}{'sv'}) );
+							&db::WriteDev($neb{$i}{$n}{'na'}) unless $main::opt{'t'};
+							$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{bw} = $main::int{$na}{$i}{spd};
+							$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{ty} = $neb{$i}{$n}{'dp'};
+							$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{de} = "Discovered ".localtime($main::now);
+							$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{du} = $main::int{$na}{$i}{dpx};
+							$main::link{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{$na}{$lif}{vl} = $main::int{$na}{$i}{vid};
+							&db::WriteLink($neb{$i}{$n}{'na'})if !$main::opt{'t'};
+							push (@misc::doneip,$neb{$i}{$n}{'ip'});
+							push (@misc::doneid,$neb{$i}{$n}{'id'});
+						}elsif($neb{$i}{$n}{'ip'} =~ /^$|^0\.0\.0\.0$|^127\.0\.0/){		# Check only SNMP devs for usable IP
+							&misc::Prt( sprintf ("%-4.4s:IP address: %s\n",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'ip'}) );
+							$misc::portprop{$na}{$lif}{nsd} = 1;
+							if($misc::notify =~ /d/i){
+								&db::Insert('events','level,time,source,info,class,device',"\"100\",\"$main::now\",\"$na\",\"$neb{$i}{$n}{'dp'}:$neb{$i}{$n}{'na'} IP=$neb{$i}{$n}{'ip'} on $neb{$i}{$n}{'if'}\",\"nedi\",\"$na\"");
+							}
 						}else{
-							&misc::Prt("not desired\n");
+							&misc::Prt( sprintf ("%-4.4s:Queueing of %s ",$neb{$i}{$n}{'dp'},$neb{$i}{$n}{'na'}) );
+							$misc::portprop{$na}{$lif}{lnk} = 1;
+							$misc::portprop{$neb{$i}{$n}{'na'}}{$neb{$i}{$n}{'if'}}{nal} = 1;# Neighbor alive will be used for node IF calculation
+							if(grep /^\Q$neb{$i}{$n}{'na'}\E$/,(@misc::doneid,@misc::failid,@misc::todo) or
+							   grep /^\Q$neb{$i}{$n}{'ip'}\E$/,(@misc::doneip,@misc::failip) ){# Don't add if done or already queued... (The \Q \E is to prevent interpreting the CDPid as a regexp)
+								&misc::Prt("was already done\n");
+								$dn++;
+							}elsif($main::opt{'p'} and $main::opt{'S'} !~ /s/){			# Only add if protocol discovery set and sysinfo not skipped
+								&misc::Prt("is ok\n");
+								push (@misc::todo,"$neb{$i}{$n}{'na'}");
+								$misc::doip{$neb{$i}{$n}{'na'}} = $neb{$i}{$n}{'ip'};
+								$ad++;
+							}else{
+								&misc::Prt("is not desired\n");
+							}
 						}
 					}
 				}
 			}
-		}else{
-			&misc::Prt("DIPR:No IF with index $i (try LLDPX or LLDPXN in .def)!\n","Dx");
 		}
-
 	}
 	&misc::Prt("","p$ad/$dn ".($bd?"b$bd ":"") );
 }
@@ -1833,7 +1848,7 @@ sub Arp {
 			my $fmc = substr($mc,0,4) . "." . substr($mc,4,4) . "." . substr($mc,8,4);
 			my $msg = "$myarpc{$mc} IP addresses found for $fmc";
 			&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$na\",\"$msg\",\"sec\",\"$na\"");
-			&mon::SendMail("ARP Poisoning on $na",$msg) if($misc::notify =~ /N/);
+			$misc::mq += &mon::AlertQ("$na: $msg\n","",1,$na) if $misc::notify =~ /N/;
 		}
 	}
 	&misc::Prt("ARPS:$narp ARP entries found\n"," a$narp o$ad/$dn".($bd?"b$bd":"").($warn)?" ":"\t");
@@ -1897,7 +1912,7 @@ sub BridgeFwd {
 
 	&misc::Prt("\nBridgeFwd (SNMP) --------------------------------------------------------------\n");
 	if($misc::sysobj{$main::dev{$na}{so}}{bf} eq "VLX"){
-		@vlans = keys %{$main::vlan{$na}};
+		@vlans = keys %{$main::vlan{$na}};#TODO this is empty with -Ss?
 	}else{
 		$vlans[0] = "";
 	}
@@ -1918,9 +1933,9 @@ sub BridgeFwd {
 				($session, $err) = &Connect($main::dev{$na}{ip}, $main::dev{$na}{rv}, $commcxt, $misc::timeout + 8 );
 				@context = ();								# Clear it again for v2
 			}
-			if($misc::sysobj{$main::dev{$na}{so}}{bf} =~ /^qbri/i){
+			if($misc::sysobj{$main::dev{$na}{so}}{bf} =~ /^qbri/){
 				&misc::Prt("FWDS:Walking Q-BridgeFwd, reassign indexes\n");
-				$r = $session->get_table(-baseoid => $qbriO, @context);
+				$r = $session->get_table(-baseoid => $qbriO, @context);#TODO context not needed, always empty?
 				$m1=14; $m2=15; $m3=16; $m4=17; $m5=18; $m6=19;#TODO check additional OIDs on Extreme..
 			}else{
 				&misc::Prt("FWDS:Walking BridgeFwd\n");
@@ -1952,12 +1967,13 @@ sub BridgeFwd {
 							if (defined $main::int{$na}{$ifx}){
 								if($mc ne $main::int{$na}{$ifx}{mac}){			# Cisco's 3500XL do that! (can't be caught before IFX is found)
 									my $po   = $main::int{$na}{$ifx}{ina};
-									if(!$vl){					# No VLX get pvid from IF
+									if($misc::sysobj{$main::dev{$na}{so}}{bf} =~ /^normal/){
 										$vl = $misc::portprop{$na}{$po}{vid};
-									}elsif($m6 == 19){
+									}elsif($misc::sysobj{$main::dev{$na}{so}}{bf} =~ /^qbri/){
+
 										$vl = $dmac[13];			# Vlanid in Qbridge MIB
 									}
-									&misc::Prt("FWDS:$mc on $po Vl$vl\n");		# Print before adding vlid
+									&misc::Prt("FWDS:$mc on $po Vl$vl $dmac[11] $dmac[12]\n");		# Print before adding vlid
 									$mc .= $vl if($misc::useivl and $vl =~ /$misc::useivl/);# Add vlid to mac
 									$misc::portnew{$mc}{$na}{vl} = $vl;
 									$misc::portnew{$mc}{$na}{po} = $po;
@@ -1965,7 +1981,7 @@ sub BridgeFwd {
 									$nspo++;
 
 									if(exists $misc::ifmac{$mc}){
-										&misc::Prt("LINK:Seeing ".join(", ",keys %{$misc::ifmac{$mc}}).": $po is uplink\n");
+										&misc::Prt("LINK:Seeing ".join(", ",keys %{$misc::ifmac{$mc}})." on $po\n");
 										$misc::portprop{$na}{$po}{lnk} = 1;
 										#TODO optimize MAC links ->
 										$main::int{$na}{$ifx}{com} .= " MAC:".join(", ",keys %{$misc::ifmac{$mc}}) if $main::int{$na}{$ifx}{com} !~ /^ (C|F|LL|N)DP:/;
@@ -2116,8 +2132,7 @@ sub MSMFwd {
 		foreach my $k ( keys %wm ){
 			my $mc   = unpack("H2",substr($wm{$k},0,1)).unpack("H2",substr($wm{$k},1,1)).unpack("H2",substr($wm{$k},2,1)).unpack("H2",substr($wm{$k},3,1)).unpack("H2",substr($wm{$k},4,1)).unpack("H2",substr($wm{$k},5,1));#TODO use H12 instead?
 			my @i = split(/\./,$k);
-
-			my $ifx = 32000 + $i[14] * 10 + 3;#$ix{"$msmixO.$i[14].$i[15]"};TODO find real IFidx!
+			my $ifx = 32000 + $i[14] * 10 + $i[15] + 2;#$ix{"$msmixO.$i[14].$i[15]"};TODO find real IFidx! -> Use IFalias & 1.3.6.1.4.1.8744.5.24.1.1.1.1.2.3?
 			my $po  = $main::int{$na}{$ifx}{ina};
 			$misc::portnew{$mc}{$na}{vl} = $wv{"$msmclO.3.$i[14].$i[15].$i[16]"};
 			$misc::portnew{$mc}{$na}{po} = $po;

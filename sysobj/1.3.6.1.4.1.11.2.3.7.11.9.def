@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	4000M
+Type	HP-4000M
 OS	other
 Icon	c2gp
 Bridge	normal

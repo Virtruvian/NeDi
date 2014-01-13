@@ -24,13 +24,13 @@ $ord = isset($_GET['ord']) ? "checked" : "";
 $opt = isset($_GET['opt']) ? "checked" : "";
 
 $cols = array(	"device"=>"Device $namlbl",
-		"devip"=>"Device IP",
-		"type"=>$typlbl,
+		"devip"=>"IP $adrlbl",
+		"type"=>"Device $typlbl",
 		"firstdis"=>"Device $fislbl $dsclbl",
 		"lastdis"=>"Device $laslbl $dsclbl",
 		"services"=>$srvlbl,
 		"description"=>$deslbl,
-		"devos"=>"OS",
+		"devos"=>"Device OS",
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
@@ -67,9 +67,10 @@ foreach ($cols as $k => $v){
 <select multiple name="rep[]" size="4">
 <option value="typ" <? if(in_array("typ",$rep)){echo "selected";} ?> ><?=$typlbl?> <?=$dislbl?>
 <option value="sft" <? if(in_array("sft",$rep)){echo "selected";} ?> >Software <?=$dislbl?>
+<option value="dus" <? if(in_array("dus",$rep)){echo "selected";} ?> ><?=$duplbl?> Serials
+<option value="dui" <? if(in_array("dui",$rep)){echo "selected";} ?> ><?=$duplbl?> IPs
 <option value="vtp" <? if(in_array("vtp",$rep)){echo "selected";} ?> >VTP <?=$dislbl?>
 <option value="cfg" <? if(in_array("cfg",$rep)){echo "selected";} ?> ><?=$cfglbl?>
-<option value="net" <? if(in_array("net",$rep)){echo "selected";} ?> ><?=$netlbl?> <?=$dislbl?>
 <option value="dli" <? if(in_array("dli",$rep)){echo "selected";} ?> >Device <?=$cnclbl?>
 <option value="ler" <? if(in_array("ler",$rep)){echo "selected";} ?> >Link <?=$stalbl?> <?=$errlbl?>
 <option value="hst" <? if(in_array("hst",$rep)){echo "selected";} ?> ><?=$dsclbl?> <?=$hislbl?>
@@ -106,6 +107,12 @@ if($rep){
 	if ( in_array("sft",$rep) ){
 		DevSW($ina,$opa,$sta,$lim,$ord);
 	}
+	if ( in_array("dus",$rep) ){
+		DevDupSer($ina,$opa,$sta,$lim,$ord);
+	}
+	if ( in_array("dui",$rep) ){
+		DevDupIP($ina,$opa,$sta,$lim,$ord);
+	}
 	if ( in_array("cfg",$rep) ){
 		DevConfigs($ina,$opa,$sta,$lim,$ord);
 	}
@@ -114,10 +121,6 @@ if($rep){
 	}
 	if ( in_array("hst",$rep) ){
 		DevHistory($ina,$opa,$sta,$lim,$ord);
-	}
-
-	if ( in_array("net",$rep) ){
-		NetDist($ina,$opa,$sta,$lim,$ord);
 	}
 
 	if ( in_array("dli",$rep) ){

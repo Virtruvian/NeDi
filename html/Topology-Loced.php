@@ -170,7 +170,7 @@ function initialize(){
 	var myOptions = {zoom: <?=$z?>,center: coords,mapTypeId: google.maps.MapTypeId.ROADMAP}
 <? if(!$locex or !$ns){?>
 	var geocoder = new google.maps.Geocoder();
-	var address = '<?=$bld?>+<?=$cty?>+<?=$reg?>';
+	var address = '<?=urlencode($bld)?>+<?=urlencode($cty)?>+<?=urlencode($reg)?>';
 
 	geocoder.geocode( { 'address': address}, function(results, status) {
 		if (status == google.maps.GeocoderStatus.OK) {

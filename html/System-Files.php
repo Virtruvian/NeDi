@@ -14,6 +14,7 @@ $sysfiles = array(	"log/msg.txt",
 			"$nedipath/seedlist",
 			"/etc/raddb/eap.conf",
 			"/etc/raddb/radiusd.conf",
+			"/etc/raddb/clients.conf",
 			"/etc/raddb/users",
 			"/etc/snmp/snmptrapd.conf",
 			"/etc/dhcpd.conf",
@@ -43,7 +44,6 @@ if( $isadmin and isset($_POST['file']) ){
 	$delable  = 1;
 }elseif( preg_match("/net/",$_SESSION['group']) and isset($_POST['cfg']) ){
 	$file  = ( file_exists("$nedipath/conf/$_POST[cfg]") )? "$nedipath/conf/$_POST[cfg]":"";
-	$editable = 1;	
 	$delable  = 1;
 }else{
 	$file  = "";
@@ -103,14 +103,6 @@ function insertAtCursor(myField, myValue) {
 <td>
 <?
 if($isadmin){
-	if($del){
-		if( unlink ($del) ){
-			echo "<h5>$dellbl $del OK</h5>";
-		}else{
-			echo "<h4>$errlbl $dellbl $del</h4>";
-		}
-	}
-
 ?>
 
 <img src="img/16/cog.png" title="System">
@@ -136,13 +128,13 @@ if( preg_match("/net/",$_SESSION['group']) ){
 <option value=""><?=$sholbl?> ->
 <?
 $plen = strlen($nedipath);
-foreach (glob("$nedipath/conf/*") as $d) {
+foreach (glob("$nedipath/conf/*") as $d){
         if (is_dir($d)){
 		$cfgd = substr($d,$plen+6);
-		echo "<option value=\"\" style=\"color: blue\">$cfgd\n";
+		echo "<option value=\"\" style=\"color: blue\">- $cfgd -\n";
 		foreach (glob("$d/*.cfg") as $f) {
  			$l = substr($f,strlen($d)+1);
-			echo "<option value=\"$cfgd/$l\" ".( ($file == $f)?"selected":"").">- $l\n";
+			echo "<option value=\"$cfgd/$l\" ".( ($file == $f)?"selected":"").">$l\n";
 		}
 	}
 }
@@ -170,6 +162,7 @@ foreach (glob("/tmp/nedi*") as $f) {
 <input type="radio" name="mod" value="m" <?=($mod == "m")?"checked":""?> onClick="document.edit.bup.disabled=true;";> <?=$implbl?>
 <input type="radio" name="mod" value="l" <?=($mod == "l")?"checked":""?> onClick="document.edit.bup.disabled=true;";> <?=$upllbl?>-log
 <input type="radio" name="mod" value="t" <?=($mod == "t")?"checked":""?> onClick="document.edit.bup.disabled=true;";> <?=$upllbl?>-tftp
+<input type="radio" name="mod" value="r" <?=($mod == "r")?"checked":""?> onClick="document.edit.bup.disabled=true;";> <?=$dellbl?> <?=$stco['200']?> RRDs
 </h3>
 <input name="tgz" type="file" size="20" accept="archive/tar"> 
 <input type="checkbox" name="bup" <?=$bup?> title="" disabled="true"> <?=$cfglbl?> <?=$buplbl?>
@@ -183,20 +176,28 @@ foreach (glob("/tmp/nedi*") as $f) {
 
 <?
 
-if($isadmin and $wrt and $file){
-	$hdle = fopen($file, "w");
-	if( fwrite($hdle, preg_replace("/\r/", "", $txt ) ) ){
-		echo "<h5>$wrtlbl $file OK</h5>\n";
-	}else{
-		echo "<h4>$errlbl: $wrtlbl $file!</h4>\n";
-	}
-	fclose($hdle);
-	if($file == "$nedipath/inc/crontab"){
-		system("crontab $file", $fail);
-		if($fail){
-			echo "<h4>Crontab $updlbl $errlbl</h4>\n";
+if($isadmin){
+	if($del){
+		if( unlink ($del) ){
+			echo "<h5>$dellbl $del OK</h5>";
 		}else{
-			echo "<h5>Crontab $updlbl OK</h5>\n";
+			echo "<h4>$errlbl $dellbl $del</h4>";
+		}
+	}elseif($wrt and $file){
+		$hdle = fopen($file, "w");
+		if( fwrite($hdle, preg_replace("/\r/", "", $txt ) ) ){
+			echo "<h5>$wrtlbl $file OK</h5>\n";
+		}else{
+			echo "<h4>$errlbl: $wrtlbl $file!</h4>\n";
+		}
+		fclose($hdle);
+		if($file == "$nedipath/inc/crontab"){
+			system("crontab $file", $fail);
+			if($fail){
+				echo "<h4>Crontab $updlbl $errlbl</h4>\n";
+			}else{
+				echo "<h5>Crontab $updlbl OK</h5>\n";
+			}
 		}
 	}
 }
@@ -214,7 +215,9 @@ if($isadmin){
 ?>
 <?=$addlbl?> &nbsp;
 <input type="button" value="Tab" OnClick="insertAtCursor(document.edit.txt, '	');";>
-<input type="button" value="<?=$cmtlbl?>" OnClick="insertAtCursor(document.edit.txt, '#');";>
+<input type="button" value="#" OnClick="insertAtCursor(document.edit.txt, '#');";>
+<input type="button" value="|" OnClick="insertAtCursor(document.edit.txt, '|');";>
+<input type="button" value="/" OnClick="insertAtCursor(document.edit.txt, '/');";>
  -
 <input type="submit" name="wrt" value="<?=$wrtlbl?>">
 <?
@@ -362,6 +365,27 @@ if($isadmin){
 ?>
 </div><br>
 
+<?
+}elseif($isadmin and $mod == "r"){
+?>
+<h2>RRDs <?=$updlbl?> > <?=$retire?> <?=$tim[d]?></h2>
+<div class="textpad code txta" name="out">
+<?
+	$nrrd = 0;
+	foreach (glob("$nedipath/rrd/*") as $dv){
+		if (is_dir($dv) && $dv != "." && $dv != "..") {
+			foreach (glob("$dv/*.rrd") as $rrd){
+				$mtime = filemtime($rrd);
+				if( $mtime < (time() - $retire * 86400) ){
+					$dstat = (unlink($rrd))?"OK":"$errlbl";
+					echo date($_SESSION[date],$mtime)." $rrd: $dellbl $dstat\n";
+				}
+			}
+		}
+	}
+
+?>
+</div><br>
 <?
 }else{
 ?>

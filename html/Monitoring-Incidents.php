@@ -48,13 +48,13 @@ if($dli){
 <table class="content"><tr class="<?=$modgroup[$self]?>1">
 <th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
 <th>
-Filter <select name="grp">
-<option value=""><?=$sellbl?> ->
+<?=$clalbl?> <select name="grp">
+<option value=""><?=$fltlbl?> ->
 <?
 foreach (array_keys($igrp) as $ig){
 	echo "<option value=\"$ig\" ";
-	if($ig == $grp){echo "selected";}
-	echo (strpos($ig,'0')?"style=\"color: blue\">$igrp[$ig]\n":">- $igrp[$ig]\n");
+	if($ig == $grp){echo "selected ";}
+	echo (strpos($ig,'0')?"style=\"color:blue\">$igrp[$ig]\n":">- $igrp[$ig]\n");
 }
 ?>
 </select>
@@ -73,7 +73,7 @@ foreach (array_keys($igrp) as $ig){
 </tr></table></form><p>
 <?}?>
 
-<h2><?=$igrp[$grp]?> Incidents <?=$lstlbl?></h2>
+<h2><?=($grp)?$igrp[$grp]:""?> Incidents <?=$lstlbl?></h2>
 
 <table class="content"><tr class="<?=$modgroup[$self]?>2">
 <th width="80" colspan="2"><img src="img/16/eyes.png"><br>Incident</th>
@@ -86,7 +86,7 @@ foreach (array_keys($igrp) as $ig){
 
 <?
 if(strpos($grp,'0') ){
-	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('grp'),array('regexp'),array("^".substr($grp,0,1)));
+	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('grp'),array('regexp'),array("^".substr($grp,0,1)."."));
 }elseif($grp){
 	$query	= GenQuery('incidents','s','*','id desc',$dlim,array('grp'),array('='),array($grp));
 }elseif($id){
@@ -114,9 +114,12 @@ if($res){
 		echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
 		echo "<th>$i[0]</th><th class=\"".$mbak[$i[1]]."\"><img src=\"img/16/" . $mico[$i[1]] . ".png\" title=\"" . $mlvl[$i[1]] . "\"></th>\n";
 		echo "<td><a href=\"Monitoring-Setup.php?ina=name&opa=%3D&sta=$ud\"><b>$i[2]</b></td><td>$i[3] deps</td>\n";
-		echo "<td bgcolor=#$fc>$fs</td><td bgcolor=#$fc>$ls</td><th>$i[6]</th><td>$at</td>";
-		?>
-<td>
+		echo "<td bgcolor=#$fc>$fs</td><td bgcolor=#$fc>$ls</td><th>$i[6]</th><td>$at</td><td>";
+
+		if( isset($_GET['print']) ){
+			echo "<img src=\"img/16/".IncImg($i[8]).".png\">".$igrp[$i[8]]."</td><td>$i[9]";
+		}else{
+?>
 <form method="get" action="<?=$self?>.php">
 <img src="img/16/<?=IncImg($i[8])?>.png">
 <input type="hidden" name="ugr" value="<?=$i[0]?>">
@@ -126,13 +129,13 @@ if($res){
 <input type="hidden" name="off" value="<?=$nof?>">
 <select size="1" name="grp" onchange="this.form.submit();" title="<?=$sellbl?> <?=$clalbl?>">
 <?
-foreach (array_keys($igrp) as $ig){
-	echo "<option value=\"$ig\" ".(strpos($ig,'0')?"style=\"color: blue\" ":"");
-	if($ig == $i[8]){echo "selected ";}
-	echo (strpos($ig,'0')?"style=\"color: blue\">$igrp[$ig]\n":">- $igrp[$ig]\n");
-}
+		foreach (array_keys($igrp) as $ig){
+			echo "<option value=\"$ig\" ".(strpos($ig,'0')?"style=\"color: blue\" ":"");
+			if($ig == $i[8]){echo "selected ";}
+			echo (strpos($ig,'0')?"style=\"color: blue\">$igrp[$ig]\n":">- $igrp[$ig]\n");
+		}
 ?>
-</SELECT>
+</select>
 </td><td>
 </form>
 <form method="get" action="<?=$self?>.php">
@@ -146,6 +149,7 @@ foreach (array_keys($igrp) as $ig){
 </td>
 </tr>
 <?
+		}
 		$nin++;
 		if($nin == $lim){break;}
 	}

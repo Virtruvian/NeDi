@@ -121,15 +121,15 @@ foreach (array_keys($mlvl) as $ml){
 ?>
 </select>
 <p>
-<a href="?ina=class&opa=like&sta=trf%"><img src="img/16/grph.png" title=" <?=$trflbl?>"></a>
-<a href="?ina=class&opa=like&sta=cfg%"><img src="img/16/conf.png" title="Configuration"></a>
-<a href="?ina=class&opa==&sta=nedi"><img src="img/16/radr.png" title="Discoveries"></a>
-<a href="?ina=class&opa==&sta=dev"><img src="img/16/dev.png" title="Device <?=$msglbl?>"></a>
+<a href="?ina=class&opa=like&sta=trf%&lim=<?=$lim?>"><img src="img/16/grph.png" title=" <?=$trflbl?>"></a>
+<a href="?ina=class&opa=like&sta=cfg%&lim=<?=$lim?>"><img src="img/16/conf.png" title="<?=$cfglbl?>"></a>
+<a href="?ina=class&opa==&sta=nedi&lim=<?=$lim?>"><img src="img/16/radr.png" title="<?=$dsclbl?>"></a>
+<a href="?ina=class&opa==&sta=dev&lim=<?=$lim?>"><img src="img/16/dev.png" title="Device <?=$msglbl?>"></a>
 <br>
-<a href="?ina=class&opa==&sta=sec"><img src="img/16/hat.png" title="Security <?=$msglbl?>"></a>
-<a href="?ina=class&opa=like&sta=usr%"><img src="img/16/user.png" title="<?=$usrlbl?> <?=$msglbl?>"></a>
-<a href="?ina=class&opa==&sta=moni"><img src="img/16/bino.png" title="Monitoring"></a>
-<a href="?ina=class&opa==&sta=node"><img src="img/16/node.png" title="Node <?=$msglbl?>"></a>
+<a href="?ina=class&opa==&sta=sec&lim=<?=$lim?>"><img src="img/16/hat.png" title="Security <?=$msglbl?>"></a>
+<a href="?ina=class&opa=like&sta=usr%&lim=<?=$lim?>"><img src="img/16/user.png" title="<?=$usrlbl?> <?=$msglbl?>"></a>
+<a href="?ina=class&opa==&sta=moni&lim=<?=$lim?>"><img src="img/16/bino.png" title="Monitoring"></a>
+<a href="?ina=class&opa==&sta=node&lim=<?=$lim?>"><img src="img/16/node.png" title="Node <?=$msglbl?>"></a>
 </th>
 <th valign="top"><?=$limlbl?><p>
 <select size="1" name="lim">
@@ -149,7 +149,7 @@ foreach (array_keys($mlvl) as $ml){
 <input type="submit" name="n" value=" > ">
 <p>
 
-<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('<?=$dellbl?> <?=$msglbl?>?')" >
+<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('<?=$dellbl?>, <?=$cfmmsg?>')" >
 </th></tr>
 </table></form>
 <p>

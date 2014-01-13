@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	E2650
+Type	HP-2650
 OS	ProCurve
 Icon	w3gd
 Bridge	normal

@@ -1,5 +1,4 @@
 <?
-/*
 #============================================================================
 # Program: index.php (NeDi GUI)
 # Programmers: Remo Rickli & community
@@ -19,10 +18,6 @@
 #============================================================================
 # Visit http://www.nedi.ch/ for more information.
 #============================================================================
-# DATE		COMMENT
-# -----------------------------------------------------------
-# 01/08/10	Refer to NeDi Forum for changes...
-*/
 #error_reporting(E_ALL);
 
 require_once ("inc/libmisc.php");
@@ -31,25 +26,26 @@ require_once ("inc/libdb-" . strtolower($backend) . ".php");
 require_once ("inc/libldap.php");
 
 $_POST = sanitize($_POST);
-$_GET  = str_replace(";","", sanitize($_GET) );						# Avoid attacks with ;
+$_GET  = preg_replace("/;|http(s)?:\/\//","", sanitize($_GET) );			# Only allow local links
 $goto  = isset($_GET['goto']) ? $_GET['goto'] : "User-Profile.php";
 
 $raderr = "";
+$tz = date_default_timezone_get();
 
 if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){			# Avoid SQL injection
 	$pass = md5( $_POST['pass'] );
 
 	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-	if ( strstr($guiauth,'none') ){
+	if($guiauth == 'none'){
 		$uok	= 1;
 		$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST[user]) );
 		$res    = @DbQuery($query,$link);
-	}elseif ( strstr($guiauth,'pam') && $_POST['user'] != "admin" ){		# PAM code by Owen Brotherhood & Bruberg
+	}elseif( strstr($guiauth,'pam') && $_POST['user'] != "admin" ){			# PAM code by Owen Brotherhood & Bruberg
 		if (!extension_loaded ('pam_auth')){dl("pam_auth.so");}
 		$uok	= pam_auth($_POST['user'],$_POST['pass']);
 		$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST[user]) );
 		$res    = @DbQuery($query,$link);
-	}elseif ( strstr($guiauth,'radius') && $_POST['user'] != "admin" ){		# Radius code by Till Elsner
+	}elseif( strstr($guiauth,'radius') && $_POST['user'] != "admin" ){		# Radius code by Till Elsner
 		$radres = radius_auth_open();
 		if (!$radres) {
 			$raderr = "Error while preparing RADIUS authentication: ".radius_strerror($radres);
@@ -71,7 +67,7 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){			# Avoid SQ
 		}else{
 			switch ($radauth){
 				case RADIUS_ACCESS_ACCEPT:
-					$query	= GenQuery('user','s','*','','',array('name'),array('='),array($_POST['user']) );
+					$query	= GenQuery('users','s','*','','',array('user'),array('='),array($_POST['user']) );
 					$res    = @DbQuery($query,$link);
 					$uok	= mysql_num_rows($res);
 					break;
@@ -103,12 +99,13 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){			# Avoid SQ
 		$uok    = @DbNumRows($res);
 	}
 
-	if ($uok == 1) {
+	if($uok == 1) {
 		$usr = @DbFetchRow($res);
 		session_start(); 
 		$_SESSION['user']  = $_POST['user'];
 		$_SESSION['group'] = "usr,";
 		$_SESSION['view'] = $usr[15];
+		$_SESSION['bread'] = array();
 		if(strstr($guiauth,'ldap') && $_POST['user'] != "admin"){
 			if (($ldapmap[0]) and in_array($ldapmap[0],$ldapusersgrp)){
 				$_SESSION['group']   .= "adm,";
@@ -129,24 +126,29 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){			# Avoid SQ
 				$_SESSION['group']   .= "oth,";
 			}
 			if(@DbNumRows($res)>0){
-			    $_SESSION['lang'] = $usr[8];
-                	    $_SESSION['theme']= $usr[9];
-                	    $_SESSION['vol']  = $usr[10];
-                	    $_SESSION['col']  = $usr[11];
-                	    $_SESSION['lim']  = $usr[12];
-                	    $_SESSION['gsiz'] = $usr[13] & 7;
-                	    $_SESSION['gbit'] = $usr[13] & 8;
-                	    $_SESSION['gfar'] = $usr[13] & 16;
-                	    $_SESSION['olic'] = $usr[13] & 32;
-                	    $_SESSION['gmap'] = $usr[13] & 64;
-                	    $_SESSION['date'] = ($usr[14])?$usr[14]:'j.M y G:i';
+				$_SESSION['lang'] = $usr[8];
+				$_SESSION['theme']= $usr[9];
+				$_SESSION['vol']  = ($usr[10] & 3)*33;
+				$_SESSION['col']  = $usr[11];
+				$_SESSION['lim']  = $usr[12];
+				$_SESSION['gsiz'] = $usr[13] & 7;
+				$_SESSION['lsiz'] = ($usr[10] & 124) >> 2;
+				$_SESSION['gbit'] = $usr[13] & 8;
+				$_SESSION['gfar'] = $usr[13] & 16;
+				$_SESSION['olic'] = $usr[13] & 32;
+				$_SESSION['gmap'] = $usr[13] & 64;
+				$_SESSION['date'] = ($usr[14])?$usr[14]:'j.M y G:i';
+				$_SESSION['tz']   = $tz;
 			}else{
-			    $_SESSION['date'] = 'j.M y G:i';
-                    	    $_SESSION['theme']= 'default';
-                	    $_SESSION['lang'] = 'english';
-                	    $_SESSION['vol']  = 10;
-                	    $_SESSION['col']  = 5;
-                	    $_SESSION['lim']  = 5;
+				$_SESSION['lang'] = 'english';
+				$_SESSION['theme']= 'default';
+				$_SESSION['vol']  = 10;
+				$_SESSION['col']  = 5;
+				$_SESSION['lim']  = 5;
+				$_SESSION['gsiz'] = 2;
+				$_SESSION['lsiz'] = 10;
+				$_SESSION['date'] = 'j.M y G:i';
+				$_SESSION['tz']   = $tz;
 			}
 		}else{
 			if ($usr[2] &  1) {$_SESSION['group']	.= "adm,";}
@@ -159,15 +161,17 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){			# Avoid SQ
 
 			$_SESSION['lang'] = $usr[8];
 			$_SESSION['theme']= $usr[9];
-			$_SESSION['vol']  = $usr[10];
+			$_SESSION['vol']  = ($usr[10] & 3)*33;
 			$_SESSION['col']  = $usr[11];
 			$_SESSION['lim']  = $usr[12];
 			$_SESSION['gsiz'] = $usr[13] & 7;
+			$_SESSION['lsiz'] = ($usr[10] & 124) >> 2;
 			$_SESSION['gbit'] = $usr[13] & 8;
 			$_SESSION['gfar'] = $usr[13] & 16;
 			$_SESSION['olic'] = $usr[13] & 32;
 			$_SESSION['gmap'] = $usr[13] & 64;
 			$_SESSION['date'] = ($usr[14])?$usr[14]:'j.M y G:i';
+			$_SESSION['tz']   = $tz;
 			$query	= GenQuery('users','u','user',$_POST['user'],'',array('lastlogin'),'',array(time()) );
 			@DbQuery($query,$link);
 		}
@@ -185,7 +189,9 @@ if(isset( $_POST['user']) and !preg_match('/\W/',$_POST['user']) ){			# Avoid SQ
 }
 ?>
 <html>
-<head><title>NeDi Login</title>
+<head>
+<title>NeDi Login</title>
+<meta name="generator" content="NeDi 1.0.7">
 <link href="themes/default.css" type="text/css" rel="stylesheet">
 <link rel="shortcut icon" href="img/favicon.ico">
 </head>

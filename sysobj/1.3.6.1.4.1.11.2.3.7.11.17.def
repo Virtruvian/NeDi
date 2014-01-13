@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	E5308xl
+Type	HP-5308xl
 OS	ProCurve
 Icon	c3gd
 Bridge	normal

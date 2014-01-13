@@ -31,6 +31,14 @@ $lid = isset($_GET['lid']) ? $_GET['lid'] : 10;
 
 $cfgup = array();
 
+$cols = array(	"device"=>"Device",
+		"config"=>"$cfglbl",
+		"length(config)"=>"$sizlbl",
+		"changes"=>"$chglbl",
+		"length(changes)"=>"$sizlbl",
+		"time"=>"$updlbl",
+		);
+
 $link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('configs','s','device,time','device','','','','','','LEFT JOIN devices USING (device)');
 $res	= @DbQuery($query,$link);
@@ -238,7 +246,7 @@ if ($gen){
 				$img = $devic[$con[0]];
 				$typ = $devty[$con[0]];
 				$ud  = rawurlencode($con[0]);
-				echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
+				echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\"><th class=\"$bi\">\n";
 				echo "<a href=Devices-Status.php?dev=$ud><img src=\"img/dev/$img.png\" title=\"$typ\"></a><br>$con[0]</td>\n";
 				echo "<td>".Devcli($devip[$con[0]],$devpo[$con[0]])."</td><td>".$devos[$con[0]]."</td>\n";
 				echo "<td><a href=$_SERVER[PHP_SELF]?shc=$ud><div class=\"code\">\n";
@@ -290,6 +298,7 @@ if ($gen){
 <a href="?shc=<?=$ucfg?>&sln=<?=$sln?>&smo=<?=!$smo?>"><img src="img/16/say.png" title="motd"></a>
 <a href="System-Export.php?action=export&exptbl=configs&query=SELECT+config+FROM+configs+where+DEVICE%3D%22<?=$ucfg?>%22&type=plain"><img src="img/16/flop.png" title="<?=(($verb1)?"$explbl $cfglbl":"$cfglbl $explbl")?>"></a>
 <a href="Devices-Status.php?dev=<?=$ucfg?>"><img src="img/16/sys.png" title="Device-Status"></a>
+<a href="Devices-Doctor.php?dev=<?=$ucfg?>"><img src="img/16/cinf.png" title="<?=$cfglbl?> <?=$sumlbl?>"></a>
 <? if($isadmin){?>
 <a href="<?=$_SERVER[PHP_SELF]?>?dco=$ucfg"><img src="img/16/bcnl.png" onclick="return confirm('$cfg[0]: $dellbl $cfglbl?')" title="$dellbl $cfglbl!"></a>
 <?}?>
@@ -327,13 +336,14 @@ if($isadmin)
 <?
 }else{
 
-	echo "<p><br><h2>$buplbl $errlbl</h2>";
+	echo "<p><br><h2><a href=\"Monitoring-Events.php?ina=class&opa==&sta=cfge\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>
+$buplbl $errlbl</h2>";
 	Events($_SESSION['lim'],array('class'),array('='),array('cfge'),'');
 
-	echo "<p><br><h2>".(($verb1)?"$laslbl $chglbl":"$chglbl $laslbl")."</h2>";
+	echo "<p><br><h2><a href=\"Monitoring-Events.php?ina=class&opa==&sta=cfgc\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>".(($verb1)?"$laslbl $chglbl":"$chglbl $laslbl")."</h2>";
 	Events($_SESSION['lim'],array('class'),array('='),array('cfgc'),'');
 
-	echo "<p><br><h2>".(($verb1)?"$newlbl $cfglbl":"$cfglbl $newlbl")."</h2>";
+	echo "<p><br><h2><a href=\"Monitoring-Events.php?ina=class&opa==&sta=cfgn\"><img src=\"img/16/bell.png\" title=\"$msglbl\"></a>".(($verb1)?"$newlbl $cfglbl":"$cfglbl $newlbl")."</h2>";
 	Events($_SESSION['lim'],array('class'),array('='),array('cfgn'),'');
 }
 

@@ -99,10 +99,10 @@ img.smallbar{
 
 /* Header table & Footer div*/
 #header{
-	width: 99%;
+	width: 98%;
 	border: 1px solid #888;
 	padding: 8px;
-	background-color: #ccc;
+	background-color: #d4d4d4;
 	border-radius: 6px;
 	-moz-border-radius: 6px;
 	-webkit-border-radius: 6px;
@@ -112,10 +112,10 @@ img.smallbar{
 #footer{
 	text-align: right;
 	font-style: italic;
-	width: 99%;
+	width: 98%;
 	border: 1px solid #888;
 	padding: 8px;
-	background-color: #ccc;
+	background-color: #d4d4d4;
 	border-radius: 6px;
 	-moz-border-radius: 6px;
 	-webkit-border-radius: 6px;
@@ -150,7 +150,7 @@ table.full{
 	width: 60%;
 	padding: 10px;
 	border-spacing: 1px;
-	border: 2px solid #dddddd;
+	border: 2px solid #d8d8d8;
 }
 
 /* Font Properties */
@@ -179,11 +179,11 @@ table.full{
 
 /* Text Fields */
 .txta{background-color: #eeeeee}
-.txtb{background-color: #e6e6e6}
+.txtb{background-color: #eaeaea}
 
 /* Image Fields */
-.imga{background-color: #f4f4f4}
-.imgb{background-color: #fefefe}
+.imga{background-color: #f8f8f8}
+.imgb{background-color: #f4f4f4}
 
 /* Status Fields */
 .good{background-color: #88ff88}
@@ -194,23 +194,23 @@ table.full{
 .part{background-image:url('../img/dia.png')}
 
 /* Default Group Based Module Colors */
-.adm1{background-color: #d8d8d8}
-.adm2{background-color: #dddddd}
+.adm1{background-color: #dddddd}
+.adm2{background-color: #d8d8d8}
 
-.net1{background-color: #d8d8d8}
-.net2{background-color: #dddddd}
+.net1{background-color: #dddddd}
+.net2{background-color: #d8d8d8}
 
-.dsk1{background-color: #d8d8d8}
-.dsk2{background-color: #dddddd}
+.dsk1{background-color: #dddddd}
+.dsk2{background-color: #d8d8d8}
 
-.mon1{background-color: #d8d8d8}
-.mon2{background-color: #dddddd}
+.mon1{background-color: #dddddd}
+.mon2{background-color: #d8d8d8}
 
-.mgr1{background-color: #d8d8d8}
-.mgr2{background-color: #dddddd}
+.mgr1{background-color: #dddddd}
+.mgr2{background-color: #d8d8d8}
 
-.oth1{background-color: #d8d8d8}
-.oth2{background-color: #dddddd}
+.oth1{background-color: #dddddd}
+.oth2{background-color: #d8d8d8}
 
-.usr1{background-color: #d8d8d8}
-.usr2{background-color: #dddddd}
+.usr1{background-color: #dddddd}
+.usr2{background-color: #d8d8d8}

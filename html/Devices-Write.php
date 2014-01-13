@@ -17,6 +17,7 @@ $inb = isset( $_POST['inb']) ? $_POST['inb'] : "";
 $opa = isset( $_POST['opa']) ? $_POST['opa'] : "";
 $opb = isset( $_POST['opb']) ? $_POST['opb'] : "";
 $cop = isset( $_POST['cop']) ? $_POST['cop'] : "";
+
 $cmd = isset( $_POST['cmd']) ? $_POST['cmd'] : "";
 $sub = isset( $_POST['sub']) ? $_POST['sub'] : "";
 $int = isset( $_POST['int']) ? $_POST['int'] : "";
@@ -39,7 +40,7 @@ $cols = array(	"device"=>$namlbl,
 		"type"=>$typlbl,
 		"services"=>$srvlbl,
 		"description"=>$deslbl,
-		"devos"=>"OS",
+		"devos"=>"Device OS",
 		"bootimage"=>"Bootimage",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
@@ -59,35 +60,35 @@ $cols = array(	"device"=>$namlbl,
 <table class="content"><tr class="<?=$modgroup[$self]?>1">
 <th width="50" rowspan="3"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
 <th valign="top"><?=$cndlbl?> A<p>
-<SELECT size="1" name="ina">
+<select size="1" name="ina">
 <?
 foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
 }
 ?>
-</SELECT>
-<SELECT size="1" name="opa">
+</select>
+<select size="1" name="opa">
 <? selectbox("oper",$opa);?>
-</SELECT>
+</select>
 <p><a href="javascript:show_calendar('list.sta');"><img src="img/16/date.png"></a>
 <input type="text" name="sta" value="<?=$sta?>" size="20" OnFocus="select();">
 </th>
 <th valign="top"><?=$cmblbl?><p>
-<SELECT size="1" name="cop">
+<select size="1" name="cop">
 <? selectbox("comop",$cop);?>
-</SELECT>
+</select>
 </th>
 <th valign="top"><?=$cndlbl?> B<p>
-<SELECT size="1" name="inb">
+<select size="1" name="inb">
 <?
 foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".( ($inb == $k)?"selected":"").">$v\n";
 }
 ?>
-</SELECT>
-<SELECT size="1" name="opb">
+</select>
+<select size="1" name="opb">
 <? selectbox("oper",$opb);?>
-</SELECT>
+</select>
 <p><a href="javascript:show_calendar('list.stb');"><img src="img/16/date.png"></a>
 <input type="text" name="stb" value="<?=$stb?>" size="20" OnFocus="select();">
 <input type="text" name="sub" value="<?=$sub?>" size="20" OnFocus="select();" title="Substitutes this search string and use result as command argument">
@@ -197,9 +198,9 @@ if($ina){
 <tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Devices (<?=$query?>)</td></tr>
 </table>
 	<?
-	}else{
+	}elseif($scm or $con){
 		if(!$sub){
-			$fd =  @fopen("log/cmd_$_SESSION[user]","w") or die ("can't create log/cmd_$_SESSION[user]");
+			$fd =  @fopen("log/cmd_$_SESSION[user]","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user]");
 			$cmds = Buildcmd('',$cfgos);
 			fwrite($fd, $cmds);
 			fclose($fd);
@@ -240,8 +241,10 @@ function Buildcmd($arg="",$configureos=""){
 	global $sub, $cmd, $stb, $sint, $eint, $smod, $emod, $ssub, $esub, $int, $icfg;
 
 	$config = "";
-	if($configureos == "IOS"){
+	if($configureos == "IOS" or $configureos == "ProCurve"){
 		$config .= "conf t\n";
+	}elseif($configureos == "Comware"){
+		$config .= "sys\n";
 	}
 	$config .= $cmd;
 	if($sub){
@@ -266,8 +269,10 @@ function Buildcmd($arg="",$configureos=""){
 			}
 		}
 	}
-	if($configureos == "IOS"){
+	if($configureos == "IOS" or $configureos == "ProCurve"){
 		$config .= "\nend\nwrite mem\n";
+	}elseif($configureos == "Comware"){
+		$config .= "\nquit\nsave\ny\n\ny\n";
 	}
 	return "$config\n";
 }

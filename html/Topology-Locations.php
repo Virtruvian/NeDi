@@ -31,8 +31,8 @@ $cols = array(	"loc"=>$loclbl,
 		"region"=>$place['r'],
 		"city"=>$place['c'],
 		"building"=>$place['b'],
-		"x"=>"Map X",
-		"y"=>"Map Y",
+		"x"=>"X",
+		"y"=>"Y",
 		"ns"=>"Latitude (NS)",
 		"ew"=>"Longitude (EW)",
 		"locdesc"=>$deslbl,
@@ -106,7 +106,7 @@ foreach ($cols as $k => $v){
 <th width="80">
 <input type="submit" value="<?=$sholbl?>">
 <p>
-<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('<?=$dellbl?> <?=$loclbl?>?')" >
+<input type="submit" name="del" value="<?=$dellbl?>" onclick="return confirm('<?=$dellbl?>, <?=$cfmmsg?>')" >
 
 </th>
 </tr></table></form><p>

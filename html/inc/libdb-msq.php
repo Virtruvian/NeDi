@@ -45,6 +45,10 @@ function DbAffectedRows($r){
         return @mysql_affected_rows($r);
 }
 
+function DbEscapeString($r){
+        return @mysql_real_escape_string($r);
+}
+
 function DbError($r){
         return @mysql_error($r);
 }
@@ -107,7 +111,7 @@ function JoinDev($ina){
 // * mac:	. : - are removed
 //
 function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),$st=array(),$co=array(),$jn=""){
-
+#TODO add sanitization here using mysql_real_escape_string() or addslashes()
 	global $debug;
 
 	if($do == 'i'){
@@ -160,7 +164,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 						$v = strtotime($v);
 					}elseif($c == 'mac'){
 						$v = preg_replace("/[.:-]/","", $v);
-					}elseif(preg_match("/^(dev|origip|nod|if)ip$/",$c) and !preg_match('/^[0-9]+$/',$v) ){			# Do we have an dotted IP?
+					}elseif(preg_match("/^(dev|orig|nod|if|mon)ip$/",$c) and !preg_match('/^[0-9]+$/',$v) ){			# Do we have an dotted IP?
 						if( strstr($v,'/') ){									# CIDR?
 							list($ip, $prefix) = explode('/', $v);
 							$dip = sprintf("%u", ip2long($ip));
@@ -181,7 +185,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 						$o = substr($op[$x],0,-2);
 					}
 					if(strstr($o,'regexp') and $v == '' ){$v = '.';}
-					if( strstr($o, 'NOQ ') ){# TODO refine column based operations (e.g. IS NULL)
+					if( strstr($o, 'COL ') ){
 						$o = substr($o,4);
 					}else{
 						$v = "\"$v\"";
@@ -196,7 +200,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 			$w = "";
 		}
 
-		if($_SESSION['view'] and (strstr($jn,'JOIN devices') or $tbl == 'devices')){
+		if(isset($_SESSION['view']) and $_SESSION['view'] and (strstr($jn,'JOIN devices') or $tbl == 'devices')){
 			$w = ($w)?"$w AND $_SESSION[view]":"WHERE $_SESSION[view]";
 		}
 
@@ -207,10 +211,10 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$in=array(),$op=array(),
 		}else{
 			$cal = "";
 			$hav = "";
-			$excol = split(";",$col);
-			if($excol[1]){
+			$excol = explode(";",$col);
+			if(array_key_exists(1,$excol) and $excol[1]){
 				$col = $excol[0];
-				if($excol[2]){$hav = "having($excol[2])";}
+				if(array_key_exists(2,$excol) and $excol[2]){$hav = "having($excol[2])";}
 				if($do == 'a'){$cal = ", avg($excol[1]) as avg";}
 				elseif($do == 'm'){$cal = ", sum($excol[1]) as sum";}
 				elseif($do == 'x'){$cal = ", max($excol[1]) as max";}

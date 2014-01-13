@@ -166,6 +166,7 @@ Duplex/Vlan
 <option value="LLDP">LLDP
 <option value="CDP">CDP
 <option value="FDP">FDP
+<option value="NDP">NDP
 <option value="ISO"><?=$isolbl?>
 </select>
 <p>
@@ -189,7 +190,7 @@ if ($dv or $typ){
 </tr>
 <?
 	if ($typ == "ISO"){
-		$query	= GenQuery('links','s','*','ifname','',array('devices.device'),array('NOQ IS'),array('NULL'),'','LEFT JOIN devices USING (device)');
+		$query	= GenQuery('links','s','links.*','ifname','',array('devices.device'),array('COL IS'),array('NULL'),'','LEFT JOIN devices USING (device)');
 	}elseif ($typ){
 		$query	= GenQuery('links','s','*','ifname','',array('linktype'),array('='),array($typ));
 	}else{
@@ -204,11 +205,11 @@ if ($dv or $typ){
 			$un = rawurlencode($l[3]);
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			echo "<tr class=\"$bg\">\n";
+			echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
 			echo "<td><a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>\n";
 			echo " <a href=?dv=$ud>$l[1]</a></td><td>$l[2]</td>\n";
 			echo "<th>$l[6]</th>\n";
-			echo "<td align=right>" . Zfix($l[5]) . "</td>\n";
+			echo "<td align=right>" . DecFix($l[5]) . "</td>\n";
 			echo "<td><a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a>\n";
 			echo " <a href=?dv=$un>$l[3]</a></td><td>$l[4] (Vlan$l[9] $l[8])</td><td>$l[7]</td>\n";
 			echo "<th><a href=?del=$l[0]&dv=$ud><img src=\"img/16/bcnl.png\" onclick=\"return confirm('Link $l[0] $dellbl?');\" title=\"$l[0] $dellbl\"></a></th></tr>\n";

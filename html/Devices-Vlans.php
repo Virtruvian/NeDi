@@ -3,6 +3,7 @@
 # Programmer: Remo Rickli
 
 $printable = 1;
+$exportxls = 1;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
@@ -19,7 +20,12 @@ $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
-	if($_SESSION['olic']){$_SESSION['vlcol'] = $col;}
+	if($_SESSION['olic']){
+		$_SESSION['vlcol'] = $col;
+		if(!$ord and $ina){						# Default order by ina as suggested by community
+			$ord = $ina;
+		}
+	}
 }elseif( isset($_SESSION['vlcol']) ){
 	$col = $_SESSION['vlcol'];
 }else{
@@ -31,13 +37,23 @@ $cols = array(	"device"=>"Device $namlbl",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
 		"vlanid"=>"Vlan ID",
-		"vlanname"=>"Vlan $namlbl"
+		"vlanname"=>"Vlan $namlbl",
+		"pop"=>$poplbl
 		);
+		
+$link = @DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
+$listalert = "";
+if($listwarn){
+	$cnr  = @DbFetchRow(DbQuery(GenQuery('vlans','s','count(*)','','','','','','','LEFT JOIN devices USING (device)'), $link));
+	if($cnr[0] > $listwarn){
+		$listalert = "onclick=\"if(document.list.sta.value == ''){return confirm('".(($verb1)?"$sholbl $alllbl $cnr[0]":"$alllbl $cnr[0] $sholbl")."?');}\"";
+	}
+}
 
+if( !isset($_GET['xls']) ){echo "<h1>Vlan $lstlbl</h1>";}
 ?>
-<h1>Vlan <?=$lstlbl?></h1>
 
-<?if( !isset($_GET['print']) ){?>
+<?if( !isset($_GET['print']) and !isset($_GET['xls']) ){?>
 
 <form method="get" name="list" action="<?=$self?>.php">
 <table class="content"><tr class="<?=$modgroup[$self]?>1">
@@ -46,7 +62,9 @@ $cols = array(	"device"=>"Device $namlbl",
 <select size="1" name="ina">
 <?
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+	if($k != 'pop'){										# Can't be used here
+		echo "<option value=\"$k\"".( ($ina == $k)?"selected":"").">$v\n";
+	}
 }
 ?>
 </select>
@@ -65,7 +83,9 @@ foreach ($cols as $k => $v){
 <select size="1" name="inb">
 <?
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".( ($inb == $k)?"selected":"").">$v\n";
+	if($k != 'pop'){
+		echo "<option value=\"$k\"".( ($inb == $k)?"selected":"").">$v\n";
+	}
 }
 ?>
 </select>
@@ -82,28 +102,20 @@ foreach ($cols as $k => $v){
        echo "<option value=\"$k\"".((in_array($k,$col))?"selected":"").">$v\n";
 }
 ?>
-<option value="pop" <?=(in_array("pop",$col))?"selected":""?> ><?=$poplbl?>
 </select>
 </th>
-<th width="80"><input type="submit" value="<?=$sholbl?>"></th>
+<th width="80">
+<input type="submit" value="<?=$sholbl?>" <?=$listalert?>>
+</th>
 </tr></table></form><p>
 <?
 }
-if ($ina){
-ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
-	?>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-	<?
-	foreach($col as $h){
-		if($h != 'pop'){
-			ColHead($h);
-		}
-	}
-	if( in_array("pop",$col) ){echo "<th>$poplbl</th>";}
-	echo "</tr>\n";
 
-	$link	= @DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-	$query	= GenQuery('vlans','s','*',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device)');
+if($ina){
+	ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
+	TblHead("$modgroup[$self]2",TRUE);
+
+	$query	= GenQuery('vlans','g','device,vlanid;vlanname,type,location,contact,count(mac) as pop',$ord,'',array($ina,$inb),array($opa,$opb),array($sta,$stb),array($cop),'LEFT JOIN devices USING (device)  LEFT JOIN nodes USING (device,vlanid)');
 	$res	= @DbQuery($query,$link);
 	if($res){
 		$row = 0;
@@ -111,31 +123,22 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
 			$ud = rawurlencode($v[0]);
-			echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">";
+			TblRow(TRUE);
 			if(in_array("device",$col)){
-				echo "<td>\n";
-				if( !isset($_GET['print']) and strpos($_SESSION['group'],$modgroup['Devices-Status']) !== false ){
-					echo "<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>\n";
-				}
-				echo "<a href=?ina=device&opa==&sta=$ud&ord=vlanid>$v[0]</a></td>\n";
+				TblCell($v[0],"?ina=device&opa==&sta=$ud&ord=vlanid","","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
 			}
-			if(in_array("type",$col)){echo "<td><a href=?ina=type&opa==&sta=\"$v[5]\">$v[5]</a>";}
-			if(in_array("location",$col)){echo "<td><a href=\"?ina=location&opa==&sta=".urlencode($v[12])."\">$v[12]</a></td>";}
-			if(in_array("contact",$col)){echo "<td><a href=\"?ina=contact&opa==&sta=".urlencode($v[13])."\">$v[13]</a></td>";}
-			if(in_array("vlanid",$col)){echo "<td><a href=?ina=vlanid&opa==&sta=$v[1]>$v[1]</a>";}
-			if(in_array("vlanname",$col)){echo "<td><a href=?ina=vlanname&opa==&sta=".urlencode($v[2]).">$v[2]</a>";}
+			if(in_array("type",$col)){TblCell($v[4],"?ina=type&opa==&sta=".urlencode($v[4]));}
+			if(in_array("location",$col)){TblCell($v[5],"?ina=location&opa==&sta=".urlencode($v[5]));}
+			if(in_array("contact",$col)){TblCell($v[6],"?ina=contact&opa==&sta=".urlencode($v[6]));}
+			if(in_array("vlanid",$col)){TblCell($v[1],"?ina=vlanid&opa==&sta=".urlencode($v[1]));}
+			if(in_array("vlanname",$col)){TblCell($v[3],"?ina=vlanname&opa==&sta=".urlencode($v[3]));}
 			if(in_array("pop",$col)){
-				$nquery	= GenQuery('nodes','g','vlanid','','',array('device','vlanid'),array('=','='),array($v[0],$v[1]),array('AND') );
-				$np  = @DbQuery($nquery,$link);
-				$nnp = @DbNumRows($np);
-				if ($nnp == 1) {
-					$vpop = @DbFetchRow($np);
-					$pbar = Bar($vpop[1],110);
-					echo "<td>$pbar <a href=Nodes-List.php?ina=device&opa==&sta=$ud&inb=vlanid&opb==&stb=$v[1]&cop=AND>$vpop[1]</td>";
+				if ($v[7]){
+					TblCell($v[7],'','',Bar($v[7],110,'mi'));
+					#echo (!$xls)?"<td>$pbar <a href=Nodes-List.php?ina=device&opa==&sta=$ud&inb=vlanid&opb==&stb=$v[1]&cop=AND>$v[7]</td>":"<td>$v[7]</td>\n";
 				}else{
 					echo "<td></td>";
 				}
-				@DbFreeResult($np);
 			}
 			echo "</tr>\n";
 		}
@@ -143,12 +146,14 @@ ConHead($ina, $opa, $sta, $cop, $inb, $opb, $stb);
 	}else{
 		print @DbError($link);
 	}
-	?>
+	
+?>
 </table>
 <table class="content">
 <tr class="<?=$modgroup[$self]?>2"><td><?=$row?> Vlans<?=($ord)?", $srtlbl: $ord":""?></td></tr>
 </table>
-	<?
+<?
 }
+
 include_once ("inc/footer.php");
 ?>

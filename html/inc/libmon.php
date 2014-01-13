@@ -20,27 +20,31 @@ $mbak['200'] = "alrm";
 $mbak['250'] = "crit";
 
 //===================================================================
-// Return icon for an event class
-function EvImg($c){
+// Return icon and title for an event class
+function EvClass($c){
+	
+	global $cfglbl,$gralbl,$usrlbl,$mlvl,$trflbl;
 
 	if($c == 'dev'){
-		return 'dev';
+		return array('dev','Device Syslog');
 	}elseif($c == 'moni'){
-		return 'bino';
+		return array('bino','Monitoring');
 	}elseif($c == 'node'){
-		return 'node';
+		return array('node','Node Syslog');
 	}elseif($c == 'nedi'){
-		return 'radr';
+		return array('radr','Discovery');
+	}elseif($c == 'trap'){
+		return array('warn','SNMP Trap');
 	}elseif($c == 'sec'){
-		return 'hat';
+		return array('hat','Security');
 	}elseif(strpos($c,'cfg') !== false){
-		return 'conf';
+		return array('conf',$cfglbl);
 	}elseif(strpos($c,'trf') !== false){
-		return 'grph';
+		return array('grph',$trflbl);
 	}elseif(strpos($c,'usr') !== false){
-		return 'user';
+		return array('user',$usrlbl);
 	}else{
-		return 'say';
+		return array('say',$mlvl['10']);
 	}
 }
 
@@ -70,7 +74,7 @@ function IncImg($cat){
 
 //===================================================================
 // Return bg color based on monitoring status
-function StatusBg($nd,$mn,$a,$bg){
+function StatusBg($nd,$mn,$a,$bg="imga"){
 
 	global $pause,$tim,$errlbl,$mullbl,$alllbl;
 
@@ -104,25 +108,25 @@ function StatusBg($nd,$mn,$a,$bg){
 
 //===================================================================
 // Generate If status tables
-function StatusIf($loc,$mode,$label,$lim,$siz=0){
+function StatusIf($loc,$mode,$label){
 
 	global $link,$rrdstep,$trfa,$modgroup,$self;
 
 	if($mode   == "brup"){
 		$type = 1;
-		$query	= GenQuery('interfaces','s','device,ifname,speed,iftype,dinerr','dinerr desc',$lim,array('dinerr','iftype','location'),array('>','!=','regexp'),array("$rrdstep",'71',$loc),array('AND','AND'),'JOIN devices USING (device)');
+		$query	= GenQuery('interfaces','s','device,ifname,speed,iftype,dinerr','dinerr desc',$_SESSION['lim'],array('dinerr','iftype','location'),array('>','!=','regexp'),array("$rrdstep",'71',$loc),array('AND','AND'),'JOIN devices USING (device)');
 	}elseif($mode   == "brdn"){
 		$type = 1;
-		$query	= GenQuery('interfaces','s','device,ifname,speed,iftype,douterr','douterr desc',$lim,array('douterr','iftype','location'),array('>','!=','regexp'),array("$rrdstep",'71',$loc),array('AND','AND'),'JOIN devices USING (device)');
+		$query	= GenQuery('interfaces','s','device,ifname,speed,iftype,douterr','douterr desc',$_SESSION['lim'],array('douterr','iftype','location'),array('>','!=','regexp'),array("$rrdstep",'71',$loc),array('AND','AND'),'JOIN devices USING (device)');
 	}elseif($mode   == "bbup"){
 		$type = 0;
-		$query	= GenQuery('interfaces','s',"device,ifname,speed,iftype,dinoct*800/speed/$rrdstep",'dinoct/speed desc',$lim,array("dinoct*800/speed/$rrdstep",'location'),array('>','regexp'),array($trfa,$loc),array('AND'),'JOIN devices USING (device)');
+		$query	= GenQuery('interfaces','s',"device,ifname,speed,iftype,dinoct*800/speed/$rrdstep",'dinoct/speed desc',$_SESSION['lim'],array("dinoct*800/speed/$rrdstep",'location'),array('>','regexp'),array($trfa,$loc),array('AND'),'JOIN devices USING (device)');
 	}elseif($mode   == "bbdn"){
 		$type = 0;
-		$query	= GenQuery('interfaces','s',"device,ifname,speed,iftype,doutoct*800/speed/$rrdstep",'doutoct/speed desc',$lim,array("doutoct*800/speed/$rrdstep",'location'),array('>','regexp'),array($trfa,$loc),array('AND'),'JOIN devices USING (device)');
+		$query	= GenQuery('interfaces','s',"device,ifname,speed,iftype,doutoct*800/speed/$rrdstep",'doutoct/speed desc',$_SESSION['lim'],array("doutoct*800/speed/$rrdstep",'location'),array('>','regexp'),array($trfa,$loc),array('AND'),'JOIN devices USING (device)');
 	}elseif($mode   == "bdis"){
 		$type = 2;
-		$query	= GenQuery('interfaces','s','device,ifname,speed,iftype,ifstat','device',$lim,array('ifstat','location'),array('&','regexp'),array('128',$loc),array('AND'),'JOIN devices USING (device)');
+		$query	= GenQuery('interfaces','s','device,ifname,speed,iftype,ifstat','device',$_SESSION['lim'],array('ifstat','location'),array('&','regexp'),array('128',$loc),array('AND'),'JOIN devices USING (device)');
 	}
 	$res	= @DbQuery($query,$link);
 	if($res){
@@ -131,7 +135,7 @@ function StatusIf($loc,$mode,$label,$lim,$siz=0){
 ?>
 <p>
 <table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th colspan="2"><img src="img/16/port.png" title="Top <?=$lim?>"><br>Interface</th><th><img src="img/16/<?=$mode?>.png"><br><?=(substr($label,0,3))?></th>
+<th colspan="2"><img src="img/16/port.png" title="Top <?=$_SESSION['lim']?>"><br>Interface</th><th><img src="img/16/<?=$mode?>.png"><br><?=(substr($label,0,3))?></th>
 <?
 			$row = 0;
 			while( ($r = @DbFetchRow($res)) ){
@@ -145,13 +149,13 @@ function StatusIf($loc,$mode,$label,$lim,$siz=0){
 				$t  = (strlen($t) < 4)?$r[0]:$t;
 				$ud = urlencode($r[0]);
 				$ui = urlencode($r[1]);
-				list($ifimg,$iftit) = Iftype($t[3]);
+				list($ifimg,$iftit) = Iftype($r[3]);
 				echo "<tr class=\"$bg\"><th class=\"$bi\" width=\"25\"><img src=img/$ifimg title=\"$iftit\">";
-				if($siz == 6){
+				if($_SESSION['gsiz'] == 6){
 					echo "</th><td>$t $r[1]</td><th bgcolor=\"#$rb$rb$bg3\">";
 				}else{
 					echo "</th><td><a href=Devices-Status.php?dev=$ud&pop=on>$t</a> ";
-					echo "<a href=Nodes-List.php?ina=device&opa==&sta=$ud&cop=AND&inb=ifname&opb==&stb=$ui>$r[1]</a> ".Zfix($r[2])."</td><th bgcolor=\"#$rb$rb$bg3\">\n";
+					echo "<a href=Nodes-List.php?ina=device&opa==&sta=$ud&cop=AND&inb=ifname&opb==&stb=$ui>$r[1]</a> ".DecFix($r[2])."</td><th bgcolor=\"#$rb$rb$bg3\">\n";
 				}
 				if($type == 2){
 					$stat = ($r[4] & 128)?"Admin":"?";
@@ -163,7 +167,7 @@ function StatusIf($loc,$mode,$label,$lim,$siz=0){
 				echo "$stat</th></tr>\n";
 			}
 			echo "</table>\n";
-		}elseif(!$siz or $siz == 6){
+		}elseif(!$_SESSION['gsiz'] or $_SESSION['gsiz'] == 6){
 ?>
 <p><img src="img/32/<?=$mode?>.png" title="<?=$label?>" hspace="8"><img src="img/32/bchk.png" title="OK">
 <?
@@ -176,18 +180,18 @@ function StatusIf($loc,$mode,$label,$lim,$siz=0){
 
 //===================================================================
 // Generate cpu status table
-function StatusCpu($loc,$lim,$siz){
+function StatusCpu($loc){
 
 	global $link,$cpua,$lodlbl,$modgroup,$self;
 
-	$query = GenQuery('devices','s','device,cpu','cpu desc',$lim,array('cpu','location'),array('>','regexp'),array($cpua,$loc),array('AND'));
+	$query = GenQuery('devices','s','device,cpu','cpu desc',$_SESSION['lim'],array('cpu','location'),array('>','regexp'),array($cpua,$loc),array('AND'));
 	$res	= @DbQuery($query,$link);
 	if($res){
 		$nr = @DbNumRows($res);
 		if($nr){
 ?>
 <p><table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th colspan="2" nowrap><img src="img/16/dev.png" title="Top <?=$lim?> CPU <?=$lodlbl?> > <?=$cpua?>%"><br>Device</th>
+<th colspan="2" nowrap><img src="img/16/dev.png" title="Top <?=$_SESSION['lim']?> CPU <?=$lodlbl?> > <?=$cpua?>%"><br>Device</th>
 <th nowrap><img src="img/16/cpu.png"><br><?=$lodlbl?></th>
 <?
 			$row = 0;
@@ -207,7 +211,7 @@ function StatusCpu($loc,$lim,$siz){
 			}
 			echo "</table>\n";
 		}else{
-			$isiz = ($siz == 2)?"16":"32";
+			$isiz = ($_SESSION['gsiz'] == 2)?"16":"32";
 ?>
 <p><img src="img/<?=$isiz?>/cpu.png" title="CPU <?=$lodlbl?>" hspace="8"> <img src="img/<?=$isiz?>/bchk.png" title="OK">
 <?
@@ -220,81 +224,78 @@ function StatusCpu($loc,$lim,$siz){
 
 //===================================================================
 // Generate cpu status table
-function StatusMem($loc,$lim,$siz){
+function StatusMem($loc){
 
 	global $link,$mema,$frelbl,$modgroup,$self;
 
 	$ma = explode('/', $mema);
-	$aquery = GenQuery('devices','s','device,memcpu','memcpu desc',$lim,array('memcpu','memcpu','location'),array('<','>','regexp'),array($ma[0] * 1024,100,$loc),array('AND','AND'));
+	$aquery = GenQuery('devices','s','device,memcpu','memcpu desc',$_SESSION['lim'],array('memcpu','memcpu','location'),array('<','>','regexp'),array($ma[0] * 1024,100,$loc),array('AND','AND'));
 	$ares	= @DbQuery($aquery,$link);
-	if($ares){
-		$nar = @DbNumRows($ares);
-		$pquery = GenQuery('devices','s','device,memcpu','memcpu desc',$lim,array('memcpu','memcpu','location'),array('<','>','regexp'),array($ma[1],0,$loc),array('AND','AND'));
-		$pres	= @DbQuery($pquery,$link);
-		$npr    = @DbNumRows($pres);
+	$nar    = @DbNumRows($ares);
 
-		if($nar or $npr){
+	$pquery = GenQuery('devices','s','device,memcpu','memcpu desc',$_SESSION['lim'],array('memcpu','memcpu','location'),array('<','>','regexp'),array($ma[1],0,$loc),array('AND','AND'));
+	$pres	= @DbQuery($pquery,$link);
+	$npr    = @DbNumRows($pres);
+
+	if($nar or $npr){
 ?>
 <p><table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th colspan="2"><img src="img/16/dev.png" title="Top <?=$lim?> Memory <?=$frelbl?> < <?=$ma[0]?>KB/<?=$ma[1]?>%"><br>Device</th>
+<th colspan="2"><img src="img/16/dev.png" title="Top <?=$_SESSION['lim']?> Memory <?=$frelbl?> < <?=$ma[0]?>KB/<?=$ma[1]?>%"><br>Device</th>
 <th nowrap><img src="img/16/mem.png"><br><?=$frelbl?></th>
 <?
-			$row = 0;
-			while( ($t = @DbFetchRow($ares)) ){
-				if ($row % 2){$bg = "txta"; $bi = "imga";$off="b8";}else{$bg = "txtb"; $bi = "imgb";$off="c8";}
-				$row++;
-				$lv  = intval($ma[0]/$t[1]);
-				$hi  = sprintf("%02x",(($lv > 55)?55:$lv) + 200);
-				$na  = substr($t[0],0,12);
-				$ud  = urlencode($t[0]);
-				if($_SESSION['gsiz'] == 6){
-					echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td>$na</td><th nowrap>$t[1]KB</th></tr>\n";
-				}else{
-					echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td><a href=Devices-Status.php?dev=$ud>$na</a></td>\n";
-					echo "<th nowrap>$t[1]KB</th></tr>\n";
-				}
+		$row = 0;
+		while( ($t = @DbFetchRow($ares)) ){
+			if ($row % 2){$bg = "txta"; $bi = "imga";$off="b8";}else{$bg = "txtb"; $bi = "imgb";$off="c8";}
+			$row++;
+			$lv  = pow($ma[0]*1024/$t[1],8);
+			$hi  = sprintf("%02x",(($lv > 55)?55:$lv) + 200);
+			$na  = substr($t[0],0,12);
+			$ud  = urlencode($t[0]);
+			if($_SESSION['gsiz'] == 6){
+				echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td>$na</td><th nowrap>".DecFix($t[1])."B</th></tr>\n";
+			}else{
+				echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td><a href=Devices-Status.php?dev=$ud>$na</a></td>\n";
+				echo "<th nowrap>".DecFix($t[1])."B</th></tr>\n";
 			}
-			while( ($t = @DbFetchRow($pres)) ){
-				if ($row % 2){$bg = "txta"; $bi = "imga";$off="b8";}else{$bg = "txtb"; $bi = "imgb";$off="c8";}
-				$row++;
-				$lv  = $t[1]-$m[1];
-				$hi  = sprintf("%02x",(($lv > 55)?55:$lv) + 200);
-				$na  = substr($t[0],0,12);
-				$ud  = urlencode($t[0]);
-				if($_SESSION['gsiz'] == 6){
-					echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td>$na</td><th nowrap>$t[1]%</th></tr>\n";
-				}else{
-					echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td><a href=Devices-Status.php?dev=$ud>$na</a></td>\n";
-					echo "<th nowrap>$t[1]%</th></tr>\n";
-				}
+		}
+		while( ($t = @DbFetchRow($pres)) ){
+			if ($row % 2){$bg = "txta"; $bi = "imga";$off="b8";}else{$bg = "txtb"; $bi = "imgb";$off="c8";}
+			$row++;
+			$lv  = $t[1]-$m[1];
+			$hi  = sprintf("%02x",(($lv > 55)?55:$lv) + 200);
+			$na  = substr($t[0],0,12);
+			$ud  = urlencode($t[0]);
+			if($_SESSION['gsiz'] == 6){
+				echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td>$na</td><th nowrap>$t[1]%</th></tr>\n";
+			}else{
+				echo "<tr bgcolor=\"#$hi$hi$off\"><th class=\"$bi\">$row</th><td><a href=Devices-Status.php?dev=$ud>$na</a></td>\n";
+				echo "<th nowrap>$t[1]%</th></tr>\n";
 			}
-			echo "</table>\n";
-		}else{
-			$isiz = ($siz == 2)?"16":"32";
+		}
+		echo "</table>\n";
+	}else{
+		$isiz = ($_SESSION['gsiz'] == 2)?"16":"32";
 ?>
 <p><img src="img/<?=$isiz?>/mem.png" title="Memory <?=$frelbl?>" hspace="8"> <img src="img/<?=$isiz?>/bchk.png" title="OK">
 <?
-		}
-		@DbFreeResult($res);
-	}else{
-		print @DbError($link);
 	}
+	@DbFreeResult($res);
 }
 
 //===================================================================
 // Generate temperature status table
-function StatusTmp($loc,$lim,$siz){
+function StatusTmp($loc){
 
 	global $link,$tmpa,$modgroup,$self;
 
-	$query = GenQuery('devices','s','device,temp','temp desc',$lim,array('temp','location'),array('>','regexp'),array($tmpa,$loc),array('AND'));
+	$query = GenQuery('devices','s','device,temp','temp desc',$_SESSION['lim'],array('temp','location'),array('>','regexp'),array($tmpa,$loc),array('AND'));
 	$res	= @DbQuery($query,$link);
 	if($res){
 		$nr = @DbNumRows($res);
 		if($nr){
 ?>
 <p><table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th colspan="2"><img src="img/16/dev.png" title="Top <?=$lim?> Temperature > <?=$tmpa?>C"><br>Device</th>
+<th colspan="2"><img src="img/16/dev.png" title="Top <?=$_SESSION['lim']?> Temperature > <?=$tmpa?>C"><br>Device</th>
 <th><img src="img/16/home.png"><br>Temp</th>
 <?
 			$row = 0;
@@ -314,7 +315,7 @@ function StatusTmp($loc,$lim,$siz){
 			}
 			echo "</table>\n";
 		}else{
-			$isiz = ($siz == 2)?"16":"32";
+			$isiz = ($_SESSION['gsiz'] == 2)?"16":"32";
 ?>
 <p><img src="img/<?=$isiz?>/home.png" title="Temp" hspace="8"> <img src="img/<?=$isiz?>/bchk.png" title="OK">
 <?
@@ -327,7 +328,7 @@ function StatusTmp($loc,$lim,$siz){
 
 //===================================================================
 // Show unacknowledged incidents
-function StatusIncidents($loc,$siz){
+function StatusIncidents($loc){
 
 	global $link,$acklbl,$nonlbl;
 
@@ -354,18 +355,18 @@ function StatusIncidents($loc,$siz){
 		}
 	}
 
-	if($siz == 6){
+	if($_SESSION['gsiz'] == 6){
 ?>
 <p>
 <img src="img/32/bomb.png" title="Incidents" hspace="8">
 <img src="img/32/<?=$ico?>.png" title="<?=$inctit?>">
 <?
 	}else{
-		$isiz = ($siz == 2)?"16":"32";
+		$isiz = ($_SESSION['gsiz'] == 2)?"16":"32";
 ?>
 <p>
-<a href="Monitoring-Incidents.php"><img src="img/<?=$isiz?>/bomb.png" title="Incidents" hspace="8"></a>
-<img src="img/<?=$isiz?>/<?=$ico?>.png" title="<?=$inctit?>">
+<a href="Monitoring-Incidents.php"><img src="img/<?=$isiz?>/bomb.png" title="Incidents" hspace="8">
+<img src="img/<?=$isiz?>/<?=$ico?>.png" title="<?=$inctit?>"></a>
 <?
 	}
 }
@@ -374,7 +375,7 @@ function StatusIncidents($loc,$siz){
 // Displays Events based on query in 3 sizes (0=full, 1=small, 2=mobile)
 function Events($lim,$in,$op,$sta,$cop,$s=0){
 
-	global $link,$modgroup,$self,$bg,$bi,$mico,$mbak,$mlvl,$datfmt;
+	global $link,$modgroup,$self,$bg,$bi,$mico,$mbak,$mlvl;
 	global $gralbl,$lstlbl,$levlbl,$timlbl,$srclbl,$msglbl,$stalbl,$cfglbl,$cmdlbl,$nonlbl,$clalbl;
 
 	$query = GenQuery('events','s','id,level,time,source,info,class','id desc',$lim,$in,$op,$sta,$cop,'LEFT JOIN devices USING (device)');
@@ -398,17 +399,19 @@ function Events($lim,$in,$op,$sta,$cop,$s=0){
 				while( ($m = @DbFetchRow($res)) ){
 					if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 					$row++;
-					$time = date($datfmt,$m[2]);
+					$time = date($_SESSION['date'],$m[2]);
+					$fd   = urlencode(date("m/d/Y H:i:s",$m[2]));
+					$usrc = urlencode($m[3]);
+					$ssrc = substr($m[3],0,$_SESSION['lsiz']);
+					$sinf = (strlen($m[4]) > 60)?substr($m[4],0,60)."...":$m[4];
 					if($s == 1){
-						$fd   = urlencode(date("m/d/Y H:i:s",$m[2]));
-						$usrc = urlencode($m[3]);
 						echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
 						echo "<th class=\"".$mbak[$m[1]]."\"><a href=Monitoring-Events.php?lvl=$m[1]>\n";
 						echo "<img src=\"img/16/" . $mico[$m[1]] . ".png\" title=\"" . $mlvl[$m[1]] . "\"></a></th>\n";
 						echo "<td nowrap><a href=Monitoring-Events.php?ina=time&opa==&sta=$fd>$time</a></td><td nowrap>\n";
-						echo "<a href=Monitoring-Events.php?ina=source&opa==&sta=$usrc>$m[3]</a></td><td>".((strlen($m[4]) > 60)?substr($m[4],0,60)."...":$m[4])."</td></tr>\n";
-					}else{							# Mobile mode
-						echo "<tr class=\"".$mbak[$m[1]]."\"><th nowrap>$m[3]</th><td nowrap>$time</td><td>".((strlen($m[4]) > 50)?substr($m[4],0,50)."...":$m[4])."</td></tr>\n";
+						echo "<a href=Monitoring-Events.php?ina=source&opa==&sta=$usrc>$ssrc</a></td><td>$sinf</td></tr>\n";
+					}else{							# Mobile mode -> mh.php
+						echo "<tr class=\"".$mbak[$m[1]]."\"><th nowrap>$ssrc</th><td nowrap>$time</td><td>$sinf</td></tr>\n";
 					}
 				}
 				echo "</table>\n";
@@ -426,35 +429,35 @@ function Events($lim,$in,$op,$sta,$cop,$s=0){
 				while( ($m = @DbFetchRow($res)) ){
 					if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 					$row++;
-					$time = date($datfmt,$m[2]);
+					$time = date($_SESSION['date'],$m[2]);
 					$fd   = urlencode(date("m/d/Y H:i:s",$m[2]));
-					$ud   = urlencode($m[3]);
-					$ei   = EvImg($m[5]);
+					$usrc   = urlencode($m[3]);
+					list($ei,$et)   = EvClass($m[5]);
 					echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
 					echo "<th><a href=\"Monitoring-Events.php?ina=id&opa==&sta=$m[0]\">$m[0]</a></th>\n";
 					echo "<th class=\"".$mbak[$m[1]]."\"><a href=\"Monitoring-Events.php?lvl=$m[1]\"><img src=\"img/16/" . $mico[$m[1]] . ".png\" title=\"" . $mlvl[$m[1]] . "\"></a></th>\n";
-					echo "<td nowrap><a href=\"Monitoring-Events.php?ina=time&opa==&sta=$fd\">$time</a></td><td nowrap><a href=\"Monitoring-Events.php?ina=source&opa==&sta=$ud\"><b>$m[3]</b></a></td>\n";
+					echo "<td nowrap><a href=\"Monitoring-Events.php?ina=time&opa==&sta=$fd\">$time</a></td><td nowrap><a href=\"Monitoring-Events.php?ina=source&opa==&sta=$usrc\"><b>$m[3]</b></a></td>\n";
 
-					$action = "<a href=\"Devices-Status.php?dev=$ud&pop=1\"><img src=\"img/16/$ei.png\" title=\"$m[5]: Device $stalbl\"></a>";
+					$action = "<a href=\"Devices-Status.php?dev=$usrc&pop=1\"><img src=\"img/16/$ei.png\" title=\"$et, Device $stalbl\"></a>";
 					if($m[5] == "node"){			# Syslog from a node
-						$action = "<a href=\"Nodes-List.php?ina=name&opa==&sta=$m[3]\"><img src=\"img/16/$ei.png\" title=\"$m[5]: Node $lstlbl\"></a>";
+						$action = "<a href=\"Nodes-List.php?ina=name&opa==&sta=$m[3]\"><img src=\"img/16/$ei.png\" title=\"$et, Node $lstlbl\"></a>";
 					}elseif($m[5] == "moni"){		# Monitoring events
-						$action = "<a href=\"Monitoring-Setup.php?ina=name&opa=%3D&sta=$ud\"><img src=\"img/16/$ei.png\" title=\"$m[5]: Monitoring Setup\"></a>";
+						$action = "<a href=\"Monitoring-Setup.php?ina=name&opa=%3D&sta=$usrc\"><img src=\"img/16/$ei.png\" title=\"$et, Monitoring Setup\"></a>";
 					}elseif($m[5] == "usrs"){		# User changed stock
-						$action = "<a href=\"Devices-Stock.php?chg=$m[3]\"><img src=\"img/16/$ei.png\" title=\"$m[5]: Device Stock\"></a>";
+						$action = "<a href=\"Devices-Stock.php?chg=$m[3]\"><img src=\"img/16/$ei.png\" title=\"$et, Device Stock\"></a>";
 					}elseif($m[5] == "cfgn" or $m[5] == "cfgc"){	# New config or changes
-						$action =  "<a href=\"Devices-Config.php?shc=$ud\"><img src=\"img/16/$ei.png\" title=\"$m[5]: Device $cfglbl\"></a>";
+						$action =  "<a href=\"Devices-Config.php?shc=$usrc\"><img src=\"img/16/$ei.png\" title=\"$et, Device $cfglbl\"></a>";
 					}elseif(strpos($m[5],"trf") !== FALSE){	# Traffic warnings or alerts
-						$action =  "<a href=\"Devices-Graph.php?dv=$ud\"><img src=\"img/16/$ei.png\" title=\"$m[5]: Device $gralbl\"></a>";
+						$action =  "<a href=\"Devices-Status.php?dev=$usrc&trg=1&erg=1\"><img src=\"img/16/$ei.png\" title=\"$et, Device $gralbl\"></a>";
 					}elseif($m[3] == "NeDi"){		# Not related to a dev or node!
-						$action = "<a href=\"System-Files.php\"><img src=\"img/16/file.png\" title=\"$m[5]: NeDi $cfglbl\"></a>";
+						$action = "<a href=\"System-Files.php\"><img src=\"img/16/file.png\" title=\"$et, NeDi $cfglbl\"></a>";
 					}elseif( strpos($m[4],"not discoverable") or $m[1] < 50){
-						$action = "<a href=\"Nodes-List.php?ina=nodip&opa==&sta=$m[3]\"><img src=\"img/16/$ei.png\" title=\"$m[5]: Node $lstlbl\"></a>";
+						$action = "<a href=\"Nodes-List.php?ina=nodip&opa==&sta=$m[3]\"><img src=\"img/16/$ei.png\" title=\"$et, Node $lstlbl\"></a>";
 					}elseif($m[5] == "ip"){			# syslog from unmonitored source
-						$action = "<img src=\"img/16/$ei.png\" title=\"$m[5]:$msglbl $clalbl $m[5]\">";
+						$action = "<img src=\"img/16/$ei.png\" title=\"$et,$msglbl $clalbl $m[5]\">";
 					}
 					echo "<th class=\"$bi\">$action</th><td>";
-					$info = preg_replace('/[\s:]([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})(\s|:|$)/', " <span class=\"blu\">$1</span> <a href=\"Nodes-Toolbox.php?Dest=$1\"><img src=\"img/16/dril.png\" title=\"Lookup\"></a><a href=\"Nodes-List.php?ina=nodip&opa=%3D&sta=$1\"><img src=\"img/16/nods.png\" title=\"Nodes $lstlbl\"></a> ", $m[4]);
+					$info = preg_replace('/[\s:]([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})(\s|:|,|$)/', " <span class=\"blu\">$1</span> <a href=\"Nodes-Toolbox.php?Dest=$1\"><img src=\"img/16/dril.png\" title=\"Lookup\"></a><a href=\"Nodes-List.php?ina=nodip&opa=%3D&sta=$1\"><img src=\"img/16/nods.png\" title=\"Nodes $lstlbl\"></a> ", $m[4]);
 					echo preg_replace('/[\s:]([0-9a-f]{4}[\.-]?[0-9a-f]{4}[\.-]?[0-9a-f]{4}|[0-9a-f]{2}[-:][0-9a-f]{2}[-:][0-9a-f]{2}[-:][0-9a-f]{2}[-:][0-9a-f]{2}[-:][0-9a-f]{2})(\s|$)/', " <span class=\"mrn\">$1</span> <a href=\"Nodes-Status.php?mac=$1\"><img src=\"img/16/node.png\" title=\"Node $stalbl\"></a> ", $info);
 					echo "</td></tr>\n";
 				}
@@ -478,11 +481,15 @@ function Events($lim,$in,$op,$sta,$cop,$s=0){
 
 //===================================================================
 // Generate device metainfo for topology based device tables
-function TopoTable($reg="",$cty="",$bld=""){
+function TopoTable($reg="",$cty="",$bld="",$nsd=0){
 
 	global $link,$dev,$deval,$dreg,$dcity,$dbuild,$locsep;
 # TODO optimize by dividing into grouped queries!
-	$query	= GenQuery('devices','s','*','','',array('location'),array('regexp'),array( TopoLoc($reg,$cty,$bld) ) );
+	if($nsd){
+		$query	= GenQuery('devices','s','*','','',array('location'),array('regexp'),array( TopoLoc($reg,$cty,$bld) ) );
+	}else{
+		$query	= GenQuery('devices','s','*','','',array('snmpversion','location'),array('>','regexp'),array('0',TopoLoc($reg,$cty,$bld)),array('AND') );
+	}
 	$res	= @DbQuery($query,$link);
 	if($res){
 		while( ($d = @DbFetchRow($res)) ){
@@ -542,7 +549,6 @@ function TopoRegs($siz=0){
 		$mn = isset( $dreg[$r]['mn']) ? $dreg[$r]['mn'] : 0;
 		$al = isset( $dreg[$r]['al']) ? $dreg[$r]['al'] : 0;
 		list($statbg,$stat) = StatusBg($nd,$mn,$al,'imga');
-		$uc = urlencode($c);
 		if ($col == $_SESSION['col']){
 			$col = 0;
 			echo "</tr><tr>";
@@ -550,7 +556,7 @@ function TopoRegs($siz=0){
 	        echo "<td valign=\"top\" class=\"$statbg\">\n";
 	        $mstat = ($mn)?"$mn Monitored $stat":"";
 		if($siz){
-			echo "<center><a href=?reg=$ur><img src=\"img/32/glob.png\" title=\"$nd Devices $mstat\"></a><br>$r\n";
+			echo "<center><a href=?reg=$ur><img src=\"img/32/glob.png\" title=\"$nd Devices $mstat\"></a><br>".substr($r,0,$_SESSION['lsiz'])."\n";
 		}else{
 			$gmap = "$ur";
 			if($_SESSION['gmap']){
@@ -564,16 +570,17 @@ function TopoRegs($siz=0){
 				}
 				$s = ($_SESSION['gsiz'] < 3)?"160x120":"240x160";
 				if($ns and $ew){
-					echo "<center><a href=?reg=$ur&cty=$uc><img src=\"http://maps.google.com/maps/api/staticmap?zoom=12&size=$s&maptype=roadmap&sensor=false&markers=color:blue%7C$ns,$ew\" title=\"$nd Devices $mstat, $com\" style=\"border:1px solid black\"></a><br>\n";
+					echo "<center><a href=?reg=$ur><img src=\"http://maps.google.com/maps/api/staticmap?zoom=12&size=$s&maptype=roadmap&sensor=false&markers=color:blue%7C$ns,$ew\" title=\"$nd Devices $mstat, $com\" style=\"border:1px solid black\"></a><br>\n";
 					$gmap = "$ns,$ew";
 				}else{
 					echo "<center><a href=?reg=$ur><img src=\"http://maps.google.com/maps/api/staticmap?center=$ur&zoom=4&size=$s&maptype=roadmap&sensor=false\" title=\"$nd Devices $mstat\" style=\"border:1px solid black\"></a><br>\n";
 				}
+				echo "<a href=\"http://maps.google.com/maps?q=$gmap\" target=\"window\"><img src=\"img/16/map.png\" title=\"Google Maps\"></a>\n";
 			}else{
 				echo "<center><a href=?reg=$ur><img src=\"img/32/glob.png\" title=\"$nd Devices $mstat\"></a><br>\n";
+				echo "<a href=\"Topology-Map.php?mod=f&fmt=png&ina=location&opa=regexp&sta=%5E$ur$locsep\"><img src=\"img/16/paint.png\" title=\"Topology-Map\"></a>\n";				
 			}
-			echo "<a href=\"http://maps.google.com/maps?q=$gmap\" target=\"window\"><img src=\"img/16/map.png\" title=\"Google Maps\"></a>\n";
-			echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur\">$r</a>\n";
+			echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur\">".substr($r,0,$_SESSION['lsiz'])."</a>\n";
 		}
 		echo "</center></td>\n";
 	        $col++;
@@ -613,9 +620,9 @@ function TopoCities($reg="",$siz=0){
 			        echo "<td valign=\"top\" class=\"$statbg\">\n";
 			        $mstat = ($mn)?"$mn Monitored $stat":"";
 				if($siz){
-					echo "<center><a href=?reg=$ur&cty=$uc><img src=\"img/$ci.png\" title=\"$nd Devices $mstat\"></a><br>$c\n";
+					echo "<center><a href=?reg=$ur&cty=$uc><img src=\"img/$ci.png\" title=\"$nd Devices $mstat\"></a><br>".substr($c,0,$_SESSION['lsiz'])."\n";
 				}else{
-					echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur\">$r</a><p>\n";
+					echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur\">".substr($r,0,$_SESSION['lsiz'])."</a><p>\n";
 					$gmap = "$uc+$ur";
 					if($_SESSION['gmap']){
 						$ns = $ew = "";
@@ -633,11 +640,12 @@ function TopoCities($reg="",$siz=0){
 						}else{
 							echo "<center><a href=?reg=$ur&cty=$uc><img src=\"http://maps.google.com/maps/api/staticmap?center=$uc+$ur&zoom=12&size=$s&maptype=roadmap&sensor=false\" title=\"$nd Devices $mstat\" style=\"border:1px solid black\"></a><br>\n";
 						}
+						echo "<a href=\"http://maps.google.com/maps?q=$gmap\" target=\"window\"><img src=\"img/16/map.png\" title=\"Google Maps\"></a>\n";
 					}else{
 						echo "<center><a href=?reg=$ur&cty=$uc><img src=\"img/$ci.png\" title=\"$nd Devices $mstat\"></a><br>\n";
+						echo "<a href=\"Topology-Map.php?mod=f&fmt=png&ina=location&opa=regexp&sta=%5E$ur$locsep$uc$locsep\"><img src=\"img/16/paint.png\" title=\"Topology-Map\"></a>\n";				
 					}
-					echo "<a href=\"http://maps.google.com/maps?q=$gmap\" target=\"window\"><img src=\"img/16/map.png\" title=\"Google Maps\"></a>\n";
-					echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur$locsep$uc$locsep\"><b>$c</b></a>";
+					echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur$locsep$uc$locsep\"><b>".substr($c,0,$_SESSION['lsiz'])."</b></a>";
 				}
 				echo "</center></td>\n";
 			        $col++;
@@ -676,7 +684,7 @@ function TopoBuilds($r,$c,$siz=0){
 	        echo "<td valign=\"top\" class=\"$statbg\">\n";
 	        $mstat = ($mn)?"$mn Monitored $stat":"";
 		if($siz){
-			echo "<center><a href=?reg=$ur&cty=$uc&bld=$ub><img src=\"img/$bi.png\" title=\"$nd Devices $mstat\">$ri</a><br>$b\n";
+			echo "<center><a href=?reg=$ur&cty=$uc&bld=$ub><img src=\"img/$bi.png\" title=\"$nd Devices $mstat\"></a><br>".substr($b,0,$_SESSION['lsiz'])."\n";
 		}else{
 			$gmap = "$ub+$uc+$ur";
 			if($_SESSION['gmap']){
@@ -693,8 +701,9 @@ function TopoBuilds($r,$c,$siz=0){
 					echo "<center><a href=?reg=$ur&cty=$uc&bld=$ub><img src=\"http://maps.google.com/maps/api/staticmap?zoom=16&size=$s&maptype=roadmap&sensor=false&markers=color:".((strpos($bi,"r"))?"red":"brown")."%7C$ns,$ew\" title=\"$nd Devices $mstat, $com\" style=\"border:1px solid black\"></a><br>\n";
 					$gmap = "$ns,$ew";
 				}else{
-					echo "<center><a href=?reg=$ur&cty=$uc&bld=$ub><img src=\"http://maps.google.com/maps/api/staticmap?center=$uc+$ur&zoom=16&size=$s&maptype=roadmap&sensor=false\" title=\"$nd Devices $mstat\" style=\"border:1px solid black\"></a><br>\n";
+					echo "<center><a href=?reg=$ur&cty=$uc&bld=$ub><img src=\"http://maps.google.com/maps/api/staticmap?center=$ub+$uc+$ur&zoom=16&size=$s&maptype=roadmap&sensor=false\" title=\"$nd Devices $mstat\" style=\"border:1px solid black\"></a><br>\n";
 				}
+				echo "<a href=\"http://maps.google.com/maps?q=$gmap\" target=\"window\"><img src=\"img/16/map.png\" title=\"Google Maps\"></a>\n";
 			}else{
 				echo "<center><a href=?reg=$ur&cty=$uc&bld=$ub><img src=\"img/$bi.png\" title=\"$nd Devices $mstat\"></a>\n";
 				if($nr > 1){
@@ -703,10 +712,9 @@ function TopoBuilds($r,$c,$siz=0){
 					echo "<img src=\"img/rtr1.png\" title=\"1 router\">";
 				}
 				echo "<br>";
-				
+				echo "<a href=\"Topology-Map.php?mod=f&fmt=png&ina=location&opa=regexp&sta=%5E$ur$locsep$uc$locsep$ub$locsep\"><img src=\"img/16/paint.png\" title=\"Topology-Map\"></a>\n";				
 			}
-			echo "<a href=\"http://maps.google.com/maps?q=$gmap\" target=\"window\"><img src=\"img/16/map.png\" title=\"Google Maps\"></a>\n";
-			echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur$locsep$uc$locsep$ub$locsep\" valign=\"bottom\"><b>$b</b></a>";
+			echo "<a href=\"Devices-List.php?ina=location&opa=regexp&sta=%5E$ur$locsep$uc$locsep$ub$locsep\" valign=\"bottom\"><b>".substr($b,0,$_SESSION['lsiz'])."</b></a>";
 		}
 		echo "</center></td>\n";
 		$col++;
@@ -776,7 +784,9 @@ function TopoFloors($r,$c,$b,$siz=0){
 
 //===================================================================
 // Return image for test
-function TEimg($srv){
+function TestImg($srv){
+
+	global $nonlbl;
 
 	if($srv == "ping")	{$img =  "relo";}
 	elseif($srv == "uptime"){$img =  "clock";}
@@ -786,10 +796,10 @@ function TEimg($srv){
 	elseif($srv == "ssh")	{$img =  "lokc";}
 	elseif($srv == "mysql")	{$img =  "db";}
 	elseif($srv == "cifs")	{$img =  "nwin";}
-	elseif($srv == "")	{$img =  "bcls";}
+	elseif($srv == "")	{$img =  "bcls";$srv = $nonlbl;}
 	else{$img =  "bbox";}
 
-	return "<img src=\"img/16/$img.png\" title=\"$srv\">";
+	return "<img src=\"img/16/$img.png\" title=\"Monitor: $srv\">";
 }
 
 ?>

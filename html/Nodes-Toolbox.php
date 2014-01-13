@@ -2,7 +2,7 @@
 # Program: Nodes-Toolbox.php
 # Programmer: Eli Gill, modifications by Remo Rickli, additional support Marco Rauchensteins
 
-$printable = 0;
+$printable = 1;
 
 include_once ("inc/header.php");
 
@@ -15,11 +15,13 @@ $do		= isset($_GET['Do']) ? $_GET['Do'] : "";
 ?>
 <h1><?=$netlbl?> Tool Box</h1>
 
+<?if( !isset($_GET['print']) ){?>
+
 <form method="get" action="<?=$self?>.php" name="nettools">
 <table class="content" ><tr class="<?=$modgroup[$self]?>1">
 <th width="50"><a href="<?=$self?>.php"><img src="img/32/<?=$selfi?>.png"></a></th>
 <th>
-<a href="log/putty.exe"><img src="img/16/lokc.png" title="Putty"></a>
+<a href="log/kitty.exe"><img src="img/16/kons.png" title="Kitty"></a>
 <a href="log/iperf.exe"><img src="img/16/flas.png" title="Iperf"></a>
 </th><th>
 <?=$dstlbl?> <input type="text" name="Dest" value="<?=$dest?>" size="15" />
@@ -34,7 +36,8 @@ $do		= isset($_GET['Do']) ? $_GET['Do'] : "";
 </table>
 </form>
 
-<?php
+<?
+}
 
 ob_end_flush();
 if($do == "Ping"){
@@ -67,70 +70,23 @@ if($do == "Ping"){
 ?>
 <h2>Client <?=$cfglbl?></h2>
 <div class="textpad txtb">
-This guide will need community work...
 
 <h3><img src="img/32/nwin.png"> Windows Clients</h3>
-<h4>Putty & Firefox</h4>
+<h4>Kitty & Firefox</h4>
 <div class="txta code">
 
-<?=$sellbl?> telnet:// -> putty.exe
+<?=$sellbl?> telnet:// -> Kitty.exe
 
 <b>about:config</b>
-network.protocol-handler.app.ssh		STRING "C:\Program Files\PuTTY\Putty.exe"
+network.protocol-handler.app.ssh		STRING "C:\Program Files\Kitty.exe"
 network.protocol-handler.external.ssh		BOOL   true
 network.protocol-handler.expose.ssh		BOOL   true
 network.protocol-handler.warn-external.ssh	BOOL   false
 </div>
 
-<h4>Putty & IE</h4>
+<h4>Kitty & IE</h4>
 <div class="txta code">
-<b>puttytelnet.reg</b>
-REGEDIT4
-
-[HKEY_CLASSES_ROOT\telnet]
-@="URL:telnet Protocol"
-"URL Protocol"=""
-
-[HKEY_CLASSES_ROOT\telnet\shell]
-
-[HKEY_CLASSES_ROOT\telnet\shell\open]
-
-[HKEY_CLASSES_ROOT\telnet\shell\open\command]
-@="\"C:\\Program Files\\PuTTY\\puttytelnetlink.bat\" \"%1\""
-<hr>
-<b>puttytelnetlink.bat</b>
-@ECHO OFF
-
-SET HOSTIP=%1
-echo Uebergabewert vom Browser: %HOSTIP%
-SET HOSTIP=%HOSTIP:~10,-2%
-echo Herausgefilterte IP: %HOSTIP%
-
-"C:\Program Files\PuTTY\putty.exe" -telnet %HOSTIP%
-<hr>
-<b>puttyssh.reg</b>
-REGEDIT4
-
-[HKEY_CLASSES_ROOT\ssh]
-@="URL:ssh Protocol"
-"URL Protocol"=""
-
-[HKEY_CLASSES_ROOT\ssh\shell]
-
-[HKEY_CLASSES_ROOT\ssh\shell\open]
-
-[HKEY_CLASSES_ROOT\ssh\shell\open\command]
-@="\"C:\\Program Files\\PuTTY\\puttysshlink.bat\" \"%1\""
-<hr>
-<b>puttysshlink.bat</b>
-@ECHO OFF
-
-SET HOSTIP=%1
-echo Uebergabewert vom Browser: %HOSTIP%
-SET HOSTIP=%HOSTIP:~7,-2%
-echo Herausgefilterte IP: %HOSTIP%
-
-"C:\Program Files\PuTTY\putty.exe" %HOSTIP%
+<?=$cmdlbl?> <a href="log/telnet-ssh-kitty.reg">telnet-ssh-kitty.reg</a>
 </div>
 
 <h4>Radmin</h4>
@@ -160,7 +116,7 @@ echo Herausgefilterte IP: %HOSTIP%
 "C:\Program Files\Radmin Viewer 3.0\Radmin.exe" /connect:%HOSTIP%
 </div>
 
-<h3><img src="img/32/cbox.png"> *nix Clients</h3>
+<h3><img src="img/32/nlin.png"> *nix Clients</h3>
 
 <h4>Xterm & Firefox</h4>
 

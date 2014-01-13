@@ -2,7 +2,6 @@
 # Please use for "Type" the exact Fortinet Product Name
 # Please use "cpmCPUTotal1minRev" for "CPUutl" --> 5min average is not available
 # Please make sure that for "Serial" the correct value is shown if available
-# If you create a .def file please send it to "remo.rickli@psi.ch"
 
 # General
 SNMPv	2c

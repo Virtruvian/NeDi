@@ -16,22 +16,30 @@ use warnings;
 
 use RRDs;
 
-use vars qw($seedlist $netfilter $webdev $nosnmpdev $border $ouidev $descfilter $getfwd);
-use vars qw($nedipath $backend $dbname $dbuser $dbpass $dbhost $clilib $uselogin $usepoe);
-use vars qw($rrdcmd $nmapcmd $rrdstep $discostep $nagpipe $snmpwrite $usessh $redbuild $guiauth $locsep);
-use vars qw($arpwatch $ignoredvlans $ignoredmacs $useivl $retire $timeout $ipchg $ifchg $arppoison $macflood);
+use vars qw($seedlist $netfilter $webdev $nosnmpdev $border $ouidev $descfilter $getfwd $timeout);
+use vars qw($nedipath $backend $dbname $dbuser $dbpass $dbhost $clilib $uselogin $usessh $usepoe);
+use vars qw($rrdcmd $rrdstep $rrdsize $discostep $nmapcmd $nagpipe $snmpwrite $redbuild $guiauth $locsep);
+use vars qw($arpwatch $ignoredvlans $ignoredmacs $useivl $retire $arppoison $macflood);
 use vars qw($notify $chka $latw $cpua $mema $tmpa $trfa $trfw $poew $pause $smtpserver $mailfrom $mailfoot);
-use vars qw(%comms %login %map %useif %skipif %doip %snmpini %ouineb %sysobj %ifmac %ifip);
+use vars qw(%comms %login %map %useif %skipif %doip %snmpini %ouineb %sysobj %ifmac %ifip %useip);
 use vars qw(%oui %arp %arpc %arpn %portprop %portnew %portdes %vlid);
 use vars qw(@todo @comms @seeds @users @curcfg);
 
 our @donenam = @doneid = @doneip = @failid = @failip = ();
-
+our $nnip = $nip = $ipchg = $ifchg = $mq = 0;
 
 =head2 FUNCTION ReadConf()
 
 Searches for nedi.conf in nedi folder first then fall back to /etc. Parse
 it if found or die if not.
+
+locsep is set to a space if commented.
+
+=head3 A note on discostep:
+
+This is the interval for the if statistics of each discovery. Leave it the same as rrdstep, if you
+just want to use nedi the old fashioned way. You can also lower rrdstep and use -A
+in combination with -SsmrfpiaAO for more granular graphs.
 
 B<Options> -
 
@@ -41,15 +49,11 @@ B<Returns> dies on missing nedi.conf
 
 =cut
 sub ReadConf {
-#TODO add? discostep	3600
-
-# This is the interval for the rrdgraphs. Leave it the same as rrdstep, if you
-# just want to use nedi the old fashioned way. You can also lower it and use -A
-# in combination with -S for more granular graphs.
 
 	my $nconf = "$main::p/nedi.conf";
 
 	$ignoredvlans = $ignoredmacs = $useivl = $border = $nosnmpdev = $descfilter = $usessh = $usepoe = "isch nid gsetzt!";
+	$locsep = " ";
 
 	if($main::opt{U}){
 		$nconf = $main::opt{U}
@@ -78,6 +82,8 @@ sub ReadConf {
 				push (@users,$v[1]);
 				$login{$v[1]}{pw} = $v[2];
 				$login{$v[1]}{en} = $v[3];}
+			elsif ($v[0] eq "useip"){
+				$useip{$v[1]} = $v[2];}
 			elsif ($v[0] eq "uselogin"){$uselogin = $v[1]}
 			elsif ($v[0] eq "snmpwrite"){$snmpwrite = $v[1]}
 			elsif ($v[0] eq "usessh"){$usessh = $v[1]}
@@ -114,8 +120,8 @@ sub ReadConf {
 			elsif ($v[0] eq "arppoison"){$arppoison = $v[1]}
 			elsif ($v[0] eq "macflood"){$macflood = $v[1]}
 
-			elsif ($v[0] eq "discostep"){$discostep = $v[1]}
 			elsif ($v[0] eq "rrdstep"){$rrdstep = $v[1]}
+			elsif ($v[0] eq "rrdsize"){$rrdsize = $v[1]}
 			elsif ($v[0] eq "rrdcmd"){$rrdcmd = $v[1]}
 			elsif ($v[0] eq "nagpipe"){$nagpipe = $v[1]}
 
@@ -151,7 +157,8 @@ sub ReadConf {
 			}
 		}
 	}
-	$discostep = ($discostep)?$discostep:$rrdstep;
+	$discostep = ($discostep)?$discostep:$rrdstep;				
+	$rrdsize = ($rrdsize)?$rrdsize:'1000';
 }
 
 
@@ -381,6 +388,7 @@ sub Shif {
 		$n =~ s/^Dot11Radio/Do/;
 		$n =~ s/^Wireless port\s?/Wp/;								# Former Colubris controllers
 		$n =~ s/^[F|G]EC-//;									# Doesn't match telnet CAM table!
+		$n =~ s/^Alcatel-Lucent //;								# ALU specific
 		$n =~ s/^BayStack (.*?)- //;								# Nortel specific
 		$n =~ s/^Vlan/Vl/;									# MSFC2 and Cat6k5 discrepancy!
 		$n =~ s/(Port\d): .*/$1/g;								# Ruby specific
@@ -447,6 +455,30 @@ sub Dec2Ip {
 	return join '.' => map { ($_[0] >> 8*(3-$_)) % 256 } 0 .. 3;
 }
 
+
+=head2 FUNCTION DecFix()
+
+Return big numbers in a more readable way
+
+B<Options> number
+
+B<Globals> -
+
+B<Returns> readable number
+
+=cut
+sub DecFix(){
+
+	if($_[0] >= 1000000000){
+		return int($_[0]/1000000000)."G";
+	}elsif($_[0] >= 1000000){
+		return int($_[0]/1000000)."M";
+	}elsif($_[0] >= 1000){
+		return int($_[0]/1000)."K";
+	}else{
+		return $_[0];
+	}
+}
 
 =head2 FUNCTION GetAp()
 
@@ -562,17 +594,29 @@ sub InitSeeds {
 		push (@todo,"testing");
 		$doip{"testing"} = join('.',unpack( 'C4',gethostbyname($main::opt{'t'}) ) );
 		&Prt("SEED:$main::opt{t} added for testing\n");
-		$s++;
+		$s = 1;
 	}elsif ($main::opt{'a'}){
-		push (@todo,"manual");
-		$doip{"manual"} = join('.',unpack( 'C4',gethostbyname($main::opt{'a'}) ) );
-		&Prt("SEED:$main::opt{a} added for discovery\n");
-		$s++;
+		if($main::opt{'a'} =~ /^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/){
+			for($i=1;$i<255;$i++){
+				my $latency = &mon::PingService("$main::opt{a}.$i",'icmp',0,0.5);
+				if ($latency){
+					push(@todo,"seed$i");
+					$doip{"seed$i"} = "$main::opt{a}.$i";
+					&Prt("SEED:$main::opt{a}.$i added for discovery\n");
+					$s++;
+				}
+			}
+		}else{
+			push (@todo,$main::opt{'a'});
+			$doip{$main::opt{'a'}} = join('.',unpack( 'C4',gethostbyname($main::opt{'a'}) ) );
+			&Prt("SEED:$main::opt{a} added for discovery\n");
+			$s = 1;
+		}
 	}elsif ($main::opt{'A'}){
 		foreach my $dv (keys %main::dev){
 			if ($main::dev{$dv}{rv}){
-				push (@todo,$dv);
-				$doip{$dv}		   = $main::dev{$dv}{ip};
+				push(@todo,$dv);
+				$doip{$dv}		 = $main::dev{$dv}{ip};
 				$snmpini{$doip{$dv}}{rc} = $main::dev{$dv}{rc};
 				$snmpini{$doip{$dv}}{rv} = $main::dev{$dv}{rv};
 				print "$dv, $main::dev{$dv}{ip} added for discovery\n" if $main::opt{'v'};
@@ -592,7 +636,7 @@ sub InitSeeds {
 				if($ip){
 					if($f[1]){$snmpini{$ip}{rc} = $f[1]}
 					if(defined $f[2] and $f[2] =~ /[0-9]/){$snmpini{$ip}{rv} = $f[2]}
-					push (@todo,"seed$s");
+					push(@todo,"seed$s");
 					$doip{"seed$s"} = $ip;
 					&Prt("SEED:$ip seed$s added for discovery\n");
 					$s++;
@@ -604,7 +648,7 @@ sub InitSeeds {
 	}else{
 		&Prt("SEED:$seedlist not found!\n");
 	}
-	if (!$s) {											# Fall back to GW if no seeds found.
+	if (!$s and !$main::opt{'A'}) {									# Fall back to GW if no seeds found.
 		&Prt("SEED:No seeds, trying default gw!\n");
 		$todo[0] 	= 'seed1';
 		$doip{'seed1'}	= &GetGw();
@@ -630,10 +674,11 @@ sub Discover {
 	my ($id)	= @_;
 	my $start	= time;
 	my $clistat	= "Init";									# CLI access status
-	my $dv	= "";
+	my $dv		= "";
+	my $skip	= $main::opt{'S'};
 
 	&misc::Prt("\nDiscover     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n",sprintf("%-15.15s ",$doip{$id}) );
-	if($main::opt{'A'} and $main::opt{'S'} =~ /s/){
+	if($main::opt{'A'} and $skip =~ /s/){
 		my ($latency, $uptime) = &mon::GetUptime($main::dev{$id}{ip},$main::dev{$id}{rv},$main::dev{$id}{rc});
 		if($latency){
 			&misc::Prt("","UP:${latency}ms ");
@@ -644,20 +689,31 @@ sub Discover {
 		$dv  = &snmp::Identify($id);
 	}
 	if($dv){
-		&snmp::Enterprise($dv,$main::opt{'S'});
-		my $noifwrite = &snmp::Interfaces($dv,$main::opt{'S'});				# Get interface info
-		&snmp::IfAddresses($dv) if $main::opt{'S'} !~ /a/;					# Get IP addresses
-		if($sysobj{$main::dev{$dv}{so}}{dp} and $main::opt{'S'} !~ /p/){
-			&snmp::DisProtocol($dv,$id,$sysobj{$main::dev{$dv}{so}}{dp});		# Get neighbours via LLDP, CDP or FDP
+		my $skip = $main::opt{'S'};
+		if(exists $misc::skipif{$main::dev{$dv}{ty}}){
+			$skip .= $misc::skipif{$main::dev{$dv}{ty}};
+			&misc::Prt("DISC:skipif policy for $main::dev{$dv}{ty}=$misc::skipif{$main::dev{$dv}{ty}}\n");
+		}elsif(exists $misc::skipif{'default'}){
+			$skip .= $misc::skipif{'default'};
+			&misc::Prt("DISC:default skipif policy=$misc::skipif{'default'}\n");
+		}else{
+			&misc::Prt("DISC:no skipif policy using -S ($main::opt{S})\n");
 		}
-		if($sysobj{$main::dev{$dv}{so}}{mt} and $main::opt{'S'} !~ /m/){
+
+		&snmp::Enterprise($dv,$skip);
+		my $noifwrite = &snmp::Interfaces($dv,$skip);						# Get interface info
+		&snmp::IfAddresses($dv) if $skip !~ /a/;						# Get IP addresses
+		if($sysobj{$main::dev{$dv}{so}}{dp} and $skip !~ /p/){
+			&snmp::DisProtocol($dv,$id,$sysobj{$main::dev{$dv}{so}}{dp});			# Get neighbours via LLDP, CDP or FDP
+		}
+		if($sysobj{$main::dev{$dv}{so}}{mt} and $skip !~ /m/){
 			&snmp::Modules($dv);
 		}else{
 			&Prt("","  ");
 		}
 		&KeyScan($main::dev{$dv}{ip}) if $main::opt{'k'};
 
-		if ($main::dev{$dv}{sv} > 3 and $main::opt{'S'} !~ /r/ and $main::dev{$dv}{os} ne "MSM"){
+		if ($main::dev{$dv}{sv} > 3 and $skip !~ /r/ and $main::dev{$dv}{os} ne "MSM"){
 # Get arp table, if  it's a layer 3 device, but ignore HP MSMs, since there's no support.
 
 			$clistat = &cli::PrepDev($dv,"arp");						# Prepare device for cli access
@@ -676,11 +732,11 @@ sub Discover {
 		}else{
 			&Prt(""," ");									# Spacer instead of L3 info.
 		}
-		if($sysobj{$main::dev{$dv}{so}}{bf} eq "MSM" and $getfwd and $main::opt{'S'} !~ /f/){
+		if($sysobj{$main::dev{$dv}{so}}{bf} eq "MSM" and $getfwd and $skip !~ /f/){
 			&snmp::MSMFwd($dv);
-		}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "CAP" and $getfwd and $main::opt{'S'} !~ /f/){
+		}elsif($sysobj{$main::dev{$dv}{so}}{bf} eq "CAP" and $getfwd and $skip !~ /f/){
 			&snmp::CAPFwd($dv);
-		}elsif($sysobj{$main::dev{$dv}{so}}{bf} and $getfwd and $main::opt{'S'} !~ /f/){	# Get mac address table, if  bridging is set in .def
+		}elsif($sysobj{$main::dev{$dv}{so}}{bf} and $getfwd and $skip !~ /f/){			# Get mac address table, if  bridging is set in .def
 			if($getfwd =~ /dyn|sec/){							# Using CLI to fetch forwarding table is configured?
 				$clistat = &cli::PrepDev($dv,"fwd");					# Prepare device for cli access
 				if($clistat =~ /^OK/){
@@ -695,36 +751,38 @@ sub Discover {
 		}
 
 		if($main::opt{'b'} or $main::opt{'B'}){							# Backup configurations
-			if($clistat eq "OK-Bridge"){							# wait if we just got BridgeFWD to avoid hang
+			if($clistat eq "OK-Bridge" or $clistat eq "OK-Arp"){				# Wait if we just got BridgeFWD or ARP via CLI to avoid hang
 				select(undef, undef, undef, $cli::clipause);
 			}else{
 				$clistat = &cli::PrepDev($dv,"cfg");
 			}
+			&Prt("DISC:Cli config = $clistat\n");
 			if($clistat =~ /^OK/){
 				@misc::curcfg = ();							# Empty config (global due to efficiency)
 				$clistat = &cli::Config($dv);
 				&db::BackupCfg($dv) if $clistat =~ /^OK/;
 			}
-			if($clistat !~ /^(OK|not implemented)/ and $notify =~ /c/i){			# If not ok, but supported...
+			if($clistat !~ /^(OK|not implemented)/ and $notify =~ /b/i){			# If not ok, but supported...
 					my $msg = "Config backup error: $clistat";
 					&Prt("DISC:$msg\n");
 					&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"cfge\",\"$dv\"");
-					&mon::SendMail("Backup Error on $dv",$msg) if $notify =~ /C/;
+					$mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $misc::notify =~ /B/;
 			}
 		}
 
-		push (@misc::doneid,$id);
-		push (@misc::doneip,$misc::doip{$id});
-		push (@misc::donenam, $dv);
-		&DevRRD($dv,$main::opt{'S'}) if($rrdcmd);						# RRD if enabled (after MSM BridgeFwd)
+		push (@doneid,$id);
+		push (@doneip,$misc::doip{$id});
+		push (@donenam, $dv);
+		&DevRRD($dv,$skip) if($rrdcmd);							# RRD if enabled (after MSM BridgeFwd)
 		unless($main::opt{'t'}){
+			&misc::Prt("\nWriting Dev  ------------------------------------------------------------------\n");
 			&db::UnStock($dv);
 			&db::WriteDev($dv);
-			&db::WriteInt($dv)  unless $noifwrite;
-			&db::WriteMod($dv)  if $main::opt{'S'} !~ /m/;
-			&db::WriteVlan($dv) if $main::opt{'S'} !~ /s/;
-			&db::WriteNet($dv)  if $main::opt{'S'} !~ /a/;
-			&db::WriteLink($dv) if $main::opt{'S'} !~ /p/;
+			&db::WriteInt($dv,$skip) unless $noifwrite;
+			&db::WriteMod($dv)  if $skip !~ /m/;
+			&db::WriteVlan($dv) if $skip !~ /s/;
+			&db::WriteNet($dv)  if $skip !~ /a/;
+			&db::WriteLink($dv) if $skip !~ /p/;
 		}
 	}else{
 		push (@misc::failid,$id);
@@ -787,22 +845,41 @@ sum of the following criterias:
 =over
 
 =item *
-0: Wlan Radios
+0: Wlan Radios (metric reflects SNR on supported APs)
 
 =item *
-5: Every other IF
+256: Every other IF
 
 =item *
-10: Links to Non-SNMP Devices like phones or APs (but not vSwitches, so VMs stay)
+512: Links to Non-SNMP Devices like phones or APs. This supersedes regular links, with that VMs stay on downlink
+to an ESXi for example.
 
 =item *
-20: Port channel/trunk
+1024: Port channel/trunk
 
 =item *
-50: Router IF from ARP table
+2048: Router IF from ARP table
 
 =item *
-100: A device link (all the above combined mustn't be higher)
+4096: A device link (all the above combined mustn't be higher). If the neighbor was discovered as well, it becomes 8192
+
+=back
+
+A letter shows (in verbose mode) how the metric was assigned:
+
+=over
+
+=item *
+N: No-SNMP-Dev link
+
+=item *
+A: Active neighbor link
+
+=item *
+L: Undiscovered neighbor link
+
+=item *
+M: Non link metric
 
 =back
 
@@ -832,20 +909,32 @@ sub UpNodIF {
 	foreach my $dv ( keys %{$portnew{$_[0]}} ){							# Cycle thru ports and use new IF, if metric is equal or better than the old one
 		my $if = $portnew{$_[0]}{$dv}{po};
 
-		my $metric =
-				$portprop{$dv}{$if}{nsd} *  512 +
-				$portprop{$dv}{$if}{chn} * 1024 +
-				$portprop{$dv}{$if}{rtr} * 2048 +
-				$portprop{$dv}{$if}{lnk} * 4096;
+		my $metric = ($portprop{$dv}{$if}{nsd})?512:0;
+		$metric   += ($portprop{$dv}{$if}{chn})?1024:0;
+		$metric   += ($portprop{$dv}{$if}{rtr})?2048:0;
 
-		if($metric < $newmet + 768){									# 256(snr) and 512(nosnmpdev) offset are ignored in metric calculation
+		if($portprop{$dv}{$if}{lnk}){
+			if($portprop{$dv}{$if}{nsd}){							# nsd overrides lnk to keep VMs here if a ESX is discovered as Device
+				&Prt("N");
+			}elsif($portprop{$dv}{$if}{nal}){						# Double metric if nbr was discovered too to keep nodes on links to unreachable devs and not on any other link
+				&Prt("A");
+				$metric   += 8192;
+			}else{
+				&Prt("L");
+				$metric   += 4096;
+			}
+		}else{
+			&Prt("M");
+		}
+
+		if($metric < $newmet + 768){								# 256(snr) and 512(nosnmpdev) offset are ignored in metric calculation
 			$newdv  = $dv;
 			$newif  = $if;
 			$newmet = $metric + ((defined $portnew{$_[0]}{$dv}{snr})?$portnew{$_[0]}{$dv}{snr}:256);
 			$vlan   = $portnew{$_[0]}{$newdv}{vl};
-			&Prt("$newdv $newif M$newmet ");
+			&Prt("$newmet $newdv $newif ");
 		}else{
-			&Prt("($dv $if M$metric) ");
+			&Prt("$metric($dv $if) ");
 		}
 	}
 	if($newdv){
@@ -938,12 +1027,6 @@ B<Returns> -
 =cut
 sub BuildNod {
 
-	my $nnip = 0;
-	my $nip  = 0;
-
-	$ipchg   = 0;
-	$ifchg   = 0;
-
 	&Prt("\nBuildNod     ------------------------------------------------------------------\n");
 	foreach my $mcvl ( keys %portnew ){
 		my $mc = substr($mcvl,0,12);
@@ -988,15 +1071,14 @@ sub BuildNod {
 				my $msg = "Node $mc appeared on $main::nod{$mcvl}{if} Vl$main::nod{$mcvl}{vl} as $main::nod{$mcvl}{na} with IP $main::nod{$mcvl}{ip}";
 				&Prt("NODE:$msg\n");
 				&db::Insert('events','level,time,source,info,class,device',"\"100\",\"$main::now\",\"$main::nod{$mcvl}{dv}\",\"$msg\",\"sec\",\"$main::nod{$mcvl}{dv}\"");
-				&mon::SendMail("New MAC on $main::nod{$mcvl}{dv}",$msg) if($misc::notify =~ /F/);
+				$mq += &mon::AlertQ("$main::nod{$mcvl}{dv}: $msg\n","",1,$main::nod{$mcvl}{dv}) if $notify =~ /F/;
 			}
 		}else{
-			#delete $main::nod{$mcvl} if exists $main::nod{$mcvl};				# Delete if previousely added as node TODO really enable? Causes reappearing nodes, if ARP times out too quickly!
+			#delete $main::nod{$mcvl} if exists $main::nod{$mcvl};				# Delete if is device TODO really enable? Causes reappearing nodes, if ARP times out too quickly!
 			&Prt("is device $isdev\n");
 		}
 
 	}
-	return ($nip, $nnip, $ipchg, $ifchg);
 }
 
 
@@ -1018,7 +1100,8 @@ sub FloodFind {
 
 	&Prt("\nFloodFind    ------------------------------------------------------------------\n");
 	foreach my $if ( keys %{$portprop{$dv}} ){
-		if(	!$portprop{$dv}{$if}{rtr} and
+		if(	$portprop{$dv}{$if}{pop} and
+			!$portprop{$dv}{$if}{rtr} and
 			!$portprop{$dv}{$if}{lnk} and
 			!$portprop{$dv}{$if}{chn} and
 			!$portprop{$dv}{$if}{nsd} and
@@ -1026,7 +1109,7 @@ sub FloodFind {
 			my $msg = "$portprop{$dv}{$if}{pop} MAC entries exceed threshold of $macflood on $if";
 			&Prt("FLOD:$msg\n");
 			&db::Insert('events','level,time,source,info,class,device',"\"150\",\"$main::now\",\"$dv\",\"$msg\",\"sec\",\"$dv\"");
-			&mon::SendMail("MAC Flood on $dv",$msg) if $notify =~ /N/;
+			$mq += &mon::AlertQ("$dv: $msg\n","",1,$dv) if $notify =~ /N/;
 			$nfld++;
 		}
 	}
@@ -1049,7 +1132,7 @@ sub RetireNod {
 
 	my $nret = 0;
 
-	&Prt("\nRetireNod ".localtime($retire)."   ------------------------------------------------------\n");
+	&Prt("\nRetireNod    ------------------------------------------------------------------\n");
 	foreach my $mcvl ( keys %main::nod ){
 
 		if ($main::nod{$mcvl}{ls} < $retire){
@@ -1104,8 +1187,8 @@ sub DevRRD {
 						"DS:memcpu:GAUGE:$ds:0:U",
 						"DS:".lc($cul[0]).":$typ:$ds:0:U",
 						"DS:temp:GAUGE:$ds:-1000:1000",
-						"RRA:AVERAGE:0.5:1:2000",
-	      					"RRA:AVERAGE:0.5:10:2000"
+						"RRA:AVERAGE:0.5:1:$rrdsize",
+	      					"RRA:AVERAGE:0.5:10:$rrdsize"
 						);
 				$err = RRDs::error;
 			}
@@ -1142,10 +1225,8 @@ sub DevRRD {
 								"DS:indisc:COUNTER:$ds:0:1E9",
 								"DS:outdisc:COUNTER:$ds:0:1E9",
 								"DS:inbcast:COUNTER:$ds:0:1E9",
-								"RRA:AVERAGE:0.5:1:1000",
-								"RRA:AVERAGE:0.5:10:1000",
-								"RRA:MAX:0.5:1:1000",
-								"RRA:MAX:0.5:10:1000"
+								"RRA:AVERAGE:0.5:1:$rrdsize",
+								"RRA:AVERAGE:0.5:10:$rrdsize"
 								);
 						$err = RRDs::error;
 					}
@@ -1340,17 +1421,20 @@ B<Returns> -
 
 =cut
 sub KeyScan{
-	my $res = `ssh-keyscan $_[0] >> ~/.ssh/known_hosts`;
-	if($?){
+
+	&Prt("\nKeyScan       -----------------------------------------------------------------\n");
+	my $res = `ssh-keyscan $_[0] 2>&1 >> ~/.ssh/known_hosts`;
+	if(!$res){
 		&Prt("ERR :ssh-keyscan for $_[0] failed\n","Ke");
 	}else{
-		&Prt("SSH :host key for $_[0] added to ~/.ssh/known_hosts\n","Ks");
+		chomp($res);
+		&Prt("KEY :$res added to ~/.ssh/known_hosts\n","Ks");
 	}
 }
 
 =head2 FUNCTION ResolveName()
 
-Resolves DNS name and returns 0 upon failure
+Resolves IP via DNS or find in DB
 
 B<Options> DNS Name
 
@@ -1363,6 +1447,10 @@ sub ResolveName{
 	my $hip = gethostbyname($_[0]);
 	if(defined $hip){
 		return join('.',unpack( 'C4',$hip ) );
+	}elsif(exists $main::dev{$_[0]}){
+		return $main::dev{$_[0]}{ip};
+	}else{
+		return 0;
 	}
 }
 

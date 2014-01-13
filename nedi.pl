@@ -34,7 +34,7 @@ Visit http://www.nedi.ch for more information.
 
 =cut
 
-$VERSION = "1.0.6";
+$VERSION = "1.0.7";
 
 use strict;
 use warnings;
@@ -51,6 +51,7 @@ use vars qw($p $warn $now $nediconf $cdp $lldp $oui);
 use vars qw(%nod %dev %int %mod %link %vlan %opt %net %usr);
 @misc::donenam = ();											# Avoid 'used only once' warning (won't break evals like LWP in libweb this way)
 $misc::pause = $misc::notify = $misc::dbhost = "";
+$misc::nnip = $misc::nip = $misc::mq = 0;
 
 getopts('a:A:bBdDFiIkNnoprs:S:t:Tu:U:vw:Wy',\%opt) || &HELP_MESSAGE;
 if(!defined $opt{'S'}){$opt{'S'} = ""}									# Avoid warnings if unused
@@ -82,7 +83,7 @@ post discovery functions.
 if ($opt{'D'}){
 	&misc::ReadOUIs();
 	&db::ReadDev();
-	&db::ReadInt();
+	&db::ReadAddr();
 	&misc::RetrVar();
 
 # Functions to be debugged go here
@@ -93,7 +94,7 @@ if ($opt{'D'}){
 	&misc::BuildNod();
 #	$misc::retire = $now - 1 * 86400;								# Test Retiring, e.g. with 1 day
 	&misc::RetireNod();
-#	&misc::FloodFind() if $misc::notify =~ /n/;
+#	&misc::FloodFind() if $misc::notify =~ /n/i
 #	&db::WriteNod();
 }elsif ($opt{'w'}){
 	&db::WlanUp();
@@ -196,8 +197,9 @@ if ($opt{'D'}){
 
 	&misc::ReadOUIs();
 	&db::ReadDev($opt{'A'});
-	&db::ReadInt();											# Read all IFs to gain topology awareness
+	&db::ReadAddr();
 	&db::ReadLink('linktype = "STAT"');								# Static links will override DP
+	my $nusr = &db::ReadUser("groups & 8 AND (phone != \"\" OR email != \"\")");			# Read users for Mail alerts
 
 	my $nseed = &misc::InitSeeds();
 	my $nthrd = &db::Select('system','value','name="threads"');
@@ -245,7 +247,6 @@ if ($opt{'D'}){
 	if ($ndev){
 		&misc::Prt("MAIN:$ndev devices discovered\n");
 		&misc::StorVar() if ($opt{'d'});
-		&misc::BuildArp() if(defined $misc::arpwatch);
 		if ($opt{'t'}){										# We're only testing
 			&db::ReadNod();
 			&misc::BuildNod();
@@ -253,6 +254,7 @@ if ($opt{'D'}){
 		}else{
 			&db::DelDev();
 			unless($opt{'S'} =~ /f/ and $opt{'S'} =~ /r/){
+				&misc::BuildArp() if(defined $misc::arpwatch);
 				while( my $nlock = &db::Select('system','value','name="nodlock"') ){	# Wait until nodes are unlocked by a parallel thread;
 					if( ($now - $nlock + 60) > $misc::discostep ){			# Force unlock, if stale
 # TODO: Use PID instead of date and check if it's still running? (based on Steffen's idea): print "Process ($pid) is ",(kill(SIGCHLD,$pid)!=0)?'running':'not running';
@@ -265,21 +267,22 @@ if ($opt{'D'}){
 					}
 				}
 				&db::Update('system',"value=\"$now\"",'name="nodlock"');		# Set node lock in system table...
-				&db::Insert('events','level,time,source,info,class',"\"50\",\"$now\",\"NeDi\",\"MAIN:Nodelock set by PID $$\",\"nedi\"");
+				&db::Insert('events','level,time,source,info,class',"\"50\",\"$now\",\"NeDi\",\"MAIN:Nodelock set by PID $$\",\"nedi\"") if $misc::notify =~ /N/; 
 				&misc::Prt("MAIN:Nodes table locked at ".localtime(time)."\n");
 				&db::ReadNod();
-				my($nip, $nnip, $ipchg, $ifchg) = &misc::BuildNod();
+				&misc::BuildNod();
 				my $nret = &misc::RetireNod();
 				&db::WriteNod() if !$opt{'t'};
 				&db::Update('system','value="0"','name="nodlock"');			# ...unlock them again
 				&misc::Prt("MAIN:Nodes table unlocked at ".localtime(time)."\n") if $misc::notify =~ /d/i;
 
-				&misc::Prt("MAIN:$nip IP and $nnip non-IP nodes processed, $nret retired\n");
-				&misc::Prt("MAIN:$ipchg IP and $ifchg IF changes detected\n") if ($ipchg or $ifchg);
+				&misc::Prt("MAIN:$misc::nip IP and $misc::nnip non-IP nodes processed, $nret retired\n");
+				&misc::Prt("MAIN:$misc::ipchg IP and $misc::ifchg IF changes detected\n") if ($misc::ipchg or $misc::ifchg);
 			}
 			my $nthrd = &db::Select('system','value','name="threads"');
 			&misc::Prt("MAIN:$nthrd threads running right now\n");
 			&db::TopRRD() if $nthrd == 1 and $opt{'S'} !~ /o/;
+			&mon::AlertFlush("NeDi Discovery Alert",$misc::mq);
 		}
 	}else{
 		print "Nothing discovered, nothing written...\n";
@@ -303,10 +306,10 @@ sub HELP_MESSAGE{
 	print "\n";
 	print "usage: nedi.pl [-i|-D|-t|-w|-y|-s|] <more option(s)>\n";
 	print "Discovery Options  --------------------------------------------------------\n";
-	print "-a ip	Add single device (override seedlist)\n";
+	print "-a ip	Add single device or ip range (e.g. 10.10.10)\n";
 	print "-t ip	Test IP only, but don't write anything\n";
 	print "-A cond	Add devices from DB cond=all or e.g.'loc regexp \"here\"'\n";
-	print "-p	Discover LLDP,CDP or FDP neighbours\n";
+	print "-p	Discover LLDP,CDP,FDP or NDP neighbours\n";
 	print "-o	OUI discovery (based on ARP chache entries)\n";
 	print "-r	Route table discovery (on L3 devices)\n";
 	print "-u file	Use specified seedlist\n";
@@ -350,10 +353,10 @@ sub HELP_MESSAGE{
 	print "Px	CLI prep p=prev err u=no user n=user not in conf\n";
 	print "Cx	CLI main c=connect p=pw e=enable i=impossible m=cmd\n";
 	print "Rx	RRD d=mkdir u=update s=make sys i=make IF t=make top n=IF name\n";
-	print "Sx	SNMP c=conn o=no name n=SN b=BI u=CPU util m=Mem t=Tmp\n";
+	print "Sx	SNMP c=conn o=no name n=SN b=BI u=CPU util m=Mem t=Tmp y=type\n";
 	print "Bx	Backup f=fetched n=new u=update w=write e=empty\n";
 	print "Vx	VTP/Vlan d=VTPdom m=VTPmode n=Vl name x=ID index i=ID not #\n";
 	print "---------------------------------------------------------------------------\n";
-	print "NeDi $main::VERSION (C) 2001-2011 Remo Rickli & contributors\n\n";
-	die;
+	print "NeDi $main::VERSION (C) 2001-2012 Remo Rickli & contributors\n\n";
+	exit;
 }

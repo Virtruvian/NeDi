@@ -21,8 +21,8 @@ $mysrv['Radius']['ico'] = "key";
 $mysrv['Iperf']['cmd'] = "/usr/local/bin/iperf -s -D";
 $mysrv['Iperf']['ico'] = "flas";
 
-#$mysrv['DHCP']['cmd'] = "/usr/sbin/dhcpd"; TODO get it to use port > 1024
-#$mysrv['DHCP']['ico'] = "glob";
+#$mysrv['Dhcpd']['cmd'] = "/usr/sbin/dhcpd -p1067";
+#$mysrv['Dhcpd']['ico'] = "glob";
 
 $_GET = sanitize($_GET);
 $stop = (isset($_GET['stop']) and in_array($_GET['stop'],array_keys($mysrv) ) ) ? $_GET['stop'] : "";
@@ -53,15 +53,23 @@ if($start and $isadmin){
 	if( $pid = GetPID($mysrv[$start]['cmd']) ){
 		echo "<h4>$start Running with PID $pid!</h4>";
 	}else{
-		system($mysrv[$start]['cmd']." > /dev/null");
-		$procs = shell_exec($pscmd);					# Refresh PIDs after start
+		if( system($mysrv[$start]['cmd']." > /dev/null") !== FALSE){
+			$procs = shell_exec($pscmd);				# Refresh PIDs after start
+			echo "<h5>$start started</h5>";
+		}else{
+			echo "<h4>$start not started!</h4>";
+		}
 	}
 }elseif($stop and $isadmin){
 	if( $pid = GetPID($mysrv[$stop]['cmd']) ){
-		posix_kill ($pid, 9);
-		$procs = shell_exec($pscmd);					# Refresh PIDs after kill
+		if( posix_kill ($pid, 9) ){
+			$procs = shell_exec($pscmd);				# Refresh PIDs after kill
+			echo "<h5>$stop stopped</h5>";
+		}else{
+			echo "<h4>$stop not stopped!</h4>";
+		}
 	}else{
-		echo "<h4>$stop not Running!</h4>";
+		echo "<h4>$stop not running!</h4>";
 	}
 }elseif($clear and $isadmin){
 	$query	= GenQuery('system','u',"name=\"threads\"",'','',array('value'),'',array('0') );
@@ -127,13 +135,13 @@ if ($sys['threads'] and $isadmin){
 </div>
 <br><p>
 
-<h2>Utilization</h2>
+<h2><?=$lodlbl?></h2>
 <div class="textpad code txta">
 <?
 	if(PHP_OS == "OpenBSD"){
 		system("/usr/bin/top -d1");
 	}elseif(PHP_OS == "Linux"){
-		system("/usr/bin/top -n1");
+		system("/usr/bin/top -bn1");
 	}elseif( strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' ){
 		system("tasklist");
 	}

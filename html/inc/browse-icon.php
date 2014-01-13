@@ -1,6 +1,6 @@
 <?php
 //===============================
-// SNMPwalk utility.
+// Browse Device Icon
 //===============================
 session_start(); 
 require_once ('libmisc.php');
@@ -25,7 +25,7 @@ function update(img){
 </script>
 </head>
 <body>
-Icon <a href="http://www.nedi.ch/doku.php?id=gui:icons" target="Window"><?=$sumlbl?></a>
+Icon <a href="http://www.nedi.ch/the-gui/icons" target="Window"><?=$sumlbl?></a>
 <?
 
 if ( $handle = opendir("../img/dev") ){
