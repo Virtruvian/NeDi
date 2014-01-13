@@ -1,0 +1,52 @@
+# Definition for 1.3.6.1.4.1.2021.250.255 created by Defgen 1.8 on 4.Aug 23:46 (admin)
+
+# General
+SNMPv	2
+Type	UCD-unknown
+Typoid	
+Sysdes	
+OS	other
+Icon	vpan
+Bridge	
+Dispro	
+Serial	
+Bimage	
+
+# Vlan Specific
+VLnams	
+VLnamx	
+VTPdom	
+VTPmod	
+
+# Interfaces
+IFname	1.3.6.1.2.1.2.2.1.2
+IFalia	
+IFalix	
+InBcast	1.3.6.1.2.1.2.2.1.12
+InDisc	1.3.6.1.2.1.2.2.1.13
+OutDisc	1.3.6.1.2.1.2.2.1.19
+IFvlan	
+IFvlix	
+IFpowr	
+IFpwix	
+IFdupl	
+IFduix	
+Halfdp	
+Fulldp	
+
+# Modules
+Modesc	
+Moclas	
+Movalu	
+Moslot	
+Modhw	
+Modsw	
+Modfw	
+Modser	
+Momodl	
+
+# RRD Graphing
+CPUutl	1.3.6.1.4.1.2021.11.10.0
+Temp		
+MemCPU	1.3.6.1.4.1.2021.4.11.0	1000
+Custom		

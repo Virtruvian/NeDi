@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+<title>NeDi Help</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<link href="style.css" type="text/css" rel="stylesheet">
+<link rel="shortcut icon" href="../../img/favicon.ico">
+</head>
+<body>
+<div id="header">
+Topology Map
+</div>
+<h2>Introduction</h2>
+This module was intended for documentation purposes, even though it features interactive handling now. Use Topology-Table to quickly “browse” your network or display traffic between locations. Another usagage could be to observe the temperatures of your sites...
+<p>
+It requires the php-gd extension and “proper” SNMP location formatting on your devices as described on the NeDi homepage (you can still draw flat maps, if that's not the case). 
+<p>
+Maps are written on a per user basis to html/log (make sure it's writable by the webserver). Upon accessing this module an existing map will be displayed (no interactive features), without any adjustment of the input form.
+<p>
+Graphs are only drawn in PNG and only for the 1st time the map is generated, because they'll be deleted afterwards. This may be a problem, if you wish to save the picture (screenshot always works, though).
+
+Alternatively SVG or even interactive json maps (devices in flat map type only) can be created.
+
+<h2>Usage</h2>
+<ul>
+<li>Watch the tutorial on the NeDi hompage to get started.
+<li>Geopgraphic maps rely on information and maps you've edited with Loced.
+<li>The SVG button generates a vector drawing, which can be imported by other applications. You probably want to use "shapes" instead of "icons" then...
+<li>Hover over the input fields and icons to get hints.
+<li>Google Map support will be considered at a later stage...
+</ul>
+
+<h2>Details</h2>
+The map is drawn based on your snmp location strings and those parameters:
+<ul>
+<li><b>Image</b> Size and depth of the canvas
+<li><b>General</b> Map location, rotation and level to be drawn
+<li><b>Layout</b> 
+<ul>
+<li>Link: Type of links and distance of info-labels to the link-ends
+<li>Point: Points are arranged in a circle (e.g. cities in the repsective regional circle). The more links such a point has, the heavier (W) it gets and the greater the pull towards the center of the circle. (L) Defines length of the links at regional level and (F) the factor as the map drawing descends into city respectively building level.
+<li>Floor: Padding (P) sets the size and (C) the number of columns of building boxes on device level maps. @ Let's you rotate building circles to fine-tune the map.
+</ul>
+<li><b>Info</b> Interface, IP Addresses or Location information are enabled for display
+<li><b>Filter</b> Use regexps to filter on location, device types (e.g. to draw core networks), vlans or networks (ip/mask)
+<li><b>Draw</b> Choose between PNG (required for RRDs on the links) or SVG (vector drawing)
+</ul>
+
+When you draw a map in geo mode, it'll try to find the best suited map automatically. E.g. the regional one, if you're only drawing one region <b>and</b> you've copied a map-\<region\>.png into html/log.
+<p>
+Assuming you've edited this region with Loced before, it'll now use the city coordinates, you've entered to locate the city icons with the region. If you draw at building level, they'll simply be arranged around the city coordinates using circle mode and above parameters.
+
+<div id="footer">Remo Rickli 2007</div>
+</body>
+

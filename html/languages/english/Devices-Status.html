@@ -1,0 +1,44 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+<title>NeDi Help</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<link href="style.css" type="text/css" rel="stylesheet">
+<link rel="shortcut icon" href="../../img/favicon.ico">
+</head>
+<body>
+<div id="header">
+Devices Status
+</div>
+<h2>Introduction</h2>
+This is the centerpoint of individual device management.
+It's divided into 5 sections (General Info, Modules, Vlans, Links and Interfaces), which correspond to the tables Devices, Modules, Vlans, Links and Interfaces of course. Hover over the icons for hints on what they do.
+<p>
+You'll see print supply levels on supported printers. The current supplylevel is held in the HW field.
+<p>
+
+If you enable SNMP on a ESXi host, and CDP on its vSwitch (e.g. esxcfg-vswitch -B both vSwitch1), it can be discovered automatically.
+VMs are shown as modules as well. If ssh access is enabled in addition, the VMs can be turned on and off.
+
+<h4>Important!</h4>
+Due to performance and device handling reasons, only uptime, interface operational status and interface last change is realtime (if devices was seen in last discovery). Everthing else is retrieved from the database.
+
+<h2>Usage</h2>
+Node population is available by checking <img src="../../img/16/nods.png">. The field shows up with a blue background, if the IF is in the tracking table. The last occurence will be revealed upon hovering over it.
+<p>
+Graphs can be displayed with the interfaces by checking the appropriate boxes on the top. They're tiny unless you select large graphs in User-Profile. 
+Otherwhise the counter values are shown. If the absolute counter is not 0, the background is blue. Recent IF status changes, high IF errors or PoE values will be highligthed as well. <b>The idea</b> behind this is to show you which ports can be re-patched on a fully occupied switch. Chances are you won't get complaints if you unplug a port where:
+<ol>
+<li>No link (icon not green)
+<li>IF last change is as much as switch uptime...or at least a long time ago!
+<li>No nodes shown when Population is checked and field itself is not blue.
+<li>Traffic is 0 and field is not blue.
+</ol>
+<p>
+<img src="../../img/16/grph.png"> pops up a realtime SVG graph window, which lets you observer the traffic in a 3 second interval.
+<p>
+You can modify log/devtools.php in System-Files to include links to external tools.
+
+<div id="footer">Remo Rickli 2011</div>
+</body>
+

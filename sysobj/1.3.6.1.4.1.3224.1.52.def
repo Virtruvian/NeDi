@@ -1,0 +1,47 @@
+# Definition for 1.3.6.1.4.1.3224.1.52 created by Defgen 1.5 on 17.Nov 09 8:21 (admin)
+
+# General
+SNMPv	2
+Type	SSG320
+OS	JunOS
+Icon	fwan
+Bridge	
+Dispro	
+Serial	
+Bimage	
+
+# Vlan Specific
+VLnams	
+VTPdom	
+VTPmod	
+
+# Interfaces
+IFname	1.3.6.1.2.1.31.1.1.1.1
+IFalia	1.3.6.1.2.1.31.1.1.1.18
+IFalix	
+InBcast	1.3.6.1.2.1.31.1.1.1.3
+InDisc	1.3.6.1.2.1.2.2.1.13
+OutDisc	1.3.6.1.2.1.2.2.1.19
+IFvlan	
+IFvlix	
+IFdupl	
+IFduix	
+Halfdp	
+Fulldp	
+
+# Modules
+Modesc	
+Moclas	
+Movalu	
+Moslot	
+Modhw	
+Modsw	
+Modfw	
+Modser	
+Momodl	
+
+# RRD Graphing
+CPUutl	
+Temp	
+MemCPU	
+Custom		

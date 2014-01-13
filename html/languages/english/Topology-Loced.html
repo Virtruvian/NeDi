@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+<title>NeDi Help</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<link href="style.css" type="text/css" rel="stylesheet">
+<link rel="shortcut icon" href="../../img/favicon.ico">
+</head>
+<body>
+<div id="header">
+Location Editor
+</div>
+<h2>Introduction</h2>
+Place your locations on the maps and add some comments if you want.
+<h4>Important!</h4>
+Only place locations in maps where it makes sense. For example, if you have a regional Map of Europe place Zurich in there but don't add buildings on that level. You should place buildings only in city maps and so forth...
+
+<h2>Usage with Google Maps</h2>
+<ul>
+<li>Upon selecting a location a geocode lockup is performed and the found coordinates are highlighted green in the NS & EW fields.
+<li>A draggable marker is placed on the map, which can be adjusted to fit your needs. Enter a description and click the add button.
+<li>The marker turns into an icon reflecting the respective location level and coordinates should stay black, since they're read from the DB now.
+</ul>
+
+<h2>Usage without Google Maps</h2>
+<ul>
+<li>Without Google Maps integration enabled in User-Profile png backdrops can be edited. This can be leveraged with the geo map type in Topology-Maps.
+<li>At first you'll see the top level map, which is a world map by default (I'll change this as soon as we've got networks on other celestial bodies). If your network only spans one country, you may want to replace html/log/map-top.png to fit your needs.
+<li>Select a region an click on the map to set the coordinates. You'll notice that values are being populated and the 'Add' button becomes 'Update', if the location already exists.
+<li>Copy lower level maps to html/log (where map-top.png is). Let's say, your network sites are located in 2 regions (USA and Europe). Just name them map-USA.png and map-Europe.png. Now when you select cities in those regions, it should descent and the coordinates are referring to this map.
+<li>This also works for cities (makes sense where you've got a big metropolitan network). Just create a map-Europe-Zurich.png in html/log and as soon as you click on buildings in Zurich you can place them into the metropolitan map.
+</ul>
+<div id="footer">Remo Rickli 2007</div>
+</body>
+

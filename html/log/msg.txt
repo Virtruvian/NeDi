@@ -1,0 +1,8 @@
+<h3>Welcome to NeDi</h3>
+<ul>
+<li>Find documentation <a href="http://www.nedi.ch" target="window">here</a>.
+<li>Join our <a href="http://forum.nedi.ch" target="window">community</a>.
+<li>Or just have a <a href="irc://irc.freenode.net/nedi">chat</a>.
+</ul>
+<div style=background-color:yellow><h4>Change the admin password now!</h4></div>
+<center>Then edit this message to fit your needs (by clicking the notepad above)</center>

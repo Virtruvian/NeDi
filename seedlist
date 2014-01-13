@@ -1,0 +1,8 @@
+# Seeds or list of devices to be discovered for NeDi 1.0
+# You can also specify communities and readversion for
+# individual devices,# separated by tab(s).
+# If list is empty, the default gateway will be used.
+;192.168.1.1		pablic
+;192.168.1.2		peblic
+;router17.nedi.ch	poblic	1
+# 10.10.10.20
