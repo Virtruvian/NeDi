@@ -1,0 +1,28 @@
+{
+    "name": "nedi/nedi",
+    "description": "NeDi discovers, maps and inventories your network devices and tracks connected end-nodes.",
+    "keywords": ["network", "discovery", "maps", "inventories"],
+    "homepage": "https://nedi.ch",
+    "license": "GPLv3",
+    "version": "1.0.9",
+    "authors": [
+        {
+            "name": "Remo Rickli",
+            "email": "info@nedi.ch",
+            "homepage": "http://nedi.ch",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.3.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "3.7.*"
+    },
+    "autoload": {
+        "psr-0": {
+            "": "src/html/inc/"
+        }
+    }
+}
