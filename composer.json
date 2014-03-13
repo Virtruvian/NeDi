@@ -3,7 +3,7 @@
     "description": "NeDi discovers, maps and inventories your network devices and tracks connected end-nodes.",
     "keywords": ["network", "discovery", "maps", "inventories"],
     "homepage": "https://nedi.ch",
-    "license": "GPLv3",
+    "license": "GPL-3.0+",
     "version": "1.0.9",
     "authors": [
         {
