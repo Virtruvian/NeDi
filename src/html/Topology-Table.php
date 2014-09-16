@@ -22,8 +22,9 @@ $nsd = isset($_GET['nsd']) ? $_GET['nsd'] : "";
 $img = isset($_GET['img']) ? $_GET['img'] : "";
 $pop = isset($_GET['pop']) ? $_GET['pop'] : "";
 
-$sub   = 0;
-$alarr = array();
+$sub    = 0;
+$alarr  = array();
+$monarr = array();
 
 if( isset($_GET['map']) ){
 	$map = $_GET['map'];
@@ -49,10 +50,10 @@ if( count($dreg) == 1 ){
 }
 
 if( !isset($_GET['print']) ) { ?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content"><tr class="bgmain">
 <td class="ctr s">
 
-<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 
 </td>
 <td>

@@ -25,8 +25,9 @@ $dbn = explode("_",$dbname);
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="post" action="<?= $self ?>.php">
-<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content" ><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td>
 
 <img src="img/16/abc.png" title=" <?= $namlbl ?>">
@@ -106,7 +107,7 @@ if($isadmin and $del){
 
 <h2>Snapshot <?= $lstlbl ?></h2>
 
-<table class="content" ><tr class="<?= $modgroup[$self] ?>2">
+<table class="content" ><tr class="bgsub">
 <th colspan="2"><img src="img/16/db.png"><br>DB <?= $namlbl ?></th>
 <th><img src="img/16/dev.png"><br>Devices</th>
 <th><img src="img/16/conf.png"><br><?= $cfglbl ?></th>
@@ -170,7 +171,7 @@ while($ss = DbFetchRow($res)){
 </table>
 
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> DBs</td></tr>
+<tr class="bgsub"><td><?= $row ?> DBs</td></tr>
 </table>
 
 <?php 

@@ -90,6 +90,31 @@ input {
 textarea {
 	color: #444444;
 }
+input.button{
+	font-size: 11px;
+	font-weight: bold;
+	color: #eee;
+	text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.25);
+	border-radius: 4px;
+	background-color: #19459f;
+	background: -webkit-linear-gradient(#2381c7, #19459f);
+	background: linear-gradient(#2381c7, #19459f);
+	border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+	padding: 3px 6px;
+	margin : 2px;
+	border-width: 1px;
+	box-shadow: 1px 0px 0px rgba(255, 255, 255, 0.125) inset, 0px 1px 0px rgba(255, 255, 255, 0.2) inset, 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+input.button:hover {
+	color: #fff;
+	cursor: pointer;
+}
+input.button:active {
+	background-color: #888;
+	background: -webkit-linear-gradient(#19459f, #2381c7);
+	background: linear-gradient(#19459f, #2381c7);
+}
 
 /* Image Properties */
 img{
@@ -140,14 +165,12 @@ img.panel{
 #header{
 	width: 100%;
 	border-spacing: 1px;
-	background-color: #C3D5E6;
+	background-color: #ADBDCC;
 	border-radius: 6px;
-	background: -webkit-linear-gradient(#8fa1b3, #c3d5e6);
-	background: linear-gradient(#8fa1b3, #c3d5e6);
 }
 /* Topmenu inspired by line25.com */
 #nav {
-	width: 520px;
+	min-width: 50em;
 }
 
 #nav ul ul {
@@ -175,11 +198,11 @@ img.panel{
 	float: left;
 }
 #nav ul li:hover {
-	border-top-left-radius:1em;
-	border-top-right-radius:1em;
+	border-top-left-radius:0.5em;
+	border-top-right-radius:0.5em;
 	background: #5F5F5F;
-	background: linear-gradient(#656565 0%, #767676 40%);
-	background: -webkit-linear-gradient(#656565 0%, #767676 40%);
+	background: linear-gradient(#c3d5e6 0%, #8fa1b3 40%);
+	background: -webkit-linear-gradient(#c3d5e6 0%, #8fa1b3 40%);
 }
 
 #nav ul li:hover a {
@@ -192,21 +215,25 @@ img.panel{
 }		
 		
 #nav ul ul {
-	background: #767676; padding: 0;
+	background: #8fa1b3; padding: 0;
 	position: absolute; top: 100%;
 }
 #nav ul ul li {
 	float: none; 
 	white-space: nowrap;
-	border-top: 1px solid #8B8B8B;
-	border-bottom: 1px solid #676767;
+	border-top: 1px solid #A5BCCF;
+	border-bottom: 1px solid #8795A1;
 }
 #nav ul ul li a {
 	padding: 5px 10px;
 	color: #fff;
 }	
 #nav ul ul li a:hover {
-	background: #6183AD;
+	color: #fff;
+	border-radius:0.5em;
+	background: #2381c7;
+	background: -webkit-linear-gradient(#2381c7, #19459f);
+	background: linear-gradient(#2381c7, #19459f);
 }
 	
 #nav ul ul ul {
@@ -231,7 +258,7 @@ img.panel{
 table.content{
 	width: 100%;
 	border-spacing: 1px;
-	background-color: #C3D5E6;
+	background-color: #ADBDCC;
 	border-radius: 4px;
 }
 
@@ -247,24 +274,44 @@ table.fixed{
 	table-layout:fixed;
 }
 
+.qrt{
+	width: 25%;
+}
+
+.half{
+	width: 50%;
+}
+
+.tqrt{
+	width: 75%;
+}
+
 .full{
 	width: 100%;
 }
 
-.s{
+.xs{
 	width: 40px;
 }
 
+.s{
+	width: 80px;
+}
+
 .m{
-	width: 100px;
+	width: 150px;
 }
 
 .l{
-	width: 180px;
+	width: 200px;
 }
 
 .xl{
 	width: 300px;
+}
+
+.xxl{
+	width: 600px;
 }
 
 .lft{
@@ -295,6 +342,18 @@ table.fixed{
 	white-space: nowrap;
 }
 
+.bctr{
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+.flft{
+	float: left;
+}
+.frgt{
+	float: right;
+}
+
 .genpad{
 	background-color: #fff;
 	border:1px solid black;
@@ -304,7 +363,6 @@ table.fixed{
 
 .textpad{
 	margin: 10px auto;
-	width: 75%;
 	padding: 10px;
 	border-spacing: 1px;
 	border: 2px solid #666666;
@@ -383,12 +441,16 @@ table.fixed{
 	background-image:url('../img/dia.png');
 }
 
-/* Default Group Based Module Colors */
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgtop{
+	background: -webkit-linear-gradient(#c3d5e6 10%, #A3B8CC 30%);
+	background: linear-gradient(#c3d5e6, #A3B8CC 30%);
+}
+.bgmain{
 	background: -webkit-linear-gradient(#8fa1b3, #c3d5e6);
 	background: linear-gradient(#8fa1b3, #c3d5e6);
 }
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	background: -webkit-linear-gradient(#c3d5e6, #8fa1b3);
 	background: linear-gradient(#c3d5e6, #8fa1b3);
 }
@@ -400,9 +462,10 @@ table.fixed{
 	background-color: #c3d5e6;
 	border: 1px solid #c3d5e6;
 	padding: 8px;
+	text-shadow: 0 1px 1px rgba(240, 240, 240, .9);
 	text-align: right;
 	font-style: italic;
 	border-radius: 6px;
-	background: -webkit-linear-gradient(#8fa1b3, #c3d5e6);
-	background: linear-gradient(#8fa1b3, #c3d5e6);
+	background: -webkit-linear-gradient(#c3d5e6, #8fa1b3);
+	background: linear-gradient(#c3d5e6, #8fa1b3);
 }

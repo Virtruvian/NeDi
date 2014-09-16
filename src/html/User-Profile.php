@@ -83,8 +83,8 @@ if ($uok == 1) {
 ?>
 
 <form method="post" action="<?= $self ?>.php" name="pro">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><?=Smilie($usr[0]) ?></a>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><?=Smilie($usr[0],$self,0) ?></a>
 <br><?= $name ?></th>
 <td valign="top">
 <h3><?= $stalbl ?> / <?= $paslbl ?></h3>
@@ -131,13 +131,13 @@ if ($uok == 1) {
 <input type="checkbox" name="map" <?= ($_SESSION['map'])?"checked":"" ?>>
 <p>
 <img src="img/16/form.png" title="# <?= $toplbl ?> <?= $msglbl ?>">
-<input type="number" min="0" max="31" name="lim" class="s" value="<?= $_SESSION['lim'] ?>">
+<input type="number" min="0" max="31" name="lim" class="xs" value="<?= $_SESSION['lim'] ?>">
 <br>
 <img src="img/16/icon.png" title="# <?= $collbl ?> (0-31)">
-<input type="number" min="0" max="31" name="col" class="s" value="<?= $_SESSION['col'] ?>">
+<input type="number" min="0" max="31" name="col" class="xs" value="<?= $_SESSION['col'] ?>">
 <br>
 <img src="img/16/abc.png" title="<?= $namlbl ?> <?= $sizlbl ?> (3-31)">
-<input type="number" min="3" max="31" name="lsiz" class="s" value="<?= $_SESSION['lsiz'] ?>">
+<input type="number" min="3" max="31" name="lsiz" class="xs" value="<?= $_SESSION['lsiz'] ?>">
 
 </td>
 <td valign="top">
@@ -152,7 +152,7 @@ if ($uok == 1) {
 <select name="tz">
 <?php
 foreach ($tzone as $k => $v){
-       echo "<option value=\"$k\"".( ($_SESSION['tz'] == $v)?" selected":"").">".substr($v,0,15)."\n";
+       echo "<option value=\"$k\"".( ($_SESSION['tz'] == $v)?" selected":"").">".substr($v,0,$_SESSION['lsiz'])."\n";
 }
 ?>
 </select>
@@ -261,7 +261,7 @@ if($isadmin){
 echo "<h2>$editam Admin $mlvl[100]</h2>\n";
 
 if( file_exists($msgfile) ){
-	echo "<div class=\"textpad warn\">\n";
+	echo "<div class=\"textpad warn tqrt\">\n";
 	include_once ($msgfile);
 	echo "</div><br>";
 }
@@ -277,7 +277,7 @@ if($nchat){
 <h2>
 <a href="User-Chat.php"><img src="img/16/say.png" title="Chat"></a>
 <?= (($verb1)?"$laslbl Chat":"Chat $laslbl") ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th width="40"><img src="img/16/user.png"><br>User</th>
 <th width="120"><img src="img/16/clock.png"><br><?= $timlbl ?></th>
 <th><img src="img/16/say.png"><br><?= $cmtlbl ?></th>
@@ -287,7 +287,7 @@ if($nchat){
 		if ($_SESSION['user'] == $m[1]){$bg = "txta"; $bi = "imga";$me=1;}else{$bg = "txtb"; $bi = "imgb";$me=0;}
 		list($fc,$lc) = Agecol($m[0],$m[0],$me);
 		$time = date($_SESSION['timf'],$m[0]);
-		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],1);
+		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],$m[1],1);
 		echo "</th>\n";
 		echo "<td bgcolor=#$fc>$time</td><td>".preg_replace('/(http[s]?:\/\/[^\s]*)/',"<a href=\"$1\" target=\"window\">$1</a>",$m[2])."</td></tr>\n";
 	}

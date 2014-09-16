@@ -17,9 +17,6 @@ $_SESSION['view'] = "";
 $_SESSION['timf'] = 'j.M y G:i';
 $_SESSION['tz'] = "GMT";
 
-$self = "mh";
-$modgroup[$self] = "mon";
-
 require_once ("inc/libmisc.php");
 ReadConf('mon');
 include_once ("./languages/english/gui.php");							# Don't require, GUI still works if missing
@@ -47,7 +44,7 @@ $loc = TopoLoc($reg,$cty,$bld);
 </head>
 
 <body>
-<table class="content"><tr class="mon1">
+<table class="content"><tr class="bgmain">
 <td class="ctr top">
 
 <p>
@@ -74,7 +71,7 @@ $query	= GenQuery('interfaces','s','count(*),round(sum(poe)/1000)','','',array('
 $res	= DbQuery($query,$link);
 if($res){
 	$m = DbFetchRow($res);
-	if($m[0]){echo "<p><b><img src=\"img/32/batt.png\" title=\"$m[0] PoE IF\">$m[1] W</b>\n";}
+	if($m[0]){echo "<p><strong><img src=\"img/32/batt.png\" title=\"$m[0] PoE IF\">$m[1] W</strong>\n";}
 	DbFreeResult($res);
 }else{
 	print DbError($link);

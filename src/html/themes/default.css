@@ -1,5 +1,5 @@
 /* General Classes */
-body {
+body{
 	font: 12px verdana, arial, sans-serif; 
 	background-color: #666666;
 	background-repeat: repeat;
@@ -66,6 +66,30 @@ input, select, textarea {
 	border-radius: 5px;
 }
 
+input.button{
+	color: #ddd;
+	font-size: 11px;
+	font-weight: bold;
+	text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.25);
+	background-color: #19459f;
+	background: -webkit-linear-gradient(#3B5065, #475E76);
+	background: linear-gradient(#3B5065, #475E76);
+	border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+	padding: 4px 8px;
+	margin : 2px;
+	border-width: 1px;
+	box-shadow: 1px 0px 0px rgba(255, 255, 255, 0.125) inset, 0px 1px 0px rgba(255, 255, 255, 0.2) inset, 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+input.button:hover {
+	color: #fff;
+	cursor: pointer;
+}
+input.button:active {
+	background-color: #888;
+	background: -webkit-linear-gradient(#475E76, #3B5065);
+	background: linear-gradient(#475E76, #3B5065);
+}
 
 /* Image Properties */
 img{
@@ -110,14 +134,16 @@ img.panel{
 	width: 100%;
 	border-spacing: 0px;
 	border-radius: 5px;
-	background-color: #99aabb;
+	background: -webkit-linear-gradient(#bbccdd, #6688aa);
+	background: linear-gradient(#bbccdd, #6688aa);
+	background-color: #6688aa
 	-webkit-box-shadow: 4px 4px 8px #555;
 	box-shadow: 4px 4px 8px #555;
 }
 
 /* Topmenu inspired by line25.com */
 #nav {
-	width: 540px;
+	min-width: 50em;
 }
 
 #nav ul ul {
@@ -221,24 +247,44 @@ table.fixed{
 	table-layout:fixed;
 }
 
+.qrt{
+	width: 25%;
+}
+
+.half{
+	width: 50%;
+}
+
+.tqrt{
+	width: 75%;
+}
+
 .full{
 	width: 100%;
 }
 
-.s{
+.xs{
 	width: 40px;
 }
 
+.s{
+	width: 80px;
+}
+
 .m{
-	width: 100px;
+	width: 120px;
 }
 
 .l{
-	width: 180px;
+	width: 200px;
 }
 
 .xl{
-	width: 300px;
+	width: 400px;
+}
+
+.xxl{
+	width: 600px;
 }
 
 .lft{
@@ -269,16 +315,27 @@ table.fixed{
 	white-space: nowrap;
 }
 
+.bctr{
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+.flft{
+	float: left;
+}
+.frgt{
+	float: right;
+}
+
 .genpad{
 	background-color: #fff;
 	border:1px solid black;
-	border-radius: 6px;
-	padding : 2px;
+	border-radius: 3px;
+	padding : 3px;
 }
 
 .textpad{
 	margin: 10px auto;
-	width: 70%;
 	padding: 10px;
 	border-spacing: 1px;
 	border: 1px solid #666;
@@ -364,13 +421,13 @@ table.fixed{
 }
 .part{background-image:url('../img/dia.png')}
 
-/* Default Group Based Module Colors */
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgtop, .bgmain{
 	background: -webkit-linear-gradient(#bbccdd, #6688aa);
 	background: linear-gradient(#bbccdd, #6688aa);
 	background-color: #6688aa
 }
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	background: -webkit-linear-gradient(#c0d0e0, #7090b0);
 	background: linear-gradient(#c0d0e0, #7090b0);
 	background-color: #7090b0

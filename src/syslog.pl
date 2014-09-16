@@ -62,7 +62,8 @@ use Getopt::Std;
 use vars qw($p $warn $now %opt %mon %srcna %usr);
 $misc::pause = "";											# Avoid 'used only once:' warning without breaking evals (like LWP in libweb)
 
-getopts('Dvp:U:',\%opt)  || &HELP_MESSAGE;
+getopts('Dd:vp:U:',\%opt)  || &HELP_MESSAGE;
+if(!defined $opt{'d'}){$opt{'d'} = ''}									# Avoid warnings if unused
 
 select(STDOUT); $| = 1;											# Disable buffering
 
@@ -170,6 +171,7 @@ sub HELP_MESSAGE {
 	print "---------------------------------------------------------------------------\n";
 	print "Options:\n";
 	print "-D		daemonize moni.pl\n";
+	print "-d		debug output\n";
 	print "-v		verbose output\n";
 	print "-p x		listen on port x (default 514)\n\n";
 	print "-U file	Use specified configuration\n";

@@ -364,7 +364,8 @@ var datepickr = (function() {
 		datepickrs.push(this);
 		
 		if(this.element.nodeName == 'INPUT') {
-			addEvent(this.element, 'focus', this.open);
+			addEvent(this.element, 'dblclick', this.open);//TODO use corresponding column selectbox to enable calendar or turn into datetime field dynamically?
+//			addEvent(this.element, 'focus', this.open);
 		} else {
 			addEvent(this.element, 'click', this.open);
 		}

@@ -66,7 +66,7 @@ $pwt = isset($_GET['pwt']) ? $_GET['pwt'] : 10;
 $lsf = isset($_GET['lsf']) ? $_GET['lsf'] : 10;
 $fco = isset($_GET['fco']) ? $_GET['fco'] : 6;
 
-$imas= ($pos == "d")?4:18;
+$imas= ($pos == "d" or $pos == "a")?4:18;
 
 $oc = "";
 $oi = "";
@@ -109,18 +109,28 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 ?>
 <h1>Topology Map</h1>
 
-<?php  if( !isset($_GET['print']) ) { ?>
-
+<?php
+if( $isadmin and isset($_GET['mon']) ){
+	$hdle = fopen("log/montools.php", "a");
+	if( fwrite($hdle, "<img class=\"genpad bctr\" src=\"inc/drawmap.php?$_SERVER[QUERY_STRING]\"><br>\n") ){
+		echo "<h5>$wrtlbl log/montools.php OK</h5>\n";
+	}else{
+		echo "<h4>$errlbl $wrtlbl log/montools.php!</h4>\n";
+	}
+	fclose($hdle);
+}
+if( !isset($_GET['print']) ){ ?>
 <form method="get" name="dynfrm" action="<?= $self ?>.php">
-<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<td valign="top">
+<table class="content" ><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
+<td class="top">
 <h3><?= $fltlbl ?></h3>
 
 <?php Filters(); ?>
 
 </td>
-<td valign="top" nowrap>
+<td class="top">
 
 <h3><?= $manlbl ?></h3>
 <img src="img/16/say.png" title="Map <?= $namlbl ?>">
@@ -128,7 +138,7 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <br>
 
 <img src="img/16/img.png" title="<?= $sizlbl ?> & <?= $frmlbl ?>">
-<select size="1" <?= $oc ?> name="dim">
+<select size="1" <?= $oc ?> name="dim" class="m">
 <?= ($dim)?"<option value=\"$dim\">$dim</option>":"" ?>
 <option value="320x200">320x200
 <option value="320x240">320x240
@@ -152,7 +162,7 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <br>
 
 <img src="img/16/abc.png" title="Map <?= $typlbl ?>">
-<select size="1" <?= $oc ?> name="lev" title="<?= $levlbl ?>">
+<select size="1" <?= $oc ?> name="lev" title="<?= $levlbl ?>" class="m">
 <option value="1"><?= $place['r'] ?>
 <option value="2" <?= ($lev == "2")?" selected":"" ?>><?= $place['c'] ?>
 <option value="3" <?= ($lev == "3")?" selected":"" ?>><?= $place['b'] ?>
@@ -168,20 +178,26 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <br>
 
 <img src="img/16/geom.png" title="Map <?= $loclbl ?>">
-<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="xo" value="<?= $xo ?>" class="s" title="X <?= $loclbl ?>">
-<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="yo" value="<?= $yo ?>" class="s" title="Y <?= $loclbl ?>">
+<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="xo" value="<?= $xo ?>" class="xs" title="X <?= $loclbl ?>">
+<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="yo" value="<?= $yo ?>" class="xs" title="Y <?= $loclbl ?>">
 <br>
 
 <img src="img/16/brld.png" title="Map <?= $rotlbl ?>">
-<input type="number" min="-180" max="180" <?= $oi ?> name="rot" value="<?= $rot ?>" class="s" title="<?= $place['r'] ?>">
-<input type="number" min="-180" max="180" <?= $oi ?> name="cro" <?= ($mde == "f" or $lev < 2 and $dyn)?"disabled":"" ?> value="<?= $cro ?>" class="s" title="<?= $place['c'] ?>">
-<input type="number" min="-180" max="180" <?= $oi ?> name="bro" <?= ($mde == "f" or $lev < 3 and $dyn)?"disabled":"" ?> value="<?= $bro ?>" class="s" title="<?= $place['b'] ?>">
+<input type="number" min="-180" max="180" <?= $oi ?> name="rot" value="<?= $rot ?>" class="xs" title="<?= $place['r'] ?>">
+<input type="number" min="-180" max="180" <?= $oi ?> name="cro" <?= ($mde == "f" or $lev < 2 and $dyn)?"disabled":"" ?> value="<?= $cro ?>" class="xs" title="<?= $place['c'] ?>">
+<input type="number" min="-180" max="180" <?= $oi ?> name="bro" <?= ($mde == "f" or $lev < 3 and $dyn)?"disabled":"" ?> value="<?= $bro ?>" class="xs" title="<?= $place['b'] ?>">
 
 </td>
-<td valign="top" nowrap><h3>Layout</h3>
+<td class="top">
+	<h3>Layout</h3>
+
+<img src="img/16/link.png" title="<?= $cnclbl ?> <?= $endlbl ?>">
+<input type="number" min="1" max="100"  <?= $oi ?> name="lsf" <?= ($mde == "f" and $lev < 6 and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lsf ?>" class="xs" title="<?= ($fmt == 'json')?$cnclbl:"$lenlbl/$levlbl" ?>">
+<input type="number" min="0" <?= $oi ?> step="5" name="lal" <?= (!$ifi and !$ifa and !$ipi and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lal ?>" class="xs" title="<?= ($fmt == 'json')?$metlbl:"IF/IP $loclbl" ?>">
+<br>
 
 <img src="img/16/ncfg.png" title="<?= $cnclbl ?> <?= $frmlbl ?>">
-<input type="number" min="0" max="1000"  <?= $oi ?> step="10" name="len" value="<?= $len ?>" class="s" title="<?= $lenlbl ?>">
+<input type="number" min="0" max="1000"  <?= $oi ?> step="5" name="len" value="<?= $len ?>" class="xs" title="<?= $lenlbl ?>">
 <select size="1" <?= $oc ?> name="lis">
 <option value=""><?= $strlbl ?>
 <option value="a1" <?= ($lis == "a1")?" selected":"" ?>><?= $arclbl ?>
@@ -192,7 +208,7 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <br>
 
 <img src="img/16/ncon.png" title="<?= $cnclbl ?> <?= $inflbl ?>">
-<input type="number" min="-100" max="100" <?= $oi ?> name="lil" <?= ($fmt == "json" or !$lit and $dyn)?"disabled":"" ?> value="<?= $lil ?>" class="s" title="<?= $inflbl ?> <?= $loclbl ?>">
+<input type="number" min="-100" max="100" <?= $oi ?> name="lil" <?= ($fmt == "json" or !$lit and $dyn)?"disabled":"" ?> value="<?= $lil ?>" class="xs" title="<?= $inflbl ?> <?= $loclbl ?>">
 <select size="1" <?= $oc ?> name="lit">
 <option value=""><?= $inflbl ?>
 <option value="w" <?= ($lit == "w")?" selected":"" ?>><?= $bwdlbl ?>
@@ -223,13 +239,8 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 </select>
 <br>
 
-<img src="img/16/link.png" title="<?= $cnclbl ?> <?= $endlbl ?>">
-<input type="number" min="1" max="100"  <?= $oi ?> name="lsf" <?= ($mde == "f" and $lev < 6 and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lsf ?>" class="s" title="<?= ($fmt == 'json')?$cnclbl:"$lenlbl/$levlbl" ?>">
-<input type="number" min="0" <?= $oi ?> step="5" name="lal" <?= (!$ifi and !$ifa and !$ipi and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lal ?>" class="s" title="<?= ($fmt == 'json')?$metlbl:"IF/IP $loclbl" ?>">
-<br>
-
 <img src="img/16/dev.png" title="<?= $nodlbl ?> <?= $cfglbl ?>">
-<input type="number" min="0" max="100" <?= $oi ?> name="pwt" <?= ($fmt == "json")?"disabled":"" ?> value="<?= $pwt ?>" class="s" title="<?= $nodlbl ?> <?= $loclbl ?>/#<?= $cnclbl ?>">
+<input type="number" min="0" max="100" <?= $oi ?> name="pwt" <?= ($fmt == "json")?"disabled":"" ?> value="<?= $pwt ?>" class="xs" title="<?= $nodlbl ?> <?= $loclbl ?>/#<?= $cnclbl ?>">
 <select size="1" <?= $oc ?> name="pos" title="<?= $nodlbl ?> <?= $typlbl ?>">
 <option value="">Icon
 <option value="d" <?= ($pos == "d")?" selected":"" ?>><?= $shplbl ?> <?= $siz['t'] ?>
@@ -237,40 +248,40 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <option value="D" <?= ($pos == "D")?" selected":"" ?>><?= $imglbl ?> <?= $siz['s'] ?>
 <option value="p" <?= ($pos == "p")?" selected":"" ?>><?= $imglbl ?> <?= $siz['m'] ?>
 <option value="P" <?= ($pos == "P")?" selected":"" ?>><?= $imglbl ?> <?= $siz['l'] ?>
-<option value="a" <?= ($pos == "a")?" selected":"" ?>><?= $avalbl ?>
+<option value="a" <?= ($pos == "a")?" selected":"" ?>><?= $avalbl ?> <?= $siz['t'] ?>
+<option value="A" <?= ($pos == "A")?" selected":"" ?>><?= $avalbl ?> <?= $siz['m'] ?>
 <option value="c" <?= ($pos == "c")?" selected":"" ?>>CPU <?= $lodlbl ?>
 <option value="h" <?= ($pos == "h")?" selected":"" ?>><?= $tmplbl ?>
 
 </select>
 <br>
 <img src="img/16/home.png" title="<?= $place['b'] ?> <?= $cfglbl ?>">
+<input type="number" min="1" max="50" <?= $oi ?> name="fco" <?= ($mde == "f" or $fmt == "json" or $lev < 4 and $dyn)?"disabled":"" ?> value="<?= $fco ?>" class="xs" title="<?= $collbl ?>">
 <input type="number" min="6" max="1000" <?= $oi ?> name="fsz" <?= ($mde == "f" or $fmt == "json" or $lev < 4 and $dyn)?"disabled":"" ?> value="<?= $fsz ?>" class="s" title="<?= $place['f'] ?> <?= $sizlbl ?>">
-<input type="number" min="1" max="50" <?= $oi ?> name="fco" <?= ($mde == "f" or $fmt == "json" or $lev < 4 and $dyn)?"disabled":"" ?> value="<?= $fco ?>" class="s" title="<?= $collbl ?>">
-
 </td>
-<td valign="top" nowrap><h3><?= $sholbl ?></h3>
-
-<img src="img/16/port.png" title="IF <?= $inflbl ?>"> 
-<input type="checkbox" title="IF <?= $namlbl ?>" <?= $oc ?> name="ifi" <?= $ifi ?>> <input type="checkbox" title="IF Alias" <?= $oc ?> name="ifa" <?= $ifa ?>><br>
-<img src="img/16/glob.png" title="IP <?= $adrlbl ?>"> 
-<input type="checkbox" title="Device IP" <?= $oc ?> name="ipd" <?= $ipd ?>> <input type="checkbox" title="IF IP" <?= $oc ?> name="ipi" <?= $ipi ?>><br>
-<img src="img/16/fort.png" title="<?= $loclbl ?>"> <input type="checkbox" <?= $oc ?> name="loo" title="<?= $place['o'] ?>" <?= $loo ?>> <input type="checkbox" <?= $oc ?> name="loa" title="<?= $place['a'] ?>" <?= $loa ?>><br>
-<img src="img/16/find.png" title="<?= $inflbl ?>"> <input type="checkbox" <?= $oc ?> name="dco" title="<?= $conlbl ?>" <?= $dco ?>> <input type="checkbox" <?= $oc ?> name="dmo" title="<?= $modlbl ?>" <?= $dmo ?>>
-
+<td class="top">
+	<h3><?= $sholbl ?></h3>
+	<img src="img/16/port.png" title="IF <?= $inflbl ?>"> 
+	<input type="checkbox" title="IF <?= $namlbl ?>" <?= $oc ?> name="ifi" <?= $ifi ?>> <input type="checkbox" title="IF Alias" <?= $oc ?> name="ifa" <?= $ifa ?>><br>
+	<img src="img/16/glob.png" title="IP <?= $adrlbl ?>"> 
+	<input type="checkbox" title="Device IP" <?= $oc ?> name="ipd" <?= $ipd ?>> <input type="checkbox" title="IF IP" <?= $oc ?> name="ipi" <?= $ipi ?>><br>
+	<img src="img/16/fort.png" title="<?= $loclbl ?>"> <input type="checkbox" <?= $oc ?> name="loo" title="<?= $place['o'] ?>" <?= $loo ?>> <input type="checkbox" <?= $oc ?> name="loa" title="<?= $place['a'] ?>" <?= $loa ?>><br>
+	<img src="img/16/find.png" title="<?= $inflbl ?>"> <input type="checkbox" <?= $oc ?> name="dco" title="<?= $conlbl ?>" <?= $dco ?>> <input type="checkbox" <?= $oc ?> name="dmo" title="<?= $modlbl ?>" <?= $dmo ?>>
 </td>
-<th width="80" valign="top">
-
-<h3>
-<img src="img/16/exit.png" title="Stop" onClick="stop_countdown(interval);">
-<span id="counter"><?= $refresh ?></span>
-</h3>
-<br>
-<img src="img/16/walk.png" title="Dynamic-<?= $edilbl ?>"> <input type="checkbox" onchange="this.form.submit();" name="dyn" <?= $dyn ?>><br>
-
-<p>
-<input type="submit" class="button" value="<?= $cmdlbl ?>">
-
-</th></tr>
+<td class="top ctr s">
+	<h3>
+		<img src="img/16/exit.png" title="Stop" onClick="stop_countdown(interval);">
+		<span id="counter"><?= $refresh ?></span>
+	</h3>
+	<img src="img/16/walk.png" title="Dynamic-<?= $edilbl ?>"> <input type="checkbox" onchange="this.form.submit();" name="dyn" <?= $dyn ?>><br>
+	<br>
+	<input type="submit" class="button" value="<?= $sholbl ?>">
+	<br>
+<?php if( $isadmin ){
+?>
+	<input type="submit" class="button" name="mon" value="<?= $monlbl ?>">
+<?php } ?>
+</td></tr>
 </table></form><p>
 <?php
 }
@@ -367,7 +378,7 @@ d3.json("map/map_<?= $_SESSION['user'] ?>.json", function(error, graph){
 	.attr("width", function(d) { return d.width; })
 	.attr("height", function(d) { return d.height; });
 
-<?php if($pos == "d"){?>
+<?php if($pos == "d" or $pos == "a"){?>
 
 		node.append("title")
 			.text(function(d) { return d.name; });
@@ -396,7 +407,7 @@ d3.json("map/map_<?= $_SESSION['user'] ?>.json", function(error, graph){
 	Map();
 	WriteSVG( Condition($in,$op,$st,$co,1) );
 ?>
-	<embed width="<?= $xm ?>" height="<?= $ym ?>" src="map/map_<?= $_SESSION[user] ?>.svg" name="SVG Map" type="image/svg+xml" class="genpad"  style="display:block;margin-left:auto;margin-right:auto">
+	<embed width="<?= $xm ?>" height="<?= $ym ?>" src="map/map_<?= $_SESSION[user] ?>.svg" name="SVG Map" type="image/svg+xml" class="genpad bctr">
 <?php
 }else{
 	if($fmt){
@@ -410,7 +421,7 @@ d3.json("map/map_<?= $_SESSION['user'] ?>.json", function(error, graph){
 	}
 	if (file_exists("map/map_$_SESSION[user].php")) {
 ?>
-<img class="genpad" style="display:block;margin-left:auto;margin-right:auto" usemap="#net" src="map/map_<?= $_SESSION['user'] ?>.php">
+<img class="genpad bctr" usemap="#net" src="map/map_<?= $_SESSION['user'] ?>.php">
 <map name="net">
 <?= $imgmap ?>
 </map>

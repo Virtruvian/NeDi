@@ -36,10 +36,10 @@ if( isset($_GET['col']) ){
 }elseif( isset($_SESSION['devcol']) ){
 	$col = $_SESSION['devcol'];
 }else{
-	$col = array('device','devip','serial','location','contact','lastdis');
+	$col = array('device','devip','serial','type','contact','firstdis','lastdis');
 }
 
-$cols = array(	"device"=>"Device $namlbl",
+$cols = array(	"device"=>"Device",
 		"imgNS"=>$imglbl,
 		"devip"=>"$manlbl IP",
 		"origip"=>"$orilbl IP",
@@ -89,23 +89,24 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 <form method="get" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content">
+<tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td>
 <?php Filters(); ?>
 </td>
 <td class="ctr">
 	<a href="?in[]=snmpversion&op[]=>&st[]=0&lim=<?= $listlim ?>"><img src="img/16/dev.png" title="SNMP Devices"></a>
+	<a href="?in[]=stack&op[]=>&st[]=1&lim=<?= $listlim ?>"><img src="img/16/db.png" title="Stacks"></a>
 	<a href="?in[]=cliport&op[]=%3D&st[]=1&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/kons.png" title="CLI <?= $errlbl ?>"></a>
 	<br>
 	<a href="?in[]=cfgstatus&op[]=~&st[]=[ECO]&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=lastdis&col[]=cfgstatus&col[]=time&ord=time"><img src="img/16/conf.png" title="<?= $cfglbl ?> <?= $errlbl ?>"></a>
 	<a href="?in[]=test&op[]==&st[]=NULL&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=serial&col[]=location&col[]=contact&col[]=lastdis&col[]=test"><img src="img/16/bino.png" title="<?= $notlbl ?> Monitor"></a>
-	<br>
 	<a href="?in[]=firstdis&op[]=~&st[]=&co[]=%3D&in[]=lastdis&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/flas.png" title="<?= $faslbl ?> Devices"></a>
-	<a href="?in[]=lastdis&op[]=<&st[]=<?= time()-2*$rrdstep ?>&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/date.png" title="Devices <?= $undlbl ?>"></a>
 	<br>
+	<a href="?in[]=lastdis&op[]=<&st[]=<?= time()-2*$rrdstep ?>&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/date.png" title="Devices <?= $undlbl ?>"></a>
 	<a href="?in[]=cpu&op[]=>&st[]=0&col[]=device&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&col[]=cpu&col[]=gfNS&lim=10&ord=cpu+desc"><img src="img/16/cpu.png" title="<?= $toplbl ?> 10 CPU <?= $lodlbl ?>"></a>
 	<a href="?in[]=temp&op[]=>&st[]=0&col[]=device&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&col[]=temp&col[]=gfNS&lim=10&ord=temp+desc"><img src="img/16/temp.png" title="<?= $toplbl ?> 10 <?= $tmplbl ?>"></a>
 </td>
@@ -130,13 +131,14 @@ foreach ($cols as $k => $v){
 <td class="ctr s">
 	<input type="submit" class="button" value="<?= $sholbl ?>">
 <?php  if($isadmin) { ?>
-	<p>
+	<br>
 	<input type="submit" class="button" name="mon" value="<?= $monlbl ?>" onclick="return confirm('<?= $monlbl ?> <?= $addlbl ?>?')" >
-	<p>
+	<br>
 	<input type="submit" class="button" name="del" value="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')" >
 <?php } ?>
 </td>
-</tr></table>
+</tr>
+</table>
 </form>
 <p>
 
@@ -167,17 +169,18 @@ if( count($in) ){
 	Condition($in,$op,$st,$co);
 	if( $del ){
 		if($isadmin){
-			echo "<table class=\"content\">\n	<tr\n		<td class=\"$modgroup[$self]2 ctr b\">\n		<img src=\"img/16/dev.png\"><br>Device\n		</td>\n";
-			echo "<td class=\"$modgroup[$self]2 ctr\">\n			<img src=\"img/16/bcnl.png\"><br>$dellbl $stalbl\n		</td>\n";
+			echo "<table class=\"content\">\n	<tr>\n		<td class=\"bgsub ctr b\">\n		<img src=\"img/16/dev.png\"><br>Device\n		</td>\n";
+			echo "		<td class=\"bgsub ctr\">\n			<img src=\"img/16/bcnl.png\"><br>$dellbl $stalbl\n		</td>\n";
 			$mon = 0;
 		}else{
 			echo $nokmsg;
 			$del = 0;
 		}
+	}else{
+		TblHead("bgsub",1);
 	}
-	if( !$del ) TblHead("$modgroup[$self]2",1);
 
-	$res	= DbQuery($query,$link);
+	$res = DbQuery($query,$link);
 	if($res){
 		$row   = 0;
 		$most = '';
@@ -187,9 +190,9 @@ if( count($in) ){
 			TblRow($bg);
 			$ip  = long2ip($dev[1]);
 			if( $del ){
-				echo "<th class=\"$bi\"><img src=\"img/dev/$dev[18].png\" title=\"$dev[3]\"><br>$dev[0]</th><td>";
+				echo "		<td class=\"$bi ctr b\">\n			<img src=\"img/dev/$dev[18].png\" title=\"$dev[3]\"><br>$dev[0]\n		</td>\n		<td>\n";
 				DevDelete($dev[0]," with IP $ip and SN $dev[2]");
-				echo "</td>";
+				echo "		</td>\n	</tr>\n";
 			}else{
 				if($isadmin and $mon and $dev[1]){
 					if($dev[14] & 3){
@@ -212,9 +215,9 @@ if( count($in) ){
 						$statbg = $bi;
 						$stat = '';
 					}
-					TblCell($dev[0],"Devices-Status.php?dev=$ud","$statbg ctr b m","+<img src=\"img/dev/$dev[18].png\" title=\"$dev[3] $stat\">".Digit($dev[29])." $most<br>");
+					TblCell($dev[0],"Devices-Status.php?dev=$ud","$statbg ctr b s","+<img src=\"img/dev/$dev[18].png\" title=\"$dev[3] $stat\">".Digit($dev[29])." $most<br>");
 				}
-				if( in_array("imgNS",$col) )	TblCell($dev[0],"Devices-Status.php?dev=$ud","imgw ctr b","+<img class=\"panel ".(preg_match('/^(ph|wa|ca)/',$dev[18])?'s':'m')."\" src=\"".DevPanel($dev[3],$dev[18],$dev[28])."\" title=\"$dev[3]\"><br>");
+				if( in_array("imgNS",$col) )	TblCell($dev[0],"Devices-Status.php?dev=$ud","imgw ctr b","+<img class=\"panel\" width=\"".(($dev[28])?'100':'50')."\" src=\"".DevPanel($dev[3],$dev[18],$dev[28])."\" title=\"$dev[3]\"><br>");
 				if(in_array("devip",$col))	TblCell($dvip);
 				if(in_array("origip",$col))	TblCell( Devcli($oi,$dev[16]) );
 				if(in_array("serial",$col))	TblCell($dev[2]);
@@ -378,9 +381,9 @@ if( count($in) ){
 				if( in_array("gfNS",$col) and !isset($_GET['xls']) ){
 					echo "		<td>\n";
 					$gsiz = ($_SESSION['gsiz'] == 4)?2:1;
-					if( substr($dev[27],1,1) == "C" ) echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=cpu\"><img src=\"inc/drawrrd.php?dv=$ud&t=cpu&s=$gsiz\" title=\"$dev[20]% CPU $lodlbl\">\n";
-					if($dev[21]) echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=mem\"><img src=\"inc/drawrrd.php?dv=$ud&t=mem&s=$gsiz\" title=\"".(($dev[21] > 100)?DecFix($dev[21]).'B':$dev[21].'%')." $memlbl $frelbl\">\n";
-					if($dev[22]) echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=tmp\"><img src=\"inc/drawrrd.php?dv=$ud&t=tmp&s=$gsiz\" title=\"$tmplbl ".(($_SESSION['far'])?($dev[22]*1.8+32)."F":"$dev[22]C")."\">\n";
+					if( substr($dev[27],1,1) == "C" ) echo "			<a href=\"Devices-Graph.php?dv=$ud&if[]=cpu\"><img src=\"inc/drawrrd.php?dv=$ud&t=cpu&s=$gsiz\" title=\"$dev[20]% CPU $lodlbl\">\n";
+					if($dev[21]) echo "			<a href=\"Devices-Graph.php?dv=$ud&if[]=mem\"><img src=\"inc/drawrrd.php?dv=$ud&t=mem&s=$gsiz\" title=\"".(($dev[21] > 100)?DecFix($dev[21]).'B':$dev[21].'%')." $memlbl $frelbl\">\n";
+					if($dev[22]) echo "			<a href=\"Devices-Graph.php?dv=$ud&if[]=tmp\"><img src=\"inc/drawrrd.php?dv=$ud&t=tmp&s=$gsiz\" title=\"$tmplbl ".(($_SESSION['far'])?($dev[22]*1.8+32)."F":"$dev[22]C")."\">\n";
 					if($dev[23]){
 						if($dev[24] and $dev[24] != 'MemIO'){
 							list($ct,$cy,$cu) = explode(";", $dev[24]);
@@ -388,7 +391,7 @@ if( count($in) ){
 							$ct = "$memlbl IO";
 							$cu = "Bytes $frelbl";
 						}
-						echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=cuv\"><img src=\"inc/drawrrd.php?dv=$ud&if[]=".urlencode($ct)."&if[]=".urlencode($cu)."&s=$gsiz&t=cuv\" title=\"$ct ".DecFix($dev[23])." $cu\">";
+						echo "			<a href=\"Devices-Graph.php?dv=$ud&if[]=cuv\"><img src=\"inc/drawrrd.php?dv=$ud&if[]=".urlencode($ct)."&if[]=".urlencode($cu)."&s=$gsiz&t=cuv\" title=\"$ct ".DecFix($dev[23])." $cu\">";
 					}
 					echo "		</td>\n";
 				}
@@ -399,13 +402,7 @@ if( count($in) ){
 	}else{
 		print DbError($link);
 	}
-	?>
-</table>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
-<?= $row ?> Devices<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?>
-
-</td></tr></table>
-<?php
+	TblFoot("bgsub", count($col), "$row Devices".(($ord)?", $srtlbl: $ord":"").(($lim)?", $limlbl: $lim":"") );
 }
 include_once ("inc/footer.php");
 ?>

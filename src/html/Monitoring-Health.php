@@ -24,14 +24,17 @@ $evloc = ($loc)?"&co[]=AND&in[]=location&op[]=like&st[]=".urlencode($loc):'';
 $rploc = ($loc)?"&in[]=location&op[]=like&st[]=".urlencode($loc):'';
 
 $shrrd = ($reg or !$_SESSION['gsiz'] or $_SESSION['view'])?0:$_SESSION['gsiz'];
+$isiz  = ($srrd == 2)?"16":"32";
+
 ?>
 <h1>Monitoring Health</h1>
 <form method="get" name="dynfrm" action="<?= $self ?>.php">
 <input type="hidden" name="reg" value="<?= $reg ?>">
 <input type="hidden" name="cty" value="<?= $cty ?>">
 <input type="hidden" name="bld" value="<?= $bld ?>">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td valign="top" align="center">
 <h3>
 <a href="Reports-Monitoring.php?rep[]=mav<?= $rploc ?>"><img src="img/16/dbin.png" title="<?= $avalbl ?> <?= $stslbl ?>"></a>
@@ -66,11 +69,12 @@ StatusIf($loc,'bbup',$shrrd);
 StatusIf($loc,'bbdn',$shrrd);
 
 if(!$shrrd){
-		$query	= GenQuery('interfaces','s','count(*),round(sum(poe)/1000)','','',array('poe','location'),array('>','like'),array('0',$loc),array('AND'),'JOIN devices USING (device)');
+		#$query	= GenQuery('interfaces','s','count(*),round(sum(poe)/1000)','','',array('poe','location'),array('>','like'),array('0',$loc),array('AND'),'JOIN devices USING (device)');
+		$query	= GenQuery('devices','s','count(*),sum(totpoe)','','',array('totpoe','location'),array('>','like'),array('0',$loc),array('AND') );
 		$res	= DbQuery($query,$link);
 		if($res){
 			$m = DbFetchRow($res);
-			if($m[0]){echo "<p><b><img src=\"img/32/batt.png\" title=\"$m[0] PoE IF\">$m[1] W</b>\n";}
+			if($m[0]){echo "<h3><img src=\"img/32/batt.png\" title=\"$totlbl PoE, $m[0] Devices\">$m[1] W</h3>\n";}
 			DbFreeResult($res);
 		}else{
 			print DbError($link);
@@ -104,11 +108,11 @@ StatusIf($loc,'bdis',$shrrd);
 <span id="counter"><?= $refresh ?></span>
 </h3>
 <?php
-StatusCpu($loc,$shrrd);
-StatusMem($loc,$shrrd);
-StatusTmp($loc,$shrrd);
+StatusCpu($loc,$shrrd,$isiz);
+StatusMem($loc,$shrrd,$isiz);
+StatusTmp($loc,$shrrd,$isiz);
 
-if($shrrd){StatusIncidents($loc,$shrrd);}
+if($shrrd) StatusIncidents($loc,$shrrd);
 
 ?>
 </td></tr></table>
@@ -132,7 +136,7 @@ if($_SESSION['lim']){
 		$nlev = DbNumRows($res);
 		if($nlev){
 ?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th width="40"><img src="img/16/idea.png"><br><?= $levlbl ?></th>
 <th><img src="img/16/bell.png"><br><?= $msglbl ?></th>
 <?php
@@ -165,7 +169,7 @@ if($_SESSION['lim']){
 		$nlev = DbNumRows($res);
 		if($nlev){
 ?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th width="40"><img src="img/16/abc.png"><br><?= $clalbl ?></th>
 <th><img src="img/16/bell.png"><br><?= $msglbl ?></th>
 <?php
@@ -176,7 +180,7 @@ if($_SESSION['lim']){
 				list($ei,$et)   = EvClass($m[0]);
 				$mbar = Bar($m[1],"lvl$m[0]",'si');
 				echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-				echo "<img src=\"img/16/$ei.png\" title=\"$et\"></th><td nowrap>$mbar <a href=\"Monitoring-Events.php?in[]=class&op[]==&st[]=$m[0]$evloc\">$m[1]</a></td></tr>\n";
+				echo "<img src=\"$ei\" title=\"$et\"></th><td nowrap>$mbar <a href=\"Monitoring-Events.php?in[]=class&op[]==&st[]=$m[0]$evloc\">$m[1]</a></td></tr>\n";
 			}
 			echo "</table>\n";
 		}else{
@@ -199,7 +203,7 @@ if($_SESSION['lim']){
 		$nlev = DbNumRows($res);
 		if($nlev){
 ?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th><img src="img/16/say.png"><br><?= $srclbl ?></th>
 <th><img src="img/16/bell.png"><br><?= $msglbl ?></th>
 <?php
@@ -253,7 +257,10 @@ if($_SESSION['col']){
 		TopoFloors($reg,$cty,$bld);
 	}
 	if($leok) TopoLocErr();
+}elseif(file_exists("log/montools.php")) {
+	include_once ("log/montools.php");
 }
+
 
 include_once ("inc/footer.php");
 

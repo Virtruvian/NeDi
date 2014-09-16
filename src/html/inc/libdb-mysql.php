@@ -42,7 +42,7 @@ function DbFreeResult($r){
 	global $debug;
 
 	if($debug){
-		echo "<div class=\"textpad code good\" style=\"width:600px\">";
+		echo "<div class=\"textpad code good xxl\">";
 		debug_print_backtrace();
 		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";
 	}
@@ -55,6 +55,16 @@ function DbAffectedRows($r){
 
 function DbEscapeString($r){
         return mysql_real_escape_string($r);
+}
+
+# We might get 'table.column' sent to this function, not just a bare column name.
+#
+# Do not further quote the result of this function.
+function DbEscapeIdentifier($i){
+	# PHP appears to have no standard MySQL-related function for this,
+	# so we approximate it as best we can. 
+	$c = explode(".", $i);
+	return "`" . implode("`.`", array_map(mysql_real_escape_string, $c)) . "`";
 }
 
 function DbError($r){
@@ -128,7 +138,8 @@ function AdOpVal($c,$o,$v){
 			}
 		}
 	}elseif( preg_match("/^(if|nod|mon)ip6$/",$c) ){
-		$c = "HEX($c)";
+		$v = inet_pton($v);
+		#$c = "HEX($c)";TODO migrate to IPv6 fields as soon as mysql supports them!
 	}
 	if( strstr($o, 'COL ') ){
 		$o = substr($o,4);
@@ -250,7 +261,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 	}
 
 	if($debug){
-		echo "<div class=\"textpad code warn\" style=\"width:600px\">";
+		echo "<div class=\"textpad code warn xxl\">";
 		debug_print_backtrace();
 		echo "<p><a href=\"System-Export.php?act=c&query=".urlencode($qry)."\">$qry</a>\n";
 		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";

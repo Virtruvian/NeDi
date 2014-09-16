@@ -60,8 +60,9 @@ $cols = array(	"tgtNS"=>"$tgtlbl",
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php" name="track">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 
 <td>
 <?php Filters(); ?>
@@ -97,7 +98,7 @@ if($del){
 if( count($in) ){
 	Condition($in,$op,$st,$co);
 
-	TblHead("$modgroup[$self]2",1);
+	TblHead("bgsub",1);
 
 	$query	= GenQuery('nodetrack','s','nodetrack.device as device,nodetrack.ifname as ifname,value,source,alias,comment,name,nodes.mac as mac,oui,nodes.vlanid as vlanid,usrname,time',$ord,$lim,$in,$op,$st,$co, 'JOIN interfaces USING (device,ifname) LEFT JOIN nodes USING (device,ifname)');
 	$res	= DbQuery($query,$link);
@@ -224,7 +225,7 @@ if( count($in) ){
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
 <?php
 }

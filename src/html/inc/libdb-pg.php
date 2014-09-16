@@ -41,7 +41,7 @@ function DbFreeResult($r){
 	global $debug;
 
 	if($debug){
-		echo "<div class=\"textpad code good\" style=\"width:600px\">";
+		echo "<div class=\"textpad code good xxl\">";
 		debug_print_backtrace();
 		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";
 	}
@@ -54,6 +54,19 @@ function DbAffectedRows($r){										# GH: different results if the last query 
 
 function DbEscapeString($r){
         return pg_escape_string($r);
+}
+
+# We might get 'table.column' sent to this function, not just a bare column name.
+#
+# Do not further quote the result of this function.
+function DbEscapeIdentifier($i){
+	# We actually want:
+	#     return pg_escape_identifier($i);
+	# or perhaps some similar code that also invokes implode() and
+	# array_map(), but pg_escape_identifier() is not available in PHP
+	# 5.2.17.  So we have to settle for the following approximation.
+	$c = explode(".", $i);
+	return '"' . implode('"."', array_map(pg_escape_string, $c)) . '"';
 }
 
 function DbError($r){
@@ -77,7 +90,7 @@ function AddRecord($table,$key,$col,$val){
 	$mres	= DbQuery("SELECT * FROM $table WHERE $key",$link);
 	if($mres){
 		if( DbNumRows($mres) ){
-			$status = "<img src=\"img/16/bdis.png\" title=\"$alrlbl OK\" vspace=\"4\">";
+			$status = "<img src=\"img/16/bdis.png\" title=\"$alrlbl OK ($key)\" vspace=\"4\">";
 		}else{
 			if( !DbQuery("INSERT INTO $table ($col) VALUES ($val)",$link) ){
 				$status = "<img src=\"img/16/bcnl.png\" title=\"".DbError($link)."\" vspace=\"4\">";
@@ -173,7 +186,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 	$co = array_map( 'pg_escape_string', $rawco );
 	if($do == 'i'){
 		$qry = "INSERT INTO $tbl (". implode(',',$in) .") VALUES ('". implode("','",$st) ."')";
-	}elseif($do == 'u'){
+	}elseif($do == 'u'){# TODO refactor this and all calls (grep ",'u'," *php) and use Condition($in,$op,$st,$co,2)?
 		if( $in[0] ){
 			$x = 0;
 			foreach ($in as $c){
@@ -243,7 +256,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 	}
 
 	if($debug){
-		echo "<div class=\"textpad code warn\" style=\"width:600px\">";
+		echo "<div class=\"textpad code warn xxl\">";
 		debug_print_backtrace();
 		echo "<p><a href=\"System-Export.php?act=c&query=".urlencode($qry)."\">$qry</a>\n";
 		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";

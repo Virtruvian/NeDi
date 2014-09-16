@@ -341,7 +341,7 @@ function DrawLink($x1,$y1,$x2,$y2,$opt) {
 		}
 		$mapitems .= DrawLabel($xlm,$ylm- 8,$ftyp,1,"blue");
 		$mapitems .= DrawLabel($xlm,$ylm-16,$rtyp,1,"blue");
-	}elseif($lit == 'l' and $pos != "d"){
+	}elseif($lit == 'l' and $pos != "d" and $pos != "a"){
 		$mapitems .= DrawLabel($xlm,$ylm-8,"$futl%/$rutl%",3,"black");
 	}elseif( is_array($rrdif) ){
 		if( preg_match('/^f/',$lit) ){
@@ -402,20 +402,20 @@ function DrawBuilding($x,$y,$r,$c,$b) {
 	if($fmt == "json"){
 	}elseif($fmt == "svg"){
 		$mapframes .= "	<rect fill=\"whitesmoke\" x=\"$x1\" y=\"$y1\" width=\"".($x2-$x1)."\" height=\"".($y2-$y1)."\" fill-opacity=\"0.6\" />\n";
-		if($pos == "d"){
-			if($loi) $mapframes .= "	<text x=\"$x1\" y=\"".($y1-4)."\" font-size=\"12\" fill=\"blue\">$b</text>\n";
+		if($pos == "d" or $pos == "a"){
+			if($loi) $mapframes .= "	<text x=\"$x1\" y=\"".($y1-4)."\" font-size=\"12\" fill=\"blue\">".substr($b,0,$_SESSION['lsiz'])."</text>\n";
 		}else{
 			$mapframes .= "	<rect fill=\"gainsboro\" x=\"$x1\" y=\"".($y1+15)."\" width=\"20\" height=\"".($y2-$y1-20)."\" fill-opacity=\"0.6\" />\n";
-			$mapframes .= "	<text x=\"".($x1+4)."\" y=\"".($y1+12)."\" font-size=\"12\" fill=\"blue\">$b</text>\n";
+			$mapframes .= "	<text x=\"".($x1+4)."\" y=\"".($y1+12)."\" font-size=\"12\" fill=\"blue\">".substr($b,0,$_SESSION['lsiz'])."</text>\n";
 		}
 		$mapframes .= "	<rect fill=\"none\" stroke=\"black\" x=\"$x1\" y=\"$y1\" width=\"".($x2-$x1)."\" height=\"".($y2-$y1)."\"/>\n";
 	}else{
 		$mapframes .= "Imagefilledrectangle(\$image, $x1, $y1, $x2, $y2, \$whitesmoke);\n";
-		if($pos == "d"){
-			if($loi) $mapframes .= "ImageString(\$image, 3, $x1, ".($y1-14).",\"$b\", \$blue);\n";
+		if($pos == "d" or $pos == "a"){
+			if($loi) $mapframes .= "ImageString(\$image, 3, $x1, ".($y1-14).",\"".substr($b,0,$_SESSION['lsiz'])."\", \$blue);\n";
 		}else{
 			$mapframes .= "Imagefilledrectangle(\$image, $x1, ".($y1+15).", ".($x1+20).", $y2, \$gainsboro);\n";
-			$mapframes .= "ImageString(\$image, 3, ".($x1+4).", $y1,\"$b\", \$blue);\n";
+			$mapframes .= "ImageString(\$image, 3, ".($x1+4).", $y1,\"".substr($b,0,$_SESSION['lsiz'])."\", \$blue);\n";
 		}
 		$mapframes .= "Imagerectangle(\$image, $x1, $y1, $x2, $y2, \$black);\n";
 	}
@@ -572,7 +572,7 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 	}elseif($typ == "ri"){										# Regioninfo
 		if($pos == "s"){
 			$itxt = IconCircle($x,$y,10,6,"gainsboro");
-		}elseif($pos == "d"){
+		}elseif($pos == "d" or $pos == "a"){
 			$itxt = IconCircle($x,$y,4,2,"gainsboro");
 		}else{
 			$itxt = IconPng($x,$y,"regg",25);
@@ -581,7 +581,7 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 	}elseif($typ == "ci"){										# Cityinfo
 		if($pos == "s"){
 			$itxt = IconRect($x,$y,10,6,"whitesmoke");
-		}elseif($pos == "d"){
+		}elseif($pos == "d" or $pos == "a"){
 			$itxt = IconRect($x,$y,4,2,"whitesmoke");
 		}else{
 			$itxt = IconPng($x,$y,"cityg",30);
@@ -590,7 +590,7 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 	}elseif($typ == "bi"){										# Bldinfo
 		if($pos == "s"){
 			$itxt .= IconRect($x,$y,4,4,"whitesmoke");
-		}elseif($pos == "d"){
+		}elseif($pos == "d" or $pos == "a"){
 			$itxt .= IconRect($x,$y,2,2,"whitesmoke");
 		}else{
 			$itxt .= IconPng($x,$y,"bldg",30);
@@ -600,7 +600,7 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 		if($pos == "s"){
 			$itxt = IconRect($x,$y,3,2,"black");
 			$itxt .= DrawLabel($x,$y+6,Safelabel($label),3,"navy");
-		}elseif($pos == "d"){
+		}elseif($pos == "d" or $pos == "a"){
 			$itxt .= IconRect($x,$y,1,0.5,"black");
 		}else{
 			$itxt = IconPng($x,$y,"stair",10);
@@ -657,20 +657,26 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 			if($dev[$label]['stk'] > 1){
 				$itxt .= DrawLabel($x+20,$y-6,$dev[$label]['stk'],2,"blue");
 			}
-		}elseif($pos == 'a'){
-			if($dev[$label]['sta'] == ''){
-				$itxt .= IconCircle($x,$y,8,4,"gray");
-			}elseif($dev[$label]['sta'] == 0){
-				$itxt = IconRect($x,$y,18,6,"green");
-				$itxt .= DrawLabel($x,$y-4,$stco['100'],1,"whitesmoke");
-			}elseif($dev[$label]['sta'] == 1){
-				$itxt = IconRect($x,$y,24,8,"yellow");
-				$itxt .= DrawLabel($x,$y-4,$stco['250'],1,"black");
-			}else{
-				$itxt = IconRect($x,$y,24,8,"red");
-				$itxt .= DrawLabel($x,$y-6,$stco['200'],3,"whitesmoke");
+		}elseif($pos == 'a' or $pos == 'A'){
+			$s = 8;
+			if($pos == 'a'){
+				$s = 0;
+				$sx = intval($sx/2);
+				$sy = intval($sy/2);
 			}
-			if($dev[$label]['stk'] > 1){
+			if($dev[$label]['sta'] == ''){
+				$itxt .= IconCircle($x,$y,$sx-2,$sy-2,"gray");
+			}elseif($dev[$label]['sta'] == 0){
+				$itxt = IconRect($x,$y,$sx+$s,$sy+$s/2,"green");
+				if($pos == 'A') $itxt .= DrawLabel($x,$y-4,$stco['100'],1,"whitesmoke");
+			}elseif($dev[$label]['sta'] == 1){
+				$itxt = IconRect($x,$y,$sx+$s,$sy+$s/2,"yellow");
+				if($pos == 'A') $itxt .= DrawLabel($x,$y-4,$stco['250'],1,"black");
+			}else{
+				$itxt = IconRect($x,$y,$sx+$s,$sy+$s/2,"red");
+				if($pos == 'A') $itxt .= DrawLabel($x,$y-6,$stco['200'],3,"whitesmoke");
+			}
+			if($dev[$label]['stk'] > 1 and $pos == 'A'){
 				$itxt .= DrawLabel($x+20,$y-6,$dev[$label]['stk'],2,"blue");
 			}
 		}elseif($pos == "p" or $pos == "P" or $pos == "D"){
@@ -685,7 +691,7 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 
 		if($fmt == "json"){
 			$itxt .= ',"name":"'.Safelabel($label)."\"},\n";
-		}elseif($pos != "d"){
+		}elseif($pos != "d" and $pos != "a"){
 			$devl = DrawLabel($x,$y+18,Safelabel($label),1,"black");
 			if($loi){
 				if($loi == 1){
@@ -808,28 +814,29 @@ function DrawNodes($dv){
 	include_once ( (($sub)?'libnod.php':'inc/libnod.php') );
 
 	if($in[0] == "vlanid" or $in[0] == "mac" or $in[0] == 'nodip' or $in[0] == 'name' or $in[0] == 'oui'){
-		$nquery	= GenQuery('nodes','s','name,nodip,mac,oui,ifname,ifmetric,iftype,speed,duplex,pvid,alias,dinoct,doutoct','ifname','',array('device',$in[0]),array('=',$op[0]),array($dv,$st[0]),array('AND'),'LEFT JOIN interfaces USING (device,ifname)');
+		$nquery	= GenQuery('nodes','s','aname,nodip,mac,oui,ifname,metric,iftype,speed,duplex,pvid,alias,dinoct,doutoct','ifname','',array('device',$in[0]),array('=',$op[0]),array($dv,$st[0]),array('AND'),'LEFT JOIN interfaces USING (device,ifname) LEFT JOIN nodarp USING (mac) LEFT JOIN dns USING (nodip)');
 	}else{
-		$nquery	= GenQuery('nodes','s','name,nodip,mac,oui,ifname,ifmetric,iftype,speed,duplex,pvid,alias,dinoct,doutoct','ifname','',array('device'),array('='),array($dv),array(),'LEFT JOIN interfaces USING (device,ifname)');
+		$nquery	= GenQuery('nodes','s','aname,nodip,mac,oui,ifname,metric,iftype,speed,duplex,pvid,alias,dinoct,doutoct','ifname','',array('device'),array('='),array($dv),array(),'LEFT JOIN interfaces USING (device,ifname) LEFT JOIN nodarp USING (mac) LEFT JOIN dns USING (nodip) ');
 	}
 	$nres	= DbQuery($nquery,$link);
 	if($nres){
 		$cun = 0;
 		$nn  = DbNumRows($nres);
 		while( ($n = DbFetchRow($nres)) ){
-			$nod[$n[2]]['nam']  = substr($n[0],0,$_SESSION['lsiz']);
+			$nod[$n[2]]['nam']  = $n[0];
 			$nod[$n[2]]['ip'] = long2ip($n[1]).(($n[9])?" Vl$n[9]":"");
 			$nod[$n[2]]['ico'] = Nimg("$n[2];$n[3]");
 			list($nod[$n[2]]['x'],$nod[$n[2]]['y']) = CircleCoords($dev[$dv]['x'],$dev[$dv]['y'],$cun,$nn,8*($cun % 2),$len/pow($lsf/10,3),0,0);
 			$mapitems .= DrawItem($nod[$n[2]]['x'],$nod[$n[2]]['y'],'0',$n[2],'n');
 			$imgmap   .= "<area href=\"Nodes-Status.php?mac=$n[2]\" coords=\"".($nod[$n[2]]['x']-$imas) .",". ($nod[$n[2]]['y']-$imas) .",". ($nod[$n[2]]['x']+$imas) .",". ($nod[$n[2]]['y']+$imas)."\" shape=\"rect\" title=\"".$nod[$n[2]]['nam']." ".$nod[$n[2]]['ip']."\">\n";
+			$m = substr($n[5],0,1);
 			$nlnk["$dv;;$n[2]"]['fbw'] = $n[7];
 			$nlnk["$dv;;$n[2]"]['rbw'] = $n[8];
 			$nlnk["$dv;;$n[2]"]['ftr'] = $n[11];
 			$nlnk["$dv;;$n[2]"]['rtr'] = $n[12];
 			$nlnk["$dv;;$n[2]"]['ifal'][] = $n[10];
 			$nlnk["$dv;;$n[2]"]['fif'][] = "$dv;;$n[4]";
-			$nlnk["$dv;;$n[2]"]['rif'][] = ($n[5] < 256)?";;$n[5]db":"";			# Draws SNR...
+			$nlnk["$dv;;$n[2]"]['rif'][] = (preg_match('/[M-Z]/',$m))?';;'.(3*(90-ord($m))).'db':'';# Draws SNR...
 			if($fmt == "json") $cud++;
 			$jnod["$dv;;$n[2]"] = $cud;
 			$cun++;
@@ -955,61 +962,18 @@ function DrawLabel($x,$y,$t,$s,$c){
 	global $fmt;
 
 	if($t != ""){
+		$tl = substr($t,0,$_SESSION['lsiz']);
 		$fs = ($s == 1)?10:(4*$s);
-		$lx = intval($x-strlen($t) * $fs/4);
+		$lx = intval($x-strlen($tl) * $fs/4);
 
 		if($fmt == "json"){
 		}elseif($fmt == "svg"){
-			return "<text x=\"$lx\" y=\"".($y+$fs)."\" font-size=\"$fs\" fill=\"$c\">$t</text>\n";
+			return "<text x=\"$lx\" y=\"".($y+$fs)."\" font-size=\"$fs\" fill=\"$c\">$tl</text>\n";
 		}else{
-			return "ImageString(\$image, $s, $lx, $y, \"$t\", \$$c);\n";
+			return "ImageString(\$image, $s, $lx, $y, \"$tl\", \$$c);\n";
 		}
 	}
 
-}
-
-//===================================================================
-// Return link style based on forward bandwidth or utilisation
-function LinkStyle($bw=0,$utl=0){
-
-	global $lit;
-
-	if($lit == 'l'){
-		$w = 4;
-		if($utl == 0){										# No traffic
-			return array($w,'gainsboro');
-		}elseif($utl < 2){
-			return array($w,'cornflowerblue');
-		}elseif($utl < 5){
-			return array($w,'blue');
-		}elseif($utl < 10){
-			return array($w,'green');
-		}elseif($utl < 25){
-			return array($w,'limegreen');
-		}elseif($utl < 50){
-			return array($w,'yellow');
-		}elseif($utl < 75){
-			return array($w,'orange');
-		}else{
-			return array($w,'red');
-		}
-	}else{
-		if($bw == 0){										# No bandwidth
-			return array('1','lightgray');
-		}elseif($bw == 11000000 or $bw == 54000000 or $bw == 300000000 or $bw == 450000000){	# Most likely Wlan
-			return array('5','gainsboro');
-		}elseif($bw < 10000000){								# Most likely serial links
-			return array(intval($bw/1000000),'limegreen');
-		}elseif($bw < 100000000){								# 10 Mbit Ethernet
-			return array(intval($bw/10000000),'blue');
-		}elseif($bw < 1000000000){								# 100 Mbit Ethernet
-			return array(intval($bw/100000000),'orange');
-		}elseif($bw < 10000000000){								# 1 Gbit Ethernet
-			return array(intval($bw/1000000000),'red');
-		}else{											# 10 Gbit Ethernet
-			return array(intval($bw/10000000000),'purple');
-		}
-	}
 }
 
 #===================================================================
@@ -1027,7 +991,7 @@ function Map(){
 
 	$acol = '';
 	$join = '';
-	if($pos == 'a'){
+	if($pos == 'a' or $pos == 'A'){
 		$acol = ',status';
 		$join .= 'LEFT JOIN monitoring USING (device) ';
 	}
@@ -1094,7 +1058,7 @@ function Map(){
 				$dev[$d[0]]['stk'] = ($d[11] > 1)?$d[11]:1;
 				$dev[$d[0]]['siz'] = $d[10] * $dev[$d[0]]['stk'];
 				$dev[$d[0]]['ver'] = $d[12];
-				if($pos == 'a') $dev[$d[0]]['sta'] = $d[13];
+				if($pos == 'a' or $pos == 'A') $dev[$d[0]]['sta'] = $d[13];
 			}
 		}
 		DbFreeResult($res);

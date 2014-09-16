@@ -14,11 +14,7 @@ if( isset($_SESSION['group']) ){
 	if($_SESSION['tz']){date_default_timezone_set($_SESSION['tz']);}
 	require_once ("libmisc.php");
 	ReadConf($_SESSION['group']);
-	$mos     = explode("-", $self);
-	$selfi   = $mod[$mos[0]][$mos[1]];
-	$nipl    = $_SESSION['nip'];									# Disables telnet:// and ssh:// links to allow browser add-ons
 	$now     = date($_SESSION['timef']);
-	$isadmin = (preg_match("/adm/",$_SESSION['group']) )?1:0;
 	$debug   = (isset($_GET['debug']) and $isadmin)?1:0;
 }else{
 	die;

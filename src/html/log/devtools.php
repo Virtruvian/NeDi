@@ -1,5 +1,5 @@
 <?php
-# This file can be used to add links from Device-Status, with the following variables available for linking:
+# This file can be used to add links in Device-Status, with the following variables available:
 # $ip		Device IP address
 # $ud		URL encoded device name
 # $os		Operating system

@@ -15,16 +15,6 @@ package db;
 use warnings;
 
 use DBI;
-use Socket;												# Pg needs libsocket6-perl to pack ipv6
-
-my $s6ok = 0;
-eval 'use Socket6;';
-if ($@){
-	&misc::Prt("DB  :No Socket6, IPv6 will not work properly with Pg backend!\n");
-}else{
-	$s6ok = 1;
-	&misc::Prt("DB  :Socket6 loaded\n");
-}
 
 use vars qw($dbh $ac);
 
@@ -43,9 +33,9 @@ sub Connect{
 
 	my ($dbname,$dbhost,$dbuser,$dbpass,$setac) = @_;
 	$ac = (!defined $setac)?0:$setac;								# Set $db::ac so functions like Insert() are autocommit aware
-	&misc::Prt("DB  :Connecting to '$dbname\@$dbhost' as '$dbuser' with".(($ac)?'':'out')." autocommit\n") if $main::opt{'d'};
+	&misc::Prt("DBG :Connecting to '$dbname\@$dbhost' as '$dbuser' with".(($ac)?'':'out')." autocommit\n") if $main::opt{'d'} =~ /d/;
 	$dbh = DBI->connect("DBI:$misc::backend:dbname=$dbname;host=$dbhost", $dbuser, $dbpass, { RaiseError => 1, AutoCommit => $ac} ) or die $DBI::errstr;
-	&misc::Prt("DB  :Connection ".((defined $dbh)?'OK':'FAIL')."\n") if $main::opt{'d'};
+	&misc::Prt("DBG :Connection ".((defined $dbh)?'OK':'FAIL')."\n") if $main::opt{'d'} =~ /d/;
 }
 
 =head2 FUNCTION Commit()
@@ -61,34 +51,8 @@ B<Returns> -
 =cut
 sub Commit{
 
+	&misc::Prt("DBG :Committing Changes\n") if $main::opt{'d'} =~ /d/;
 	$dbh->commit;
-}
-
-=head2 FUNCTION IPtoDB()
-
-Convert IPv6 Binary for writing to Pg-inet
-May be used to handle IPv4 in the future as well...
-
-B<Options> dbhandle
-
-B<Globals> -
-
-B<Returns> -
-
-=cut
-sub IPtoDB{
-
-	my ($ip6,$addr) = @_;
-
-	if($misc::backend eq 'Pg'){
-		if($addr and $ip6){
-			return sprintf("%x:%x:%x:%x:%x:%x:%x:%x",unpack("n8",$addr));
-		}else{
-			return  undef;									# Pg accepts NULL but not empty :-/
-		}
-	}else{
-		return  $addr;
-	}
 }
 
 =head2 FUNCTION Disconnect()
@@ -121,58 +85,93 @@ B<Returns> -
 =cut
 sub InitDB{
 
-	&db::Connect( ($misc::backend eq 'Pg')?'postgres':'mysql',$misc::dbhost,$_[0],$_[1],1);
-	my $dbver;
-	my $sth = $dbh->prepare("SELECT VERSION()");
-	$sth->execute();
-	while ((my @f) = $sth->fetchrow) {
-		$dbver = $f[0];
-	}
-	print "DB Version	: $dbver\n";
-	print "----------------------------------------------------------------------\n";
-	$dbh->do("DROP DATABASE IF EXISTS $misc::dbname");
-	#$dbh->do("DROP FUNCTION public.inet_ntoa(bigint)");TODO remove, if not needed
-	print "Old DB '$misc::dbname' dropped!\n";
+	my ($adminuser, $adminpass, $nedihost) = @_;
 
-	print "Creating $misc::dbname\n";
-	my $serid = 'serial';
-	my $tinun = 'smallint';
-	my $smaun = 'integer';
-	my $intun = 'bigint';
-	my $bigun = 'bigint';
-	my $char  = 'character varying';
-	my $vchar = 'character varying';
-	my $ipv6  = 'inet';
-	my $text  = 'text';
+	my $dbcon = 'mysql';
+	my $serid = 'INT UNSIGNED NOT NULL AUTO_INCREMENT';
+	my $tinun = 'TINYINT UNSIGNED';
+	my $smaun = 'SMALLINT UNSIGNED';
+	my $intun = 'INT UNSIGNED';
+	my $bigun = 'BIGINT UNSIGNED';
+	my $char  = 'CHAR';
+	my $vchar = 'VARCHAR';
+	my $ipv6  = "VARBINARY(16) DEFAULT ''";
+	my $text  = 'MEDIUMTEXT';
 	if($misc::backend eq 'Pg'){
-		unless( &Select('pg_user','','usename',"usename = '$misc::dbuser'") ){
-			$dbh->do("CREATE ROLE $misc::dbuser WITH login PASSWORD '$misc::dbpass';");
-		}
-		$dbh->do("CREATE DATABASE $misc::dbname OWNER=$misc::dbuser");
-		$dbh->do("GRANT ALL PRIVILEGES ON DATABASE $misc::dbname TO $misc::dbuser");
-	}else{
-		$dbh->do("CREATE DATABASE $misc::dbname");
-		$dbh->do("GRANT ALL PRIVILEGES ON $misc::dbname.* TO \'$misc::dbuser\'\@\'$_[2]\' IDENTIFIED BY \'$misc::dbpass\'");
-		if($dbver =~ /5\.0/) {									#fix for mysql 5.0 with old client libs
-			$dbh->do("SET PASSWORD FOR \'$misc::dbuser\'\@\'$_[2]\' = OLD_PASSWORD(\'$misc::dbpass\')");
-		}
-		$serid = 'INT UNSIGNED NOT NULL AUTO_INCREMENT';
-		$tinun = 'TINYINT UNSIGNED';
-		$smaun = 'SMALLINT UNSIGNED';
-		$intun = 'INT UNSIGNED';
-		$bigun = 'BIGINT UNSIGNED';
-		$char  = 'CHAR';
-		$vchar = 'VARCHAR';
-		$ipv6  = "VARBINARY(16) DEFAULT ''";
-		$text  = 'MEDIUMTEXT';
+		$dbcon = 'postgres';
+		$serid = 'serial';
+		$tinun = 'smallint';
+		$smaun = 'integer';
+		$intun = 'bigint';
+		$bigun = 'bigint';
+		$char  = 'character varying';
+		$vchar = 'character varying';
+		$ipv6  = 'inet';
+		$text  = 'text';
 	}
-	print "for $misc::dbuser\@$_[2]\n";
-	&db::Disconnect();
+
+	unless($adminuser eq 'nodrop'){									# Skip creating DB doesn't require admin rights
+		&db::Connect( $dbcon,$misc::dbhost,$adminuser,$adminpass,1);
+		my $sth = $dbh->prepare("SELECT VERSION()");
+		$sth->execute();
+		my @dbver = $sth->fetchrow;
+		$sth->finish if $sth;
+		print "DB Version	: $dbver[0]\n";
+		print "----------------------------------------------------------------------\n";
+		$dbh->do("DROP DATABASE IF EXISTS $misc::dbname");
+		print "Old DB '$misc::dbname' dropped!\n";
+
+		print "Creating '$misc::dbname' for $misc::dbuser\@$nedihost:\n";
+		if($misc::backend eq 'Pg'){
+			#$dbh->do("DROP FUNCTION public.inet_ntoa(bigint)");TODO remove, if not needed
+			unless( &Select('pg_user','','usename',"usename = '$misc::dbuser'") ){
+				$dbh->do("CREATE ROLE $misc::dbuser WITH login PASSWORD '$misc::dbpass';");
+			}
+			$dbh->do("CREATE DATABASE $misc::dbname OWNER=$misc::dbuser");
+			$dbh->do("GRANT ALL PRIVILEGES ON DATABASE $misc::dbname TO $misc::dbuser");
+		}else{
+			$dbh->do("CREATE DATABASE $misc::dbname");
+			$dbh->do("GRANT ALL PRIVILEGES ON $misc::dbname.* TO \'$misc::dbuser\'\@\'$nedihost\' IDENTIFIED BY \'$misc::dbpass\'");
+			if($dbver[0] =~ /5\.0/) {							#fix for mysql 5.0 with old client libs
+				$dbh->do("SET PASSWORD FOR \'$misc::dbuser\'\@\'$nedihost\' = OLD_PASSWORD(\'$misc::dbpass\')");
+			}
+		}
+		&db::Disconnect();
+	}
 
 #---Connect as nedi db user and create tables.
 	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
 
-	print "TABLES\ndevices\n";
+	if($adminuser eq 'nodrop'){									# Clean existing tables, if DB wasn't dropped before
+		$dbh->do("DROP TABLE IF EXISTS devices");
+		$dbh->do("DROP TABLE IF EXISTS modules");
+		$dbh->do("DROP TABLE IF EXISTS interfaces");
+		$dbh->do("DROP TABLE IF EXISTS networks");
+		$dbh->do("DROP TABLE IF EXISTS configs");
+		$dbh->do("DROP TABLE IF EXISTS inventory");
+		$dbh->do("DROP TABLE IF EXISTS vlans");
+		$dbh->do("DROP TABLE IF EXISTS links");
+		$dbh->do("DROP TABLE IF EXISTS locations");
+		$dbh->do("DROP TABLE IF EXISTS events");
+		$dbh->do("DROP TABLE IF EXISTS monitoring");
+		$dbh->do("DROP TABLE IF EXISTS incidents");
+		$dbh->do("DROP TABLE IF EXISTS nodes");
+		$dbh->do("DROP TABLE IF EXISTS nodarp");
+		$dbh->do("DROP TABLE IF EXISTS nodnd");
+		$dbh->do("DROP TABLE IF EXISTS nodetrack");
+		$dbh->do("DROP TABLE IF EXISTS iftrack");
+		$dbh->do("DROP TABLE IF EXISTS iptrack");
+		$dbh->do("DROP TABLE IF EXISTS dns");
+		$dbh->do("DROP TABLE IF EXISTS dns6");
+		$dbh->do("DROP TABLE IF EXISTS stolen");
+		$dbh->do("DROP TABLE IF EXISTS users");
+		$dbh->do("DROP TABLE IF EXISTS system");
+		$dbh->do("DROP TABLE IF EXISTS chat");
+		$dbh->do("DROP TABLE IF EXISTS wlan");
+		$dbh->commit;
+	}
+
+	print "devices\n";
 	my $index = ($misc::backend eq 'Pg')?'':',INDEX (device),PRIMARY KEY (device)';
 	$dbh->do("CREATE TABLE devices(
 		device $vchar(64) NOT NULL UNIQUE,
@@ -223,7 +222,7 @@ sub InitDB{
 		hw $vchar(128) DEFAULT '',
 		fw $vchar(128) DEFAULT '',
 		sw $vchar(128) DEFAULT '',
-		modidx $smaun DEFAULT 0,
+		modidx $intun DEFAULT 0,
 		modclass $tinun DEFAULT 1,
 		status $smaun DEFAULT 0,
 		modloc $vchar(255) DEFAULT ''
@@ -257,7 +256,7 @@ sub InitDB{
 		outdis $intun DEFAULT 0,
 		dindis $intun DEFAULT 0,
 		doutdis $intun DEFAULT 0,
-		inbrc $intun DEFAULT 0,
+		inbrc $bigun DEFAULT 0,
 		dinbrc $intun DEFAULT 0,
 		lastchg $intun DEFAULT 0,
 		poe $smaun DEFAULT 0,
@@ -277,6 +276,7 @@ sub InitDB{
 		ifip6 $ipv6,
 		prefix $tinun DEFAULT 0,
 		vrfname $vchar(32) DEFAULT '',
+		vrfrd $vchar(16) DEFAULT '',
 		status $smaun DEFAULT 0
 		$index)" );
  	$dbh->commit;
@@ -296,20 +296,28 @@ sub InitDB{
 	$dbh->do("CREATE TABLE inventory(
 		state $tinun DEFAULT 0,
 		serial $vchar(32) NOT NULL UNIQUE,
-		type $vchar(32) DEFAULT 0,
-		asset $vchar(32) DEFAULT '',
-		location $vchar(255) DEFAULT '',
-		source $vchar(32) default '-',
-		cost $intun DEFAULT 0,
-		ponumber $vchar(32) DEFAULT '',
-		time $intun DEFAULT 0,
-		partner $vchar(32) DEFAULT '',
+		assetclass $tinun DEFAULT 1,
+		assettype $vchar(32) DEFAULT 0,
+		assetnumber $vchar(32) DEFAULT '',
+		assetlocation $vchar(255) DEFAULT '',
+		assetcontact $vchar(255) DEFAULT '',
+		assetupdate $intun DEFAULT 0,
+		pursource $vchar(32) default '-',
+		purcost $intun DEFAULT 0,
+		purnumber $vchar(32) DEFAULT '',
+		purtime $intun DEFAULT 0,
+		maintpartner $vchar(32) DEFAULT '',
+		maintsla $vchar(32) DEFAULT '',
+		maintdesc $vchar(32) DEFAULT '',
+		maintcost $intun DEFAULT 0,
+		maintstatus $tinun DEFAULT 0,
 		startmaint $intun DEFAULT 0,
 		endmaint $intun DEFAULT 0,
-		lastwty $intun DEFAULT 0,
+		endwarranty $intun DEFAULT 0,
+		endsupport $intun DEFAULT 0,
+		endlife $intun DEFAULT 0,
 		comment $vchar(255) DEFAULT '',
-		usrname $vchar(32) DEFAULT '-',
-		asupdate $intun DEFAULT 0
+		usrname $vchar(32) DEFAULT '-'
 		$index)" );
  	$dbh->commit;
 
@@ -388,7 +396,7 @@ sub InitDB{
 		eventfwd $vchar(255) DEFAULT '',
 		eventlvl $tinun DEFAULT 0,
 		eventdel $vchar(255) DEFAULT '',
-		depend $vchar(64) DEFAULT '',
+		depend1 $vchar(64) DEFAULT '',
 		depend2 $vchar(64) DEFAULT '',
 		device $vchar(64) NOT NULL,
 		notify $char(32) DEFAULT '',
@@ -421,10 +429,8 @@ sub InitDB{
  	$dbh->commit;
 
 	print "nodes\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(name), INDEX(nodip), INDEX(mac), INDEX(vlanid), INDEX(device)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(device), INDEX(ifname), INDEX(vlanid), INDEX(noduser)';
 	$dbh->do("CREATE TABLE nodes(
-		name $vchar(64) DEFAULT '',
-		nodip $intun DEFAULT 0,
 		mac $vchar(16) NOT NULL,
 		oui $vchar(32) DEFAULT '',
 		firstseen $intun DEFAULT 0,
@@ -432,20 +438,45 @@ sub InitDB{
 		device $vchar(64) DEFAULT '',
 		ifname $vchar(32) DEFAULT '',
 		vlanid $smaun DEFAULT 0,
-		ifmetric $intun DEFAULT 0,
+		metric $vchar(10) DEFAULT '',
 		ifupdate $intun DEFAULT 0,
 		ifchanges $intun DEFAULT 0,
-		ipupdate $intun DEFAULT 0,
+		noduser $vchar(32) DEFAULT '',
+		nodesc $vchar(255) DEFAULT ''
+		$index)" );
+ 	$dbh->commit;
+
+	print "nodarp\n";
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(nodip), INDEX(arpdevice), INDEX(arpifname)';
+	$dbh->do("CREATE TABLE nodarp(
+		mac $vchar(16) DEFAULT '',
+		nodip $intun DEFAULT 0,
 		ipchanges $intun DEFAULT 0,
-		iplost $intun DEFAULT 0,
-		arpval $smaun DEFAULT 0,
-		nodip6 $ipv6,
+		ipupdate $intun DEFAULT 0,
 		tcpports $vchar(64) DEFAULT '',
 		udpports $vchar(64) DEFAULT '',
-		nodtype $vchar(64) DEFAULT '',
-		nodos $vchar(64) DEFAULT '',
-		osupdate $intun DEFAULT 0,
-		noduser $vchar(32) DEFAULT ''
+		srvtype $vchar(64) DEFAULT '',
+		srvos $vchar(64) DEFAULT '',
+		srvupdate $intun DEFAULT 0,
+		arpdevice $vchar(64) DEFAULT '',
+		arpifname $vchar(32) DEFAULT ''
+		$index)" );
+ 	$dbh->commit;
+
+	print "nodnd\n";
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(nodip6), INDEX(nddevice), INDEX(ndifname)';
+	$dbh->do("CREATE TABLE nodnd(
+		mac $vchar(16) DEFAULT '',
+		nodip6 $ipv6,
+		ip6changes $intun DEFAULT 0,
+		ip6update $intun DEFAULT 0,
+		tcp6ports $vchar(64) DEFAULT '',
+		udp6ports $vchar(64) DEFAULT '',
+		srv6type $vchar(64) DEFAULT '',
+		srv6os $vchar(64) DEFAULT '',
+		srv6update $intun DEFAULT 0,
+		nddevice $vchar(64) DEFAULT '',
+		ndifname $vchar(32) DEFAULT ''
 		$index)" );
  	$dbh->commit;
 
@@ -462,14 +493,13 @@ sub InitDB{
  	$dbh->commit;
 
 	print "iftrack\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(vlanid), INDEX(device)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(device), INDEX(vlanid)';
 	$dbh->do("CREATE TABLE iftrack(
 		mac $vchar(16) NOT NULL,
 		ifupdate $intun DEFAULT 0,
 		device $vchar(64) DEFAULT '',
 		ifname $vchar(32) DEFAULT '',
-		vlanid $smaun DEFAULT 0,
-		ifmetric $intun DEFAULT 0
+		vlanid $smaun DEFAULT 0
 		$index)" );
  	$dbh->commit;
 
@@ -478,10 +508,28 @@ sub InitDB{
 	$dbh->do("CREATE TABLE iptrack(
 		mac $vchar(16) NOT NULL,
 		ipupdate $intun DEFAULT 0,
-		name $vchar(64) DEFAULT '',
+		aname $vchar(64) DEFAULT '',
 		nodip $intun DEFAULT 0,
 		vlanid $smaun DEFAULT 0,
 		device $vchar(64) NOT NULL DEFAULT ''
+		$index)" );
+ 	$dbh->commit;
+
+	print "dns\n";
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(nodip), INDEX(aname)';
+	$dbh->do("CREATE TABLE dns(
+		nodip $intun DEFAULT 0,
+		aname $vchar(64) DEFAULT '',
+		dnsupdate $intun DEFAULT 0
+		$index)" );
+ 	$dbh->commit;
+
+	print "dns6\n";
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(nodip6), INDEX(aaaaname)';
+	$dbh->do("CREATE TABLE dns6(
+		nodip6 $ipv6,
+		aaaaname $vchar(64) DEFAULT '',
+		dns6update $intun DEFAULT 0
 		$index)" );
  	$dbh->commit;
 
@@ -512,15 +560,15 @@ sub InitDB{
 		comment $vchar(255) DEFAULT '',
 		language $vchar(16) NOT NULL DEFAULT 'english',
 		theme $vchar(16) NOT NULL DEFAULT 'default',
-		volume $tinun NOT NULL DEFAULT '48',
+		volume $tinun NOT NULL DEFAULT '60',
 		columns $tinun NOT NULL DEFAULT '6',
 		msglimit $tinun NOT NULL DEFAULT '5',
-		miscopts $smaun NOT NULL DEFAULT '2',
+		miscopts $smaun NOT NULL DEFAULT '35',
 		dateformat $vchar(16) NOT NULL DEFAULT 'j.M y G:i470',
 		viewdev $vchar(255) DEFAULT ''
 		$index)" );
 	$sth = $dbh->prepare("INSERT INTO users (usrname,password,groups,time,comment,volume,columns,msglimit,miscopts) VALUES ( ?,?,?,?,?,?,?,?,? )");
-	$sth->execute ( 'admin','3cac26b5bd6addd1ba4f9c96a58ff8c2c2c8ac15018f61240f150a4a968b8562','255',$main::now,'default admin','48','8','10','3' );
+	$sth->execute ( 'admin','3cac26b5bd6addd1ba4f9c96a58ff8c2c2c8ac15018f61240f150a4a968b8562','255',$main::now,'default admin','75','8','10','35' );
  	$dbh->commit;
 
 	print "system\n";
@@ -533,6 +581,7 @@ sub InitDB{
 	$sth->execute ( 'nodlock','0' );
 	$sth->execute ( 'threads','0' );
 	$sth->execute ( 'first','0' );
+	$sth->execute ( 'version','1.1' );
  	$dbh->commit;
 
 	print "chat\n";
@@ -572,6 +621,75 @@ END
 
 		$dbh->do($inet_ntoa);
 #		$dbh->do("ALTER FUNCTION inet_ntoa(bigint) OWNER TO nedi;");TODO remove, if not needed
+
+		$dbh->do('ALTER TABLE ONLY events    ADD CONSTRAINT events_pkey    PRIMARY KEY (id);');
+		$dbh->do('ALTER TABLE ONLY incidents ADD CONSTRAINT incidents_pkey PRIMARY KEY (id);');
+		$dbh->do('ALTER TABLE ONLY links     ADD CONSTRAINT links_pkey PRIMARY KEY (id);');
+		$dbh->do('ALTER TABLE ONLY locations ADD CONSTRAINT locations_pkey PRIMARY KEY (id);');
+
+		$dbh->do('CREATE INDEX chat_time         ON chat       USING btree (time);');
+		$dbh->do('CREATE INDEX chat_usrname      ON chat       USING btree (usrname);');
+		$dbh->do('CREATE INDEX configs_device    ON configs    USING btree (device);');
+		$dbh->do('CREATE INDEX devices_device    ON devices    USING btree (device);');
+		$dbh->do('CREATE INDEX dns_aname         ON dns        USING btree (aname);');
+		$dbh->do('CREATE INDEX dns_dnsupdate     ON dns        USING btree (dnsupdate);');
+		$dbh->do('CREATE INDEX dns_nodip         ON dns        USING btree (nodip);');
+		$dbh->do('CREATE INDEX dns6_aaaaname     ON dns6       USING btree (aaaaname);');
+		$dbh->do('CREATE INDEX dns6_dns6update   ON dns6       USING btree (dns6update);');
+		$dbh->do('CREATE INDEX dns6_nodip6       ON dns6       USING btree (nodip6);');
+		$dbh->do('CREATE INDEX events_class      ON events     USING btree (class);');
+		$dbh->do('CREATE INDEX events_device     ON events     USING btree (device);');
+		$dbh->do('CREATE INDEX events_level      ON events     USING btree (level);');
+		$dbh->do('CREATE INDEX events_source     ON events     USING btree (source);');
+		$dbh->do('CREATE INDEX events_time       ON events     USING btree (time);');
+		$dbh->do('CREATE INDEX iftrack_device    ON iftrack    USING btree (device);');
+		$dbh->do('CREATE INDEX iftrack_mac       ON iftrack    USING btree (mac);');
+		$dbh->do('CREATE INDEX iftrack_vlanid    ON iftrack    USING btree (vlanid);');
+		$dbh->do('CREATE INDEX incidents_device  ON incidents  USING btree (device);');
+		$dbh->do('CREATE INDEX incidents_name    ON incidents  USING btree (name);');
+		$dbh->do('CREATE INDEX inventory_serial  ON inventory  USING btree (serial);');
+		$dbh->do('CREATE INDEX interfaces_device ON interfaces USING btree (device);');
+		$dbh->do('CREATE INDEX interfaces_ifidx  ON interfaces USING btree (ifidx);');
+		$dbh->do('CREATE INDEX interfaces_ifname ON interfaces USING btree (ifname);');
+		$dbh->do('CREATE INDEX iptrack_device    ON iptrack    USING btree (device);');
+		$dbh->do('CREATE INDEX iptrack_mac       ON iptrack    USING btree (mac);');
+		$dbh->do('CREATE INDEX iptrack_vlanid    ON iptrack    USING btree (vlanid);');
+		$dbh->do('CREATE INDEX links_device      ON links      USING btree (device);');
+		$dbh->do('CREATE INDEX links_ifname      ON links      USING btree (ifname);');
+		$dbh->do('CREATE INDEX links_nbrifname   ON links      USING btree (nbrifname);');
+		$dbh->do('CREATE INDEX links_neighbor    ON links      USING btree (neighbor);');
+		$dbh->do('CREATE INDEX locations_region  ON locations  USING btree (region);');
+		$dbh->do('CREATE INDEX modules_device    ON modules    USING btree (device);');
+		$dbh->do('CREATE INDEX modules_slot      ON modules    USING btree (slot);');
+		$dbh->do('CREATE INDEX monitoring_name   ON monitoring USING btree (name);');
+		$dbh->do('CREATE INDEX monitoring_device ON monitoring USING btree (device);');
+		$dbh->do('CREATE INDEX networks_device   ON networks   USING btree (device);');
+		$dbh->do('CREATE INDEX networks_ifip     ON networks   USING btree (ifip);');
+		$dbh->do('CREATE INDEX networks_ifname   ON networks   USING btree (ifname);');
+		$dbh->do('CREATE INDEX nodarp_arpdevice  ON nodarp     USING btree (arpdevice);');
+		$dbh->do('CREATE INDEX nodarp_arpifname  ON nodarp     USING btree (arpifname);');
+		$dbh->do('CREATE INDEX nodarp_ipupdate   ON nodarp     USING btree (ipupdate);');
+		$dbh->do('CREATE INDEX nodarp_nodip      ON nodarp     USING btree (nodip);');
+		$dbh->do('CREATE INDEX nodarp_mac        ON nodarp     USING btree (mac);');
+		$dbh->do('CREATE INDEX nodarp_srvupdate  ON nodarp     USING btree (srvupdate);');
+		$dbh->do('CREATE INDEX nodnd_nddevice    ON nodnd      USING btree (nddevice);');
+		$dbh->do('CREATE INDEX nodnd_ndifname    ON nodnd      USING btree (ndifname);');
+		$dbh->do('CREATE INDEX nodnd_ip6update   ON nodnd      USING btree (ip6update);');
+		$dbh->do('CREATE INDEX nodnd_nodip6      ON nodnd      USING btree (nodip6);');
+		$dbh->do('CREATE INDEX nodnd_mac         ON nodnd      USING btree (mac);');
+		$dbh->do('CREATE INDEX nodnd_srv6update  ON nodnd      USING btree (srv6update);');
+		$dbh->do('CREATE INDEX nodes_device      ON nodes      USING btree (device);');
+		$dbh->do('CREATE INDEX nodes_mac         ON nodes      USING btree (mac);');
+		$dbh->do('CREATE INDEX nodes_vlanid      ON nodes      USING btree (vlanid);');
+		$dbh->do('CREATE INDEX nodetrack_device  ON nodetrack  USING btree (device);');
+		$dbh->do('CREATE INDEX nodetrack_ifname  ON nodetrack  USING btree (ifname);');
+		$dbh->do('CREATE INDEX stolen_device     ON stolen     USING btree (device);');
+		$dbh->do('CREATE INDEX stolen_mac        ON stolen     USING btree (mac);');
+		$dbh->do('CREATE INDEX system_name       ON system     USING btree (name);');
+		$dbh->do('CREATE INDEX vlans_device      ON vlans      USING btree (device);');
+		$dbh->do('CREATE INDEX vlans_vlanid      ON vlans      USING btree (vlanid);');
+		$dbh->do('CREATE INDEX wlan_mac          ON wlan       USING btree (mac);');
+
 		$dbh->commit;
 	}
 
@@ -651,11 +769,11 @@ sub ReadDev{
 		$main::dev{$f[0]}{pls} = $main::dev{$f[0]}{ls};						# Preserve lastseen for calculations
 		$main::dev{$f[0]}{pip} = $main::dev{$f[0]}{ip};
 
-		$misc::seedini{$main::dev{$f[0]}{ip}}{rv} = $main::dev{$f[0]}{rv};			# Tie comm & ver to IP,
-		$misc::seedini{$main::dev{$f[0]}{ip}}{rc} = $main::dev{$f[0]}{rc};
+		$misc::seedini{$main::dev{$f[0]}{ip}}{dv} = $main::dev{$f[0]}{rv};			# Tie comm & ver to IP,
+		$misc::seedini{$main::dev{$f[0]}{ip}}{dc} = $main::dev{$f[0]}{rc};
 		$misc::seedini{$main::dev{$f[0]}{ip}}{na} = $f[0];
-		$misc::seedini{$main::dev{$f[0]}{oi}}{rv} = $main::dev{$f[0]}{rv};			# it's all we have at first
-		$misc::seedini{$main::dev{$f[0]}{oi}}{rc} = $main::dev{$f[0]}{rc};
+		$misc::seedini{$main::dev{$f[0]}{oi}}{dv} = $main::dev{$f[0]}{rv};			# it's all we have at first
+		$misc::seedini{$main::dev{$f[0]}{oi}}{dc} = $main::dev{$f[0]}{rc};
 		$misc::seedini{$main::dev{$f[0]}{oi}}{na} = $f[0];
 
 		$misc::map{$main::dev{$f[0]}{ip}}{na} = $f[0] if $main::dev{$f[0]}{os} eq 'MSMc';	# MSM APs always send their SN via CDP!
@@ -737,7 +855,7 @@ sub ReadNod{
 		$main::nod{$f[2]}{al} = $f[14];
 		$main::nod{$f[2]}{av} = $f[15];
 		if($f[16]){
-			$main::nod{$f[2]}{i6} = ($misc::backend eq 'Pg' and $s6ok)?inet_pton(AF_INET6,$f[16]):$f[16];
+			$main::nod{$f[2]}{i6} = ($misc::backend eq 'Pg')?inet_pton(AF_INET6,$f[16]):$f[16];
 		}else{
 			$main::nod{$f[2]}{i6} = '';
 		}
@@ -785,7 +903,7 @@ sub BackupCfg{
 	}elsif($sth->rows == 1){									# Previous config found, get changes
 		my @pc = $sth->fetchrow_array;
 		my @pcfg = split(/\n/,$pc[0]);
-		my $achg = &misc::CfgChanges(\@pcfg, \@misc::curcfg);
+		my $achg = &misc::Diff(\@pcfg, \@misc::curcfg);
 		if(!$main::opt{'t'}){
 			if($achg){									# Only write new, if changed
 				$chg  = $pc[1] . "#--- " . localtime($main::now) ." ---#\n". $achg;
@@ -795,7 +913,7 @@ sub BackupCfg{
 				&misc::WriteCfg($dv) if defined $main::opt{'B'};
 				my $len = length($achg);
 				$achg =~ s/["']//g;
-				my $msg = "Config changed by $len characters $achg";
+				my $msg = "Config changed by $len characters: $achg";
 				my $lvl = ($len > 1000)?100:50;
 				$misc::mq += &mon::Event('B',$lvl,'cfgc',$dv,$dv,$msg);
 				&misc::Prt('',"Bu");
@@ -864,21 +982,21 @@ sub WriteDev{
 			(defined $main::dev{$dv}{cfc})?$main::dev{$dv}{cfc}:0,
 			((defined $main::dev{$dv}{bup})?$main::dev{$dv}{bup}:'-').((defined $main::dev{$dv}{cst})?$main::dev{$dv}{cst}:'-')
 			);
-	$dbh->commit;
+
 	$sth->finish if $sth;
 
 	&misc::Prt("WDEV:$dv written to $misc::dbname.devices\n");
-	
+
 	&Inventory($dv) if $main::opt{'Y'};
 
-	my $regex = ($misc::backend eq 'Pg')?'~':'regexp';
-	my $ldel = &db::Delete('links',"device = ".$dbh->quote($dv)." AND linktype $regex '^[CFNL]{1,2}DP\$' AND time < '$misc::retire'");
-	$mq += &mon::Event('l',100,'nedl',$dv,$dv,"$ldel links older than ".localtime($misc::retire)." have been retired") if $ldel;
+	my $regex = ($misc::backend eq 'Pg')?'!~':'not regexp';
+	my $ldel = &db::Delete('links',"device = ".$dbh->quote($dv)." AND linktype $regex '^STA' AND time < '$misc::retire'");
+	$mq += &mon::Event('l',100,'nedl',$dv,$dv,"$ldel dynamic links older than ".localtime($misc::retire)." have been retired") if $ldel;
 }
 
 =head2 FUNCTION ReadAddr()
 
-Reads IP and MAC addresses of all IF in DB for topology awareness. 
+Reads IP and MAC addresses of all IF in DB for topology awareness.
 
 B<Options> -
 
@@ -892,7 +1010,7 @@ sub ReadAddr{
 	my $nmac = 0;
 	my $nip  = 0;
 	my $nip6 = 0;
-		
+
 	my $sth = $dbh->prepare("SELECT device,ifmac,ifname FROM interfaces where ifmac != ''");
 	$sth->execute();
 	while((my @i) = $sth->fetchrow_array){
@@ -901,16 +1019,16 @@ sub ReadAddr{
 	}
 	$sth->finish if $sth;
 
-	$sth = $dbh->prepare("SELECT device,ifname,inet_ntoa(ifip),ifip6 FROM networks where ifip != 2130706433");# Ignore 127.0.0.1
+	$sth = $dbh->prepare("SELECT device,ifname,ifip,ifip6 FROM networks where ifip != 2130706433");# Ignore 127.0.0.1
 	$sth->execute();
 	while ((my @i) = $sth->fetchrow_array) {
-		if($i[3]){
-			my $ip6 = ($misc::backend eq 'Pg' and $s6ok)?inet_pton(AF_INET6,$i[3]):$i[3];
+		if($i[2]){
+			push @{$misc::ifip{ &misc::Dec2Ip($i[2]) }{$i[0]}},$i[1];
+			$nip++;
+		}elsif($i[3]){										# Dies on empty or 0
+			my $ip6 = ($misc::backend eq 'mysql')?misc::IP6Text($i[3]):$i[3];
 			push @{$misc::ifip{$ip6}{$i[0]}},$i[1];
 			$nip6++;
-		}else{
-			push @{$misc::ifip{$i[2]}{$i[0]}},$i[1];
-			$nip++;
 		}
 	}
 	$sth->finish if $sth;
@@ -967,7 +1085,7 @@ sub ReadInt{
 		$main::int{$i[0]}{$i[2]}{bra} = $i[30];
 		$main::int{$i[0]}{$i[2]}{mcf} = $i[31];
 
-		$main::int{$i[0]}{$i[2]}{plt} = $i[3];							# Needed for link tracking in misc::CheckIf
+		$main::int{$i[0]}{$i[2]}{plt} = $i[3];							# Previous... (lt=linktype)
 		$main::int{$i[0]}{$i[2]}{pst} = $i[8];
 		$main::int{$i[0]}{$i[2]}{psp} = $i[9];
 		$main::int{$i[0]}{$i[2]}{pdp} = $i[10];
@@ -1041,7 +1159,7 @@ sub WriteInt{
 			$tint++;
 		}
 	}
-	$dbh->commit;
+
 	$sth->finish if $sth;
 
 	&misc::Prt("WIF :$tint interfaces written to $misc::dbname.interfaces\n");
@@ -1102,7 +1220,7 @@ sub WriteMod{
 		}
 		$nmod++;
 	}
-	$dbh->commit;
+
 	$sth->finish if $sth;
 
 	&misc::Prt("WMOD:$nmod modules written to $misc::dbname.modules\n");
@@ -1134,7 +1252,7 @@ sub WriteVlan{
 				);
 		$nvlans++;
 	}
-	$dbh->commit;
+
 	$sth->finish if $sth;
 
 	&misc::Prt("WVLN:$nvlans vlans written to $misc::dbname.vlans\n");
@@ -1158,23 +1276,212 @@ sub WriteNet{
 	my $nip  = 0;
 
 	$dbh->do("DELETE FROM  networks where device = ".$dbh->quote($dv) );
-	my $sth = $dbh->prepare("INSERT INTO networks( device,ifname,ifip,ifip6,prefix,vrfname,status ) VALUES ( ?,?,?,?,?,?,? )");
+	my $sth = $dbh->prepare("INSERT INTO networks( device,ifname,ifip,ifip6,prefix,vrfname,vrfrd,status ) VALUES ( ?,?,?,?,?,?,?,? )");
 	foreach my $n ( sort keys %{$main::net{$dv}} ){
 		$sth->execute (	$dv,
 				$main::net{$dv}{$n}{ifn},
-				((!$main::net{$dv}{$n}{ip6})?&misc::Ip2Dec($n):0),
-				IPtoDB($main::net{$dv}{$n}{ip6},$n),
+				((!$main::net{$dv}{$n}{ip6})?misc::Ip2Dec($n):0),
+				misc::IP6toDB($n,$main::net{$dv}{$n}{ip6}),
 				$main::net{$dv}{$n}{pfx},
 				$main::net{$dv}{$n}{vrf},
+				$main::net{$dv}{$n}{vrd},
 				$main::net{$dv}{$n}{sta} );
 		$nip++;
 	}
-	$dbh->commit;
+
 	$sth->finish if $sth;
 
 	&misc::Prt("WNET:$nip networks written to $misc::dbname.networks\n");
 }
 
+=head2 FUNCTION WriteArpND()
+
+Process Address information and write to arp table
+
+B<Options> device, pointer to Address hash
+
+B<Globals> -
+
+B<Returns> -
+
+=cut
+sub WriteArpND{#TODO refactor to insert ?,?,? and update ?,? for commit efficiency?
+
+	my ($dv,$n) = @_;
+
+	my %arp   = ();
+	my $narin = my $narup = my $narp6 = my $ad = my $dn = my $bd = my $fl = 0;
+	my $arpp  = (exists $main::mon{$dv})?$main::mon{$dv}{ap}:$misc::arppoison;
+	my @keys6 = ('mac', 'nodip6');
+	my @keys  = ('mac', 'nodip');
+
+	&misc::Prt("\nWrite ArpND -------------------------------------------------------------------\n");
+	foreach my $ver ( keys %$n ){
+		foreach my $mc ( keys %{$n->{$ver}} ){
+			if( scalar keys %{$n->{$ver}{$mc}} > 1 ){
+				&misc::Prt("WAND:$mc seen on ".join(', ', keys %{$n->{$ver}{$mc}})." and IVL=$misc::useivl\n");
+			}
+			foreach my $po ( keys %{$n->{$ver}{$mc}} ){
+				my $mcvl = $mc;
+				my $vl   = ($po =~ /^Vl[-]?(\d+)$/) ? $1 : 0;
+				$mcvl    = $mc.(($misc::useivl and $vl =~ /$misc::useivl/)?$vl:'');	# Make MAC unique by adding vlid if IVL is requested
+				if($ver){
+					my $nips = scalar keys %{$n->{$ver}{$mc}{$po}};
+					&misc::Prt("DBG :$mc has $nips IPv6 addresses\n") if $main::opt{'d'};
+					my $dbmc = &db::Select('nodnd',\@keys6,'*',"mac='$mcvl'");	# What of this MAC's in the DB?
+					foreach my $ip ( keys %{$n->{$ver}{$mc}{$po}} ){
+						my $add = 0;
+						my $dbip = misc::IP6toDB($ip,1);			# This means binary comparison with mysql backend...
+						if(  exists $dbmc->{$mcvl} ){				# MAC exists in DB
+							my $ndbips = scalar keys %{$dbmc->{$mcvl}};
+							&misc::Prt("DBG :$ndbips IPv6 addresses in DB\n") if $main::opt{'d'};
+							if( exists $dbmc->{$mcvl}{$dbip} ){		# MAC-IP exists in DB, only update if DB entry exeeds revive (retire/2) days
+								if( $n->{$ver}{$mc}{$po}{$ip} > $misc::revive and $dbmc->{$mcvl}{$dbip}{'ip6update'} < $misc::revive ){
+									my $dnsna = &db::WriteDNS($ip,6);
+									&db::Update('nodnd',"ip6update=$n->{$ver}{$mc}{$po}{$ip},nddevice=".$db::dbh->quote($dv).",ndifname='$po'","mac='$mcvl' and nodip6=".$db::dbh->quote($dbip) );
+									$narup++;
+								}
+							}else{						# MAC-IP doesn't exist...
+								if( $nips == 1 and  $ndbips == 1 ){	# Currently have 1 and DB has 1 -> IP changed
+									my $dnsna = &db::WriteDNS($ip,6);
+									my @k = keys %{$dbmc->{$mcvl}};
+									my $ip6c = $dbmc->{$mcvl}{$k[0]}{'ip6changes'} + 1;
+									$misc::mq += &mon::Event('J',100,'secj',$dv,$dv,"Node $mc changed IPv6 to $ip".(($dnsna)?" and name $dnsna":"") );
+									&db::Update('nodnd',"nodip6=".$db::dbh->quote($dbip).",ip6update=$n->{$ver}{$mc}{$po}{$ip},ip6changes=$ip6c,nddevice=".$db::dbh->quote($dv).",ndifname='$po'","mac='$mcvl'");
+									$narup++;
+								}else{
+									$add = 1;
+								}
+							}							
+						}else{							# MAC doesn't exist at all add...
+							$add = 1;
+						}
+						if( $add ){						# Add if logic above conlcuded to!
+							my $dnsna = &db::WriteDNS($ip,6);
+							$misc::mq += &mon::Event('J',100,'secj',$dv,$dv,"Node $mc has new IP address $ip".(($dnsna)?" and name $dnsna":"") );
+							&db::Insert('nodnd','mac,nodip6,ip6update,nddevice,ndifname',"'$mcvl',".$db::dbh->quote($dbip).",$n->{$ver}{$mc}{$po}{$ip},".$db::dbh->quote($dv).",'$po'");
+							$narin++;
+						}
+					}
+				}else{
+					my $nips = scalar keys %{$n->{$ver}{$mc}{$po}};
+					&misc::Prt("DBG :$mc has $nips IP addresses\n") if $main::opt{'d'};
+					my $dbmc = &db::Select('nodarp',\@keys,'*',"mac='$mcvl'");	# What of this MAC's in the DB?
+					if($arpp and $nips > $arpp){					# Check for ARP poisoning
+						$misc::mq += &mon::Event('N',150,'secp',$dv,$dv,"$nips IP addresses for $mc exceed ARP poison threshold of $arpp");
+					}					
+					foreach my $ip ( keys %{$n->{$ver}{$mc}{$po}} ){
+						my $add = 0;
+						my $dip = &misc::Ip2Dec($ip);
+						if(  exists $dbmc->{$mcvl} ){				# MAC exists in DB
+							my $ndbips = scalar keys %{$dbmc->{$mcvl}};
+							if( exists $dbmc->{$mcvl}{$dip} ){		# MAC-IP exists in DB
+								if( $n->{$ver}{$mc}{$po}{$ip} > $misc::revive and $dbmc->{$mcvl}{$dip}{'ipupdate'} < $misc::revive ){
+									my $dnsna = &db::WriteDNS($ip);
+									&db::Update('nodarp',"ipupdate=$n->{$ver}{$mc}{$po}{$ip},arpdevice=".$db::dbh->quote($dv).",arpifname='$po'","mac='$mcvl' and nodip=$dip");
+									$narup++;
+								}
+							}else{						# MAC-IP doesn't exist...
+								if( $nips == 1 and  $ndbips == 1 ){	# Currently have 1 and DB has 1 -> IP changed
+									my $dnsna = &db::WriteDNS($ip);
+									my @k = keys %{$dbmc->{$mcvl}};
+									my $ipc = $dbmc->{$mcvl}{$k[0]}{'ipchanges'} + 1;
+									$misc::mq += &mon::Event('J',100,'secj',$dv,$dv,"Node $mc changed IP to $ip".(($dnsna)?" and name $dnsna":"") );
+									&db::Insert('iptrack','mac,ipupdate,Aname,nodip,vlanid,device',"'$mcvl',$main::now,'$dnsna',$dip,$vl,".$db::dbh->quote($dv) );
+									&db::Update('nodarp',"nodip=$dip,ipupdate=$n->{$ver}{$mc}{$po}{$ip},ipchanges=$ipc,arpdevice=".$db::dbh->quote($dv).",arpifname='$po'","mac='$mcvl'");
+									$narup++;
+								}else{
+									$add = 1;
+								}
+							}							
+						}else{							# MAC doesn't exist at all add...
+							$add = 1;
+						}
+						if( $add ){						# Add if logic above conlcuded to!
+							my $dnsna = &db::WriteDNS($ip);
+							$misc::mq += &mon::Event('J',100,'secj',$dv,$dv,"Node $mc has new IP address $ip".(($dnsna)?" and name $dnsna":"") );
+							&db::Insert('nodarp','mac,nodip,ipupdate,arpdevice,arpifname',"'$mcvl',$dip,$n->{$ver}{$mc}{$po}{$ip},".$db::dbh->quote($dv).",'$po'");
+							$narin++;
+						}
+						if($main::opt{'o'}){					# Only add if OUI discovery set
+							my $oui = &misc::GetOui($mc);
+							if($oui =~ /$misc::ouidev/i or $mc =~ /$misc::ouidev/){
+								if(grep /\Q$mc\E/,(@misc::doneid,@misc::failid,@misc::todo) ){# Don't queue if done or queued.
+									&misc::Prt("OUI :Device done already\n");
+									$dn++;
+								}elsif($mc =~ /$misc::border/ or $oui =~ /$misc::border/){# ...or matching the border...
+									&misc::Prt("OUI :$mc or $oui matches border /$misc::border/\n");
+									$bd++;
+								}else{
+									&misc::Prt("OUI :MAC or '$oui' matches ouidev\n");
+									$ad += misc::CheckTodo($mc,&misc::MapIp($ip,'ip') );
+								}
+							}else{
+								&misc::Prt("DBG :OUI no match with $oui =~ /$misc::ouidev/i or $mc =~ /$misc::ouidev/\n") if $main::opt{'d'};
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	&misc::Prt("WAND:$narin new IPs and $narup updates written\n"," a".($narup + $narin)." o$ad/$dn b$bd".($warn?" ":"   ") );
+}
+
+=head2 FUNCTION WriteDNS()
+
+Resolve DNS (or use optional name e.g. from arpwatch) and write to dns or dns6
+
+B<Options> IP, version, name, timestamp
+
+B<Globals> -
+
+B<Returns> -
+
+=cut
+sub WriteDNS(){
+
+	my ($ip,$ver,$name,$time) = @_;
+
+	my $dnsup = ($time)?$time:$main::now;
+	my $dnsna = '';
+	my @keys6 = ('aaaaname', 'nodip6');
+	my @keys  = ('aname', 'nodip');
+
+
+	if($name){
+		$dnsna = $name;
+	}else{
+		$dnsna = misc::IP2Name($ip);
+	}
+
+	if($dnsna and $ver){
+		&misc::Prt( sprintf("WDNS:%-39.39s AAAAname %s\n",$ip,$dnsna) ) if $main::opt{'d'};
+		my $dbip = misc::IP6toDB($ip,1);							# This means binary comparison with mysql backend...
+		my $dbnams = &db::Select('dns6',\@keys6,'*',"nodip6=".$db::dbh->quote($dbip)." AND aaaaname='$dnsna'");
+		if( exists $dbnams->{$dnsna}{$dbip} ){
+			if( $dnsup > $misc::revive and $dbnams->{$dnsna}{$dbip}{'dns6update'} < $misc::revive ){
+				&db::Update('dns6',"dns6update=$dnsup","aaaaname='$dnsna' and nodip6=".$db::dbh->quote($dbip) );					
+			}
+		}else{
+			&db::Insert('dns6','nodip6,aaaaname,dns6update',$db::dbh->quote($dbip).",'$dnsna',$main::now");
+		}
+		return $dnsna;
+	}elsif($dnsna){
+		&misc::Prt( sprintf("WDNS:%-15.15s Aname %s\n",$ip,$dnsna) ) if $main::opt{'d'};
+		my $dip    = &misc::Ip2Dec($ip);
+		my $dbnams = &db::Select('dns',\@keys,'*',"aname='$dnsna' AND nodip=$dip");
+		if( exists $dbnams->{$dnsna}{$dip} ){
+			if( $dnsup > $misc::revive and $dbnams->{$dnsna}{$dip}{'dnsupdate'} < $misc::revive ){
+				&db::Update('dns',"dnsupdate=$dnsup","aname='$dnsna' AND nodip=$dip");					
+			}
+		}else{
+			&db::Insert('dns','nodip,aname,dnsupdate',"$dip,'$dnsna',$main::now");
+		}
+		return $dnsna;
+	}
+	return '';
+}
 
 =head2 FUNCTION WriteLink()
 
@@ -1195,14 +1502,8 @@ sub WriteLink{
 	$sth->execute();
 	if($sth->rows){
 		&misc::Prt("WLNK:Link exists from $dv,$i to $ne,$ni. Updating $main::link{$dv}{$i}{$ne}{$ni}{ty} link\n");
-		$sth = $dbh->prepare("UPDATE links SET	device=?,ifname=?,neighbor=?,nbrifname=?,bandwidth=?,linktype=?,
-					linkdesc=?,nbrduplex=?,nbrvlanid=?,time=? WHERE device=".$dbh->quote($dv)." AND ifname='$i' AND neighbor=".$dbh->quote($ne)." AND nbrifname='$ni' AND linktype='$main::link{$dv}{$i}{$ne}{$ni}{ty}'");
-		$sth->execute ( $dv,
-				$i,
-				$ne,
-				$ni,
-				$main::link{$dv}{$i}{$ne}{$ni}{bw},
-				$main::link{$dv}{$i}{$ne}{$ni}{ty},
+		$sth = $dbh->prepare("UPDATE links SET bandwidth=?,linkdesc=?,nbrduplex=?,nbrvlanid=?,time=? WHERE device=".$dbh->quote($dv)." AND ifname='$i' AND neighbor=".$dbh->quote($ne)." AND nbrifname='$ni' AND linktype='$main::link{$dv}{$i}{$ne}{$ni}{ty}'");
+		$sth->execute (	$main::link{$dv}{$i}{$ne}{$ni}{bw},
 				substr($main::link{$dv}{$i}{$ne}{$ni}{de},0,255),
 				$main::link{$dv}{$i}{$ne}{$ni}{du},
 				$main::link{$dv}{$i}{$ne}{$ni}{vl},
@@ -1221,7 +1522,7 @@ sub WriteLink{
 				$main::link{$dv}{$i}{$ne}{$ni}{vl},
 				$main::now );
 	}
-	$dbh->commit;
+
 	$sth->finish if $sth;
 }
 
@@ -1242,27 +1543,26 @@ sub Inventory{
 	my $dv     = $_[0];
 	my $notnew = ($main::opt{'Y'} =~ /n/ and $main::dev{$dv}{pls})?1:0;
 
-	if( $dbh->do("UPDATE inventory SET asupdate=$main::now,comment=".$dbh->quote("Rediscovered as $dv with IP $main::dev{$dv}{ip}").",state=100 where serial = '$main::dev{$dv}{sn}' ") + 0){
+	if( $dbh->do("UPDATE inventory SET assetupdate=$main::now,comment=".$dbh->quote("Rediscovered as $dv with IP $main::dev{$dv}{ip}").",state=100 where serial = '$main::dev{$dv}{sn}' ") + 0){
 		&misc::Prt("INV :Device $main::dev{$dv}{sn} ($dv) updated in $misc::dbname.inventory\n");
 	}elsif( $main::opt{'Y'} =~/[a]/ or $main::opt{'Y'} =~/[s]/ and $main::dev{$dv}{rv} ){
 		if( $notnew ){
 			&misc::Prt("INV :Only adding new devices (due to -Yn)\n");
-		}elsif($main::dev{$dv}{sn}){
-			$r = $dbh->do("INSERT INTO inventory (state,serial,type,location,comment,asupdate) VALUES
-			(100,'$main::dev{$dv}{sn}','$main::dev{$dv}{ty}',".$dbh->quote($main::dev{$dv}{lo}).",".$dbh->quote("Discovered as $dv with IP $main::dev{$dv}{ip}").",".$main::now.')' );
+		}elsif(length $main::dev{$dv}{sn} > 3){
+			$r = $dbh->do("INSERT INTO inventory (state,serial,assetclass,assettype,assetlocation,assetcontact,comment,assetupdate) VALUES
+			(100,'$main::dev{$dv}{sn}',3,'$main::dev{$dv}{ty}',".$dbh->quote($main::dev{$dv}{lo}).",".$dbh->quote($main::dev{$dv}{co}).",".$dbh->quote("Discovered as $dv with IP $main::dev{$dv}{ip}").",".$main::now.')' );
 			&misc::Prt("INV :Device $main::dev{$dv}{sn} ($dv) added to $misc::dbname.inventory\n") if $r;
 		}
 	}
 	foreach my $i ( sort keys %{$main::mod{$dv}} ){
-		if($main::mod{$dv}{$i}{sn}){
-			if( $dbh->do("UPDATE inventory SET asupdate=$main::now,comment=".$dbh->quote("Rediscovered in $dv $main::mod{$dv}{$i}{sl}").",state=100 where serial = '$main::mod{$dv}{$i}{sn}'") + 0){
+		if(length $main::mod{$dv}{$i}{sn} > 3){
+			if( $dbh->do("UPDATE inventory SET assetupdate=$main::now,comment=".$dbh->quote("Rediscovered in $dv $main::mod{$dv}{$i}{sl}").",state=100 where serial = '$main::mod{$dv}{$i}{sn}'") + 0){
 				&misc::Prt("INV :Module $i $main::mod{$dv}{$i}{sn} updated in $misc::dbname.inventory\n");
 			}elsif( $main::opt{'Y'} =~/[m]/ ){
 				if( $notnew ){
 					&misc::Prt("INV :Only adding modules of new devices (due to -Yn)\n");
 				}else{
-					$r = $dbh->do("INSERT INTO inventory (state,serial,type,location,comment,asupdate) VALUES
-					(100,'$main::mod{$dv}{$i}{sn}','$main::mod{$dv}{$i}{mo}',".$dbh->quote($main::dev{$dv}{lo}).",".$dbh->quote("Discovered in $dv $main::mod{$dv}{$i}{sl}").",".$main::now.')' );
+					$r = $dbh->do("INSERT INTO inventory (state,serial,assetclass,assettype,assetlocation,assetcontact,comment,assetupdate) VALUES (100,'$main::mod{$dv}{$i}{sn}',$main::mod{$dv}{$i}{mc},'$main::mod{$dv}{$i}{mo}',".$dbh->quote($main::dev{$dv}{lo}).",".$dbh->quote($main::dev{$dv}{co}).",".$dbh->quote("Discovered in $dv $main::mod{$dv}{$i}{sl}").",".$main::now.')' );
 					&misc::Prt("INV :Device $main::dev{$dv}{sn} ($dv) added to $misc::dbname.inventory\n") if $r;
 				}
 			}
@@ -1274,105 +1574,60 @@ sub Inventory{
 
 =head2 FUNCTION WriteNod()
 
-Writes the nodes table by only connecting once and preparing all actions combined to scale for large networks using multiple threads.
-In addition entries from IF and IP track tables are deleted upon retiring a node.
+
+In AP mode the nodes are written even if the device (controlled AP) is new. This
+is necessary since they're are deleted after writing to free up memory.
 
 B<Options> -
 
-B<Globals> main::nod
+B<Globals> main::nod, apmode
 
 B<Returns> -
 
 =cut
 sub WriteNod{
 
-	my $dnod = my $inod = my $unod = 0;
+	my ($m, $ap) = @_;
 
-	my $std = $dbh->prepare("DELETE FROM nodes WHERE mac=?");
-	my $stf = $dbh->prepare("DELETE FROM iftrack WHERE mac=?");
-	my $sta = $dbh->prepare("DELETE FROM iptrack WHERE mac=?");
+	my $nchg = my $inod = my $unod = 0;
 
-	my $sti = $dbh->prepare("INSERT INTO nodes(	name,nodip,mac,oui,firstseen,lastseen,device,ifname,vlanid,ifmetric,ifupdate,ifchanges,
-							ipupdate,ipchanges,iplost,arpval,nodip6,tcpports,udpports,nodtype,nodos,osupdate,noduser) VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
+	&misc::Prt("\nWrite Nodes ------------------------------------------------------------------\n");
 
-	my $stu = $dbh->prepare("UPDATE nodes SET	name=?,nodip=?,mac=?,oui=?,firstseen=?,lastseen=?,device=?,ifname=?,vlanid=?,ifmetric=?,ifupdate=?,ifchanges=?,
-							ipupdate=?,ipchanges=?,iplost=?,arpval=?,nodip6=?,tcpports=?,udpports=?,nodtype=?,nodos=?,osupdate=?,noduser=? WHERE mac=?");
-
-	foreach my $mcvl ( sort keys %main::nod ){							# Based on Lukas' idea
-		if( $main::nod{$mcvl}{fs} > $main::nod{$mcvl}{ls} ){					# Not sure why, but can happen!
-			my $msg = "Node $mcvl firstseen ".localtime($main::nod{$mcvl}{fs})." after lastseen ".localtime($main::nod{$mcvl}{ls});
-			&misc::Prt("WNOD:$msg\n");
-			&db::Insert('events','level,time,source,info,class',"'10','".time."','NeDi','$msg','bugx'") if $misc::notify =~ /x/;
-			$main::nod{$mcvl}{fs} = $main::nod{$mcvl}{ls};
+	foreach my $dv ( keys %$m ){
+		foreach my $mcvl ( keys %{$m->{$dv}} ){
+			my $mc = substr($mcvl,0,12);
+			my $vl = $m->{$dv}{$mcvl}{vl};
+			my $if = $m->{$dv}{$mcvl}{if};
+			my $me = $m->{$dv}{$mcvl}{me};
+			my $us = ($m->{$dv}{$mcvl}{us})?$m->{$dv}{$mcvl}{us}:'';
+			if( $misc::portprop{$dv}{$if}{lnk} ){
+				&misc::Prt("DBG :$mc on $if not written, is on a link\n") if $main::opt{'d'};
+			}elsif( !$ap and !$main::dev{$dv}{pls} ){
+				&misc::Prt("DBG :$mc on $if not written, first discovery of $dv\n") if $main::opt{'d'};
+			}else{
+				my $dbmac  = &db::Select('nodes','mac','*',"mac='$mcvl'");
+				if( exists $dbmac->{$mcvl} ){
+					my $mehist = substr($me.$dbmac->{$mcvl}{'metric'},0,9);
+					if($dbmac->{$mcvl}{'device'} ne $dv or $dbmac->{$mcvl}{'ifname'} ne $if){
+						$dbmac->{$mcvl}{'ifchanges'}++;
+						$nchg += &db::Update('nodes',"lastseen=$main::now,device=".$db::dbh->quote($dv).",ifname='$if',vlanid=$vl,ifchanges=$dbmac->{$mcvl}{'ifchanges'},metric='$mehist',noduser='$us'","mac='$mcvl'");
+						&db::Insert('iftrack','mac,ifupdate,device,ifname,vlanid',"'$mcvl',$main::now,'$dbmac->{$mcvl}{'device'}','$dbmac->{$mcvl}{'ifname'}',$dbmac->{$mcvl}{'vlanid'}");
+					}else{
+						$unod += &db::Update('nodes',"vlanid=$vl,lastseen=$main::now,metric='$mehist',noduser='$us'","mac='$mcvl'");
+					}
+				}else{
+					$inod += &db::Insert('nodes','mac,oui,firstseen,lastseen,device,ifname,vlanid,metric,ifupdate,noduser',"'$mcvl',".$db::dbh->quote( &misc::GetOui($mcvl) ).",$main::now,$main::now,".$db::dbh->quote($dv).",'$if',$vl,'$me',$main::now,'$us'");
+					$misc::mq += &mon::Event('F',100,'secn',$dv,$dv,"Node $mc appeared on $if Vl$vl");
+				}
+				if( exists $misc::stolen->{$mc} ){
+					$misc::mq += &mon::Event('N',150,'secs',$dv,$dv,"Node $mc marked stolen on $stolen->{$mc}{'device'}, $stolen->{$mc}{'ifname'} reappeared on $if Vl$vl");
+				}
+				&misc::Prt("DBG :$mc on $dv, $if vl$vl metric $me processed\n") if $main::opt{'d'};
+			}
 		}
-		if($main::nod{$mcvl}{ls} < $misc::retire){
-			$std->execute($mcvl);
-			$sta->execute($mcvl);
-			$stf->execute($mcvl);
-			$dnod++;
-		}elsif($main::nod{$mcvl}{fs} == $main::now){
-			$sti->execute(	$main::nod{$mcvl}{na},
-					&misc::Ip2Dec($main::nod{$mcvl}{ip}),
-					$mcvl,
-					$main::nod{$mcvl}{nv},
-					$main::nod{$mcvl}{fs},
-					$main::nod{$mcvl}{ls},
-					$main::nod{$mcvl}{dv},
-					$main::nod{$mcvl}{if},
-					$main::nod{$mcvl}{vl},
-					$main::nod{$mcvl}{im},
-					$main::nod{$mcvl}{iu},
-					$main::nod{$mcvl}{ic},
-					$main::nod{$mcvl}{au},
-					$main::nod{$mcvl}{ac},
-					$main::nod{$mcvl}{al},
-					$main::nod{$mcvl}{av},
-					IPtoDB(1,$main::nod{$mcvl}{i6}),
-					$main::nod{$mcvl}{tp},
-					$main::nod{$mcvl}{up},
-					$main::nod{$mcvl}{os},
-					$main::nod{$mcvl}{ty},
-					$main::nod{$mcvl}{ou},
-					$main::nod{$mcvl}{us} );
-			$inod++;
-		}elsif($main::nod{$mcvl}{ls} == $main::now){
-			$stu->execute(	$main::nod{$mcvl}{na},
-					&misc::Ip2Dec($main::nod{$mcvl}{ip}),
-					$mcvl,
-					$main::nod{$mcvl}{nv},
-					$main::nod{$mcvl}{fs},
-					$main::nod{$mcvl}{ls},
-					$main::nod{$mcvl}{dv},
-					$main::nod{$mcvl}{if},
-					$main::nod{$mcvl}{vl},
-					$main::nod{$mcvl}{im},
-					$main::nod{$mcvl}{iu},
-					$main::nod{$mcvl}{ic},
-					$main::nod{$mcvl}{au},
-					$main::nod{$mcvl}{ac},
-					$main::nod{$mcvl}{al},
-					$main::nod{$mcvl}{av},
-					IPtoDB(1,$main::nod{$mcvl}{i6}),
-					$main::nod{$mcvl}{tp},
-					$main::nod{$mcvl}{up},
-					$main::nod{$mcvl}{os},
-					$main::nod{$mcvl}{ty},
-					$main::nod{$mcvl}{ou},
-					$main::nod{$mcvl}{us},
-					$mcvl );
-
-			$unod++;
-		}
-
 	}
-	$dbh->commit;
-	$std->finish if $std;
-	$stf->finish if $stf;
-	$sta->finish if $sta;
-	$sti->finish if $sti;
-	$stu->finish if $stu;
 
-	&misc::Prt("WNOD:$dnod nodes retired, $inod inserted and $unod updated in $misc::dbname.nodes\n");
+	&misc::Prt("WNOD:$inod inserted, $nchg nodes moved and $unod updated in $misc::dbname.nodes\n");
 }
 
 =head2 FUNCTION ReadMon()
@@ -1433,11 +1688,12 @@ sub ReadMon{
 		$main::mon{$na}{pw} = $f[27];
 		$main::mon{$na}{ap} = $f[28];
 		$main::mon{$na}{sa} = $f[29];
-		$main::mon{$na}{dc} = 0;								# Dependendant count
-		$main::mon{$na}{ds} = ($f[18] ne '' and $f[19] ne '')?2:1;				# Dependency status, 2 if both are set
 		$main::mon{$na}{ty} = ($f[2] eq 'dev')?$f[30]:0;
 		$main::mon{$na}{rv} = ($f[2] eq 'dev')?$f[31]:0;
 		$main::mon{$na}{rc} = ($f[2] eq 'dev')?$f[32]:'';
+		$main::mon{$na}{dc} = 0;								# #dependencies
+		$main::mon{$na}{dd} = 0;								# #dependencies down
+		$main::mon{$na}{nup}= 0;								# Just so 'new uptime' defined
 		$nmon++;
 	}
 	$sth->finish if $sth;
@@ -1515,12 +1771,13 @@ sub Insert{# TODO consider using hashref as argument, with that this can be used
 
 	&misc::NagPipe($vals) if $table eq 'events' and $misc::nagpipe;
 
-	my $r = '(only testing)';
-	if(!$main::opt{'t'} or $main::opt{'t'} eq 'a'){
+	my $r = 0;
+	&misc::Prt("DBG :INSERT INTO $table ($cols) VALUES ($vals)\n") if $main::opt{'d'} =~ /d/;
+	if(!$main::opt{'t'} or $main::opt{'t'} eq 'a'){							# Only write events, when testing access
 		$r = $dbh->do("INSERT INTO $table ($cols) VALUES ($vals)") || die "ERR :INSERT INTO $table ($cols) VALUES ($vals)\n";
 		$dbh->commit unless $ac;
 	}
-	&misc::Prt("INS :$r ROWS INTO $table ($cols) VALUES ($vals)\n") if $main::opt{'d'};
+	&misc::Prt("DBG :INSERTED $r ROWS\n") if $main::opt{'d'} =~ /d/;
 
 	return $r;
 }
@@ -1541,13 +1798,14 @@ sub Delete{
 
 	my ($table, $match) = @_;
 
+	&misc::Prt("DBG :DELETE FROM  $table WHERE $match\n") if $main::opt{'d'} =~ /d/;
 	my $r = $dbh->do("DELETE FROM  $table WHERE $match") || die "ERR : DELETE FROM  $table WHERE $match\n";
 	$dbh->commit unless $ac;
 
 	&misc::Prt("ERR :$dbh->errstr\n") if(!$r);							# Something went wrong
 	$r = 0 if($r eq '0E0');										# 0E0 actually means 0
 
-	&misc::Prt("DEL :$r ROWS FROM $table WHERE $match\n") if $main::opt{'d'};
+	&misc::Prt("DBG :DELETED $r ROWS\n") if $main::opt{'d'} =~ /d/;
 	return $r;
 }
 
@@ -1567,10 +1825,13 @@ sub Update{
 
 	my ($table, $set, $match) = @_;
 
-	my $r = $dbh->do("UPDATE $table SET $set WHERE $match") || die "ERR : UPDATE $table SET $set WHERE $match\n";
-	$dbh->commit unless $ac;
-
-	&misc::Prt("UPDT:$r ROWS FROM $table SET $set WHERE $match\n") if $main::opt{'d'};
+	my $r = 0;
+	&misc::Prt("DBG :UPDATE $table SET $set WHERE $match\n") if $main::opt{'d'} =~ /d/;
+	if(!$main::opt{'t'}){
+		$r = $dbh->do("UPDATE $table SET $set WHERE $match") || die "ERR : UPDATE $table SET $set WHERE $match\n";
+		$dbh->commit unless $ac;
+	}
+	&misc::Prt("DBG :UPDATED $r ROWS\n") if $main::opt{'d'} =~ /d/;
 	return $r;
 }
 
@@ -1595,6 +1856,7 @@ sub Select{
 
 	my $res = "";
 	my $nre = 0;
+	&misc::Prt("DBG :$qry\n") if $main::opt{'d'} =~ /d/;
 	if($key){
 		$res = $dbh->selectall_hashref($qry, $key);
 		$nre = scalar keys %$res;
@@ -1609,11 +1871,8 @@ sub Select{
 			$res = $a;
 		}
 	}
+	&misc::Prt(' '.&main::Dumper($res)."\n") if $main::opt{'d'} =~ /d/;
 
-	if($main::opt{'d'}){
-		&misc::Prt("DB  :$qry; ($nre results)\n");
-		&misc::Prt(' '.&main::Dumper($res)."\n");
-	}
 	return $res;
 }
 

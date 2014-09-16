@@ -205,7 +205,7 @@ while(1){
 								$di += $d;
 							}
 						}
-						&misc::Prt("ANSR:$ni new incidents, $ui updated and $di deleted\n");
+						&misc::Prt("ANSR:$ni new incidents, $ui updated and $di deleted\n");# TODO refactor to commit at end for scalability?
 					}
 				}else{
 					my $msg = "Incidents - ".$res->status_line;

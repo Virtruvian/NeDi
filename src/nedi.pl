@@ -30,12 +30,12 @@ Visit http://www.nedi.ch for more information.
 
 =cut
 
-our $VERSION = "1.1.155";
+our $VERSION = "1.4.232";
 
 use strict;
 use warnings;
 no warnings qw(once);
-use bignum;
+#use bignum; TODO remove if not necessary (using bigint in libmisc for DevRRD instead)
 
 use Getopt::Std;
 use File::Path;
@@ -51,8 +51,10 @@ $misc::mq = 0;
 $misc::ncmd = "$0 ".join(" ",@ARGV);
 
 
-getopts('a:A:bB:c:C:dDfFiIkKl:NnM:opP:rs:S:t:u:U:vV:wWyY:',\%opt) || &HELP_MESSAGE;
+getopts('a:A:bB:c:C:d:DfFiIkKl:N:nM:opP:rs:S:t:u:U:vV:wWyY:',\%opt) || &HELP_MESSAGE;
 if(!defined $opt{'S'}){$opt{'S'} = ''}									# Avoid warnings if unused
+if(!defined $opt{'d'}){$opt{'d'} = ''}									# Avoid warnings if unused
+if(!defined $opt{'t'}){$opt{'t'} = ''}									# Avoid warnings if unused
 
 select(STDOUT); $| = 1;											# Disable buffering
 
@@ -71,7 +73,7 @@ require "$p/inc/libdb.pm";										# Use the DB function library
 $lasdis = $now - $misc::rrdstep * 1.1;									# Last discovery time with some slack
 
 my $dsok = 0;
-if($opt{'d'}){
+if($opt{'d'} =~ /s/){
 	use Data::Dumper;
 	eval 'use Devel::Size qw(size total_size);';
 	if ($@){
@@ -84,31 +86,30 @@ if($opt{'d'}){
 
 =head2 Debug Mode
 
-The -D option skips discovery and loads internal variables (using misc::RetrVar), which where previousely
-stored in the .db files (with -d, debug output). This works like a snapshot and allows for debugging the
-post discovery functions.
+The -D section lets you execute specific functions. misc::RetrVar restores previousely
+dumped variables into .db files (with -dv). This works like a snapshot and allows for debugging the
+post discovery functions, without having to discovery the network everytime.
+
+The actual content below varies and doesn't necessarily make sense...
 
 =cut
 if ( $opt{'D'} ){
+print misc::IP2Name('10.10.10.1');
+#my $na = gethostbyaddr(inet_aton('10.10.10.1'), AF_INET);
+#print $na;
 #	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
 #	&misc::ReadOUIs();
-	my $nseed = &misc::InitSeeds();
-	print "Got $nseed seeds\n";
+#	my $nseed = &misc::InitSeeds();
+#	print "Got $nseed seeds\n";
 #	&db::ReadDev();
 #	&db::ReadAddr();
 #	&misc::RetrVar();
-
 #	&db::Inventory();
-#	&misc::BuildArp(1);
+#	&db::Disconnect();
+
 #	print &db::Select('system', '','value','name="first"');
 
-#	$misc::retire = $now - 1 * 86400;								# Test Retiring, e.g. with 1 day
-#	&db::ReadNod();
-#	&misc::BuildNod();
-#	&db::Disconnect();
-#	&misc::FloodFind() if $misc::notify =~ /n/i
-#	&db::WriteNod();
-	#&misc::TopRRD();
+#	&misc::TopRRD();
 
 # Debug VoIP Phones
 #	require "$p/inc/libweb.pm";
@@ -127,9 +128,9 @@ if ( $opt{'D'} ){
 	my $nedihost = 'localhost';
 	print "\nInitialize NeDi DB".(($opt{'I'})?', delete configs and RRDs':'')."!!!\n";
 	print "------------------------------------------------------------------------\n";
-	if ($#ARGV eq 1){										# 2 arguments for -i?
+	if ($#ARGV ne -1){										# Not using getopt to allow OPTIONAL credentials
 		$adminuser = $ARGV[0];
-		$adminpass = $ARGV[1];
+		$adminpass = (exists $ARGV[1])?$ARGV[1]:'';
 	}else{												# interactive credentials then...
 		print "$misc::backend admin user: ";
 		$adminuser = <STDIN>;
@@ -167,14 +168,36 @@ if ( $opt{'D'} ){
 		}
 	}
 	print "$nd Definitions (and counting) ------------------------------------------------\n\n";
+}elsif( $opt{'N'} ){
+	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
+	if($opt{'N'} =~ /^arpwatch/){
+		&misc::ArpWatch();
+		#&db::Commit();#Remove commit from Insert/Update/ and test?
+		exit;
+	}else{
+		my @r = split(/\./,$opt{'N'});
+		foreach my $ipa ( misc::ExpandRange($r[0]) ){
+			foreach my $ipb ( misc::ExpandRange($r[1]) ){
+				foreach my $ipc ( misc::ExpandRange($r[2]) ){
+					foreach my $ipd ( misc::ExpandRange($r[3]) ){
+						&db::WriteDNS("$ipa.$ipb.$ipc.$ipd");
+					}
+				}
+			}
+		}
+		#&db::Commit();
+		exit;
+	}
+	&db::Disconnect();
 }elsif( $opt{'s'} ){
 	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
-	print "Scanning Nodes ($main::VERSION) ---------------------------------------------\n";
-	if($opt{'s'} =~ /update/) {&db::ReadNod("lastseen > $now-$misc::rrdstep order by osupdate")}
-	elsif($opt{'s'} =~ /ip=/){
+	print "Scanning ($VERSION) $misc::ncmd\n";
+	if($opt{'s'} =~ /update/) {
+		#TODO rewrite with nodarp &db::ReadNod("lastseen > $now-$misc::rrdstep order by osupdate");
+	}elsif($opt{'s'} =~ /ip=/){
 		my $ip = $opt{'s'};
 		$ip =~ s/.*ip=//;
-		&db::ReadNod("nodip = \"".&misc::Ip2Dec(join('.',unpack( 'C4',gethostbyname($ip))))."\"");
+			#TODO rewrite with nodarp	&db::ReadNod("nodip = \"".&misc::Ip2Dec(join('.',unpack( 'C4',gethostbyname($ip))))."\"");
 	}
 	my $fp = ($opt{'s'} =~ /O/)?"-O":"";
 	my $fm = ($opt{'s'} =~ /F/)?"-F":"";
@@ -224,12 +247,14 @@ if ( $opt{'D'} ){
 	require "$p/inc/libweb.pm" unless $opt{'S'} =~ /W/;						# Use the WEB functions for webdevs if not skipped
 
 	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
-	&misc::ReadOUIs();
-	&db::ReadAddr();
-	&db::ReadLink("linktype = 'STAT'");								# Static links will override DP
 	my $ntgt  = &mon::InitMon();
 	my $nseed = &misc::InitSeeds();
 	&db::ReadDev();
+	&db::ReadAddr();
+	&misc::ReadOUIs();
+
+	$misc::stolen = &db::Select('stolen','mac','*');
+
 	my $nthrd = &db::Select('system','','value',"name='threads'");
 	my $first = &db::Select('system','','value',"name='first'");
 
@@ -267,7 +292,7 @@ if ( $opt{'D'} ){
 		my $id = shift(@misc::todo);
 		&misc::Discover($id);
 
-		if($opt{'d'} ){
+		if( $opt{'d'} =~ /s/ ){
 			print "-------------------------------------------------------------------------------\n";
 			system('ps aux|egrep "^USER|perl"');
 			if( $dsok ){
@@ -307,43 +332,32 @@ if ( $opt{'D'} ){
 	my $nnod = 0;
 	if ($ndev){
 		&misc::Prt("MAIN:$ndev devices discovered\n");
-		&misc::StorVar() if ($opt{'d'});
-
-		undef %misc::map;
-		if ($opt{'t'}){										# We're only testing
-			unless($opt{'S'} =~ /f/ and $opt{'S'} =~ /a/){
-				&misc::BuildArp();
-				&db::ReadNod();
-				&misc::BuildNod();
-			}
-		}else{
-			unless($opt{'S'} =~ /f/ and $opt{'S'} =~ /a/){
-				&misc::BuildArp();
-				while( my $nlock = &db::Select('system','','value',"name='nodlock'") ){	# Wait until nodes are unlocked by a parallel thread;
-					if( $nlock and kill 0,$nlock ){					# Registered thread and still running? (based on Steffen's idea)
-						&misc::Prt("MAIN:Nodes already locked by PID $nlock, waiting for unlock\n","N");
-						&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) waiting for nodes unlock (locked by PID $nlock)").",'bugx'",1) if $misc::notify =~ /x/;
-						sleep $misc::pause;
-					}else{
-						&misc::Prt("MAIN:PID $nlock not running, unlocking nodes!\n");
-						&db::Update('system',"value=0","name='nodlock'");
-						&db::Insert('events','level,time,source,info,class',"200,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) forces unlock nodes (locked by PID $nlock, which is not running anymore)").",'bugn'",1);
-					}
-				}
-				&db::Update('system',"value='$$'","name='nodlock'");			# Set node lock in system table...
-				&misc::Prt("MAIN:Nodes table locked at ".localtime(time)." by PID $$\n","Building nodes\n");
-				&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) locks nodes").",'bugx'",1) if $misc::notify =~ /x/;
-				&db::ReadNod();
-				$nnod = &misc::BuildNod();
-				&db::WriteNod();
-				&db::Update('system','value=0',"name='nodlock'");			# ...unlock them again
-				&misc::Prt("\nMAIN:Nodes table unlocked at ".localtime(time)." by PID $$\n"," done\n");
-				&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) unlocks nodes").",'bugx'",1) if $misc::notify =~ /x/;
-				&misc::Prt("MAIN:$misc::ipchg IP and $misc::ifchg IF changes detected\n") if ($misc::ipchg or $misc::ifchg);
-			}
+		&misc::StorVar() if $opt{'d'}  =~ /v/;
+		unless( $opt{'t'} ){									# We're only testing
 			my $nthrd = &db::Select('system','','value',"name='threads'");
 			&misc::Prt("MAIN:$nthrd threads running right now\n");
-			&misc::TopRRD() if $nthrd == 1 and $opt{'S'} !~ /o/;
+			if( $nthrd == 1){
+				if( $opt{'S'} !~ /R/ ){
+					my $ndel = &db::Delete('nodes',"lastseen < $misc::retire");
+					&misc::Prt("MAIN:$ndel nodes retired\n");
+				}
+				if( $opt{'S'} !~ /D/ ){
+					my $Adel = &db::Delete('dns',"dnsupdate < $misc::retire");
+					my $A4del = &db::Delete('dns6',"dns6update < $misc::retire");
+					&misc::Prt("MAIN:$Adel Anames and $A4del AAAAnames retired\n");
+				}
+				if( $opt{'S'} !~ /I/ ){
+					my $ardel = &db::Delete('nodarp',"ipupdate < $misc::retire");
+					my $nddel = &db::Delete('nodnd',"ip6update < $misc::retire");
+					&misc::Prt("MAIN:$ardel ARP and $nddel ND entries retired\n");
+				}
+				if( $opt{'S'} !~ /T/ ){
+					my $ifdel = &db::Delete('iftrack',"ifupdate < $misc::retire");
+					my $ipdel = &db::Delete('iptrack',"ipupdate < $misc::retire");
+					&misc::Prt("MAIN:$ifdel IF track and $ipdel IP track entries retired\n");
+				}
+				&misc::TopRRD() if $opt{'S'} !~ /G/;
+			}
 			&mon::AlertFlush("Discovery Notification",$misc::mq);
 		}
 	}else{
@@ -356,8 +370,6 @@ if ( $opt{'D'} ){
 	&db::Commit();
 	&db::Disconnect();
 	print "END :Took $disdur minutes\n\n";
-
-	&misc::Prt("\%nod\t".&misc::DecFix( size(\%nod) )."\n") if $dsok and $opt{'d'};
 }
 
 =head2 FUNCTION HELP_MESSAGE()
@@ -373,42 +385,45 @@ B<Returns> -
 =cut
 sub HELP_MESSAGE(){
 	print "\n";
-	print "usage: nedi.pl [Discovery Sources] [Discovery Control] [Discovery Actions] | Other Actions\n\n";
-	print "Discovery Sources (how the Todo-list gets filled up) ----------------------\n";
-	print "-a ip	Add single device or ip range (e.g. 10.10.10)\n";
+	print "usage: nedi.pl [Sources] [Control] [Actions] | Other Actions\n\n";
+	print "Sources (how the Todo-list gets filled up) --------------------------------\n";
+	print "-a ip	Add single device or ip range (e.g. 10.10.1-9.1 or 10.10.10.1,2,3)\n";
 	print "-A cond	Add devices from DB cond=all or e.g.\"loc LIKE 'here%'\"\n";
 	print "-p 	Discover LLDP,CDP,FDP or NDP neighbours\n";
 	print "-o	OUI discovery (based on ARP chache entries)\n";
 	print "-r	Route table discovery (on L3 devices)\n";
 	print "-u file	Use specified seedlist\n";
 	print "-U file	Use specified configuration (use - to read from stdin)\n\n";
-	print "Discovery Control (how data is handled) -----------------------------------\n";
-	print "-c cmty	Prefer this community over those in nedi.conf and DB\n";
-	print "-d|D	Debug info, store variables, write CLI logs|Advanced debug mode\n";
+	print "Control (how data is handled) ---------------------------------------------\n";
+	print "-C cmty	Prefer this community over those in nedi.conf and DB\n";
+	print "-d opt	b=basic debug,d=DB queries,s=sysload,c=write clilog,v= dump vars\n";
+	print "-D	Enters debug section in nedi.pl\n";
 	print "-f 	Use discovered IPs as devicenames (useful, if they're not unique)\n";
-	print "-F 	Use FQDNs for devices. Allows \".\" in dev names (can mess up links!)\n";
+	print "-F 	Use FQDN for device. Allows \".\" in dev name (can mess up links!)\n";
 	print "-l x	Limit discovery to x devices\n";
 	print "-n 	Don't resolve node names via DNS\n";
-	print "-N 	Don't exclude devices from nodes\n";
 	print "-P x	Ping device (with timout x) prior SNMP access (faster with sweeps)\n";
 	print "-v	Verbose output\n";
 	print "-V ver	Prefer this SNMP version over those in nedi.conf and DB\n\n";
-	print "Discovery Actions (applies to each device found) --------------------------\n";
+	print "Actions (applies to each device found) ------------------------------------\n";
 	print "-b|Bx	Backup running config|also write files, delete old versions if > x\n";
-	print "-C file	Send commands in file.php and write output to file-ip.log\n";
+	print "-c file	Send commands in file.php (preceed with diff- to create events on\n";
+	print "	changes) and write output to file-ip.log\n";
 	print "-k	Store ssh key in ~/.ssh/known_hosts\n";
 	print "-K	Delete stored key from ~/.ssh/known_hosts\n";
-	print "-Y opt	Add to inventory n=new s=snmp|a=all m=modules any=update only\n";
-	print "-S opt	Skip s=sys v=vlans m=modules g=devrrd a=arp f=fwd p=dprot o=toprrd\n";
-	print "	W=web j=adr i=IFinf t=trf e=err d=dscrd b=bcast w=poe A=adm O=op\n";
-	print "	l=APloc Examples: -Saf=nodes -SOAedibatflow=IFinfo -Sog=RRDs\n";
-	print "-t opt	Test only (no DB write) a=snmp access|i=all info \n";
+	print "-Y opt	Add to inventory n=new s=snmp|a=all m=modules u=update only\n";
+	print "-S opt	Skip s=sys v=vlans m=modules g=devrrd A=arp F=fwd p=dprot G=toprrd\n";
+	print "	W=web j=adr i=IFinf t=trf e=err d=dscrd b=bcast w=poe a=adm o=oper\n";
+	print "	P=APloc l=linkcalc, retire: N=nodes, T=IF/IPtrack D=dns I=IPs\n";
+	print "-t opt	Test only a=access (events upon success) i=info p=ping (with -P)\n";
 	print "-W 	Retry SNMP writeaccess\n\n";
-	print "Other Actions =============================================================\n";
+	print "Other Actions -------------------------------------------------------------\n";
 	print "-i u pw	Initialize database (-I deletes all RRDs & Configs in addition)\n";
+	print "	If user is set to 'nodrop', an empty DB can be used without admin rights\n";
 	print "-s Xopt	Scan nodes, X=Tcp,Udp,Os,Fast opt=update or ip=(ip) e.g. TUFupdate\n";
+	print "-N opt	ip or range resolve names, arpwatch(-iponly)=import info (w/o name)\n";
 	print "-y	Show supported devices based on .def files (in sysobj)\n\n";
-	print "Output Legend -------------------------------------------------------------\n";
+	print "Output Legend =============================================================\n";
 	print "Statistics (lower case letters):\n";
 	print "i#	Interfaces\n";
 	print "j#	IF IP addresses\n";
@@ -416,10 +431,11 @@ sub HELP_MESSAGE(){
 	print "f#	Forwarding entries\n";
 	print "m#	Modules\n";
 	print "v#	Vlans\n";
-	print "c#	Config lines\n";
-	print "pro x/y	Discovery protocol, route or OUI queueing (# added/# done already)\n";
+	print "c#	Config lines returned (-b or -Bx options)\n";
+	print "x#	Lines returned from executed command (-C option)\n";
+	print "p|r|o#/#	Protocol, route or OUI queueing (# added/# done already)\n";
 	print "b#	Border hits\n\n";
-	print "Warnings (upper case letters) -------------------------------------------\n";
+	print "Warnings (upper case letters) ---------------------------------------------\n";
 	print "Jx	IF Addresses (a=IP m=Mask 6=ipv6 c=cisco-ip6 p=prefix v=vrf)\n";
 	print "Ax	ARP (n=net2media p=net2phys 6=ipv6 c=cisco-ip6 i=no IF index)\n";
 	print "Bx	Backup f=fetched n=new u=update w=write e=empty d=delete\n";

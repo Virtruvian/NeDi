@@ -14,10 +14,11 @@ if( !isset($_GET['print']) ) {
 ?>
 <h1>Text Converter</h1>
 <form method="get" action="<?= $self ?>.php">
-<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content" ><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th>
-<?= $inflbl ?>: <input type="text" name="txt" value="<?= $txt ?>" class="xl">
+<?= $inflbl ?>: <input type="text" name="txt" value="<?= $txt ?>" class="xl" onfocus="select();">
 </th>
 <th width="80">
 <input type="submit" class="button" value="<?= $sholbl ?>">
@@ -29,7 +30,7 @@ if( !isset($_GET['print']) ) {
 
 ?>
 <h2>Decimal, ASCII, HEX</h2>
-<table class="content fixed" ><tr class="<?= $modgroup[$self] ?>2">
+<table class="content fixed" ><tr class="bgsub">
 <?php
 
 $ord = preg_split('/\D/', $txt);

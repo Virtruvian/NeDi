@@ -56,9 +56,9 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 <form method="get" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content"><tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td>
 <?php Filters(); ?>
@@ -95,7 +95,7 @@ if( count($in) ){
 		echo "	<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\">\n</div>\n<p>\n";
 	}
 	Condition($in,$op,$st,$co);
-	TblHead("$modgroup[$self]2",1);
+	TblHead("bgsub",1);
 
 	$query	= GenQuery('modules','s','modules.*,type,firstdis,lastdis,description,location,contact',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device)');
 	$res	= DbQuery($query,$link);
@@ -134,13 +134,7 @@ if( count($in) ){
 	}else{
 		print DbError($link);
 	}
-	?>
-</table>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
-<?= $row ?> Modules<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?>
-
-</td></tr></table>
-<?php
+	TblFoot("bgsub", count($col), "$row Modules".(($ord)?", $srtlbl: $ord":"").(($lim)?", $limlbl: $lim":"") );
 }
 include_once ("inc/footer.php");
 ?>

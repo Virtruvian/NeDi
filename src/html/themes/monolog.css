@@ -62,6 +62,10 @@ input {
 textarea {
 	color: #444444;
 }
+input.button{
+	padding: 4px;
+	margin : 2px;
+}
 
 /* Image Properties */
 img{
@@ -95,7 +99,7 @@ img.panel{
 :link:hover, :visited:hover {color: #ff4400}
 :link:active, :visited:active {color: #0088dd}
 
-/* Header table & Footer div*/
+/* Header table */
 #header{
 	width: 100%;
 	border-spacing: 1px;
@@ -104,7 +108,7 @@ img.panel{
 
 /* Topmenu inspired by line25.com */
 #nav {
-	width: 540px;
+	min-width: 50em;
 }
 
 #nav ul ul {
@@ -192,8 +196,28 @@ table.fixed{
 	table-layout:fixed;
 }
 
-.s{
+.qrt{
+	width: 25%;
+}
+
+.half{
+	width: 50%;
+}
+
+.tqrt{
+	width: 75%;
+}
+
+.full{
+	width: 100%;
+}
+
+.xs{
 	width: 50px;
+}
+
+.s{
+	width: 90px;
 }
 
 .m{
@@ -208,8 +232,8 @@ table.fixed{
 	width: 350px;
 }
 
-.full{
-	width: 100%;
+.xxl{
+	width: 700px;
 }
 
 .lft{
@@ -240,6 +264,18 @@ table.fixed{
 	white-space: nowrap;
 }
 
+.bctr{
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+.flft{
+	float: left;
+}
+.frgt{
+	float: right;
+}
+
 .genpad{
 	background-color: #fff;
 	border:1px solid black;
@@ -248,7 +284,6 @@ table.fixed{
 
 .textpad{
 	margin: 10px auto;
-	width: 70%;
 	padding: 10px;
 	border-spacing: 1px;
 	border: 2px solid #dddddd;
@@ -304,11 +339,11 @@ table.fixed{
 .crit{background-color: #ff0000}
 .part{background-image:url('../img/dia.png')}
 
-/* Default Group Based Module Colors */
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgtop, .bgmain{
 	background-color: #dddddd;
 }
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	background-color: #eeeeee;
 }
 

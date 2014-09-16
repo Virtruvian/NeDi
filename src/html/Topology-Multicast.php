@@ -12,9 +12,10 @@ include_once ("inc/libsnmp.php");
 $_GET = sanitize($_GET);
 $mdv = isset($_GET['dev']) ? $_GET['dev'] : "";
 
-$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-$query	= GenQuery('devices','s','*','device','',array('services','snmpversion'),array('>','!='),array('3','0'),array('AND') );
-$res	= DbQuery($query,$link);
+$devtyp = array();
+$link   = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$query  = GenQuery('devices','s','*','device','',array('services','snmpversion'),array('>','!='),array('3','0'),array('AND') );
+$res    = DbQuery($query,$link);
 if($res){
 	while( ($d = DbFetchRow($res)) ){
 		$devtyp[$d[0]] = $d[3];
@@ -25,13 +26,14 @@ if($res){
 }
 
 ?>
-<h1><?= $mtitl[0] ?> <?= $mtitl[1] ?></h1>
+<h1><?= $rltlbl ?> Multicast</h1>
 
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php" name="mrout">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th>
 
 <SELECT size="1" name="dev">
@@ -80,13 +82,12 @@ if ($mdv) {
 <tr><th class="imga" width="80">
 <a href="Devices-Status.php?dev=<?= $ud ?>"><img src="img/dev/<?= $dev[18] ?>.png" title="<?= $stalbl ?>"></a>
 <br><?= $dev[0] ?></th><td class="txta"><?= (Devcli($ip,$dev[16])) ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $srvlbl ?></th><td class="txtb"><?= ($sv)?$sv:"&nbsp;" ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $loclbl ?></th><td class="txta"><?= $dev[10] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $conlbl ?></th><td class="txtb"><?= $dev[11] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">SNMP</th><td class="txta"><?= $dev[15] ?> (Version <?= $dev[14] & 7?>)</td></tr>
+<tr><th class="bgsub"><?= $srvlbl ?></th><td class="txtb"><?= ($sv)?$sv:"&nbsp;" ?></td></tr>
+<tr><th class="bgsub"><?= $loclbl ?></th><td class="txta"><?= $dev[10] ?></td></tr>
+<tr><th class="bgsub"><?= $conlbl ?></th><td class="txtb"><?= $dev[11] ?></td></tr>
 </table>
 <h2>IGMP  <?= $grplbl ?> <?= $lstlbl ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <?php
 		if ($dev[8] == "ProCurve"){
 ?>
@@ -120,10 +121,10 @@ if ($mdv) {
 ?>
 </tr></table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
 <h2>IGMP Querier <?= $lstlbl ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th colspan="2"><img src="img/16/port.png"><br>Interface</th>
 <th><img src="img/16/home.png"><br><?= $dstlbl ?></th>
 <th><img src="img/16/date.png"><br>Age <?= $timlbl ?></th>
@@ -151,7 +152,7 @@ if ($mdv) {
 ?>
 </tr></table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
 <?php
 		}else{
@@ -197,7 +198,7 @@ if ($mdv) {
 ?>
 </tr></table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
 <?php
 		}

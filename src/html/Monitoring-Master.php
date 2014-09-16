@@ -26,8 +26,8 @@ $bld = isset($_GET['bld']) ? $_GET['bld'] : "";
 <input type="hidden" name="reg" value="<?= $reg ?>">
 <input type="hidden" name="cty" value="<?= $cty ?>">
 <input type="hidden" name="bld" value="<?= $bld ?>">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 
 </th>
 <td valign="top" align="center">
@@ -72,7 +72,7 @@ StatusIncidents($loc,$_SESSION['gsiz'],1);
 		$nlev = DbNumRows($res);
 		if($nlev){
 ?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th><img src="img/16/dev.png"><br>Device</th>
 <th><img src="img/16/bell.png"><br><?= $msglbl ?></th>
 <th><img src="img/16/cog.png"><br><?= $cmdlbl ?></th>

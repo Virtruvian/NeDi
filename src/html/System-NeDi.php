@@ -118,8 +118,9 @@ function UpCmd(){
 <?php  if( !isset($_GET['print']) ){ ?>
 <form name="nedi" action="<?= $self ?>.php" method="post">
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>1">
-<th width="50" class="<?= $modgroup[$self] ?>1"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<tr class="bgmain">
+<th width="50" class="bgmain"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 
 <td valign="top">
 
@@ -165,9 +166,9 @@ function UpCmd(){
 <option value="B10" <?= ($bup == "B10")?" selected":"" ?> >DB & <?= $fillbl ?> (<?= $maxlbl ?> 10)
 </select>
 <input type="text" name="skp" value="<?= $skp ?>" class="m" placeholder="Skip" onfocus="select();" onchange="UpCmd();"> 
-<img src="img/16/port.png" align="right" onClick="document.nedi.skp.value='wOAtedib';UpCmd();" title="Skip IF">
-<img src="img/16/nods.png" align="right" onClick="document.nedi.skp.value='af';UpCmd();" title="Skip Nodes">
-<img src="img/16/grph.png" align="right" onClick="document.nedi.skp.value='og';UpCmd();" title="Skip <?= $gralbl ?>">
+<img src="img/16/port.png" align="right" onClick="document.nedi.skp.value='adobewit';UpCmd();" title="Skip IF">
+<img src="img/16/nods.png" align="right" onClick="document.nedi.skp.value='AF';UpCmd();" title="Skip Nodes">
+<img src="img/16/grph.png" align="right" onClick="document.nedi.skp.value='Gg';UpCmd();" title="Skip <?= $gralbl ?>">
 </td>
 <td><input type="checkbox" name="wco" <?= $wco ?> title="<?= $dsclbl ?> Writecommunity" onchange="UpCmd();"> <?= $wrtlbl ?></td>
 <td><input type="checkbox" name="fqd" <?= $fqd ?> title="Device <?= $namlbl ?> & Domain" onchange="UpCmd();"> FQDN</td>
@@ -196,11 +197,18 @@ function UpCmd(){
 <?php } ?>
 
 <h2 id="cmd"><?= $cmd ?></h2>
-<div class="textpad code txta" name="out">
+<div class="textpad code txta tqrt" name="out">
 <?php
 session_write_close();
 ob_end_flush();
-system("$cmd 2>&1");
+
+if($mde == 'y'){
+	$out =shell_exec("$cmd 2>&1");
+	echo preg_replace('/([\d\.]+)\.def/','<a href="Other-Defgen.php?so=$1">$1</a>',$out);
+}else{
+	system("$cmd 2>&1");
+}
+
 ?>
 </div><br>
 

@@ -56,8 +56,9 @@ $cols = array(	"info"=>"Info",
 <?php  if( !isset($_GET['print']) ){ ?>
 
 <form method="get" name="dynfrm" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td valign="top">
 
 <?php Filters(1); ?>
@@ -96,7 +97,7 @@ $cols = array(	"info"=>"Info",
 <td align="center">
 
 <table style="border-spacing: 0px">
-<tr class="<?= $modgroup[$self] ?>2"><td>
+<tr class="bgsub"><td>
 <a href="?<?=SkewTime($qstr,"sta", -7) ?>"><img src="img/16/bbl2.png" title="<?= $sttlbl ?> -<?= $tim['w'] ?>"></a>
 </td><td>
 <a href="?<?=SkewTime($qstr,"sta", -1) ?>"><img src="img/16/bblf.png" title="<?= $sttlbl ?> -<?= $tim['d'] ?>"></a>
@@ -107,7 +108,7 @@ $cols = array(	"info"=>"Info",
 </td><td>
 <a href="?<?=SkewTime($qstr,"sta", 7) ?>"><img src="img/16/bbr2.png" title="<?= $sttlbl ?> +<?= $tim['w'] ?>"></a>
 </td></tr>
-<tr class="<?= $modgroup[$self] ?>2"><td>
+<tr class="bgsub"><td>
 <a href="?<?=SkewTime($qstr,"all", -7) ?>"><img src="img/16/bbl2.png" title="<?= $gralbl ?> -<?= $tim['w'] ?>"></a>
 </td><td>
 <a href="?<?=SkewTime($qstr,"all", -1) ?>"><img src="img/16/bblf.png" title="<?= $gralbl ?> -<?= $tim['d'] ?>"></a>
@@ -118,7 +119,7 @@ $cols = array(	"info"=>"Info",
 </td><td>
 <a href="?<?=SkewTime($qstr,"all", 7) ?>"><img src="img/16/bbr2.png" title="<?= $gralbl ?> +<?= $tim['w'] ?>"></a>
 </td></tr>
-<tr class="<?= $modgroup[$self] ?>2"><td>
+<tr class="bgsub"><td>
 <a href="?<?=SkewTime($qstr,"end", -7) ?>"><img src="img/16/bbl2.png" title="<?= $endlbl ?> -<?= $tim['w'] ?>"></a>
 </td><td>
 <a href="?<?=SkewTime($qstr,"end", -1) ?>"><img src="img/16/bblf.png" title="<?= $endlbl ?> -<?= $tim['d'] ?>"></a>
@@ -155,7 +156,7 @@ Condition($in,$op,$st,$co);
 
 if( !strpos($fmt,'g') ){
 ?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th width="80"><img src="img/16/clock.png"><br><?= $timlbl ?></th>
 <th><img src="img/16/bell.png"><br><?= $msglbl ?></th>
 </tr>
@@ -210,7 +211,7 @@ while($istart < $end){
 					$gico = "<img src=\"img/16/" . $mico[$m['level']] . ".png\" title=\"" . $mlvl[$m['level']] . "\">";
 				}else{
 					list($ei,$et) = EvClass($m['class']);
-					$gico = "<img src=\"img/16/$ei.png\" title=\"$et\">";
+					$gico = "<img src=\"$ei\" title=\"$et\">";
 				}
 				if( !strpos($fmt,'g') ){
 					echo "<a href=\"${monev}in[]=time&op[]=%3E=&st[]=$fs&co[]=AND&in[]=time&op[]=%3C&st[]=$fe&in[]=$det&op[]==&st[]=".urlencode($m[$det])."&co[]=AND&elm=$listlim\">";
@@ -252,7 +253,7 @@ while($istart < $end){
 if( strpos($fmt,'g') ){
 	$ncol = count($chd['labels']);
 	ksort($dsval);
-	echo "<div style=\"display: block;margin: 0 auto;width:800px;background-color:#ccc;padding:4px;border:1px solid black\">\n";
+	echo "<div class=\"genpad txta bctr tqrt\">\n";
 	foreach ( array_keys($dsval) as $dsgrp ){
 		$cds = array();
 		if($dsgrp == '50'){
@@ -275,7 +276,7 @@ if( strpos($fmt,'g') ){
 				$dsval[$dsgrp][$d] = 0;			
 			}
 		}
-		echo "<span style=\"background-color:rgb($rgba);padding:5px\">\n";
+		echo "<span style=\"background-color:rgb($rgba);padding:3px;margin:2px\">\n";
 		echo "<a href=\"${monev}in[]=time&op[]=%3E=&st[]=$strsta&co[]=AND&in[]=time&op[]=%3C&st[]=$strend&in[]=$det&op[]==&st[]=".urlencode($dsgrp)."&co[]=AND&elm=$listlim\">";
 		echo "$dsico[$dsgrp]</a></span>\n";
 		ksort( $dsval[$dsgrp] );
@@ -288,7 +289,7 @@ if( strpos($fmt,'g') ){
 </div>
 <p>
 <script src="inc/Chart.min.js"></script>
-<canvas id="evchart" style="display: block;margin: 0 auto;padding: 10px;border:1px solid black;background-color:#fff" width="960" height="400"></canvas>
+<canvas id="evchart" class="genpad bctr" width="960" height="400"></canvas>
 <script language="javascript">
 var data = <?= json_encode($chd,JSON_NUMERIC_CHECK) ?>
 
@@ -306,7 +307,7 @@ var myNewChart = new Chart(ctx).<?= ($fmt == 'cg')?'Bar':'Line' ?>(data);
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?>, <?= $tmsg ?> <?= $msglbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?>, <?= $tmsg ?> <?= $msglbl ?></td></tr>
 </table>
 <?php
 }

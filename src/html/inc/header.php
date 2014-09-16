@@ -3,9 +3,7 @@
 // NeDi Header
 //===============================
 
-$listlim = 200;
-
-error_reporting(E_ALL ^ E_NOTICE);
+$listlim = 250;
 
 ini_set("memory_limit","128M");										# Enterprise network support TODO move to modules an adapt?
 
@@ -54,12 +52,11 @@ if( isset($_GET['xls']) ){
 	.imga{background-color: #f0f0f0}
 	.imgb{background-color: #e6e6e6}
 
-	.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
-		background-color: #eee;
+	.bgmain{
+		background-color: #eeeeee;
 	}
-
-	.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
-		background-color: #ddd;
+	.bgsub{
+		background-color: #dddddd;
 	}
 	</style>
 </head>
@@ -80,7 +77,7 @@ if( isset($_GET['xls']) ){
 </head>
 
 <body>
-<div id="header" class="<?= $modgroup[$self] ?>1">
+<div id="header">
 	<div style="float:right">
 		<img src="<?= (( file_exists("themes/custom.png") )?"themes/custom":"img/nedi") ?>.png" height="32">
 	</div>
@@ -137,7 +134,7 @@ if( isset($refresh) ){
 <?php } ?>
 </script>
 
-<table id="header"><tr class="<?= $modgroup[$self] ?>1">
+<table id="header"><tr class="bgtop">
 <?php 													# Tried with div instead table, but got too many inconcistencies with browsers and mobile mode
 if( isset($_SESSION['snap']) ){
 	echo "<td class=\"warn ctr s\">\n	<a href=\"System-Snapshot.php\"><img src=\"img/32/foto.png\" title=\"Snapshot $stco[100]: $_SESSION[snap]\"></a>\n</td>\n";
@@ -151,10 +148,10 @@ if($mobile){
 	echo "	<tr>";
 	foreach( array_keys($mod) as $m){
 		if($mos[0] == $m){
-			echo "		<td class=\"$modgroup[$self]1 ctr\">$m</th>";
+			echo "		<td class=\"bgmain ctr\">$m</th>";
 		}else{
 			$s = current( array_keys($mod[$m]) );
-			echo "		<td class=\"$modgroup[$self]2 ctr\"><a href=\"$m-$s.php\">$m</a></td>";
+			echo "		<td class=\"bgsub ctr\"><a href=\"$m-$s.php\">$m</a></td>";
 		}
 	}
 	$col = 0;
@@ -165,9 +162,9 @@ if($mobile){
 	foreach($mod[$mos[0]] as $s => $i){
 		$col++;
 		if($mos[1] == $s){
-			echo "		<td class=\"$modgroup[$self]1 ctr\"><img src=\"img/16/$i.png\"></td>";
+			echo "		<td class=\"bgmain ctr\"><img src=\"img/16/$i.png\"></td>";
 		}else{
-			echo "		<td class=\"$modgroup[$self]2 ctr\"><a href=\"$mos[0]-$s.php\"><img src=\"img/16/$i.png\"></a></td>";
+			echo "		<td class=\"bgsub ctr\"><a href=\"$mos[0]-$s.php\"><img src=\"img/16/$i.png\"></a></td>";
 		}
 	}
 	echo "	</tr>\n";
@@ -204,7 +201,7 @@ if($_SESSION['opt']){
 	foreach ($_SESSION['bread'] as $prv) {
 		$bc++;
 		if($bc == $_SESSION['lim']){
-			$bim = "";
+			$bim = '';
 		}else{
 			$boc = intval(10 * $bc / $_SESSION['lim']);
 			$bim = "style=\"opacity:0.$boc;filter:alpha(opacity=${boc}0);}\"";
@@ -236,7 +233,7 @@ if($_SESSION['opt']){
 
 }
 ?>
-<td class="ctr">
+<td class="ctr m">
 	<img src="img/16/ring.png" title="Help" onclick="window.open('<?="languages/$_SESSION[lang]/$self.html" ?>','Help','width=640,height=480,scrollbars');">
 <?php  
 if($printable) { ?>
@@ -268,8 +265,12 @@ if($isadmin and $_SESSION['user'] == 'admin'){
 		die;
 	}
 
+	error_reporting(E_ALL ^ E_NOTICE);
 	if($debug){
-		echo "<div class=\"textpad code good\">Self:	$self\n";
+		ini_set('display_errors', 'On');
+		error_reporting(E_ALL);
+
+		echo "<div class=\"textpad code good half\">Self:	$self\n";
 		echo "Version:	$_SESSION[ver]\n";
 		echo "NeDipath:	$nedipath\n";
 		echo "DB:	$dbhost,$dbuser,$dbname\n";
@@ -277,7 +278,7 @@ if($isadmin and $_SESSION['user'] == 'admin'){
 		echo "Now:	$now (Format:$_SESSION[timf]-$_SESSION[datf] TZ:$_SESSION[tz])\n";
 		echo "</div>\n";
 
-		echo "<div class=\"textpad code alrm\">\n";
+		echo "<div class=\"textpad code alrm tqrt\">\n";
 		echo "SERVER: ";
 		print_r($_SERVER);
 		echo "\nSESSION: ";

@@ -1,5 +1,5 @@
 /* General Classes */
-body {
+body{
 	margin : 20px;
 	font: 12px verdana, arial, sans-serif; 
 	color: #000000;
@@ -102,6 +102,9 @@ img.panel{
 	border: 1px solid #888;
 	padding: 8px;
 	background-color: #d4d4d4;
+	background: -webkit-linear-gradient(90deg, #b0b0b0 25%, #cccccc 75%);
+	background: -ms-linear-gradient(25% 75% 90deg, #b0b0b0, #cccccc);
+	background: linear-gradient(#cccccc, #b0b0b0);
 }
 
 #footer{
@@ -111,6 +114,9 @@ img.panel{
 	border: 1px solid #888;
 	padding: 8px;
 	background-color: #d4d4d4;
+	background: -webkit-linear-gradient(90deg, #b0b0b0 25%, #cccccc 75%);
+	background: -ms-linear-gradient(25% 75% 90deg, #b0b0b0, #cccccc);
+	background: linear-gradient(#cccccc, #b0b0b0);
 }
 
 /* Actual Module */
@@ -235,20 +241,19 @@ table.fixed{
 .crit{background-color: #ff8888}
 .part{
  opacity:0.8;
-/*filter:alpha(opacity=80); /* For IE8 and earlier */
 }
 
-/* Module Colors */
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgmain{
 	background-color: #bbbbbb;
-	background: linear-gradient(#cccccc, #b0b0b0);
 	background: -webkit-linear-gradient(90deg, #b0b0b0 25%, #cccccc 75%);
 	background: -ms-linear-gradient(25% 75% 90deg, #b0b0b0, #cccccc);
+	background: linear-gradient(#cccccc, #b0b0b0);
 }
 
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	background-color: #cccccc;
-	background: linear-gradient(#dddddd, #c0c0c0);
 	background: -webkit-linear-gradient(90deg, #c0c0c0 25%, #dddddd 75%);
 	background: -ms-linear-gradient(25% 75% 90deg, #c0c0c0, #dddddd);
+	background: linear-gradient(#dddddd, #c0c0c0);
 }

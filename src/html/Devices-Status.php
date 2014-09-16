@@ -18,6 +18,7 @@ $dld = isset($_GET['del']) ? $_GET['del'] : '';
 $dtx = isset($_GET['dtx']) ? $_GET['dtx'] : '';
 $shd = isset($_GET['dev']) ? $_GET['dev'] : '';
 $add = isset($_GET['add']) ? $_GET['add'] : '';
+$adi = isset($_GET['adi']) ? $_GET['adi'] : '';
 
 $loc = isset($_GET['loc']) ? $_GET['loc'] : '';
 $con = isset($_GET['con']) ? $_GET['con'] : $_SESSION['user'];
@@ -54,20 +55,20 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 <?php  if( !isset($_GET['print']) ) { ?>
 <form method="get">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content"><tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td>
-<a href="?dev=new"><img src="img/16/add.png" title="<?= $addlbl ?>"></a>
-<select size="1" name="dev" onchange="this.form.submit();">
-<option value="">Device ->
+	<a href="?dev=new"><img src="img/16/add.png" title="<?= $addlbl ?>"></a>
+	<select size="1" name="dev" onchange="this.form.submit();">
+		<option value="">Device ->
 <?php
 $query	= GenQuery('devices','s','device','device');
 $res	= DbQuery($query,$link);
 if($res){
 	while( $d = DbFetchRow($res) ){
-		echo "	<option value=\"$d[0]\"".( ($shd == $d[0])?" selected":"").">$d[0]\n";
+		echo "		<option value=\"$d[0]\"".( ($shd == $d[0])?" selected":"").">$d[0]\n";
 	}
 	DbFreeResult($res);
 }else{
@@ -75,32 +76,30 @@ if($res){
 	die;
 }
 ?>
-</select>
+	</select>
 
 </td>
+<td class="ctr">
 <?php if($rrdcmd and $_SESSION['gsiz']){ ?>
-<th>
-
-<img src="img/16/grph.png" title="IF <?= $gralbl ?>">
-<input type="checkbox" name="shg" <?= $shg ?>>
-
-</th>
+	<img src="img/16/grph.png" title="<?= $porlbl ?> <?= $gralbl ?>">
+	<input type="checkbox" name="shg" <?= $shg ?>>
 <?php } ?>
-
-<th>
-<img src="img/16/nods.png" title="<?= $sholbl ?> <?= $poplbl ?>">
-<input type="checkbox" name="pop" <?= $pop ?>>
-</th>
-<th width="80">
-<input type="submit" class="button" value="<?= $sholbl ?>">
-</th>
-</tr></table></form><p>
+	<img src="img/16/nods.png" title="<?= $sholbl ?> <?= $poplbl ?>">
+	<input type="checkbox" name="pop" <?= $pop ?>>
+</td>
+<td class="ctr s">
+	<input type="submit" class="button" value="<?= $sholbl ?>">
+</td>
+</tr>
+</table>
+</form>
+<p>
 <?php
 }
 if( $add ){
 	if( $isadmin ){
 		$dvst = AddRecord('devices',"device='$add'",'device,devip,serial,type,firstdis,lastdis,services,description,location,contact,devgroup,devmode,icon,sysobjid,devopts,size',"'$add','".ip2long($ip)."','$sn','$typ','".time()."','".time()."',0,'$des','$loc','$con','$grp',9,'$ico','NoSNMP-User','NNNI',$siz");
-		$ifst = AddRecord('interfaces',"device='$add'",'device,ifname,ifidx,ifmac,ifdesc,alias,iftype,ifstat,speed',"'$add','$ina',1,'$mac','User added','$ali',53,3,$spd");
+		$ifst = AddRecord('interfaces',"device='$add' AND ifidx='$adi'",'device,ifname,ifidx,ifmac,ifdesc,alias,iftype,ifstat,speed',"'$add','$ina','$adi','$mac','User added','$ali',53,3,$spd");
 		echo "<h3><a href=\"?dev=".urlencode($add)."\">$add</a> $addlbl Device $dvst Interface $ifst</h3>\n";
 	}else{
 		echo $nokmsg;
@@ -117,86 +116,88 @@ setTimeout("history.go(-2)",1000);
 		echo $nokmsg;
 	}
 }elseif ($shd){
-if ($cactiuser and $cactihost and $cactidb){
-	$clink  = DbConnect($cactihost,$cactiuser,$cactipass,$cactidb);
-	$cquery = GenQuery('host','s','id','','',array('description','hostname'),array('=','='),array($shd,$shd),array('OR') );
-	$cres   = DbQuery($cquery,$clink);
-	if ( DbNumRows($cres) == 1) {
-	        $caho = DbFetchRow($cres);
-	}
-	DbFreeResult($cres);
-}
 
 $ud	= urlencode($shd);										# Need raw for RRD filenames
 $query	= GenQuery('devices','s','*','','',array('device'),array('='),array($shd) );
 $res	= DbQuery($query,$link);
 $ndev	= DbNumRows($res);
-if ($ndev != 1) {
-	echo "<h4>$shd: $nonlbl <a href=\"?del=$ud\"><img src=\"img/16/bcnl.png\" title=\"".(($verb1)?"$dellbl $mlvl[10] $inflbl":"$mlvl[10] $inflbl $dellbl")."\"></a></h4>";
+if( $ndev != 1 or $adi ){
+	if( $ndev != 1 ){
+		echo "<h4>$shd: $nonlbl <a href=\"?del=$ud\"><img src=\"img/16/bcnl.png\" title=\"".(($verb1)?"$dellbl $mlvl[10] $inflbl":"$mlvl[10] $inflbl $dellbl")."\"></a></h4>";
+		echo "<h2>$stco[10] Device</h2><p>\n";
+	}else{
+		echo "<h2>$stco[10] $intlbl</h2><p>\n";
+	}
 	DbFreeResult($res);
 ?>
-<h2><?= $stco['10'] ?> Device</h2><p>
-
 <form method="get" name="bld" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<td valign="top">
-
-<h3><?= $manlbl ?></h3>
-<img src="img/16/dev.png" title="<?= $namlbl ?>">
-<input type="text" name="add" value="<?= $shd ?>" placeholder="<?= $namlbl ?>" class="m"><br>
-<img src="img/16/key.png" title="<?= $serlbl ?>">
-<input type="text" name="sn" value="<?= $sn ?>" placeholder="<?= $serlbl ?>" class="m"><br>
-<img src="img/16/icon.png" onClick="window.open('inc/browse-img.php','Icons','scrollbars=1,menubar=0,resizable=1,width=600,height=800');" title="<?= $sellbl ?> <?= $imglbl ?>">
-<input type="text" name="ico" value="<?= $ico ?>" class="m" placeholder="Icon"><br>
-<img src="img/16/abc.png" title="<?= $typlbl ?>" onClick="window.open('inc/browse-img.php?t=p','Panels','scrollbars=1,menubar=0,resizable=1,width=600,height=800');" title="<?= $sellbl ?> <?= $imglbl ?>">
-<input type="text" name="typ" value="<?= $typ ?>" placeholder="<?= $typlbl ?>" class="m"><br>
-
-</td>
-<td valign="top">
-
-<h3><?= $inflbl ?></h3>
-<img src="img/16/form.png" title="<?= $sizlbl ?>">
-<input type="text" name="siz" value="<?= $siz ?>" placeholder="<?= $sizlbl ?>" class="s"><br>
-<img src="img/16/home.png" title="<?= $loclbl ?>">
-<input type="text" name="loc" value="<?= $loc ?>" placeholder="<?= $loclbl ?>" class="l"><br>
-<img src="img/16/user.png" title="<?= $conlbl ?>">
-<input type="text" name="con" value="<?= $con ?>" placeholder="<?= $conlbl ?>" class="l"><br>
-<img src="img/16/ugrp.png" title="<?= $grplbl ?>">
-<input type="text" name="grp" value="<?= $grp ?>" placeholder="<?= $grplbl ?>" class="l"><br>
-<img src="img/16/find.png" title="<?= $deslbl ?>">
-<input type="text" name="des" value="<?= $des ?>" placeholder="<?= $deslbl ?>" class="l"><br>
+<table class="content">
+<tr class="bgmain">
+<td class="top">
+<?php
+	if( $ndev != 1 ){
+?>
+	<h3><?= $manlbl ?></h3>
+	<img src="img/16/dev.png" title="<?= $namlbl ?>">
+	<input type="text" name="add" value="<?= $shd ?>" placeholder="<?= $namlbl ?>" class="m"><br>
+	<img src="img/16/key.png" title="<?= $serlbl ?>">
+	<input type="text" name="sn" value="<?= $sn ?>" placeholder="<?= $serlbl ?>" class="m"><br>
+	<img src="img/16/icon.png" onClick="window.open('inc/browse-img.php','Icons','scrollbars=1,menubar=0,resizable=1,width=600,height=800');" title="<?= $sellbl ?> <?= $imglbl ?>">
+	<input type="text" name="ico" value="<?= $ico ?>" class="m" placeholder="Icon"><br>
+	<img src="img/16/abc.png" title="<?= $typlbl ?>" onClick="window.open('inc/browse-img.php?t=p','Panels','scrollbars=1,menubar=0,resizable=1,width=600,height=800');" title="<?= $sellbl ?> <?= $imglbl ?>">
+	<input type="text" name="typ" value="<?= $typ ?>" placeholder="<?= $typlbl ?>" class="m"><br>
 
 </td>
-<td valign="top">
+<td class="top">
 
-<h3><?= $cnclbl ?></h3>
-<img src="img/16/port.png" title="IF <?= $namlbl ?>">
-<input type="text" name="ina" value="<?= $ina ?>" placeholder="IF <?= $namlbl ?>" class="m"><br>
-<img src="img/16/glob.png" title="IP <?= $adrlbl ?>">
-<input type="text" name="ip" value="<?= $ip ?>" placeholder="IP <?= $adrlbl ?>" class="m"><br>
-<img src="img/16/card.png" title="MAC <?= $adrlbl ?>">
-<input type="text" name="mac" value="<?= $mac ?>" placeholder="MAC <?= $adrlbl ?>" class="m"><br>
-<img src="img/16/find.png" title="Alias">
-<input type="text" name="ali" value="<?= $ali ?>" placeholder="Alias" class="l"><br>
-<img src="img/spd.png" title="<?= $spdlbl ?>">
-<input type="text" name="spd" value="<?= $spd ?>" placeholder="<?= $spdlbl ?>" class="m">
-<select size="1" name="sps" onchange="document.bld.spd.value=document.bld.sps.options[document.bld.sps.selectedIndex].value">
-<option value=""><?= $bwdlbl ?> ->
-<option value="1544000">T1
-<option value="2048000">E1
-<option value="10000000">10M
-<option value="100000000">100M
-<option value="1000000000">1G
-<option value="10000000000">10G
-</select>
-<br>
-
+	<h3><?= $inflbl ?></h3>
+	<img src="img/16/form.png" title="<?= $sizlbl ?>">
+	<input type="text" name="siz" value="<?= $siz ?>" placeholder="<?= $sizlbl ?>" class="s"><br>
+	<img src="img/16/home.png" title="<?= $loclbl ?>">
+	<input type="text" name="loc" value="<?= $loc ?>" placeholder="<?= $loclbl ?>" class="l"><br>
+	<img src="img/16/user.png" title="<?= $conlbl ?>">
+	<input type="text" name="con" value="<?= $con ?>" placeholder="<?= $conlbl ?>" class="l"><br>
+	<img src="img/16/ugrp.png" title="<?= $grplbl ?>">
+	<input type="text" name="grp" value="<?= $grp ?>" placeholder="<?= $grplbl ?>" class="l"><br>
+	<img src="img/16/find.png" title="<?= $deslbl ?>">
+	<input type="text" name="des" value="<?= $des ?>" placeholder="<?= $deslbl ?>" class="l"><br>
+<?php
+	}else{
+		echo "	<h3>$idxlbl $adi</h3>\n";
+		echo "	<input type=\"hidden\" name=\"add\" value=\"$shd\">\n";
+		echo "	<input type=\"hidden\" name=\"adi\" value=\"$adi\">\n";
+	}
+?>
 </td>
-<th width="80">
+<td class="top">
 
-<input type="submit" class="button" value="<?= $addlbl ?>">
-
-</th></tr></table></form>
+	<h3><?= $intlbl ?></h3>
+	<img src="img/16/port.png" title="IF <?= $namlbl ?>">
+	<input type="text" name="ina" value="<?= $ina ?>" placeholder="IF <?= $namlbl ?>" class="m"><br>
+	<img src="img/16/glob.png" title="IP <?= $adrlbl ?>">
+	<input type="text" name="ip" value="<?= $ip ?>" placeholder="IP <?= $adrlbl ?>" class="m"><br>
+	<img src="img/16/card.png" title="MAC <?= $adrlbl ?>">
+	<input type="text" name="mac" value="<?= $mac ?>" placeholder="MAC <?= $adrlbl ?>" class="m"><br>
+	<img src="img/16/find.png" title="Alias">
+	<input type="text" name="ali" value="<?= $ali ?>" placeholder="Alias" class="l"><br>
+	<img src="img/spd.png" title="<?= $spdlbl ?>">
+	<input type="text" name="spd" value="<?= $spd ?>" placeholder="<?= $spdlbl ?>" class="m">
+	<select size="1" name="sps" onchange="document.bld.spd.value=document.bld.sps.options[document.bld.sps.selectedIndex].value">
+		<option value=""><?= $bwdlbl ?> ->
+		<option value="1544000">T1
+		<option value="2048000">E1
+		<option value="10000000">10M
+		<option value="100000000">100M
+		<option value="1000000000">1G
+		<option value="10000000000">10G
+	</select>
+</td>
+<td class="ctr s">
+	<input type="submit" class="button" value="<?= $addlbl ?>">
+</td>
+</tr>
+</table>
+</form>
 <p>
 
 <?php
@@ -207,7 +208,6 @@ $dev = DbFetchRow($res);
 DbFreeResult($res);
 
 $ip		= ($dev[1]) ? long2ip($dev[1]) : 0;
-$us		= ($dev[2] != '-')?urlencode($dev[2]):0;
 list($fc,$lc)	= Agecol($dev[4],$dev[5],0);
 $fs		= date($_SESSION['timf'],$dev[4]);
 $ls		= date($_SESSION['timf'],$dev[5]);
@@ -274,6 +274,8 @@ if($dev[13] < 10){
 
 $query	= GenQuery('monitoring','s','*','','',array('name'),array('='),array($dev[0]) );
 $res	= DbQuery($query,$link);
+$statbg = 'imga';
+$stat   = '';
 if (DbNumRows($res) == 1){
 	include_once ("inc/libmon.php");
 	$mon = DbFetchRow($res);
@@ -281,11 +283,7 @@ if (DbNumRows($res) == 1){
 	if(!$wasup){
 		$statbg .= " part";
 		$stat    = "$stat, $laslbl $dsclbl < $rrdstep $tim[s]?";
-	}
-}else{
-	$statbg = "imga";
-	$stat   = "";
-	
+	}	
 }
 DbFreeResult($res);
 
@@ -372,12 +370,22 @@ if($isadmin and $guiauth != 'none'){
 
 <h2><?= $sumlbl ?></h2><p>
 <table class="content"><tr>
-<td class="<?= $statbg ?> ctr m b"><a href="?dev=<?= $ud ?>"><img src="img/dev/<?= $ico ?>.png" title="<?= $stat ?>" vspace="4"></a><?= Digit($dev[29]) ?><br><?= $dev[0] ?></td>
-<th class="<?= $modgroup[$self] ?>2">
+<td class="<?= $statbg ?> ctr s b"><a href="?dev=<?= $ud ?>"><img src="img/dev/<?= $ico ?>.png" title="<?= $stat ?>" vspace="4"></a><?= Digit($dev[29]) ?><br><?= $dev[0] ?></td>
+<td class="bgsub">
 
 <div style="float:left">
 <?php  if ($rver) { ?>
 <?php
+	if ($cactiuser and $cactihost and $cactidb){
+		$clink  = DbConnect($cactihost,$cactiuser,$cactipass,$cactidb);
+		$cquery = GenQuery('host','s','id','','',array('description','hostname'),array('=','='),array($shd,$shd),array('OR') );
+		$cres   = DbQuery($cquery,$clink);
+		if ( DbNumRows($cres) == 1) {
+			$caho = DbFetchRow($cres);
+		}
+		DbFreeResult($cres);
+	}
+
 	if ( isset($caho[0]) ){
 ?><a target="window" href="<?= $cactiurl ?>/graph_view.php?action=preview&host_id=<?= $caho[0] ?>"><img src="img/cacti.png"></a><?php
 	}
@@ -414,16 +422,16 @@ if($isadmin){
 	}
 	echo "<a href=\"Monitoring-Setup.php?in[]=name&op[]=%3D&st[]=$ud\">$most</a>";
 ?>
-<a href="?del=<?= $ud ?>&dtx=+with+IP+<?= $ip ?>+SN+<?= $dev[2] ?>"><img src="img/16/bcnl.png" title="<?= $dellbl ?>!" onclick="return confirm('<?= $dellbl ?> <?= $dev[0] ?>, <?= $cfmmsg ?>')"></a>
+<a href="?del=<?= $ud ?>&dtx=+with+IP+<?= $ip ?>+SN+<?= urlencode($dev[2]) ?>"><img src="img/16/bcnl.png" title="<?= $dellbl ?>!" onclick="return confirm('<?= $dellbl ?> <?= $dev[0] ?>, <?= $cfmmsg ?>')"></a>
 <?php } ?>
 
 </div>
 </th>
 
 </tr>
-<tr>
-	
-<th class="<?= $modgroup[$self] ?>2"><?= $manlbl ?> IP</th><td class="txtb">
+<tr class="txta">
+
+<td class="imga s b"><?= $manlbl ?> IP</th><td>
 <div style="float:right">
 <a href="telnet://<?= $ip ?>"><img src="img/16/loko.png" title="Telnet"></a>
 <a href="ssh://<?= $ip ?>"><img src="img/16/lokc.png" title="SSH"></a>
@@ -436,9 +444,9 @@ if($isadmin){
 
 </tr>
 <?php  if($ip != $oi and $oi){ ?>
-<tr>
+<tr class="txtb">
 	
-<th class="<?= $modgroup[$self] ?>2"><?= $orilbl ?> IP</th><td class="txtb">
+<td class="imgb s b"><?= $orilbl ?> IP</th><td>
 <div style="float:right">
 <a href="telnet://<?= $oi ?>"><img src="img/16/loko.png" title="Telnet"></a>
 <a href="ssh://<?= $oi ?>"><img src="img/16/lokc.png" title="SSH"></a>
@@ -451,9 +459,9 @@ if($isadmin){
 
 </tr>
 <?php } ?>
-<tr>
+<tr class="txta">
 
-<th class="<?= $modgroup[$self] ?>2"><?= $srvlbl ?></th><td class="txta">
+<td class="imga s b"><?= $srvlbl ?></th><td>
 <div style="float:right">
 <?php  if($dev[6] > 3) { ?>
 <a href="Topology-Routes.php?rtr=<?= $ud ?>"><img src="img/16/rout.png" title="Topology-Routes"></a>
@@ -466,31 +474,17 @@ if($dev[6] & 2) { ?>
 <?=Syssrv($dev[6]) ?>
 </td></tr>
 
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $dsclbl ?></th><th class="txtb">
+<tr class="txtb"><td class="imgb s b"><?= $dsclbl ?></td><td class="ctr">
 <span class="genpad" style="background-color: #<?= $fc ?>" title="<?= $fislbl ?>"> <?= $fs ?> </span>
 <?= Bar( intval(($dev[5]-$dev[4])/86400),0,'mi',$tim[d]) ?>
 <span class="genpad" style="background-color:#<?= $lc ?>" title="<?= $laslbl ?>"> <?= $ls ?> </span>
-</th></tr>
+</th></tr class="txta">
 
-<tr><th class="<?= $modgroup[$self] ?>2">Bootimage</th>	<td class="txta"><a href="Reports-Devices.php?in[]=bootimage&op[]=%3D&st[]=<?= urlencode($dev[9]) ?>&rep[]=sft"><?= $dev[9] ?></a> (<a href="Reports-Devices.php?in[]=devos&op[]=%3D&st[]=<?= urlencode($os) ?>&rep[]=sft"><?= $os ?></a>)</td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $serlbl ?></th>
-<td class="txtb">
+<tr class="txta"><td class="imga s b">Bootimage</th>	<td><a href="Reports-Devices.php?in[]=bootimage&op[]=%3D&st[]=<?= urlencode($dev[9]) ?>&rep[]=sft"><?= $dev[9] ?></a> (<a href="Reports-Devices.php?in[]=devos&op[]=%3D&st[]=<?= urlencode($os) ?>&rep[]=sft"><?= $os ?></a>)</td></tr>
+<tr class="txtb"><td class="imgb s b"><?= $serlbl ?></td>
+<td>
 <?php
-	if($us){
-		echo "<span class=\"mrn\">$dev[2]</span><div style=\"float:right\">";
-		$query	= GenQuery('inventory','s','*','','',array('serial'),array('='),array($dev[2]) );
-		$res	= DbQuery($query,$link);
-		if (DbNumRows($res) == 1) {
-			$stock = DbFetchRow($res);
-			echo "<a href=\"Devices-Inventory.php?lst=em&val=$stock[11]\" class=\"genpad ".SupportBg($stock[11])."\"><img src=\"img/16/bbrt.png\" title=\"$igrp[31] $endlbl\"> ".date($_SESSION['datf'],$stock[11])."</a>\n";
-			echo "<a href=\"Devices-Inventory.php?lst=lw&val=$stock[12]\" class=\"genpad ".SupportBg($stock[12])."\"><img src=\"img/16/bbr2.png\" title=\"$wtylbl $endlbl\"> ".date($_SESSION['datf'],$stock[12])."</a>\n";
-			echo "<a href=\"Devices-Inventory.php?chg=$us\" title=\"$chglbl $invlbl\">".Staimg($stock[0])."</a>";
-		}else{
-			echo "<a href=\"Devices-Inventory.php?sn=$us&typ=".urlencode($dev[3])."&lo=".urlencode($dev[10])."&com=Manually+added+from+$ud+with+IP+$ip&sta=150\" title=\"$addlbl $invlbl\">".Staimg(1)."</a>\n";
-		}
-	}
-	echo "</div> $stock[13]\n";
-	DbFreeResult($res);
+	InvCheck( $dev[2],$dev[3],$dev[10] );
 
 	$dbloc = explode($locsep, $dev[10]);
 	if($dbloc[2]){
@@ -507,10 +501,11 @@ if($dev[6] & 2) { ?>
 	list($vn,$ic) = DevVendor($dev[25],substr($ico,2,1));
 ?>
 </td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $deslbl ?></th><td class="txta">
+<tr class="txta"><td class="imga s b"><?= $deslbl ?></th><td>
 <a href="http://www.google.com/search?q=<?= urlencode($dev[3]) ?>&btnI=1" target="window"><img src="img/oui/<?= $ic ?>.png" title="<?= $vn ?>"></a>
 <a href="Devices-List.php?in[]=type&op[]==&st[]=<?= urlencode($dev[3]) ?>"><?= $dev[3] ?></a> <?= $dev[7] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $loclbl ?></th><td class="txtb">
+<tr class="txtb"><td class="imgb s b"><?= $loclbl ?></td>
+<td>
 <div style="float:right">
 <a href="Topology-Table.php?<?= $dvloc ?>"><img src="img/16/icon.png" title="<?= (($verb1)?"$sholbl $lolbl":"$lolbl $sholbl") ?>"></a>
 <a href="Monitoring-Health.php?<?= $dvloc ?>"><img src="img/16/hlth.png" title="<?= (($verb1)?"$sholbl $lolbl":"$lolbl $sholbl") ?>"></a>
@@ -528,7 +523,7 @@ if($dev[6] & 2) { ?>
 	}
 ?>
 </td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $conlbl ?></th><td class="txta">
+<tr class="txta"><td class="imga s b"><?= $conlbl ?></th><td>
 <?php
 	if($isadmin and $guiauth != 'none' and ($wasup and $dev[26] or $sysobj == 'NoSNMP-User')  and !isset($_GET['print']) ){# Admin, write access or user-created
 ?>
@@ -546,15 +541,15 @@ if($dev[6] & 2) { ?>
 		echo "$dev[11]</td></tr>\n";
 	}
 ?>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $grplbl ?></th><td class="txtb">
+<tr class="txtb"><td class="imgb s b"><?= $grplbl ?></td><td>
 <a href="Devices-List.php?in[]=devgroup&op[]==&st[]=<?= $ug ?>"><?= $dev[12] ?></a> <?= $modlbl ?>: <a href="Devices-List.php?in[]=devmode&op[]==&st[]=<?= $dev[13] ?>"><?= DevMode($dev[13]) ?></a>
 </td></tr>
 
 <?php if($rver) { ?>
-<tr><th class="<?= $modgroup[$self] ?>2">SNMP</th>	<td class="txta">
+<tr class="txta"><td class="imga s b">SNMP</th>	<td>
 
 <?php if($isadmin) { ?>
-<div class="txta" style="float:right;margin:2px 2px">
+<div class="frgt" style="float:right;margin:2px 2px">
 <form method="post" name="nedi" action="System-NeDi.php">
 <input type="hidden" name="mde" value="d">
 <input type="hidden" name="sed" value="a">
@@ -572,26 +567,32 @@ if($dev[6] & 2) { ?>
 </td></tr>
 <?php } ?>
 
-<tr><th class="<?= $modgroup[$self] ?>2">
+<tr class="txtb"><td class="imgb s b">
 <?php
 if($dev[13] == 8){
-	echo "Controller</th><td class=\"txtb\"><a href=\"Devices-Status.php?dev=".urlencode($login)."\"><img src=\"img/16/sys.png\" title=\"Devices-Status\"></a> $login";
+	echo "Controller</td><td><a href=\"Devices-Status.php?dev=".urlencode($login)."\"><img src=\"img/16/sys.png\" title=\"Devices-Status\"></a> <a href=\"Devices-List.php?in[]=login&op[]==&st[]=".urlencode($login)."\">$login</a>";
 }else{
-	echo "CLI</th><td class=\"txtb\">";
+	echo "CLI</td><td>";
 
 	if($isadmin and $rver){
 		if($cliport){
 			if($login){
 				if( preg_match("/^(IOS|EOS|Ironware|ProCurve|Nortel)/",$os) ){
-					$shlog = "show log";
-				}elseif($os == "CatOS"){
-					$shlog = "show logging buf";
-				}elseif($os == "ESX"){
-					$shlog = "tail -100 /var/log/messages";
-				}elseif($os == "Comware"){
-					$shlog = "dis log";
+					$shlog = 'show log';
+				}elseif($os == 'CatOS'){
+					$shlog = 'show logging buf';
+				}elseif($os == 'ESX'){
+					$shlog = 'tail -100 /var/log/syslog.log';
+				}elseif($os == 'Comware'){
+					$shlog = 'dis log';
+                                }elseif($os == 'SAOS'){
+                                        $shlog = 'log flash view';
+                                }elseif($os == 'LEOS'){
+                                        $shlog = 'log flash view tail 50';
+                                }elseif($os == 'ROS'){
+                                        $shlog = 'log print';
 				}else{
-					$shlog = "";
+					$shlog = '';
 				}
 				if($shlog){
 ?>
@@ -617,10 +618,12 @@ if($dev[13] == 8){
 <?php
 		}
 	}
-	echo ($cliport and $login)?"<img src=\"img/bulbg.png\">":"<img src=\"img/bulba.png\">" ?> <?= $login ?> <?= $porlbl ?> <?= ($cliport)?$cliport:"-";
+	echo ($cliport and $login)?"<img src=\"img/bulbg.png\">":"<img src=\"img/bulba.png\">";
+	echo " <a href=\"Devices-List.php?in[]=login&op[]==&st[]=".urlencode($login)."\">$login</a>";
+	echo " $porlbl <a href=\"Devices-List.php?in[]=cliport&op[]==&st[]=$cliport\">$cliport</a>";
 	}
 	echo "</td></tr>\n";
-	echo "<tr><th class=\"$modgroup[$self]2\">$cfglbl</th><td class=\"txta\">";
+	echo "<tr class=\"txta\"><td class=\"imga s b\">$cfglbl</th><td>";
 	echo DevCfg($dev[33],$dev[32]);
 
 if($isadmin){
@@ -630,7 +633,7 @@ if($isadmin){
 		<input type="hidden" name="mde" value="d">
 		<input type="hidden" name="sed" value="a">
 		<input type="hidden" name="bup" value="B0">
-		<input type="hidden" name="skp" value="WOAjedibatflowg">
+		<input type="hidden" name="skp" value="AFGgsjmvpadobewit">
 <?= strpos($dev[27],'a')?'<input type="hidden" name="uip" value="a">':'' ?>
 		<input type="hidden" name="vrb" value="on">
 		<input type="hidden" name="opt" value="<?=$ip?>">
@@ -675,7 +678,7 @@ if($dev[22]){
 }
 if($rver and $rrdcmd and $_SESSION['gsiz']){
 	$gsiz = ($_SESSION['gsiz'] == 4)?2:1;
-	echo "<tr><th class=\"$modgroup[$self]2\">$gralbl</th><td class=\"txtb ctr\">";
+	echo "<tr class=\"txtb\"><td class=\"imgb s b\">$gralbl</th><td class=\"ctr\">";
 	if( substr($dev[27],1,1) == "C" ){
 		echo "<a href=\"Devices-Graph.php?dv=$ud&if[]=cpu\"><img src=\"inc/drawrrd.php?dv=$ud&t=cpu&s=$gsiz\" title=\"CPU $lodlbl $dev[20]%\"></a>\n";
 	}
@@ -695,7 +698,7 @@ if($rver and $rrdcmd and $_SESSION['gsiz']){
 
 flush();
 
-echo "<tr><th class=\"$modgroup[$self]2\">$stalbl</th><td class=\"txta\">";
+echo "<tr class=\"bgsub\"><td class=\"b\">$stalbl</th><td>";
 if( substr($dev[27],1,1) == "C" ){
 	echo " <img src=\"img/16/cpu.png\" title=\"CPU $lodlbl\">".Bar($dev[20],$cpua/2,'si')." $dev[20]% &nbsp;&nbsp;";
 }
@@ -763,7 +766,7 @@ $res   = DbQuery($query,$link);
 if( DbNumRows($res) ){
 ?>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>2">
+<tr class="bgsub">
 <th width="120"><img src="img/16/port.png"><br>Interface</th>
 <th><img src="img/16/dev.png"><br><?= $neblbl ?></th>
 <th width="60"><img src="img/16/tap.png"><br><?= $bwdlbl ?></th>
@@ -782,14 +785,14 @@ if( DbNumRows($res) ){
 		list($tc,$tc) = Agecol($l[10],$l[10],$row % 2);
 		echo "<tr class=\"$bg\"><th class=\"$bi\" width=\"120\">\n";
 		echo "$l[2]</th><td><a href=?dev=$ul>$l[3]</a>, $l[4]</td><td align=\"right\" width=\"70\">" . DecFix($l[5]) . " $l[8]</td>";
-		echo "<td width=\"50\">$l[6]</td><td style=\"background-color:$tc\" width=\"100\" nowrap>".date($_SESSION['timf'],$l[10])."</td></tr>\n";
+		echo "<td width=\"50\">$l[6]</td><td style=\"background-color:#$tc\" width=\"100\" nowrap>".date($_SESSION['timf'],$l[10])."</td></tr>\n";
 	}
 	DbFreeResult($res);
 ?>
 </table>
 </div>
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Links <?= $totlbl ?></td></tr>
+	<tr class="bgsub"><td><?= $row ?> Links <?= $totlbl ?></td></tr>
 </table>
 <?php
 }else{
@@ -808,7 +811,7 @@ if ($rver){
 Vlans</h2>
 
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 		<th class="s"><img src="img/16/vlan.png" title="SSIDs on some Wlan Controllers"><br>Vlan</th>
 		<th><img src="img/16/say.png"><br><?= $namlbl ?></th>
 	</tr>
@@ -836,7 +839,7 @@ Vlans</h2>
 </table>
 </div>
 <table class="content">
-	<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Vlans <?= $totlbl ?></td></tr>
+	<tr class="bgsub"><td><?= $row ?> Vlans <?= $totlbl ?></td></tr>
 </table>
 <?php
 	}else{
@@ -864,7 +867,7 @@ if ($rver or $dev[13] == 11){										# Phones can have extensions like keypads
 ?>
 Supplies</h2>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>2">
+<tr class="bgsub">
 <th width="350"><img src="img/16/file.png" title="<?= $typlbl ?>,<?= $deslbl ?>"><br><?= $typlbl ?></th>
 <th><img src="img/16/form.png"><br><?= $levlbl ?></th></tr>
 </table>
@@ -883,7 +886,7 @@ Supplies</h2>
 </table>
 </div>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>2">
+<tr class="bgsub">
 <td><?= $tmod[0] ?> Supplies <?= $totlbl ?></td></tr>
 </table>
 <?php
@@ -891,7 +894,7 @@ Supplies</h2>
 ?>
 Virtual Machines</h2>
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 		<th><img src="img/16/node.png" title="<?= $stalbl ?>, <?= $namlbl ?>"><br>VM</th>
 		<th title="# CPUs, <?= $memlbl ?>" width="300"><img src="img/16/cinf.png"><br>HW</th>
 	</tr>
@@ -970,7 +973,7 @@ Virtual Machines</h2>
 </form>
 </div>
 <?php } ?>
-<b><?= $m[1] ?></b>
+<strong><?= $m[1] ?></strong>
 </td>
 <?php
 				}else{
@@ -989,7 +992,7 @@ Virtual Machines</h2>
 </table>
 </div>
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 		<td><?= $row ?> VMs <?= $totlbl ?>, <?= $tact ?>VMs & <?= round($tmem/1000,2) ?>Gb Ram <?= $stco['100'] ?></td>
 	</tr>
 </table>
@@ -998,7 +1001,7 @@ Virtual Machines</h2>
 ?>
 Modules</h2>
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 		<th><img src="img/16/find.png"><br>Slot / <?= $mdllbl ?></th>
 		<th width="130"><img src="img/16/key.png"><br><?= $serlbl ?></th>
 	</tr>
@@ -1021,7 +1024,7 @@ Modules</h2>
 </table>
 </div>
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 		<td><?= $tmod[0] ?> Modules <?= $totlbl ?></td>
 	</tr>
 </table>
@@ -1047,7 +1050,7 @@ if($_SESSION['gsiz'] < 3){
 
 <h2>Maps</h2>
 <table class="content">
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 <?php
 	$query	= GenQuery('events','g','level','level desc','',array('time','source'),array('>','='),array( (time() - $rrdstep),$shd),array('AND'));
 	$res	= DbQuery($query,$link);
@@ -1120,18 +1123,18 @@ if( count($ifn) ){
 <a href="Reports-Interfaces.php?in[]=device&op[]==&st[]=<?= $ud ?>&ord=ifname&rep[]=trf&rep[]=err&rep[]=dsc&rep[]=brc&rep[]=net&rep[]=pop&lir=5"><img src="img/16/dif.png" title="Interface <?= $sumlbl ?>"></a>
 Interfaces <?= ($pvi)?"(PVID $pvi)":'' ?></h2><p>
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>2">
-		<th colspan="2" valign="bottom"><img src="img/16/port.png" title="IF <?= $stalbl ?> (<?= $rltlbl ?>)"><br><?= $namlbl ?></th>
-		<th valign="bottom"><img src="img/16/abc.png"><br>Alias</th>
-		<th valign="bottom"><img src="img/16/find.png"><br><?= $deslbl ?></th>
-		<th valign="bottom"><img src="img/16/vlan.png" title="pvid"><br>Vlan</th>
-		<th valign="bottom"><img src="img/spd.png" title="<?= $spdlbl ?>"><br><?= substr($spdlbl,0,5) ?></th>
-		<th valign="bottom"><img src="img/dpx.png"><br>Duplex</th>
-		<th valign="bottom"><img src="img/16/swit.png" title="<?= $stalbl ?> <?= $chglbl ?> (<?= $rltlbl ?>)"><br><?= $laslbl ?></th>
+	<tr class="bgsub">
+		<th colspan="2" class="m"><img src="img/16/port.png" title="IF <?= $stalbl ?> (<?= $rltlbl ?>)"><br><?= $namlbl ?></th>
+		<th><img src="img/16/abc.png"><br>Alias</th>
+		<th><img src="img/16/find.png"><br><?= $deslbl ?></th>
+		<th><img src="img/16/vlan.png" title="pvid"><br>Vlan</th>
+		<th><img src="img/spd.png" title="<?= $spdlbl ?>"><br><?= substr($spdlbl,0,5) ?></th>
+		<th><img src="img/dpx.png"><br>Duplex</th>
+		<th><img src="img/16/swit.png" title="<?= $stalbl ?> <?= $chglbl ?> (<?= $rltlbl ?>)"><br><?= $laslbl ?></th>
 <?php
 	if($pop){
 ?>
-		<th valign="bottom"><img src="img/16/nods.png"><br><?= (substr($poplbl,0,3)) ?></th>
+		<th><img src="img/16/nods.png"><br><?= (substr($poplbl,0,3)) ?></th>
 <?php
 		$query	= GenQuery('nodes','g','ifname','','',array('device'),array('='),array($shd) );
 		$res	= DbQuery($query,$link);
@@ -1150,23 +1153,23 @@ Interfaces <?= ($pvi)?"(PVID $pvi)":'' ?></h2><p>
 	}
 	if($shg and $_SESSION['gsiz']){
 ?>
-		<th valign="bottom"><img src="img/16/grph.png"><br>IF <?= $gralbl ?></th>
+		<th><img src="img/16/grph.png"><br>IF <?= $gralbl ?></th>
 <?php
 	}else{
 		$rrdt = ($rrdstep/60)." $tim[i]";
 ?>
-		<th valign="bottom"><img src="img/16/bbup.png" title="Octets/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
-		<th valign="bottom"><img src="img/16/bbdn.png" title="Blue: Abs <?= $trflbl ?>"><br><?= (substr($oublbl,0,3)) ?></th>
-		<th valign="bottom"><img src="img/16/brup.png" title=" <?= $errlbl ?>/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
-		<th valign="bottom"><img src="img/16/brdn.png" title="Red: <?= $mullbl ?> <?= $errlbl ?>"><br><?= (substr($oublbl,0,3)) ?></th>
-		<th valign="bottom"><img src="img/16/bbu2.png" title="Discards/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
-		<th valign="bottom"><img src="img/16/bbd2.png"><br><?= (substr($oublbl,0,3)) ?></th>
-		<th valign="bottom"><img src="img/16/wlan.png" title="Broadcasts/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
+		<th><img src="img/16/bbup.png" title="Octets/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
+		<th><img src="img/16/bbdn.png" title="Blue: Abs <?= $trflbl ?>"><br><?= (substr($oublbl,0,3)) ?></th>
+		<th><img src="img/16/brup.png" title=" <?= $errlbl ?>/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
+		<th><img src="img/16/brdn.png" title="Red: <?= $mullbl ?> <?= $errlbl ?>"><br><?= (substr($oublbl,0,3)) ?></th>
+		<th><img src="img/16/bbu2.png" title="Discards/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
+		<th><img src="img/16/bbd2.png"><br><?= (substr($oublbl,0,3)) ?></th>
+		<th><img src="img/16/brc.png" title="Broadcasts/<?= $rrdt ?>"><br><?= (substr($inblbl,0,3)) ?></th>
 <?php
 	}
 ?>
 		<th><img src="img/16/batt.png" title="PoE [mW]"><br>PoE</th>
-		<th valign="bottom" width="10%"><img src="img/netg.png" title="MAC IP VRF"><br><?= $adrlbl ?></th>
+		<th width="10%"><img src="img/netg.png" title="MAC IP VRF"><br><?= $adrlbl ?></th>
 	</tr>
 
 <?php
@@ -1260,7 +1263,7 @@ Interfaces <?= ($pvi)?"(PVID $pvi)":'' ?></h2><p>
 			}
 
 			TblRow($bg);
-			echo "		<td class=\"$ifstat ctr s\">";
+			echo "		<td class=\"$ifstat ctr xs\">";
 			if($isadmin and $dev[26] and $guiauth != 'none' and $wasup and $cif){
 				echo "<a href=\"?dev=$ud&cif=$cif\"><img src=\"img/$ifimg\" onclick=\"return confirm('$actmsg')\" title=\"$i - $iftit\"></a></td>\n";
 			}else{
@@ -1278,7 +1281,7 @@ Interfaces <?= ($pvi)?"(PVID $pvi)":'' ?></h2><p>
 			<form method="get">
 			<input type="hidden" name="dev" value="<?= $dev[0] ?>">
 			<input type="hidden" name="ifx" value="<?= $i ?>">
-			<input type="text" name="ali" class="m" value="<?= $ifl[$i] ?>" onkeypress="if(event.keyCode==13)this.form.submit()">
+			<input type="text" name="ali" class="l" value="<?= $ifl[$i] ?>" onkeypress="if(event.keyCode==13)this.form.submit()">
 			</form>
 		</td>
 <?php
@@ -1353,6 +1356,9 @@ Interfaces <?= ($pvi)?"(PVID $pvi)":'' ?></h2><p>
 				}
 			}
 			echo "<td class=\"code\">";
+			echo "<div class=\"frgt\">";
+			include ("log/iftools.php");
+			echo "</div>\n";
 			if($ifm[$i]){echo "<span class=\"drd\">$ifm[$i]</span><br>";}
 			if( array_key_exists($in, $net) ){
 				foreach( array_keys($net[$in]) as $addr ){
@@ -1369,8 +1375,9 @@ Interfaces <?= ($pvi)?"(PVID $pvi)":'' ?></h2><p>
 	}
 	?>
 </table>
-<table class="content" ><tr class="<?= $modgroup[$self] ?>2"><td>
+<table class="content" ><tr class="bgsub"><td>
 	<?= $row ?>/<?= count( array_keys($ifn) ) ?> Interfaces<?= ($tpow)?", ${tpow}W $totlbl PoE":"" ?>
+	<?= ($dev[13] == 9)?"<a href=\"?dev=$ud&adi=".($row+1)."\"><img src=\"img/16/add.png\" title=\"$addlbl\"></a>":''; ?>
 </td></tr></table>
 	<?php
 }

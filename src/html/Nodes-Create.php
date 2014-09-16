@@ -31,8 +31,9 @@ $iso = isset($_GET['iso']) ? $_GET['iso'] : "";
 <h1>Nodes Create</h1>
 
 <form method="get" action="<?= $self ?>.php" name="mkvm">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td valign="top">
 
 <h3><?= $dstlbl ?></h3>

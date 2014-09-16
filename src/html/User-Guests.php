@@ -22,8 +22,9 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" name="usr" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th>
 Device <SELECT size="1" name="ip" onchange="this.form.submit();">
 <OPTION VALUE="">------------
@@ -82,7 +83,7 @@ if($ip){
 
 ?>
 <h2><?= $usrlbl ?> <?= $lstlbl ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th>ID</th>
 <th><?= $namlbl ?></th>
 <th>Access Ctrl</th>

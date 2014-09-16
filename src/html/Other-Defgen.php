@@ -214,7 +214,7 @@ function update() {
 		alert('Controls disabled!');
 	}else{
 		document.gen.so.value = document.bld.so.value;
-		document.gen.def.value = "# Definition for " + document.bld.so.value + " created by Defgen 1.8 on <?= date('j.M Y') ?> (<?= $_SESSION['user'] ?>)\n" +
+		document.gen.def.value = "# Definition for " + document.bld.so.value + " created by Defgen 1.9 on <?= date('j.M Y') ?> (<?= $_SESSION['user'] ?>)\n" +
 		" \n# General\n" +
 		"SNMPv\t" + document.bld.ver.options[document.bld.ver.selectedIndex].value + "\n" +
 		"Type\t" + document.bld.typ.value + "\n" +
@@ -415,8 +415,9 @@ function walk(oid) {
 
 //-->
 </script>
-<table class="content" ><tr class="<?= $modgroup[$self] ?>2">
-<th width="50" rowspan="3" class="<?= $modgroup[$self] ?>1"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content" ><tr class="bgsub">
+<th width="50" rowspan="3" class="bgmain"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td>
 
 <form name="bld">
@@ -430,7 +431,7 @@ function walk(oid) {
 
 <th align="right">Community</th><td><input type="text" name="co" value="<?= $co ?>" class="m" onfocus="select();" title="target's SNMP community"></td></tr>
 
-<tr class="<?= $modgroup[$self] ?>1"><th colspan="4">
+<tr class="bgmain"><th colspan="4">
 <img src="img/16/bcnl.png" align="right" onClick="setgen();" title="<?= $reslbl ?>">
 <img src="img/16/idea.png" align="right" onClick="setgen('1');" title="Standard System OIDs">
 <img src="img/16/dev.png" align="left" >
@@ -519,6 +520,7 @@ OS</th><td>
 <option value="HuaweiVRP"<?= ($os == "HuaweiVRP")?" selected":"" ?>>Huawei VRP
 <option value="">--------
 <option value="Ironware"<?= ($os == "Ironware")?" selected":"" ?>>Ironware
+<option value="Vyatta"<?= ($os == "Vyatta")?" selected":"" ?>>Vyatta
 <option value="">--------
 <option value="JunOS"<?= ($os == "JunOS")?" selected":"" ?>>Juniper OS
 <option value="NetScreen"<?= ($os == "NetScreen")?" selected":"" ?>>NetScreen OS
@@ -526,6 +528,8 @@ OS</th><td>
 <option value="LANCOM"<?= ($os == "LANCOM")?" selected":"" ?>>LANCOM
 <option value="">--------
 <option value="Maipu"<?= ($os == "Maipu")?" selected":"" ?>>Maipu
+<option value="">--------
+<option value="ROS"<?= ($os == "ROS")?" selected":"" ?>>Mikrotik-ROS
 <option value="">--------
 <option value="Netgear"<?= ($os == "Netgear")?" selected":"" ?>>Netgear
 <option value="">--------
@@ -537,6 +541,8 @@ OS</th><td>
 <option value="ZDOS"<?= ($os == "ZDOS")?" selected":"" ?>>Ruckus ZDOS
 <option value="">--------
 <option value="ESX"<?= ($os == "ESX")?" selected":"" ?>>VMware ESX
+<option value="">--------
+<option value="ZyNOS"<?= ($os == "ZyNOS")?" selected":"" ?>>Zyxel ZyNOS
 </select>
 
 SNMP <select size="1" name="ver" title="HC=64bit, MC=64bit & 32bit" onchange="update();">
@@ -566,7 +572,7 @@ Bridge</th><td>
 <option value="CAP"<?= ($bfd == "CAP")?" selected":"" ?>>Cisco fat AP
 <option value="WLC"<?= ($bfd == "WLC")?" selected":"" ?>>Cisco WLC Controller
 <option value="MSM"<?= ($bfd == "MSM")?" selected":"" ?>>HP MSM Controller
-<option value="WRT"<?= ($bfd == "WRT")?" selected":"" ?>>DD-WRT AP
+<option value="DDWRT"<?= ($bfd == "DDWRT")?" selected":"" ?>>DD-WRT AP
 </select>
 <img src="img/16/walk.png" title="normal bridge-fwd" onClick="walk('1.3.6.1.2.1.17.4.3.1.2');">
 <img src="img/16/walk.png" title="Q-bridge-fwd, 1st #=vlid (use normal if empty)" onClick="walk('1.3.6.1.2.1.17.7.1.2.2.1.2');">
@@ -606,7 +612,7 @@ ARP/ND</th><td>
 </td><th align="right">
 <?= $dsclbl ?> <?= $prolbl ?></th><td>
 <input type="text" name="dpr" value="<?= $dpr ?>" class="m" title="e.g. CDP|LLDPXN" onfocus="select();" onchange="update();">
-<span class="<?= $modgroup[$self] ?>1"><img src="img/16/walk.png" title="LLDP" onClick="document.bld.dpr.value = 'LLDP';walk('1.0.8802.1.1.2.1.4.1.1');update();">
+<span class="bgmain"><img src="img/16/walk.png" title="LLDP" onClick="document.bld.dpr.value = 'LLDP';walk('1.0.8802.1.1.2.1.4.1.1');update();">
 <img src="img/16/walk.png" title="+X index = ifdesc, +XA index = ifalias" onClick="document.bld.dpr.value = 'LLDPX';walk('1.0.8802.1.1.2.1.3.7.1.4');update();">
 <img src="img/16/walk.png" title="+XN index = ifname" onClick="document.bld.dpr.value = 'LLDPXN';walk('1.0.8802.1.1.2.1.3.7.1.3');update();">
 <img src="img/16/walk.png" title="LLDP <?= $neblbl ?> IP <?= $adrlbl ?>" onClick="walk('1.0.8802.1.1.2.1.4.2.1.3');">
@@ -656,7 +662,7 @@ Bootimage</th><td>
 <img src="img/16/brgt.png" onClick="get(document.bld.cfw.value);"></td>
 </tr>
 
-<tr class="<?= $modgroup[$self] ?>1"><th colspan="4">
+<tr class="bgmain"><th colspan="4">
 <img src="img/16/bcnl.png" align="right" onClick="setint('0');" title="<?= $reslbl ?>">
 <img src="img/16/idea.png" align="right" onClick="setint('1');" title="Standard dot3-MIB">
 <img src="img/16/port.png" align="left">
@@ -750,7 +756,7 @@ Power <?= $idxlbl ?></th><td>
 <img src="img/16/walk.png" onClick="walk(document.bld.ipx.value);">
 </td></tr>
 
-<tr class="<?= $modgroup[$self] ?>1"><th colspan="4">
+<tr class="bgmain"><th colspan="4">
 <img src="img/16/bcnl.png" align="right" onClick="setmod('0');" title="<?= $reslbl ?>">
 <img src="img/16/idea.png" align="right" onClick="setmod('1');" title="Standard Entity-MIB">
 <img src="img/16/print.png" align="right" onClick="setmod('2');" title="Printsupplies MIB">
@@ -800,7 +806,7 @@ Model</th><td>
 <img src="img/16/walk.png" onClick="walk(document.bld.mmo.value);">
 </td></tr>
 
-<tr class="<?= $modgroup[$self] ?>1"><th colspan="4">
+<tr class="bgmain"><th colspan="4">
 <img src="img/16/bcnl.png" align="right" onClick="setrrd('0');" title="<?= $reslbl ?>">
 <img src="img/16/idea.png" align="right" onClick="setrrd('1');" title="Possible Standard OIDs">
 <img src="img/16/grph.png" align="left">
@@ -833,7 +839,7 @@ Mem <?= $frelbl ?></th><td>
 
 </td>
 </tr>
-<tr class="<?= $modgroup[$self] ?>2"><th>
+<tr class="bgsub"><th>
 <?php  if( $isadmin and $ip) { ?>
 <div style="float:right;margin:2px 2px">
 <form method="post" name="nedi" action="System-NeDi.php">

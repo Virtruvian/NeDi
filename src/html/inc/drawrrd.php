@@ -50,29 +50,26 @@ if($typ == 'cpu'){
 	$tit = "CPU $lodlbl";
 	$rrd = "$nedipath/rrd/" . rawurlencode($_GET['dv']) ."/system.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
-	$draw .= "DEF:cpu=$rrd:cpu:AVERAGE AREA:cpu#cc8855 ";
-	$draw .= "CDEF:cpu2=cpu,1.1,/ AREA:cpu2#dd9966 ";
-	$draw .= "CDEF:cpu3=cpu,1.2,/ AREA:cpu3#eeaa77 ";
-	$draw .= "CDEF:cpu4=cpu,1.3,/ AREA:cpu4#ffbb88 ";
-	$draw .= "LINE2:cpu#995500:\"%\" ";
+	$draw .= "DEF:cpu=$rrd:cpu:AVERAGE AREA:cpu#cc8844 ";
+	$draw .= "CDEF:cpu2=cpu,1.3,/ AREA:cpu2#dd9955 ";
+	$draw .= "CDEF:cpu3=cpu,2,/ AREA:cpu3#eeaa66 ";
+	$draw .= "LINE2:cpu#884400:\"%\" ";
 }elseif($typ == 'mem'){
 	$tit = "$manlbl Memory";
 	$rrd = "$nedipath/rrd/" . rawurlencode($_GET['dv']) ."/system.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
-	$draw .= "DEF:memcpu=$rrd:memcpu:AVERAGE AREA:memcpu#bbbb77 ";
-	$draw .= "CDEF:memcpu2=memcpu,1.1,/ AREA:memcpu2#cccc88 ";
-	$draw .= "CDEF:memcpu3=memcpu,1.2,/ AREA:memcpu3#dddd99 ";
-	$draw .= "CDEF:memcpu4=memcpu,1.3,/ AREA:memcpu4#eeeeaa ";
+	$draw .= "DEF:memcpu=$rrd:memcpu:AVERAGE AREA:memcpu#bbbb66 ";
+	$draw .= "CDEF:memcpu2=memcpu,1.3,/ AREA:memcpu2#cccc77 ";
+	$draw .= "CDEF:memcpu3=memcpu,2,/ AREA:memcpu3#dddd88 ";
 	$draw .= "LINE2:memcpu#666600:\"Bytes/% $frelbl\" ";
 }elseif($typ == 'tmp'){
 	$tit = "$tmplbl";
 	$rrd = "$nedipath/rrd/" . rawurlencode($_GET['dv']) ."/system.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
-	$draw .= "DEF:temp=$rrd:temp:AVERAGE AREA:temp#7788bb  ";
-	$draw .= "CDEF:temp2=temp,1.1,/ AREA:temp2#8899cc ";
-	$draw .= "CDEF:temp3=temp,1.2,/ AREA:temp3#99aadd ";
-	$draw .= "CDEF:temp4=temp,1.3,/ AREA:temp4#aabbee ";
-	$draw .= "LINE2:temp#224488:\"$grdlbl Celsius\" ";
+	$draw .= "DEF:temp=$rrd:temp:AVERAGE AREA:temp#6688bb  ";
+	$draw .= "CDEF:temp2=temp,1.3,/ AREA:temp2#7799cc ";
+	$draw .= "CDEF:temp3=temp,2,/ AREA:temp3#88aadd ";
+	$draw .= "LINE2:temp#004488:\"$grdlbl Celsius\" ";
 	if ($_SESSION['far']){$draw .= "CDEF:far=temp,1.8,*,32,+ LINE2:far#006699:\"$grdlbl Fahrenheit\" ";}
 }elseif($typ == 'cuv'){
 	$tit = ($_GET['if'][0])?$_GET['if'][0]:"IO Memory";
@@ -80,11 +77,10 @@ if($typ == 'cpu'){
 	$cuds= preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tit) );
 	$rrd = "$nedipath/rrd/" . rawurlencode($_GET['dv']) ."/system.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
-	$draw .= "DEF:$cuds=$rrd:$cuds:AVERAGE AREA:$cuds#88bb77 ";
-	$draw .= "CDEF:${cuds}2=$cuds,1.1,/ AREA:${cuds}2#99cc88 ";
-	$draw .= "CDEF:${cuds}3=$cuds,1.2,/ AREA:${cuds}3#aadd99 ";
-	$draw .= "CDEF:${cuds}4=$cuds,1.3,/ AREA:${cuds}4#bbeeaa ";
-	$draw .= "LINE2:$cuds#668800:\"$u\" ";
+	$draw .= "DEF:$cuds=$rrd:$cuds:AVERAGE AREA:$cuds#88bb66 ";
+	$draw .= "CDEF:${cuds}2=$cuds,1.5,/ AREA:${cuds}2#99cc77 ";
+	$draw .= "CDEF:${cuds}3=$cuds,2,/ AREA:${cuds}3#aadd88 ";
+	$draw .= "LINE2:$cuds#448800:\"$u\" ";
 }elseif($typ == 'ttr'){
 	$rrd = "$nedipath/rrd/top.rrd";
 	if($safe){$debug = ( file_exists("$rrd") )?"":"RRD $rrd not found!";}
@@ -166,7 +162,7 @@ if($typ == 'cpu'){
 $opts = GraphOpts($gsz,$sta,$end,$tit,$opt);
 
 if($debug){
-	echo "<b>$debug</b>";
+	echo "<strong>$debug</strong>";
 	echo "<pre>$rrdcmd graph - -a PNG $opts\n\t$draw</pre>";
 }else{
 	header("Content-type: image/png");

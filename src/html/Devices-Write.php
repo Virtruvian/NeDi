@@ -53,14 +53,15 @@ $cols = array(	"device"=>" Device $namlbl",
 <h1>Device Write</h1>
 
 <form method="post" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content">
+<tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td colspan="2">
 <?php Filters(); ?>
 </td>
-</tr><tr class="<?= $modgroup[$self] ?>2">
+</tr><tr class="bgsub">
 <td></td>
 <td class="top ctr b">
 	<?= $cmdlbl ?> / <?= $cfglbl ?>
@@ -88,7 +89,7 @@ $cols = array(	"device"=>" Device $namlbl",
 	<p>
 	<textarea rows="4" name="icfg" cols="50"><?= $icfg ?></textarea>
 </td>
-</tr><tr class="<?= $modgroup[$self] ?>1">
+</tr><tr class="bgmain">
 <td class="top ctr b" colspan="3">
 <?php
 if ( strstr($guiauth,'-pass') ){
@@ -144,12 +145,12 @@ if( count($in) ){
 	}
 	$cfgos = ($con or $sim)?$prevos:"";# TODO Change $con to checkbox!
 	if($sim){
-		echo "<h3>$cmdlbl</h3>\n";
-		echo "<div class=\"textpad code txta\">\n";
+		echo "<h3>$cmdlbl</h3>\n\n";
+		echo "<div class=\"textpad code txta tqrt\">\n\n";
 		echo Buildcmd('',$cfgos);
-		echo "</div><br>\n";
+		echo "\n</div><br>\n";
 		Condition($in,$op,$st,$co);
-		echo "<table class=\"content\">\n	<tr class=\"$modgroup[$self]2\">\n";
+		echo "<table class=\"content\">\n	<tr class=\"bgsub\">\n";
 		echo "		<th colspan=\"2\">Device</th>\n		<th>Device OS</th>\n";
 		echo "		<th>Login</th>\n		<th>IP $adrlbl</th>\n		<th>$cfglbl $stalbl</th>\n	</tr>\n";
 		$row = 0;
@@ -164,33 +165,37 @@ if( count($in) ){
 			echo "		<td>\n			". DevCli($ip,$devpo[$dv]).":$devpo[$dv]\n		</td>\n";
 			echo "		<td>\n			". DevCfg($devcfg[$dv]).$devcfg[$dv]."\n		</td>\n	</tr>\n";
 		}
-	?>
-</table>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
-<?= $row ?> Devices (<?= $query ?>)
-</td></tr></table>
-<?php
+		TblFoot("bgsub", 6, "$row Devices");
 	}elseif($scm or $con){
-		$fd =  @fopen("log/cmd_$_SESSION[user].php","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user].php");
-		fwrite($fd, Buildcmd('',$cfgos,1) );
+		$fd =  @fopen("$nedipath/cli/cmd_$_SESSION[user]","w") or die ("$errlbl $wrtlbl $nedipath/cli/cmd_$_SESSION[user]");
+		$cmds = Buildcmd('',$cfgos);
+		fwrite($fd,$cmds);
 		fclose($fd);
 		echo "<h2>$actlbl $lstlbl</h2>\n";
 		foreach ($devip as $dv => $ip){
 			flush();
-			echo "<h3>$dv ".DevCli($ip,$devpo[$dv],1)."</h3>";
+			$ud = urlencode($dv);
+			echo "<h3>$dv</h3>\n";
+			echo "<div class=\"textpad txtb qrt\">\n";
+			echo "	<a href=\"Devices-Status.php?dev=$ud\">\n		<img src=\"img/16/sys.png\">\n	</a>\n";
+			echo DevCli($ip,$devpo[$dv],1)." $rpylbl:";
 			$cred = ( strstr($guiauth,'-pass') )?"$_SESSION[user] $pwd":"$devlo[$dv] dummy";
 			$cred = addcslashes($cred,';$!');
-			$out  = system("perl $nedipath/inc/devwrite.pl $nedipath $ip $devpo[$dv] $cred $devos[$dv] log/cmd_$_SESSION[user]", $err);
-			echo "<iframe style=\"display:block;\" class=\"textpad txta code\" ".(($ndev == 1)?'height="800"':'')." src=\"log/cmd_$_SESSION[user]-$ip.log\"></iframe>";
-			$cstr = preg_replace('/\n|"|\'/',' ',$cmds);
+			$out  = system("perl $nedipath/inc/devwrite.pl $nedipath $dv $ip $devpo[$dv] $cred $devos[$dv] cmd_$_SESSION[user]", $err);
+			echo "\n</div>\n";
+			$nout = array_sum( explode(' ',$out) );
+			$outh = ($nout > 50)?500:$nout*20;
+			echo "<div class=\"textpad code txta bctr tqrt\" height=\"$outh\">\n";
+			include("$nedipath/cli/".rawurlencode($dv)."/cmd_$_SESSION[user].log");
+			echo "</div>\n";
+			$cstr = preg_replace('/[\r\n\"\']/',' ',$cmds);
 			if( strlen($cstr) > 40 ){$cstr = substr( $cstr,0,40)."...";}
-			$msg  = "User $_SESSION[user] wrote $cstr";
 			if($err){
 				$lvl = 150;
 				$msg = "User $_SESSION[user] wrote $cstr causing errors";
 			}else{
 				$lvl = 100;
-				$msg = "User $_SESSION[user] wrote $cstr successfully";
+				$msg = "User $_SESSION[user] wrote \"$cstr\" successfully";
 			}
 			$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),array(),array($lvl,time(),$dv,$msg,'usrd',$dv) );
 			if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}
@@ -199,17 +204,16 @@ if( count($in) ){
 }
 include_once ("inc/footer.php");
 
-function Buildcmd($arg="",$configureos="",$hdr=0){
+function Buildcmd($arg="",$configureos=""){
 
 	global $cmd, $stb, $sint, $eint, $smod, $emod, $ssub, $esub, $int, $icfg;
 
-	$config = ($hdr)?"<?php exit; ?>\n":'';
 	if($configureos == "IOS" or $configureos == "ProCurve"){
 		$config .= "conf t\n";
 	}elseif($configureos == "Comware"){
 		$config .= "sys\n";
 	}
-	$config .= $cmd . (preg_match('/\n$/',$cmd)?"":"\n");						# Add return on last line, if missing (tx Tristan)
+	$config .= $cmd;
 	if($int){
 		for($m = $smod;$m <= $emod;$m++){
 			for($i = $sint;$i <= $eint;$i++){

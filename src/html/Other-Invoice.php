@@ -74,8 +74,9 @@ $tot = $sda + $nda + $noa;
 <form method="get" name="bill" action="<?= $self ?>.php">
 <?php  if( !isset($_GET['print']) ) { ?>
 <h1>NeDi <?= $icelbl ?></h1>
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td>
 
 </td>
@@ -139,7 +140,7 @@ if( isset($_GET['print']) ){
 <h3><?= $dsclbl ?> <?= $srvlbl ?> 1.Jan.<?= date("Y") ?> - 31.Dec.<?= date("Y") ?></h3>
 
 <table class="full">
-<tr class="<?= $modgroup[$self] ?>1">
+<tr class="bgmain">
 
 <?php
 TblCell($deslbl,'','ctr b');

@@ -2,7 +2,7 @@
  
 # General
 SNMPv	2HC
-Type	IES5106
+Type	IES-5106
 Typoid	
 Sysdes	
 OS	other

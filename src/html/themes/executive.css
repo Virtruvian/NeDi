@@ -99,6 +99,7 @@ input.button{
 	font-weight: bold;
 	padding: 7px;
 	text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.8);
+	margin : 4px;
 }
 input.button:hover {
 	border: 1px solid #642;
@@ -144,13 +145,12 @@ img.panel{
 :link:hover, :visited:hover {color: #C3883D;}
 :link:active, :visited:active {color: #CF9348}
 
-/* Header table & Footer div*/
+/* Header table */
 #header{
 	padding: 2px;
 	width: 100%;
 	border-spacing: 0px;
 	border: 2px solid #AE8D65;
-	border: 2px solid #76521F;
 	background: linear-gradient(#dcc794, #ae8b39);
 	border-radius: 1em;
 	-webkit-border-radius: 1em;
@@ -158,7 +158,7 @@ img.panel{
 
 /* Topmenu inspired by line25.com */
 #nav {
-	width: 540px;
+	min-width: 50em;
 	font-style:italic
 }
 
@@ -247,12 +247,6 @@ table.content{
 	-webkit-border-radius: 8px;
 }
 
-td.content{
-	text-align: left;
-	border-radius: 8px;
-	-webkit-border-radius: 8px;
-}
-
 td.helper{
 	padding: 10px 10px;
 	vertical-align: top;
@@ -266,12 +260,28 @@ table.fixed{
 	table-layout:fixed;
 }
 
+.qrt{
+	width: 25%;
+}
+
+.half{
+	width: 50%;
+}
+
+.tqrt{
+	width: 75%;
+}
+
 .full{
 	width: 100%;
 }
 
-.s{
+.xs{
 	width: 60px;
+}
+
+.s{
+	width: 100px;
 }
 
 .m{
@@ -284,6 +294,10 @@ table.fixed{
 
 .xl{
 	width: 500px;
+}
+
+.xxl{
+	width: 700px;
 }
 
 .lft{
@@ -314,6 +328,18 @@ table.fixed{
 	white-space: nowrap;
 }
 
+.bctr{
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+.flft{
+	float: left;
+}
+.frgt{
+	float: right;
+}
+
 .genpad{
 	background-color: #fff;
 	border:1px solid #AE8D65;
@@ -323,7 +349,6 @@ table.fixed{
 
 .textpad{
 	margin: 10px auto;
-	width: 70%;
 	padding: 9px;
 	border-spacing: 4px;
 	border: 3px dotted #D99550;
@@ -398,14 +423,13 @@ table.fixed{
 }
 .part{background-image:url('../img/dia.png')}
 
-/* Default Group Based Module Colors */
-
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgtop, .bgmain{
 	background: -webkit-linear-gradient(#dcc794, #ae8b39);
 	background: linear-gradient(#dcc794, #ae8b39);
 	background-color: #ae8b39
 }
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	background: -webkit-linear-gradient(#deca9a, #cdae67);
 	background: linear-gradient(#deca9a, #cdae67);
 	background-color: #cdae67

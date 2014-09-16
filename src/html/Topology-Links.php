@@ -55,8 +55,9 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 
 <form method="get" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 
 <td>
 <?php Filters(); ?>
@@ -66,7 +67,7 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 
 <h3><?= $fltlbl ?></h3>
 <a href="?in[]=device&op[]=~&st[]=&co[]=%3D&in[]=neighbor"><img src="img/16/brld.png" title="Loops"></a>
-<a href="?in[]=time&op[]=<&st[]=<?= time()-2*$rrdstep ?>&ord=time+desc"><img src="img/16/date.png" title="<?= $stco['160'] ?> <?= $cnclbl ?>"></a>
+<a href="?in[]=time&op[]=<&st[]=<?= strtotime("-1 day") ?>&ord=time+desc"><img src="img/16/date.png" title="<?= $stco['160'] ?> <?= $cnclbl ?>"></a>
 
 </th>
 <th>
@@ -105,7 +106,7 @@ if( count($in) ){
 		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
 	}
 	Condition($in,$op,$st,$co);
-	TblHead("$modgroup[$self]2",1);
+	TblHead("bgsub",1);
 	$query	= GenQuery('links','s','links.*,type,firstdis,lastdis,location,contact,devgroup',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device)');
 	$res	= DbQuery($query,$link);
 	if($res){
@@ -142,12 +143,7 @@ if( count($in) ){
 	}else{
 		print DbError($link);
 	}
-	?>
-</table>
-<table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Links<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?></td></tr>
-</table>
-	<?php
+	TblFoot("bgsub", count($col), "$row Links".(($ord)?", $srtlbl: $ord":"").(($lim)?", $limlbl: $lim":"") );
 }
 include_once ("inc/footer.php");
 ?>

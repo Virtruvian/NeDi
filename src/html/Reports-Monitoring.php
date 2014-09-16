@@ -49,8 +49,9 @@ $cols = array(	"device"=>"Device",
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" name="report" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td valign="top">
 
 <?php Filters(1); ?>
@@ -69,8 +70,8 @@ $cols = array(	"device"=>"Device",
 <select multiple name="rep[]" size="4">
 <option value="mav" <?= (in_array("mav",$rep))?" selected":"" ?>><?= $avalbl ?> <?= $dislbl ?>
 <option value="lat" <?= (in_array("lat",$rep))?" selected":"" ?>><?= $latlbl ?> <?= $stslbl ?>
-<option value="upt" <?= (in_array("upt",$rep))?" selected":"" ?>>Devices <?= $uptlbl ?>
-<option value="evt" <?= (in_array("evt",$rep))?" selected":"" ?>><?= $msglbl ?> <?= $stslbl ?>
+<option value="upt" <?= (in_array("upt",$rep))?" selected":"" ?>><?= $tgtlbl ?> <?= $uptlbl ?>
+<option value="evt" <?= (in_array("evt",$rep))?" selected":"" ?>><?= $msglbl ?> <?= $dislbl ?>
 <option value="igr" <?php if(in_array("igr",$rep)){echo "selected";} ?> ><?= $inclbl ?> <?= $grplbl ?>
 <option value="idi" <?php if(in_array("idi",$rep)){echo "selected";} ?> ><?= $inclbl ?> <?= $dislbl ?>
 <option value="ack" <?php if(in_array("ack",$rep)){echo "selected";} ?> ><?= $inclbl ?> <?= $acklbl ?>

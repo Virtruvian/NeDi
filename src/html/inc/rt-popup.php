@@ -22,7 +22,7 @@ $graph = "rt-svg.php?t=$t&r=$r&ip=$_GET[ip]&c=$_GET[c]&v=$_GET[v]&i=$_GET[i]&in=
 </head>
 
 <body>
-<div class="net2">
+<div class="gmain">
 	<form method="get" name="iv">
 		<img src="../img/16/grph.png">
 		<span class="b">

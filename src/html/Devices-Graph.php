@@ -37,9 +37,9 @@ $qstr = strpos($_SERVER['QUERY_STRING'], "sta")?$_SERVER['QUERY_STRING']:$_SERVE
 <?php if( !isset($_GET['print']) ) { ?>
 <form method="get" action="<?= $self ?>.php" name="dynfrm">
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>1">
+<tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td class="ctr">
 	<select size="6" name="dv" onchange="this.form.submit();">
@@ -141,7 +141,7 @@ if($cg){
 </td>
 <td class="ctr s">
 	<table style="border-spacing: 0px">
-		<tr class="<?= $modgroup[$self] ?>2">
+		<tr class="bgsub">
 			<td>
 				<a href="?<?=SkewTime($qstr,"sta", -7) ?>"><img src="img/16/bbl2.png" title="<?= $sttlbl ?> -<?= $tim['w'] ?>"></a>
 			</td>
@@ -158,7 +158,7 @@ if($cg){
 				<a href="?<?=SkewTime($qstr,"sta", 7) ?>"><img src="img/16/bbr2.png" title="<?= $sttlbl ?> +<?= $tim['w'] ?>"></a>
 			</td>
 		</tr>
-		<tr class="<?= $modgroup[$self] ?>2">
+		<tr class="bgsub">
 			<td>
 				<a href="?<?=SkewTime($qstr,"all", -7) ?>"><img src="img/16/bbl2.png" title="<?= $gralbl ?> -<?= $tim['w'] ?>"></a>
 			</td>
@@ -175,7 +175,7 @@ if($cg){
 				<a href="?<?=SkewTime($qstr,"all", 7) ?>"><img src="img/16/bbr2.png" title="<?= $gralbl ?> +<?= $tim['w'] ?>"></a>
 			</td>
 		</tr>
-		<tr class="<?= $modgroup[$self] ?>2">
+		<tr class="bgsub">
 			<td>
 				<a href="?<?=SkewTime($qstr,"end", -7) ?>"><img src="img/16/bbl2.png" title="<?= $endlbl ?> -<?= $tim['w'] ?>"></a>
 			</td>
@@ -272,24 +272,24 @@ if($cad){
 	}
 }elseif ($dv == "Totals") {
 	if( in_array("msg",$if) ){
-		echo "<a href=\"Monitoring-Timeline.php?sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=level&sho=1\">\n";
-		echo "<img src=\"inc/drawrrd.php?&s=$sze&t=msg&a=$sta&e=$end\" title=\"$sholbl Timeline\"></a>\n";
+		echo "	<a href=\"Monitoring-Timeline.php?sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=level&sho=1\">\n";
+		echo "		<img src=\"inc/drawrrd.php?&s=$sze&t=msg&a=$sta&e=$end\" title=\"$sholbl Timeline\">\n	</a>\n";
 	}
 	if( in_array("mon",$if) ){
-		echo "<a href=\"Monitoring-Timeline.php?in[]=class&op[]==&st[]=moni&sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=source\">\n";
-		echo "<img src=\"inc/drawrrd.php?&s=$sze&t=mon&a=$sta&e=$end\" title=\"$tgtlbl $avalbl\"></a>\n";
+		echo "	<a href=\"Monitoring-Timeline.php?in[]=class&op[]==&st[]=moni&sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=source\">\n";
+		echo "		<img src=\"inc/drawrrd.php?&s=$sze&t=mon&a=$sta&e=$end\" title=\"$tgtlbl $avalbl\">\n	</a>\n";
 	}
-	if( in_array("nod",$if) ){echo "<img src=\"inc/drawrrd.php?&s=$sze&t=nod&a=$sta&e=$end\" title=\"$totlbl Nodes\">\n";}
-	if( in_array("tpw",$if) ){echo "<img src=\"inc/drawrrd.php?&s=$sze&t=tpw&a=$sta&e=$end\" title=\"$totlbl PoE\">\n";}
-	if( in_array("ttr",$if) ){echo "<img src=\"inc/drawrrd.php?&s=$sze&t=ttr&a=$sta&e=$end\" title=\"$totlbl $trflbl\">\n";}
-	if( in_array("ter",$if) ){echo "<img src=\"inc/drawrrd.php?&s=$sze&t=ter&a=$sta&e=$end\" title=\"$totlbl $errlbl\">\n";}
-	if( in_array("tdi",$if) ){echo "<img src=\"inc/drawrrd.php?&s=$sze&t=tdi&a=$sta&e=$end\" title=\"$totlbl Discards\">\n";}
-	if( in_array("ifs",$if) ){echo "<img src=\"inc/drawrrd.php?&s=$sze&t=ifs&a=$sta&e=$end\" title=\"IF $stalbl $sumlbl\">\n";}
-}else{
-	if( in_array("cpu",$if) ){echo "<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=cpu&a=$sta&e=$end\" title=\"% CPU\">\n";}
-	if( in_array("mem",$if) ){echo "<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=mem&a=$sta&e=$end\" title=\"Mem $frelbl\">\n";}
-	if( in_array("tmp",$if) ){echo "<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=tmp&a=$sta&e=$end\" title=\"$tmplbl\">\n";}
-	if( in_array("cuv",$if) ){echo "<img src=\"inc/drawrrd.php?dv=$ud&&if[]=".urlencode($ct)."&if[]=".urlencode($cu)."&s=$sze&t=cuv&a=$sta&e=$end\" title=\"$ct [$cu]\">\n";}
+	if( in_array("nod",$if) ){echo "	<img src=\"inc/drawrrd.php?&s=$sze&t=nod&a=$sta&e=$end\" title=\"$totlbl Nodes\">\n";}
+	if( in_array("tpw",$if) ){echo "	<img src=\"inc/drawrrd.php?&s=$sze&t=tpw&a=$sta&e=$end\" title=\"$totlbl PoE\">\n";}
+	if( in_array("ttr",$if) ){echo "	<img src=\"inc/drawrrd.php?&s=$sze&t=ttr&a=$sta&e=$end\" title=\"$totlbl $trflbl\">\n";}
+	if( in_array("ter",$if) ){echo "	<img src=\"inc/drawrrd.php?&s=$sze&t=ter&a=$sta&e=$end\" title=\"$totlbl $errlbl\">\n";}
+	if( in_array("tdi",$if) ){echo "	<img src=\"inc/drawrrd.php?&s=$sze&t=tdi&a=$sta&e=$end\" title=\"$totlbl Discards\">\n";}
+	if( in_array("ifs",$if) ){echo "	<img src=\"inc/drawrrd.php?&s=$sze&t=ifs&a=$sta&e=$end\" title=\"IF $stalbl $sumlbl\">\n";}
+}else{	
+	if( in_array("cpu",$if) ){echo "	<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=cpu&a=$sta&e=$end\" title=\"% CPU\">\n";}
+	if( in_array("mem",$if) ){echo "	<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=mem&a=$sta&e=$end\" title=\"Mem $frelbl\">\n";}
+	if( in_array("tmp",$if) ){echo "	<img src=\"inc/drawrrd.php?dv=$ud&s=$sze&t=tmp&a=$sta&e=$end\" title=\"$tmplbl\">\n";}
+	if( in_array("cuv",$if) ){echo "	<img src=\"inc/drawrrd.php?dv=$ud&&if[]=".urlencode($ct)."&if[]=".urlencode($cu)."&s=$sze&t=cuv&a=$sta&e=$end\" title=\"$ct [$cu]\">\n";}
 	if( isset($if[0]) ){
 		$uif = "";
 		foreach ( $if as $i){
@@ -298,11 +298,11 @@ if($cad){
 			}
 		}
 		if($uif){
-			if(in_array("t",$it)){echo "<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=trf&a=$sta&e=$end\" title=\"$trflbl\">\n";}
-			if(in_array("e",$it)){echo "<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=err&a=$sta&e=$end\" title=\"$errlbl\">\n";}
-			if(in_array("d",$it)){echo "<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=dsc&a=$sta&e=$end\" title=\"Discards\">\n";}
-			if(in_array("b",$it)){echo "<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=brc&a=$sta&e=$end\" title=\"Broadcasts\">\n";}
-			if(in_array("s",$it)){echo "<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=sta&a=$sta&e=$end\" title=\"IF $stalbl (no stack!)\">\n";}
+			if(in_array("t",$it)){echo "	<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=trf&a=$sta&e=$end\" title=\"$trflbl\">\n";}
+			if(in_array("e",$it)){echo "	<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=err&a=$sta&e=$end\" title=\"$errlbl\">\n";}
+			if(in_array("d",$it)){echo "	<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=dsc&a=$sta&e=$end\" title=\"Discards\">\n";}
+			if(in_array("b",$it)){echo "	<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=brc&a=$sta&e=$end\" title=\"Broadcasts\">\n";}
+			if(in_array("s",$it)){echo "	<img src=\"inc/drawrrd.php?dv=$ud$uif&s=$sze&t=sta&a=$sta&e=$end\" title=\"IF $stalbl (no stack!)\">\n";}
 		}
 	}
 }

@@ -11,7 +11,7 @@ if( !preg_match("/net/",$_SESSION['group']) ){
 	die;
 }
 $_GET = sanitize($_GET);
-if($_GET['t'] == 'p'){
+if( isset($_GET['t']) and $_GET['t'] == 'p'){
 	$dir = '../img/panel';
 	$flt = 'gen-';
 	$suf = '.jpg';
@@ -41,7 +41,8 @@ if($_GET['t'] == 'p'){
 </head>
 
 <body>
-	<a href="http://www.nedi.ch/expand" target="Window"><?= $imglbl ?> <?= $sumlbl ?></a>
+	<div class="genpad">
+	<?= $imglbl ?><a href="http://www.nedi.ch/expand" target="Window"> <?= $inflbl ?></a>
 <?php
 
 if ( $handle = opendir($dir) ){
@@ -57,15 +58,15 @@ if ( $handle = opendir($dir) ){
 			$n = str_replace($suf,"",$i);
 			$t = substr($i, $sst, $sse);
 			if ($t != $p){
-				echo "	<div class=\"code imga\">$t</div>";
+				echo "		<p><div class=\"txta b\">$t</div>";
 			}
 			$p = $t;
-			echo "	<img src=$dir/$i title=\"$n\" hspace=\"4\" vspace=\"4\" onClick=\"update('$n');\">\n";
+			echo "		<img src=$dir/$i title=\"$n\" hspace=\"4\" vspace=\"4\" onClick=\"update('$n');\">\n";
 
 	}
 }
 ?>
-
+	</div>
 </body>
 
 </html>

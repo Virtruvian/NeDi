@@ -40,9 +40,9 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 <?php  if( !isset($_GET['print']) ) { ?>
 <form method="POST" action="<?= $self ?>.php" enctype="multipart/form-data">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content"><tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td class="ctr b">
 	Cfg #<br>
@@ -130,43 +130,47 @@ if($dev){
 		}elseif( preg_match("/^(no )?spanning-tree|^ stp/",$l) ){
 			$stp[] = $l;
 		}
-	}#TODO pretty html print...
+	}
 	echo "<h3>Interfaces</h3>\n";
-	echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\"><td>$namlbl</td><td>IP $adrlbl</td><td>Alias</td><td>$typlbl</td><td>IP Helper</td><td>VRF</td></tr>";
+	echo "<table class=\"content\">	<tr class=\"bgsub\">\n";
+	echo "		<td>$namlbl</td>\n		<td>IP $adrlbl</td>\n";
+	echo "		<td>Alias</td>\n		<td>$typlbl</td>\n";
+	echo "		<td>IP Helper</td>\n		<td>VRF</td>\n	</tr>\n";
 	foreach($if as $i){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
 		TblRow($bg);
-		echo "<td>$i</td><td class=\"blu\">$ipadd[$i]</td><td class=\"gry\">$ifdsc[$i]</td>";
-		echo "<td class=\"grn\">$ifmod[$i]</td><td class=\"gry\">$ifhlp[$i]</td><td>$ifvpn[$i]</td></tr>";
+		echo "		<td>$i</td>\n		<td class=\"blu\">$ipadd[$i]</td>\n";
+		echo "		<td class=\"gry\">$ifdsc[$i]</td>\n		<td class=\"grn\">$ifmod[$i]</td>\n";
+		echo "		<td class=\"gry\">$ifhlp[$i]</td>\n		<td>$ifvpn[$i]</td>\n	</tr>\n";
 	}
 	echo "</table>";
 
-	echo "<h3>Spanning-Tree</h3>";
+	echo "<h3>Spanning-Tree</h3>\n";
 	echo "<div class=\"textpad code txta\">\n";
 	foreach($stp as $i){
-		echo "$i\n";
+		echo "	$i\n";
 	}
 	echo "</div>\n";
 
 	echo "<h3>SNMP</h3>";
 	echo "<div class=\"textpad code txta\">\n";
 	foreach($snmp as $i){
-		echo "$i\n";
+		echo "	$i\n";
 	}
 	echo "</div>\n";
 
 	echo "<h3>$srvlbl</h3>";
 	echo "<div class=\"textpad code txta\">\n";
 	foreach($srv as $i){
-		echo "$i\n";
+		echo "	$i\n";
 	}
 	echo "</div>\n";
 
 	echo "<h3>Logging</h3>";
 	echo "<div class=\"textpad code txta\">\n";
 	foreach($log as $i){
-		echo "$i\n";
+		echo "	$i\n";
 	}
 	echo "</div>\n";
 

@@ -100,13 +100,13 @@
 <br>
 <form action="<?= $self ?>.php" method="post">
 <table>
-	<tr class="<?= $modgroup[$self] ?>1">
+	<tr class="bgmain">
 		<th rowspan="2"><img src="img/32/nag.png"></td>
 		<th>Export configuration script for:</th>
 		<th>Export options:</th>
 		<th rowspan="2"><input type="submit" class="button" name="mkconf" value="Export"></th>
 	</tr>
-	<tr class="<?= $modgroup[$self] ?>1">
+	<tr class="bgmain">
 		<td>
 <input type="radio" checked name="exptype" value="d"> Device: <select name="device">
 	<option value="0" selected>Select a device:</option>

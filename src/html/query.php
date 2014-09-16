@@ -44,7 +44,7 @@ if( isset($_POST['u']) and isset($_POST['p']) ){
 	if($uok == 1) {
 		$res = DbQuery($_POST['q'],$link);
 		$sys = posix_uname();
-		$sys['nedi'] = "1.1.155"; 
+		$sys['nedi'] = "1.4.232"; 
 		if($_POST['m']){
 			if($res){
 				while($l = DbFetchArray($res)) {

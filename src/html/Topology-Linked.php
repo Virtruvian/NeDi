@@ -39,14 +39,16 @@ if ( $add and $dv and $if and $nb and $ni){
 
 <?php  if( !isset($_GET['print']) ) { ?>
 <form method="get" action="<?= $self ?>.php" name="li">
-<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content" ><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th valign="top">
 <select name="dv" onchange="this.form.submit();">
 <option value="">Device ->
 <?php
-$dquery	= GenQuery('devices','s','*','device','',array('devopts'),array('~'),array('^...I') );
-$res	= DbQuery($dquery,$link);
+$devs   = array();
+$dquery = GenQuery('devices','s','*','device','',array('devopts'),array('~'),array('^...I') );
+$res    = DbQuery($dquery,$link);
 if($res){
 	while( ($d = DbFetchRow($res)) ){
 		echo "<option value=\"$d[0]\" ";
@@ -62,7 +64,7 @@ if($res){
 </select>
 <?php
 if ($dv) {
-	$query	= GenQuery('interfaces','s','*','ifname','',array('device'),array('='),array($dv) );
+	$query	= GenQuery('interfaces','s','ifname,alias,ifstat,speed,duplex,pvid,comment','ifname','',array('device'),array('='),array($dv) );
 	$res	= DbQuery($query,$link);
 	if($res){
 ?>
@@ -70,14 +72,14 @@ if ($dv) {
 <option value="">IF <?= $namlbl ?> ->
 <?php
 		while( ($i = DbFetchRow($res)) ){
-			echo "<OPTION VALUE=\"$i[1]\" ";
-			if($if == $i[1]){
+			echo "<option value=\"$i[0]\" ".(($i[2] == 3)?'class="grn"':'');
+			if($if == $i[0]){
 				echo "selected";
-				$dbw=$i[9];
-				$ddu=$i[10];
-				$dvl=$i[11];
+				$dbw=$i[3];
+				$ddu=$i[4];
+				$dvl=$i[5];
 			}
-			echo " >$i[1] " . substr($i[28],0,$_SESSION['lsiz']).' '.substr($i[7],0,$_SESSION['lsiz'])."\n";
+			echo " >$i[0] " . substr($i[1],0,$_SESSION['lsiz']).' '.substr($i[6],0,$_SESSION['lsiz'])."\n";
 		}
 		DbFreeResult($res);
 		echo "</select>";
@@ -86,8 +88,8 @@ if ($dv) {
 if ($if) {
 ?>
 <hr>
-Duplex <input type="text" name="ddu" class="s" value="<?= $ddu ?>">
-PVID <input type="number" name="dvl" class="s" value="<?= $dvl ?>">
+<img src="img/dpx.png" title="Duplex"><input type="text" name="ddu" class="xs" value="<?= $ddu ?>">
+<img src="img/16/vlan.png" title="PVID"><input type="number" name="dvl" class="xs" value="<?= $dvl ?>">
 <select size="1" name="dbs" onchange="document.li.dbw.value=document.li.dbs.options[document.li.dbs.selectedIndex].value">
 <option value=""><?= $bwdlbl ?> ->
 <option value="1544000">T1
@@ -95,11 +97,10 @@ PVID <input type="number" name="dvl" class="s" value="<?= $dvl ?>">
 <option value="10000000">10M
 <option value="100000000">100M
 <option value="1000000000">1G
-<option value="4294967295">>4G
 <option value="10000000000">10G
 
 </select>
-<input type="number" min="0" step="1000" name="dbw" class="m" value="<?= $dbw ?>">
+<input type="number" min="0" step="1000" name="dbw" class="s" value="<?= $dbw ?>">
 </th>
 <?php
 }
@@ -119,7 +120,7 @@ foreach ($devs as $ndv){
 </select>
 <?php
 if ($nb) {
-	$query	= GenQuery('interfaces','s','*','ifname','',array('device'),array('='),array($nb) );
+	$query	= GenQuery('interfaces','s','ifname,alias,ifstat,speed,duplex,pvid,comment','ifname','',array('device'),array('='),array($nb) );
 	$res	= DbQuery($query,$link);
 	if($res){
 ?>
@@ -127,14 +128,14 @@ if ($nb) {
 <option>IF <?= $namlbl ?> ->
 <?php
 		while( ($i = DbFetchRow($res)) ){
-			echo "<OPTION VALUE=\"$i[1]\" ";
-			if($ni == $i[1]){
+			echo "<option value=\"$i[0]\" ".(($i[2] == 3)?'class="grn"':'');
+			if($if == $i[0]){
 				echo "selected";
-				$nbw=$i[9];
-				$ndu=$i[10];
-				$nvl=$i[11];
+				$dbw=$i[3];
+				$ddu=$i[4];
+				$dvl=$i[5];
 			}
-			echo " >$i[1] " . substr($i[28],0,$_SESSION['lsiz']).' '.substr($i[7],0,$_SESSION['lsiz'])."\n";
+			echo " >$i[0] " . substr($i[1],0,$_SESSION['lsiz']).' '.substr($i[6],0,$_SESSION['lsiz'])."\n";
 		}
 		DbFreeResult($res);
 		echo "</select>";
@@ -143,19 +144,18 @@ if ($nb) {
 if ($ni) {
 ?>
 <hr>
-Duplex <input type="text" name="ndu" class="s" value="<?= $ndu ?>">
-PVID <input type="number" name="nvl" class="s" value="<?= $nvl ?>">
+<img src="img/dpx.png" title="Duplex"><input type="text" name="ndu" class="xs" value="<?= $ndu ?>">
+<img src="img/16/vlan.png" title="PVID"><input type="number" name="nvl" class="xs" value="<?= $nvl ?>">
 <select size="1" name="nbs" onchange="document.li.nbw.value=document.li.nbs.options[document.li.nbs.selectedIndex].value">
 <option value=""><?= $bwdlbl ?> ->
 <option value="1544000">T1
 <option value="2048000">E1
 <option value="10000000">10M
 <option value="100000000">100M
-<option value="1000000000">1G
 <option value="10000000000">10G
 </select>
-<input type="number" min="0" step="1000" name="nbw" class="m" value="<?= $nbw ?>">
-<?= $cmtlbl ?> <input type="text" name="lde" class="l" value="<?= $lde ?>">
+<input type="number" min="0" step="1000" name="nbw" class="s" value="<?= $nbw ?>">
+<img src="img/16/say.png" title="<?= $cmtlbl ?>"><input type="text" name="lde" class="l" value="<?= $lde ?>">
 <?php
 }
 ?>
@@ -170,7 +170,7 @@ PVID <input type="number" name="nvl" class="s" value="<?= $nvl ?>">
 <option value="STAT">Static
 <option value="FWD">BriFwd
 <option value="MAC">IfMAC
-<option value="IFIP">IfIP
+<option value="IFI">IfIP
 <option value="ISO"><?= $isolbl ?>
 </select>
 <p>
@@ -182,7 +182,7 @@ PVID <input type="number" name="nvl" class="s" value="<?= $nvl ?>">
 if ($dv or $typ){
 ?>
 <h2><?= ($typ)?$typ:$dv ?> - Links</h2>
-<table class="content" ><tr class="<?= $modgroup[$self] ?>2">
+<table class="content" ><tr class="bgsub">
 <th><img src="img/16/dev.png"><br>Device</th>
 <th><img src="img/16/port.png"><br>Interface</th>
 <th><img src="img/16/abc.png" title="D=Discovery Protocol,O=Oui,V=VoIP,S=static"><br><?= $typlbl ?></th>
@@ -197,7 +197,7 @@ if ($dv or $typ){
 	if ($typ == "ISO"){
 		$query	= GenQuery('links','s','links.*','ifname','',array('devices.device'),array('COL IS'),array('NULL'),array(),'LEFT JOIN devices USING (device)');
 	}elseif ($typ){
-		$query	= GenQuery('links','s','*','ifname','',array('linktype'),array('='),array($typ));
+		$query	= GenQuery('links','s','*','ifname','',array('linktype'),array('~'),array("^$typ"));
 	}else{
 		$query	= GenQuery('links','s','*','ifname','',array('device'),array('='),array($dv));
 	}
@@ -228,7 +228,7 @@ if ($dv or $typ){
 	?>
 </table>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Links</td></tr>
+<tr class="bgsub"><td><?= $row ?> Links</td></tr>
 </table>
 	<?php
 }

@@ -12,8 +12,8 @@ Remo Rickli & NeDi Community
 =cut
 
 package mon;
-use warnings;
 
+use warnings;
 use Time::HiRes;
 
 =head2 FUNCTION InitMon()
@@ -41,7 +41,6 @@ sub InitMon{
 
 	return $nt;
 }
-
 
 =head2 FUNCTION GetUptime()
 
@@ -80,7 +79,6 @@ sub GetUptime{
 	}
 }
 
-
 =head2 FUNCTION PingService()
 
 Pings a tcp service.
@@ -99,7 +97,7 @@ sub PingService{
 	$tout = ($tout)?$tout:$misc::timeout;
 	my $p = Net::Ping->new($proto);
 	$p->hires();
-	&misc::Prt("TEST:");
+	&misc::Prt("PING:");
 	if ($proto and $proto ne 'icmp'){
 		$srv = "microsoft-ds" if $srv eq "cifs";
 		$p->tcp_service_check(1);
@@ -284,6 +282,7 @@ sub Elevate{
 			$elevate = 1;
 		}
 	}
+	&misc::Prt("DBG :Elevate=$elevate Min=$min Mode=$mode Notify=$nfy\n") if $main::opt{'d'};
 
 	return ($elevate > $min)?$elevate:$min;
 }
@@ -307,28 +306,26 @@ sub Event{
 	my ($mode,$level,$class,$tgt,$dv,$msg,$sms) = @_;
 	
 	my $elevate = &Elevate($mode,0,$tgt);
-
-	&misc::Prt("EVNT:CL=$class EL=$elevate TGT=$tgt MSG=$msg\n");
-
 	if($class ne "moni" and exists $main::mon{$tgt}){						# Using alert settings for moni events and never elevate unmonitored sources
 		if($main::mon{$tgt}{ed} and $msg =~ /$main::mon{$tgt}{ed}/){
 			$elevate = 0;
-			&misc::Prt("EINF:$msg contains /$main::mon{$tgt}{ed}/, discarding\n");
+			&misc::Prt("DBG :$msg contains /$main::mon{$tgt}{ed}/, discarding\n") if $main::opt{'d'};
 		}
 		if( $main::mon{$tgt}{el} ){
 			if( $level >= $main::mon{$tgt}{el} ){
 				$elevate = 3;
-				&misc::Prt("ELVL:Forward level limit $main::mon{$tgt}{el} <= $level, forwarding\n");
+				&misc::Prt("DBG :Forward level limit $main::mon{$tgt}{el} <= $level, forwarding\n") if $main::opt{'d'};
 			}elsif($main::mon{$tgt}{el}%2 and $level > ($main::mon{$tgt}{el}-2) ){		# Deduct 2 and use > instead >=
 				$elevate = 0;
-				&misc::Prt("ELVL:Discard level limit ".($main::mon{$tgt}{el}-1)." >= event level $level, discarding\n");
+				&misc::Prt("DBG :Discard level limit ".($main::mon{$tgt}{el}-1)." >= event level $level, discarding\n") if $main::opt{'d'};
 			}
 		}
 		if($main::mon{$tgt}{ef} and $msg =~ /$main::mon{$tgt}{ef}/){
 			$elevate = 3;
-			&misc::Prt("EINF:$msg contains /$main::mon{$tgt}{ef}/, forwarding\n");
+			&misc::Prt("DBG :$msg contains /$main::mon{$tgt}{ef}/, forwarding\n") if $main::opt{'d'};
 		}
 	}
+	&misc::Prt("EVNT:MOD=$mode/$elevate L=$level CL=$class TGT=$tgt MSG=$msg\n");
 
 	if($elevate){
 		my $info = ((length $msg > 250)?substr($msg,0,250)."...":$msg);

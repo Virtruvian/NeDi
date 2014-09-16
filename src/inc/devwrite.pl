@@ -29,28 +29,29 @@ Visit http://www.nedi.ch for more information.
 
 =cut
 
-$VERSION = "1.2";
+$VERSION = "1.4";
 
 use strict;
-use Net::Telnet;
 
-use vars qw($p $now $ip $po $us $pw $os $cf %opt);
+use vars qw($p $now $dv $ip $po $us $pw $os $cf %opt);
 $now = time;												# Expected in libmisc.pm
+$opt{'d'} = '';
 
 #$opt{'v'} = "1";											# Turn debugging on
 
 #select(STDOUT);
 #$| = 1;
 
-die "7 arguments needed not " . @ARGV . "!\n" if @ARGV != 7;
-($p, $ip, $po, $us, $pw, $os, $cf) = @ARGV;
+die "7 arguments needed not " . @ARGV . "!\n" if @ARGV != 8;
+($p, $dv, $ip, $po, $us, $pw, $os, $cf) = @ARGV;
 
 require "$p/inc/libmisc.pm";
+require "$p/inc/libmon.pm";
 &misc::ReadConf();
 require "$p/inc/libcli.pm";
 
-my $err = &cli::SendCmd($ip, $po, $us, $pw, $os, $cf);
-if($err){
-	print $err if $opt{'v'};
+my $status = &cli::Commands($dv, $ip, $po, $us, $pw, $os, $cf);
+if($status !~ /^OK-/){
+	print $status if $opt{'v'};
 	exit 1;
 }

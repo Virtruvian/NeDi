@@ -33,10 +33,10 @@ $cols = array(	"device"=>"Device $namlbl",
 		"vlanid"=>"Vlan $idxlbl",
 		"vlanname"=>"Vlan $namlbl",
 		"type"=>"Device $typlbl",
-		"firstdis"=>"$fislbl $dsclbl",
-		"lastdis"=>"$laslbl $dsclbl",
 		"location"=>$loclbl,
 		"contact"=>$conlbl,
+		"firstdis"=>"$fislbl $dsclbl",
+		"lastdis"=>"$laslbl $dsclbl",
 		"poNS"=>$poplbl
 		);
 		
@@ -46,9 +46,9 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 <form method="get" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content"><tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td>
 <?php Filters(); ?>
@@ -86,7 +86,7 @@ if( count($in) ){
 		echo "	<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\">\n</div>\n<p>\n";
 	}
 	Condition($in,$op,$st,$co);
-	TblHead("$modgroup[$self]2",1);
+	TblHead("bgsub",1);
 	$query	= GenQuery('vlans','s','device,vlanid,vlanname,type,firstdis,lastdis,location,contact',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device)');
 	$res	= DbQuery($query,$link);
 	if($res){
@@ -101,10 +101,10 @@ if( count($in) ){
 			if(in_array("vlanid",$col))	TblCell($v[1],"?in[]=vlanid&op[]==&st[]=".urlencode($v[1]),"$bi rgt b");
 			if(in_array("vlanname",$col))	TblCell($v[2],"?in[]=vlanname&op[]==&st[]=".urlencode($v[2]),'b');
 			if(in_array("type",$col))	TblCell($v[3],"?in[]=type&op[]==&st[]=".urlencode($v[3]));
-			if( in_array("firstdis",$col) )	TblCell( date($_SESSION['timf'],$v[4]),"?in[]=firstdis&op[]==&st[]=$v[4]",'nw','',"background-color:#$fc" );
-			if( in_array("lastdis",$col) )	TblCell( date($_SESSION['timf'],$v[5]),"?in[]=lastdis&op[]==&st[]=$v[5]",'nw','',"background-color:#$lc" );
 			if(in_array("location",$col))	TblCell($v[6],"?in[]=location&op[]==&st[]=".urlencode($v[6]));
 			if(in_array("contact",$col))	TblCell($v[7],"?in[]=contact&op[]==&st[]=".urlencode($v[7]));
+			if( in_array("firstdis",$col) )	TblCell( date($_SESSION['timf'],$v[4]),"?in[]=firstdis&op[]==&st[]=$v[4]",'nw','',"background-color:#$fc" );
+			if( in_array("lastdis",$col) )	TblCell( date($_SESSION['timf'],$v[5]),"?in[]=lastdis&op[]==&st[]=$v[5]",'nw','',"background-color:#$lc" );
 			if(in_array("poNS",$col)){
 				$pop = NodPop( array('device','vlanid'),array('=','='),array($v[0],$v[1]),array('AND') );
 				if($pop){
@@ -119,14 +119,7 @@ if( count($in) ){
 	}else{
 		print DbError($link);
 	}
-	
-?>
-</table>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
-<?= $row ?> Vlans<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?>
-
-</td></tr></table>
-<?php
+	TblFoot("bgsub", count($col), "$row Vlans".(($ord)?", $srtlbl: $ord":"").(($lim)?", $limlbl: $lim":"") );
 }
 include_once ("inc/footer.php");
 ?>

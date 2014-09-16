@@ -7,7 +7,7 @@
 // Read configuration
 function ReadConf($group=''){
 
-	global $locsep,$bldsep,$lang,$redbuild,$modgroup,$disc,$fahrtmp;
+	global $modgroup,$locsep,$bldsep,$lang,$redbuild,$disc,$fahrtmp;
 	global $comms,$mod,$backend,$dbhost,$dbname,$dbuser,$dbpass,$retire;
 	global $timeout,$ignoredvlans,$useivl,$cpua,$mema,$tmpa,$trfa,$trfw;
 	global $mapip,$poew,$pause,$latw,$rrdcmd,$nedipath,$rrdstep;
@@ -248,10 +248,10 @@ function selectbox($type,$sel){
 	}elseif($type == "comop"){
 		$options = array(""=>"-","AND"=>"and","OR"=>"or",">"=>"Col > Col","="=>"Col = Col","!="=>"Col != Col","<"=>"Col < Col");
 	}elseif($type == "limit"){
-		$options = array("5"=>"5","10"=>"10","20"=>"20","50"=>"50","100"=>"100","200"=>"200","500"=>"500","1000"=>"1000","2000"=>"2000","0"=>"none!");
+		$options = array("3"=>"3","5"=>"5","10"=>"10","25"=>"25","50"=>"50","100"=>"100","250"=>"250","500"=>"500","1000"=>"1000","2500"=>"2500","0"=>"none!");
 	}
 	foreach ($options as $key => $txt){
-	       $selopt = ($sel == "$key")?" selected":"";
+	       $selopt = ($sel == "$key")?' selected':'';
 	       echo "	<option value=\"$key\"$selopt>$txt\n";
 	}
 	#TODO add this and opening tag to function? echo "</select>\n" or just return array, which can be used for sanity checks?
@@ -271,7 +271,7 @@ function Filters($num=4){
 <select name="in[]" title="<?= $collbl ?> 1">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "	<option value=\"$k\"".( ($in[0] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[0] == $k)?' selected':'').">$v\n";
 	}
 }?>
 </select>
@@ -284,18 +284,18 @@ function Filters($num=4){
 <?php	if( $num == 1 ){ echo '</div>';return;} ?>
 <select name="co[]" onchange="convis('1',this.value);">
 	<option value="">
-	<option value="AND"<?= ($co[0] == 'AND')?'selected':'' ?>>and
-	<option value="OR"<?=  ($co[0] == 'OR' )?'selected':'' ?>>or
-	<option value=">"<?=   ($co[0] == '>'  )?'selected':'' ?>>1 > 2
-	<option value="="<?=   ($co[0] == '='  )?'selected':'' ?>>1 = 2
-	<option value="!="<?=  ($co[0] == '!=' )?'selected':'' ?>>1 != 2
-	<option value="<"<?=   ($co[0] == '<'  )?'selected':'' ?>>1 < 2
+	<option value="AND"<?= ($co[0] == 'AND')?' selected':'' ?>>and
+	<option value="OR"<?=  ($co[0] == 'OR' )?' selected':'' ?>>or
+	<option value=">"<?=   ($co[0] == '>'  )?' selected':'' ?>>1 > 2
+	<option value="="<?=   ($co[0] == '='  )?' selected':'' ?>>1 = 2
+	<option value="!="<?=  ($co[0] == '!=' )?' selected':'' ?>>1 != 2
+	<option value="<"<?=   ($co[0] == '<'  )?' selected':'' ?>>1 < 2
 </select>
 <br>
 <select name="in[]" id="ib1" title="<?= $collbl ?> 2">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "	<option value=\"$k\"".( ($in[1] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[1] == $k)?' selected':'').">$v\n";
 	}
 }?>
 </select>
@@ -306,14 +306,14 @@ function Filters($num=4){
 <select name="co[]" id="cb1" onchange="fltvis(this.value);">
 	<option value="">
 	<option value="AND"<?= ($co[1] == 'AND')?' selected':'' ?>>and
-	<option value="OR"<?= ($co[1] == 'OR')?'selected':'' ?>>or
+	<option value="OR"<?= ($co[1] == 'OR')?' selected':'' ?>>or
 </select>
 </div>
 <div id="flt2" style="margin: 2px 8px;padding: 2px 8px;visibility: hidden">
 <select name="in[]" id="ia2" title="<?= $collbl ?> 3">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "	<option value=\"$k\"".( ($in[2] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[2] == $k)?' selected':'').">$v\n";
 	}
 }?>
 </select>
@@ -324,17 +324,17 @@ function Filters($num=4){
 <select name="co[]" id="ca2"  onchange="convis('2',this.value);">
 	<option value="">
 	<option value="AND"<?= ($co[2] == 'AND')?' selected':'' ?>>and
-	<option value="OR"<?=  ($co[2] == 'OR' )?'selected':'' ?>>or
-	<option value=">"<?=   ($co[2] == '>'  )?'selected':'' ?>>3 > 4
-	<option value="="<?=   ($co[2] == '='  )?'selected':'' ?>>3 = 4
-	<option value="!="<?=  ($co[2] == '!=' )?'selected':'' ?>>3 != 4
-	<option value="<"<?=   ($co[2] == '<'  )?'selected':'' ?>>3 < 4
+	<option value="OR"<?=  ($co[2] == 'OR' )?' selected':'' ?>>or
+	<option value=">"<?=   ($co[2] == '>'  )?' selected':'' ?>>3 > 4
+	<option value="="<?=   ($co[2] == '='  )?' selected':'' ?>>3 = 4
+	<option value="!="<?=  ($co[2] == '!=' )?' selected':'' ?>>3 != 4
+	<option value="<"<?=   ($co[2] == '<'  )?' selected':'' ?>>3 < 4
 </select>
 <br>
 <select name="in[]" id="ib2" title="<?= $collbl ?> 4">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "	<option value=\"$k\"".( ($in[3] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[3] == $k)?' selected':'').">$v\n";
 	}
 }?>
 </select>
@@ -410,17 +410,18 @@ function Condition($in,$op,$st,$co,$mod=0){
 	$h = '';
 	$w = '';
 
+	$argok = array_key_exists(0,$co);
 	$comok = 0;
 	if( !count($in) ) return '';
 
-	if( preg_match('/[<>=]/',$co[0]) ){								# subconditions 1 and 2 compare columns
+	if($argok and preg_match('/[<>=]/',$co[0]) ){							# subconditions 1 and 2 compare columns
 		$w .= $in[0]." $co[0] ".$in[1];
 		$h .= $cols[$in[0]]." $co[0] ".$cols[$in[1]];
 		$comok = 1;
 	}elseif( $op[0] and !( preg_match('/~|LIKE$/i',$op[0]) and $st[0] === '') ){			# process normally unless empty regexp/like in 1
 		$w .= AdOpVal($in[0],$op[0],$st[0]);
 		$h .= $cols[$in[0]]." $op[0] '".$st[0]."'";
-		if($co[0] and $op[1] and !( preg_match('/~|LIKE$/i',$op[1]) and $st[1] === '') ){	# subcondition 2 unless empty regexp/like
+		if($argok and $co[0] and $op[1] and !( preg_match('/~|LIKE$/i',$op[1]) and $st[1] === '') ){# subcondition 2 unless empty regexp/like
 			$w .= " $co[0] ".AdOpVal($in[1],$op[1],$st[1]);
 			$h .= " $co[0] ".$cols[$in[1]]." $op[1] '".$st[1]."'";
 			$comok = 1;
@@ -447,15 +448,15 @@ function Condition($in,$op,$st,$co,$mod=0){
 	}elseif($mod){
 		 return $h;
 	}else{
-		if($h) echo "<h3>$h</h3>\n";
+		if($h) echo "\n<h3>$h</h3>\n\n";
 	}
 }
 
 //===================================================================
 // Generate table header
-// Opt	Bgcolor, column mode: 2 or 3=use all, 0 or 3=no sorting (1 shows selected columns with sorting arrow)
+// Opt	class, column mode: 2 or 3=use all, 0 or 3=no sorting (1 shows selected columns with sorting arrow)
 // Keys BL=blank, IG=ignored, NS=no-sort, NF=no-filter
-function TblHead($bkg,$mode = 0){
+function TblHead($class,$mode = 0){
 
 	global $ord,$cols,$col,$altlbl,$srtlbl;
 
@@ -473,25 +474,25 @@ function TblHead($bkg,$mode = 0){
 	foreach( $mycol as $n ){
 		if( !preg_match('/IG$/',$n) ){
 			if( preg_match('/BL$/',$n) ){
-				echo "		<th class=\"$bkg\">&nbsp;</th>\n";
+				echo "		<th class=\"$class\">&nbsp;</th>\n";
 			}elseif( isset($_GET['xls']) or preg_match('/NS$/',$n) or $mode == 3 or !$mode ){
-				echo "		<th class=\"$bkg\">$cols[$n]</th>\n";
+				echo "		<th class=\"$class\">$cols[$n]</th>\n";
 			}elseif( !array_key_exists($n,$cols) ){
-				echo "		<th class=\"$bkg\">$n</th>\n";
+				echo "		<th class=\"$class\">$n</th>\n";
 			}else{
 				$nclr = preg_replace('/NF$/','',$n);
 				if( !$ord ){
-					echo "		<th class=\"$bkg nw\">$cols[$n] <a href=\"?$_SERVER[QUERY_STRING]&ord=$nclr+desc\"><img src=img/dwn.png title=\"Sort by $nclr\"></a></th>\n";
+					echo "		<th class=\"$class nw\">$cols[$n] <a href=\"?$_SERVER[QUERY_STRING]&ord=$nclr+desc\"><img src=img/dwn.png title=\"Sort by $nclr\"></a></th>\n";
 				}elseif($ord == $nclr){
-					echo "		<th class=\"$bkg mrn nw\">$cols[$n] <a href=\"?";
+					echo "		<th class=\"$class mrn nw\">$cols[$n] <a href=\"?";
 					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
 					echo "&ord=$nclr+desc\"><img src=\"img/up.png\" title=\"$srtlbl\"></a></th>\n";
 				}elseif($ord == "$nclr desc"){
-					echo "		<th class=\"$bkg mrn nw\">$cols[$n] <a href=\"?";
+					echo "		<th class=\"$class mrn nw\">$cols[$n] <a href=\"?";
 					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
 					echo "&ord=$nclr\"><img src=\"img/dwn.png\" title=\"$altlbl $srtlbl\"></a></th>\n";
 				}else{
-					echo "		<th class=\"$bkg nw\">$cols[$n] <a href=\"?";
+					echo "		<th class=\"$class nw\">$cols[$n] <a href=\"?";
 					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
 					echo "&ord=$nclr+desc\"><img src=\"img/dwn.png\" title=\"$srtlbl $nclr\"></a></th>\n";
 				}
@@ -543,6 +544,21 @@ function TblCell($val="",$href="",$cla="",$img="",$sty=""){
 	$csty = ($sty)?" style=\"$sty\"":'';
 
 	echo "		<td$ccla$csty>$cval</td>\n";
+}
+
+//===================================================================
+// Generate table footer
+// Opt	class, #colulmns, text to display
+function TblFoot($class,$cols,$txt){
+?>
+	<tr class="<?= $class ?>">
+		<td colspan="<?= $cols ?>">
+			<?= $txt ?>
+
+		</td>
+	</tr>
+</table>
+<?php
 }
 
 //===================================================================
@@ -649,7 +665,7 @@ function Nettype($ip,$ip6=""){
 
 //===================================================================
 // Return Smilie based on name
-function Smilie($usr,$s=0){
+function Smilie($usr,$t='',$s=0){
 	
 	global $stslbl, $cfglbl, $dsclbl, $msglbl;
 
@@ -664,16 +680,18 @@ function Smilie($usr,$s=0){
 		return "<img src=\"img/32/port.png\"".($s?"width=\"20\"":"")." title=\"Interface $stslbl\">";
 	}else{
 		$si = ( ord($n) + ord(substr($n,1)) + ord(substr($n,-1)) + ord(substr($n,-2)) ) % 99;
-		return "<img src=\"img/usr/$si.png\"".($s?"width=\"20\"":"")." title=\"$n\">";
+		return "<img src=\"img/usr/$si.png\"".($s?"width=\"20\"":"")." title=\"$t\">";
 	}
 }
 
 //===================================================================
-// Return digital numbers
+// Return digital numbers (for stacks)
 function Digit($n){
 	$i = '';
-	foreach (str_split($n) as $d){
-		if($n > 1) $i .= "<img src=\"img/$d.png\">";
+	if($n > 1){
+		foreach (str_split($n) as $d){
+			$i .= "<img src=\"img/$d.png\">";
+		}
 	}
 	return $i;
 }
@@ -695,7 +713,7 @@ function SkewTime($istr,$var,$days){
 		$ostr = preg_replace("/$var=[0-9a-z%\+]+(&|$)/i",$repl,$istr);
 	}
 
-	return $ostr.(strpos($ostr,'sho')?'':'sho=1');
+	return $ostr.(strpos($ostr,'sho')?'':'&sho=1');
 }
 
 //===================================================================
@@ -711,18 +729,18 @@ function FileImg($f) {
 	
 	global $hislbl,$fillbl,$imglbl,$cfglbl,$cmdlbl,$mlvl;
 
-	$l  = "";
+	$l  = '';
 	$ed = 0;
 	if(preg_match("/\.(zip|tgz|tbz|tar|gz|7z|bz2|rar)$/i",$f))	{$i = "pkg"; $t = "Archive";}
-	elseif(stristr($f,".csv"))				{$i = "list";$t = "CSV $fillbl";$l = $f;}
-	elseif(stristr($f,".def"))				{$i = "geom";$t = "Device Definition";$l = "Other-Defgen.php?so=".urlencode(basename($f,".def"));}
-	elseif(stristr($f,".log"))				{$i = "note";$t = "$hislbl";$l = $f;}
-	elseif(stristr($f,".js"))				{$i = "dbmb";$t = "Javascript";$l = $f;}
-	elseif(stristr($f,".pdf"))				{$i = "pdf"; $t = "PDF $fillbl";$l = $f;}
-	elseif(stristr($f,".php"))				{$i = "php"; $t = "PHP Script";}
-	elseif(stristr($f,".patch"))				{$i = "hlth";$t = "System Patch";}
-	elseif(stristr($f,".reg"))				{$i = "nwin";$t = "Registry $fillbl";}
-	elseif(stristr($f,".xml"))				{$i = "dcub";$t = "XML $fillbl";$l = $f;$ed = 1;}
+	elseif(preg_match("/\.(csv)$/i",$f))			{$i = "list";$t = "CSV $fillbl";$l = $f;}
+	elseif(preg_match("/\.(def)$/i",$f))			{$i = "geom";$t = "Device Definition";$l = "Other-Defgen.php?so=".urlencode(basename($f,".def"));}
+	elseif(preg_match("/\.(log)$/i",$f))			{$i = "note";$t = "$hislbl";}
+	elseif(preg_match("/\.(js)$/i",$f))			{$i = "dbmb";$t = "Javascript";$l = $f;}
+	elseif(preg_match("/\.(pdf)$/i",$f))			{$i = "pdf"; $t = "PDF $fillbl";$l = $f;}
+	elseif(preg_match("/\.(php)$/i",$f))			{$i = "php"; $t = "PHP Script";}
+	elseif(preg_match("/\.(patch)$/i",$f))			{$i = "hlth";$t = "System Patch";}
+	elseif(preg_match("/\.(reg)$/i",$f))			{$i = "nwin";$t = "Registry $fillbl";}
+	elseif(preg_match("/\.(xml)$/i",$f))			{$i = "dcub";$t = "XML $fillbl";$l = $f;$ed = 1;}
 	elseif(preg_match("/\.(bmp|gif|jpg|png|svg)$/i",$f))	{$i = "img";$t = "$imglbl";$l = "javascript:pop('$f','$imglbl')";}
 	elseif(preg_match("/\.(txt|text)$/i",$f))		{$i = "abc"; $t = "TXT $fillbl";$l = $f;$ed = 1;}
 	elseif(preg_match("/[.-](cfg|conf|config)$/i",$f))	{$i = "conf";$t = "$cfglbl";$ed = 1;}

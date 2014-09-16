@@ -7,7 +7,7 @@ if( isset($_GET['print']) or isset($_GET['xls']) ){
 }elseif($debug){
 	echo "	$cmdlbl $timlbl ".round(microtime(1) - $debug,2)." $tim[s]";
 }else{
-	echo "	&copy; 2001-2014 Remo Rickli & contributors\n";
+	echo "	<span class=\"flft\">$self</span> &copy; 2001-2014 Remo Rickli & contributors\n";
 }
 ?>
 </div>

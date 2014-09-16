@@ -21,6 +21,9 @@ $type   = isset($_GET['type']) ? $_GET['type'] : "htm";
 $timest = isset($_GET['timest']) ? "checked" : "";
 $conv   = isset($_GET['conv']) ? "checked" : "";
 
+$ipmatch = "/^(orig|dev|if|nod|mon)ip$/";
+$timatch = "/^(first|last|time|(dns(6)?|if|ip(6)?|os)?update)/";
+
 // A connection to the database has to be made
 $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 ?>
@@ -34,8 +37,9 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 <form method="get" name="export" action="<?= $self ?>.php">
 
 <table class="content" >
-	<tr class="<?= $modgroup[$self] ?>1">
-		<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+	<tr class="bgmain">
+		<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+		</th>
 
 		<!-- This <th> contains the export part of the form -->
 		<td valign="top" align="center">
@@ -73,6 +77,9 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='uprcom') {
 					document.forms['export'].query.value='UPDATE devices set readcomm=<new> where readcomm=<old>';
 				}
+				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='dupdns') {
+					document.forms['export'].query.value='SELECT aname,count(*) FROM dns group by aname having( count(*) > 1);';
+				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='ipupres') {
 					document.forms['export'].query.value='UPDATE nodes set ipupdate=0';
 				}
@@ -102,6 +109,7 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 				echo "<option value=\"iptrkret\"".($exptbl=="iptrkret"?" selected":"").">$dellbl IPtrack $agelbl > $retire $tim[d]</option>\n";
 				echo "<option value=\"lnkret\"".($exptbl=="lnkret"?" selected":"").">$dellbl Links $laslbl $updlbl > $retire $tim[d]</option>\n";
 				echo "<option value=\"uprcom\"".($exptbl=="uprcom"?" selected":"").">$updlbl SNMP $realbl Community</option>\n";
+				echo "<option value=\"dupdns\"".($exptbl=="dupdns"?" selected":"").">$duplbl DNS $vallbl</option>\n";
 				echo "<option value=\"ipupres\"".($exptbl=="ipupres"?" selected":"").">$reslbl IP $updlbl</option>\n";
 				echo "<option value=\"flush\"".($exptbl=="flush"?" selected":"").">$dellbl bin-logs</option>\n";
 				echo "<option value=\"reset\"".($exptbl=="reset"?" selected":"").">$reslbl DB</option>\n";
@@ -230,7 +238,7 @@ if($isadmin and $act == "c") {
 	// HTML Override
 	elseif($type == "htm") {
 		echo "<h2>$query</h2>";
-		echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\">";
+		echo "<table class=\"content\"><tr class=\"bgsub\">";
 		for ($i = 0; $i < DbNumFields($res); ++$i) {
 			$field = DbFieldName($res, $i);
 			echo  "<th>$i $field</th>\n";
@@ -244,9 +252,9 @@ if($isadmin and $act == "c") {
 			foreach($l as $id => $field) {
 				if( $field and preg_match("/^(if|nod|mon)ip6$/",$id) ){
 					echo "<td>".(( $backend == 'Pg')?$field:inet_ntop($field))."</td>";
-				}elseif($field and $timest and  preg_match("/^(orig|dev|if|nod|mon)ip$/",$id) ){
+				}elseif($field and $timest and  preg_match($ipmatch,$id) ){
 					echo "<td>".long2ip($field)."</td>";
-				}elseif($timest and preg_match("/^(first|last|time|(if|ip|os)?update)/",$id) ){
+				}elseif($timest and preg_match($timatch,$id) ){
 					echo "<td>".date($_SESSION['timf'],$field)."</td>";
 				}else{
 					echo "<td>$field</td>";
@@ -257,7 +265,7 @@ if($isadmin and $act == "c") {
 ?>
 </table>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?>, <?= round( microtime(1) - $start,2 ) ?> <?= $tim['s'] ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?>, <?= round( microtime(1) - $start,2 ) ?> <?= $tim['s'] ?></td></tr>
 </table>
 		<?php
 	}else {
@@ -290,7 +298,7 @@ if($isadmin and $act == "c") {
 		$tbl = join(' ',$sqltbl);
 		$cnv = ($conv)?"--compatible=postgresql":"";
 		$dbf = "log/$dbname-$_SESSION[user]".(($timest)?'_'.date("Ymd_Hi"):'').".msq";
-		$dok = system("mysqldump $cnv -u$dbuser -p$dbpass $dbname $tbl > $dbf");
+		$dok = system("mysqldump $cnv -h $dbhost -u$dbuser -p$dbpass $dbname $tbl > $dbf");
 	}elseif( $backend == 'Pg'){
 		$tbl = '-t'.join(' -t',$sqltbl);
 		$dbf = "log/$dbname-$_SESSION[user]".(($timest)?'_'.date("Ymd_Hi"):'').".psq";
@@ -333,7 +341,7 @@ if($isadmin and $act == "c") {
 	DbFreeResult($res);
 
 	$res = DbQuery(GenQuery("", "x"), $dblink);
-	echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\">";
+	echo "<table class=\"content\"><tr class=\"bgsub\">";
 	for ($i = 0; $i < DbNumFields($res); ++$i) {
 		$field = DbFieldName($res, $i);
 		echo  "<th>$field</th>\n";
@@ -356,8 +364,8 @@ if($isadmin and $act == "c") {
 	$col = 0;
 	echo "<table class=\"full fixed\"><tr>\n";
 	while($tab = DbFetchRow($res)){
-		if($col == intval($_SESSION['col']/2)){echo "</tr><tr>";$col=0;}
-		echo "<td class=\"helper\">\n\n<table class=\"content\" ><tr class=\"$modgroup[$self]2\">\n";
+		if($col == intval($_SESSION['col']/2) or (!$_SESSION['col'] and $col == 4) ){echo "</tr><tr>";$col=0;}
+		echo "<td class=\"helper\">\n\n<table class=\"content\" ><tr class=\"bgsub\">\n";
 		echo "<th colspan=\"3\">$tab[0]</th><th>NULL</th><th>KEY</th><th>DEF</th></tr>\n";
 		$cres = DbQuery(GenQuery($tab[0], "c"), $dblink);
 		$row = 0;
@@ -372,11 +380,11 @@ if($isadmin and $act == "c") {
 	?>
 </table>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>2"><td>
+<tr class="bgsub"><td>
 <div style="float:right">
 
 <?php  if($recs[0]) { ?>
-<a href="?act=c&exptbl=links&sep=%3B&query=SELECT+*+FROM+<?= $tab[0] ?> limit <?= $listlim ?>"><img src="img/16/eyes.png" title="<?= $sholbl ?>"></a>
+<a href="?act=c&exptbl=links&sep=%3B&query=SELECT+*+FROM+<?= $tab[0] ?> limit <?= ($listlim)?$listlim:250 ?>&timest=on"><img src="img/16/eyes.png" title="<?= $sholbl ?>"></a>
 <?php } 
 if($isadmin) { ?>
 <a href="?act=opt&sqltbl[]=<?= $tab[0] ?>"><img src="img/16/hat2.png" title="<?= $optlbl ?>"></a>
@@ -453,8 +461,8 @@ function DbCsv($res, $sep, $quotes, $outfile, $head) {
 		$csv = "";
 		// Each element is added to the string individually
 		foreach($row as $id => $field) {
-			if(preg_match("/^(origip|ip)$/",$id) ){$field = long2ip($field);}
-			if(preg_match("/^(firstseen|lastseen|time|i[fp]update)$/",$id) ){$field = date($_SESSION['timf'],$field);}
+			if(preg_match($ipmatch,$id) ){$field = long2ip($field);}
+			if(preg_match($timatch,$id) ){$field = date($_SESSION['timf'],$field);}
 			// If quotes are wished, they are put around the element
 			if($quotes == "on") $csv .= "\"";
 			$csv .= $field;

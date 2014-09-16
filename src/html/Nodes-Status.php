@@ -2,7 +2,6 @@
 # Program: Nodes-Status.php
 # Programmer: Remo Rickli
 
-#$timeout = 1;												# Uncomment this, if you override the timeout for the mini-portscan
 $printable = 1;
 $exportxls = 0;
 
@@ -14,9 +13,13 @@ include_once ("inc/libdev.php");
 $_GET = sanitize($_GET);
 $mac = isset($_GET['mac']) ? $_GET['mac'] : "";
 $wol = isset($_GET['wol']) ? $_GET['wol'] : "";
+$wip = isset($_GET['wip']) ? $_GET['wip'] : "";
 $del = isset($_GET['del']) ? $_GET['del'] : "";
 $trk = isset($_GET['trk']) ? $_GET['trk'] : "";
+$dip = isset($_GET['dip']) ? $_GET['dip'] : "";
 $mon = isset($_GET['mon']) ? $_GET['mon'] : "";
+$shg = isset($_GET['shg']) ? "checked" : "";
+$srv = isset($_GET['srv']) ? "checked" : "";
 ?>
 <script src="inc/Chart.min.js"></script>
 
@@ -25,21 +28,34 @@ $mon = isset($_GET['mon']) ? $_GET['mon'] : "";
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th>
-MAC <?= $adrlbl ?> <input type="text" name="mac" value="<?= $mac ?>" class="m">
-</th>
-<th width="80"><input type="submit" class="button" value="<?= $sholbl ?>"></th>
-</tr></table></form><p>
+<table class="content"><tr class="bgmain">
+<td class="ctr s">
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</td>
+<td class="ctr">
+	MAC <?= $adrlbl ?>
+	<input type="text" name="mac" value="<?= $mac ?>" class="m">
+</td>
+<td class="ctr">
+<?php if($rrdcmd and $_SESSION['gsiz']){ ?>
+	<img src="img/16/grph.png" title="<?= $porlbl ?> <?= $gralbl ?>">
+	<input type="checkbox" name="shg" <?= $shg ?>>
+<?php } ?>
+</td>
+<td class="ctr s">
+	<input type="submit" class="button" value="<?= $sholbl ?>">
+</td>
+</tr>
+</table>
+</form>
+<p>
+
 <?php
 }
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if ($trk){
 	$mac = $trk;
 	if($isadmin){
-		$query	= GenQuery('nodes','u',"mac = '$mac'",'','',array('ipchanges'),array(),array('0') );
-		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$mac ipchanges $updlbl OK</h5>";}
 		$query	= GenQuery('nodes','u',"mac = '$mac'",'','',array('ifchanges'),array(),array('0') );
 		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$mac ifchanges $updlbl OK</h5>";}
 		$query	= GenQuery('iptrack','d','','','',array('mac'),array('='),array($mac) );
@@ -49,47 +65,40 @@ if ($trk){
 	}else{
 		echo $nokmsg;
 	}
+}elseif ($dip){
+	$mac = $dip;
+	if($isadmin){
+		$query	= GenQuery('nodarp','d','','','',array('mac'),array('='),array($mac) );
+		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$mac ARP $dellbl OK</h5>";}
+		$query	= GenQuery('nodnd','d','','','',array('mac'),array('='),array($mac) );
+		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$mac ND $dellbl OK</h5>";}
+	}else{
+		echo $nokmsg;
+	}
 }
 
 if ($mac){
-	$query	= GenQuery('nodes','s','nodes.*,location,contact,snmpversion','','',array('mac'),array('='),array($mac),array(),'LEFT JOIN devices USING (device)');
-	$res	= DbQuery($query,$link);
-	$nnod	= DbNumRows($res);
-	while( ($n = DbFetchRow($res)) ){
-		$name		= preg_replace("/^(.*?)\.(.*)/","$1", $n[0]);
-		$ip		= long2ip($n[1]);
-		if(!$name) $name = $ip;
-		$ip6		= ($n[16])?DbIPv6($n[16]):'';
-		$img		= Nimg($n[3]);
-		$fs		= date($_SESSION['timf'],$n[4]);
-		$ls		= date($_SESSION['timf'],$n[5]);
-		list($fc,$lc)	= Agecol($n[4],$n[5],0);
-		$wasup		= ($n[5] > time() - $rrdstep*2)?1:0;
-		$ud 		= urlencode($n[6]);
-		$ui 		= urlencode($n[7]);
-		$au		= date($_SESSION['timf'],$n[12]);
-		list($a1c,$a2c) = Agecol($n[12],$n[12],0);
-		$fu		= date($_SESSION['timf'],$n[21]);
-		list($f1c,$f2c) = Agecol($n[21],$n[21],0);
-		$l		= explode($locsep, $n[23]);
+	$query	= GenQuery('nodes','s','nodes.*,type,location,contact,snmpversion,icon,sysobjid,linktype,iftype,ifdesc,alias,ifstat,speed,duplex,pvid,lastchg,inoct,outoct,inerr,outerr,indis,outdis,inbrc,dinoct,doutoct,dinerr,douterr,dindis,doutdis,dinbrc','','',array('mac'),array('='),array($mac),array(),'LEFT JOIN devices USING (device) LEFT JOIN interfaces USING (device,ifname)');
+	$nres	= DbQuery($query,$link);
+	$nnod	= DbNumRows($nres);
+	while( ($n = DbFetchRow($nres)) ){
+		$ouicon	= Nimg($n[1]);
+		$dur	= intval(($n[3]-$n[2])/86400);
+		$wasup	= ($n[3] > time() - $rrdstep*2)?1:0;
+		$ud 	= urlencode($n[4]);
+		$ui 	= urlencode($n[5]);
+		$loc	= explode($locsep, $n[13]);
+		$lit	= '';
+		list($firstcol,$lastcol)  = Agecol($n[2],$n[3],0);
+		list($ifchgcol,$ifchgcol) = Agecol($n[8],$n[8],1);
+		list($devnd,$vndic)	  = DevVendor($n[17],substr($n[16],2,1));
+		list($ifimg,$iftyp)	  = Iftype($n[19]);
+		list($ifbg,$ifst)	  = Ifdbstat($n[22]);
+		list($lnkhgt,$lnkcol)	  = LinkStyle( $n[23],0 );
 
-		if($n[7]){
-			$query	= GenQuery('interfaces','s','*','','',array('device','ifname'),array('=','='),array($n[6],$n[7]),array('AND') );
-			$res	= DbQuery($query,$link);
-			if (DbNumRows($res) == 1) {
-				$if	= DbFetchRow($res);
-				list($ifbg,$ifst)   = Ifdbstat($if[8]);
-				list($ifimg,$iftyp) = Iftype($if[4]);
-			}else{
-				echo "<h4>IF DB $errlbl</h4>";
-			}
-			DbFreeResult($res);
-			$iu		= date($_SESSION['timf'],$n[10]);
-			list($i1c,$i2c) = Agecol($n[10],$n[10],1);
-		}
 		$vl[2] = "-";
-		if($n[8] and $n[9] > 255){
-			$query	= GenQuery('vlans','s','*','','',array('device','vlanid'),array('=','='),array($n[6],$n[8]),array('AND') );
+		if($n[6] and preg_match('/[A-L]/',$n[7]) ){
+			$query	= GenQuery('vlans','s','*','','',array('device','vlanid'),array('=','='),array($n[4],$n[6]),array('AND') );
 			$res	= DbQuery($query,$link);
 			if (DbNumRows($res) == 1) {
 				$vl = DbFetchRow($res);
@@ -98,207 +107,315 @@ if ($mac){
 			}
 			DbFreeResult($res);
 		}
-	
-		$query	= GenQuery('monitoring','s','test,status','','',array('monip'),array('='),array($n[1]) );
-		$res	= DbQuery($query,$link);
-		if (DbNumRows($res) == 1) {
-			$most = DbFetchRow($res);
-			list($statbg,$stat) = StatusBg(1,($most[0])?1:0,$most[1],'imga');
-		}else{
-			$statbg = 'imga';
-			$stat   = '';
-		}
-		DbFreeResult($res);
 ?>
 
-<table class="full fixed"><tr><td class="helper">
-
-<h2><?= $sumlbl ?></h2><p>
-<table class="content"><tr>
-<th class="<?= $statbg ?>" width="80"><a href="?mac=<?= $n[2] ?>"><img src="img/oui/<?= $img ?>.png" title="<?= $stat ?>"></a><br><?= $name ?></th>
-<th class="<?= $modgroup[$self] ?>2">
-
-<div  style="float:left">
-<?php
-		if(preg_match("/dsk/",$_SESSION['group']) ){
-			echo "<a href=\"Nodes-Stolen.php?na=$n[0]&ip=$ip&stl=$n[2]&dev=$ud&ifn=$ui\"><img src=\"img/16/step.png\" title=\"Mark as stolen!\"></a>";
-			echo "<a href=\"$_SERVER[PHP_SELF]?wol=$n[2]\"><img src=\"img/16/exit.png\" title=\"WOL $srvlbl\"></a>";
-		}
-		$src = $mac.(($n[0] == "" or $n[0] == "-")?"":"|$n[0]").(($ip)?"|^$ip$":"");
-?>
-<a href="Monitoring-Events.php?in[]=source&in[]=info&op[]=~&op[]=~&st[]=<?= $src ?>&st[]=<?= $src ?>&co[]=OR"><img src="img/16/bell.png" title="<?= $msglbl ?>"></a>
-
-</div><div  style="float:right">
-
+<table class="full"><tr>
+<td class="helper xl">
+	<table class="content">
+		<tr class="bgsub">
+			<td colspan="2">
+				<h2>Node
+				<div  class="frgt">
 <?php
 		if($isadmin){
-			if($n[1]){
-				if(!isset($most) ){
-					if ($mon == 1){
-						$mona  = ($n[0])?$n[0]:$ip;
-						echo AddRecord('monitoring',"name='$mona'","name,monip,class,test,device,depend","'$mona','$n[1]','node','ping','".DbEscapeString($n[6])."','".DbEscapeString($n[6])."'");
-					}else{
-						echo "<a href=\"?mac=$mac&mon=1\"><img src=\"img/16/bino.png\" title=\"Monitor $addlbl\"></a>";
-					}
-				}else{
-					echo "<a href=\"Monitoring-Setup.php?in[]=monip&op[]=%3D&st[]=$ip\">".TestImg($most[3])."</a>";
-				}
+			echo "				<a href=\"?trk=$n[0]\"><img src=\"img/16/bdis.png\" onclick=\"return confirm('$dellbl IF/IP $chglbl  $n[0]?')\" title=\"$dellbl IF/IP $chglbl\"></a>";
+			echo "				<a href=\"?dip=$n[0]\"><img src=\"img/16/glob.png\" onclick=\"return confirm('$dellbl IP $adrlbl  $n[0]?')\" title=\"$dellbl IP $adrlbl\"></a>";
+			echo "				<a href=\"?del=$n[0]\"><img src=\"img/16/bcnl.png\" onclick=\"return confirm('$dellbl $n[0] ?')\" title=\"$dellbl Node!\"></a>";
+		}
+?>
+				</div>
+				</h2>
+			</td>
+		</tr>
+		<tr class="txta">
+			<td class="imga s b">
+				MAC <?= $adrlbl ?>
+			</td>
+			<td class="drd">
+				<?= rtrim(chunk_split($n[0],2,"-"),"-") ?><br>
+				<?= rtrim(chunk_split($n[0],2,":"),":") ?><br>
+				<?= rtrim(chunk_split($n[0],4,"."),".") ?>&nbsp;
+				<a href="Monitoring-Events.php?in[]=info&op[]=~&st[]=<?= $n[0] ?>" title="MAC ~ Monitoring-Events" class="frgt"><img src="img/16/bell.png"></a>
+				<a href="Nodes-List.php?in[]=mac&op[]==&st[]=<?= $n[0] ?>" title="MAC = Nodes-List" class="frgt"><img src="img/16/nods.png"></a>
+			</td>
+		</tr>
+		<tr class="txtb">
+			<td class="imgb s b">
+				<?= $venlbl ?>
+			</td>
+			<td>
+				<a href="http://www.google.com/search?q=<?= urlencode($n[1]) ?>&btnI=1" target="window"><img src="img/oui/<?= $ouicon ?>.png" title="Google <?= $venlbl ?>"></a>
+				<a href="Nodes-List.php?in[]=oui&op[]==&st[]=<?= urlencode($n[1]) ?>"><?= $n[1] ?></a>
+				<?= ($ouicon == 'vm')?"<a href=\"Devices-Modules.php?in[]=hw&op[]==&st[]=$n[2]\"><img src=\"img/16/node.png\" title=\"VM, Devices-Modules\" class=\"frgt\"></a>":""; ?>
+			</td>
+		</tr>
+		<tr class="txta">
+			<td class="imga s b">
+				<?= $dsclbl ?>
+			</td>
+			<td class="ctr">
+				<span  class="genpad" style="background-color:#<?= $firstcol ?>" title="<?= $fislbl ?>"><a href="Nodes-List.php?in[]=firstseen&op[]==&st[]=<?= $n[2] ?>"><?= date($_SESSION['timf'],$n[2]) ?></a></span>
+				<?= Bar($dur,0,'mi',"$dur $tim[d]") ?>
+				<span  class="genpad" style="background-color:#<?= $lastcol ?>" title="<?= $laslbl ?>"><a href="Nodes-List.php?in[]=lastseen&op[]==&st[]=<?= $n[3] ?>"><?= date($_SESSION['timf'],$n[3]) ?></a></span>
+				<?= ($wasup)?"<img src=\"img/16/flas.png\" title=\"$stco[100]\" class=\"frgt\">":"<img src=\"img/16/bcls.png\" title=\"$stco[160]\" class=\"frgt\">"; ?>
+			</td>
+		</tr>
+		<tr class="txtb">
+			<td class="imgb s b">
+				<?= $usrlbl ?>
+			</td>
+			<td>
+				<?= $n[10] ?>
+			</td>
+		</tr>
+		<tr>
+			<td class="imga ctr b" colspan="2">
+				IP <?= $adrlbl ?>
+			</td>
+		</tr>
+<?php
+		$irow   = 1;
+		$query	= GenQuery('nodarp','s','nodarp.*,aname,dnsupdate,test,status','','',array('mac'),array('='),array($mac),array(),'LEFT JOIN dns USING (nodip) LEFT JOIN monitoring on (nodip = monip)' );
+		$res	= DbQuery($query,$link);
+		while( ($arp = DbFetchRow($res)) ){
+			if ($irow % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+			$ip                 = long2ip($arp[1]);
+			list($statbg,$stat) = StatusBg(1,($arp[13])?1:0,$arp[14]);
+			list($iuc,$iuc)     = Agecol($arp[3],$arp[3],1);
+			TblRow($bg);
+?>
+			<td class="<?= $statbg ?>" colspan="2">
+				<?= $irow ?>&nbsp;
+				<a href="Nodes-List.php?in[]=nodip&op[]==&st[]=<?= $ip ?>" title="<?= $updlbl ?> <?= date($_SESSION['timf'],$arp[3]) ?><?= ($arp[9])?", Device:$arp[9]":"" ?>, Nodes-List"><?= $ip ?></a>
+				<strong><a href="Nodes-List.php?in[]=aname&op[]==&st[]=<?= $arp[11] ?>" title="<?= $updlbl ?> <?= date($_SESSION['timf'],$arp[12]) ?>, Nodes-List"><?= $arp[11] ?></a></strong>
+
+				<a href="Monitoring-Events.php?in[]=info&op[]=~&st[]=<?= $ip ?>" title="IP ~ Monitoring-Events" class="frgt"><img src="img/16/bell.png"></a>
+				<?= ($stat)?"<a href=\"Monitoring-Setup.php?in[]=monip&op[]=%3D&st[]=$ip\" class=\"frgt\">".TestImg($arp[13])."</a>":"" ?>
+				<a href="Nodes-Toolbox.php?Dest=<?= $ip ?>" class="frgt"><img src="img/16/dril.png" title="Nodes-Toolbox"></a>
+				<a href="Nodes-Stolen.php?na=<?= $arp[11] ?>&ip=<?= $ip ?>&stl=<?= $n[0] ?>&dev=<?= $ud ?>&ifn=<?= $ui ?>" title="Nodes-Stolen <?= $addlbl ?>" class="frgt"><img src="img/16/step.png"></a>
+				<a href="?wol=<?= $n[0] ?>&wip=<?= $arp[1] ?>"  title="WoL <?= $srvlbl ?>" class="frgt"><img src="img/16/exit.png"></a>
+			</td>
+		</tr>
+<?php
+			$irow++;
+		}
+		DbFreeResult($res);
+
+		$irow   = 1;
+		$query	= GenQuery('nodnd','s','nodnd.*,aaaaname,dns6update','','',array('mac'),array('='),array($mac),array(),'LEFT JOIN dns6 USING (nodip6)' );
+		$res	= DbQuery($query,$link);
+		while( ($arp = DbFetchRow($res)) ){
+			if ($irow % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+			$ip                 = DbIPv6($arp[1]);
+			list($statbg,$stat) = StatusBg(1,($arp[13])?1:0,$arp[14]);
+			list($iuc,$iuc)     = Agecol($arp[3],$arp[3],1);
+			TblRow($bg);
+?>
+			<td colspan="2">
+				<?= $irow ?>&nbsp;
+				<a href="Nodes-List.php?in[]=nodip6&op[]==&st[]=<?= $ip ?>" title="<?= $updlbl ?> <?= date($_SESSION['timf'],$arp[3]) ?><?= ($arp[9])?", Device:$arp[9]":"" ?>, Nodes-List"><?= $ip ?></a>
+				<strong><a href="Nodes-List.php?in[]=aaaaname&op[]==&st[]=<?= $arp[11] ?>" title="<?= $updlbl ?> <?= date($_SESSION['timf'],$arp[12]) ?>, Nodes-List"><?= $arp[11] ?></a></strong>
+
+				<a href="Monitoring-Events.php?in[]=info&op[]=~&st[]=<?= $ip ?>" title="IP ~ Monitoring-Events" class="frgt"><img src="img/16/bell.png"></a>
+			</td>
+		</tr>
+<?php
+			$irow++;
+		}
+		DbFreeResult($res);
+
+		TblRow('imga');
+?>
+			<td class="ctr b" colspan="2">
+				<?= $metlbl ?> <?= $hislbl ?><p>
+				<?php MetricChart("meth",4, $n[7]); ?><br>
+				<span class="drd">0 = FD, 1 = HD</span><br>
+				<span class="blu">1 = 10M, 2 = 100M, 3 = 1G, 4 = 10G</span>
+			</td>
+		</tr>
+	</table>
+</td><td class="ctr l">
+<?php
+		if( $n[18] ){
+			$query	= GenQuery('links','s','neighbor,type,contact,icon','','',array('links.device','ifname'),array('=','='),array($n[4],$n[5]),array('AND'),'LEFT JOIN devices on (neighbor = devices.device)' );
+			$res	= DbQuery($query,$link);
+			while( ($neb = DbFetchRow($res)) ){
+?>
+	<div  class="genpad imga">
+		<a href="Devices-Status.php?dev=<?= urlencode($neb[0]) ?>"><img src="img/dev/<?= $neb[3] ?>.png" title="<?= $neb[1] ?>, <?= $conlbl ?> <?= $neb[2] ?>, Devices-Status"></a>
+		<a href="Devices-List.php?in[]=device&op[]==&st[]=<?= urlencode($neb[0]) ?>" title="Devices-List"><strong><?= $neb[0] ?></strong></a><br>
+		<?= DecFix($n[23]) ?> - <?= $n[24] ?>
+	</div>
+<?php
 			}
-			echo "<a href=\"Devices-Status.php?dev=".urlencode($name)."&ip=$ip&sn=$n[2]&ina=Et1&mac=$n[2]&spd=$if[9]&ico=svan&loc=".urlencode($n[23])."&con=".urlencode($n[24])."\"><img src=\"img/16/sys.png\" title=\"$addlbl Device\"></a>";
-			echo "<a href=\"?trk=$n[2]\"><img src=\"img/16/bdis.png\" onclick=\"return confirm('$dellbl IF/IP $chglbl  $n[2]?')\" title=\"$dellbl IF/IP $chglbl\"></a>";
-			echo "<a href=\"?del=$n[2]\"><img src=\"img/16/bcnl.png\" onclick=\"return confirm('$dellbl $n[2] ?')\" title=\"$dellbl Node!\"></a>";
-		}
-?>
-
-</div>
-
-</th></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">MAC <?= $adrlbl ?></th><td class="txta">
-<?php
-		if($img == 'vm') echo "<a href=\"Devices-Modules.php?in[]=hw&op[]==&st[]=$n[2]\"><img src=\"img/16/node.png\" title=\"VM\"></a>";
-?>
-<b class="drd"><?= rtrim(chunk_split($n[2],2,"-"),"-") ?></b> -
-<b class="drd"><?= rtrim(chunk_split($n[2],2,":"),":") ?></b> -
-<b class="drd"><?= rtrim(chunk_split($n[2],4,"."),".") ?></b>
-</td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">NIC <?= $venlbl ?></th>	<td class="txtb"><a href="http://www.google.com/search?q=<?= urlencode($n[3]) ?>&btnI=1" target="window"><?= $n[3] ?></a></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $dsclbl ?></th>	<th class="txta">
-<span  class="genpad" style="background-color:#<?= $fc ?>" title="<?= $fislbl ?>"> <?= $fs ?> </span>
-<?= Bar( intval(($n[5]-$n[4])/86400),0,'mi',$tim['d']) ?>
-<span  class="genpad" style="background-color:#<?= $lc ?>" title="<?= $laslbl ?>"> <?= $ls ?> </span>
-</th></tr>
-
-<tr><th class="<?= $modgroup[$self] ?>2">IP <?= $adrlbl ?></th>	<td class="txta">
-
-<div style="float:right;margin:2px 2px">
-<a href="Nodes-Toolbox.php?Dest=<?= $ip ?>"><img src="img/16/dril.png" title="Toolbox"></a>
-</div>
-
-<?php
-		if($n[1] and $wasup and $isadmin) { ?>
-<div style="float:right;margin:2px 2px">
-<form method="post" name="nedi" action="System-NeDi.php">
-<input type="hidden" name="mde" value="d">
-<input type="hidden" name="sed" value="a">
-<input type="hidden" name="vrb" value="v">
-<input type="hidden" name="opt" value="<?= $ip ?>">
-<input type="image" src="img/16/radr.png" value="Submit" title="<?=  (($verb1)?"$dsclbl $tim[n]":"$tim[n] $dsclbl")  ?>">
-</form>
-</div>
-
-<div style="float:right;margin:2px 2px">
-<form method="post" name="nedi" action="System-NeDi.php">
-<input type="hidden" name="mde" value="s">
-<input type="hidden" name="opt" value="<?= $ip ?>">
-<input type="hidden" name="vrb" value="v">
-<input type="image" src="img/16/find.png" value="Submit" title="Scan Node">
-</form>
-</div>
-<?php
-		}
-?>
-
-<span class="blu"><?= $ip ?></span> DNS <?= $tim['n']?>: <?= ($n[1])?gethostbyaddr($ip):"" ?>
-<br><span class="prp"><?= $ip6 ?></span>
-</td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">IP <?= $updlbl ?></th>	<td class="txtb"><span  class="genpad" style="background-color:#<?= $a1c ?>"> <?= $au ?> </span> &nbsp; (<?= $n[13] ?> <?= $chglbl ?> / <?= $n[14] ?> <?= $loslbl ?> / <?= $n[15] ?> ARP <?= $vallbl ?>)</td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">Device</th>		<td class="txta"><a href="Devices-Status.php?dev=<?= $ud ?>&pop=on"><img src="img/16/sys.png" title="<?= $n[6] ?> <?= $stalbl ?>"></a><b><?= $n[6] ?></b> <img src="img/16/home.png" title="<?= $loclbl ?>"> <?= $l[1] ?> <?= $l[2] ?> <img src="img/16/ucfg.png" title="<?= $conlbl ?>"> <?= $n[24] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">Interface</th>		<td class="<?= ($ifbg)?$ifbg:"txtb" ?>"><img src="img/<?= $ifimg ?>" title="<?= $iftyp ?> - <?= $ifst ?>"><b><?= $n[7] ?></b> (<?= DecFix($if[9]) ?>-<?= $if[10] ?>) <i><?= $if[7] ?> <?= $if[20] ?></i>, <?= $stalbl ?> <?= $chglbl ?> <?= date($_SESSION['timf'],$if[26])?> </td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">Vlan</th>		<td class="txta"><?= $n[8] ?> <?= $vl[2] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $laslbl ?></th>	<td class="txtb"><?= $trflbl ?> <?= DecFix($if[16]) ?>/<?= DecFix($if[18]) ?> <?= $errlbl ?> <?= DecFix($if[17]) ?>/<?= DecFix($if[19]) ?> Discards <?= DecFix($if[22]) ?>/<?= DecFix($if[23]) ?> Broadcasts <?= DecFix($if[25]) ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $totlbl ?></th>	<td class="txta"><?= $trflbl ?> <?= DecFix($if[12]) ?>/<?= DecFix($if[14]) ?> <?= $errlbl ?> <?= DecFix($if[13]) ?>/<?= DecFix($if[15]) ?> Discards <?= DecFix($if[20]) ?>/<?= DecFix($if[21]) ?> Broadcasts <?= DecFix($if[24]) ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">IF <?= $updlbl ?></th>	<td class="txtb"><span  class="genpad" style="background-color:#<?= $i1c ?>"> <?= $iu ?> </span> &nbsp; - <?= $chglbl ?>: <?= $n[11] ?> - <?= ($n[9] < 255)?"SNR ".Bar($n[9],-30,'mi')."$n[9]db":"Metric $n[9]" ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $usrlbl ?></th>	<td class="txta"><?= $n[22] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">TCP <?= $porlbl ?></th>		<td class="txtb"><?= $n[17] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">UDP <?= $porlbl ?></th>		<td class="txta"><?= $n[18] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $typlbl ?>/OS</th>	<td class="txtb"><?= $n[19] ?> / <?= $n[20] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">OS <?= $updlbl ?></th>	<td bgcolor=#<?= $f1c ?>><?= $fu ?></td></tr>
-
-</table>
-
-</td><td class="helper">
-
-<?php
-		flush();
-		if($n[1]){
-?>
-<h2><?= $srvlbl ?></h2><p>
-<table class="content"><tr>
-<th class="<?= $modgroup[$self] ?>2" width="80"><img src="img/32/nwin.png"><br>Netbios</th><td class="txta"><?= (($wasup)?NbtStat($ip):"-") ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><a href="http://<?= $ip ?>" target="window"><img src="img/32/glob.png"></a><br>HTTP</th>
-<td class="txtb"><?= (($wasup)?CheckTCP($ip,'80',"GET / HTTP/1.0\r\n\r\n"):"-") ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><a href="https://<?= $ip ?>" target="window"><img src="img/32/glok.png"></a><br>HTTPS</th>
-<td class="txta"><?= (($wasup)?CheckTCP($ip,'443',''):"-") ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><a href="ssh://<?= $ip ?>"><img src="img/32/lokc.png"></a><br>SSH</th>
-<td class="txtb"><?= (($wasup)?CheckTCP($ip,'22',''):"-") ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><a href="telnet://<?= $ip ?>"><img src="img/32/loko.png"></a><br>Telnet</th>
-<td class="txta"><?= (($wasup)?CheckTCP($ip,'23','\n'):"-") ?></td></tr>
-</table>
-<?php
 		}else{
-			echo "<h4>No IP!</h4>";
-		}
-		echo "</td></tr></table>";
+			echo "	<h2>".DecFix($n[23])." - $n[24]</h2>\n";
+		}	
 ?>
-
-<?php		if(($n[25]) and $rrdcmd){?>
-<table class="full fixed">
-<tr><td class="helper" align="center">
-
-<h2><?= $n[6] ?>-<?= $n[7] ?> <?= $gralbl ?></h2>
-<?php IfGraphs($ud, $ui, $if[9], $_SESSION['gsiz']); ?>
-
-</td></tr>
-</table>
-<?php		} ?>
-
-<table class="full fixed">
-<tr><td class="helper" align="center">
-
-<h2><?= $stslbl ?> <?= $totlbl ?> / <?= $laslbl ?></h2>
-<?php IfRadar('radtot','4','248',$if[12],$if[14],$if[13],$if[15],$if[20],$if[21],$if[24],1); ?>
-
-<?php IfRadar('radlast','4','284',$if[16],$if[18],$if[17],$if[19],$if[22],$if[23],$if[25],1); ?>
-
-</td><td class="helper" align="center">
-
-<h2>Nodemap</h2>
-<a href="Topology-Map.php?in[]=mac&op[]=%3D&st[]=<?=$n[2] ?>&tit=<?= urlencode($n[0]) ?>+Map&dim=800x200&fmt=png&lev=6&mde=f&xo=-200&len=400&lit=w&lal=160&pos=P&ifi=on&ipd=on&loo=on"><img  class="genpad" src="inc/drawmap.php?dim=400x200&in[]=mac&op[]==&st[]=<?= $n[2]?>&mde=f&lev=6&xo=-100&pos=s&ifi=on&len=150&lit=w&ipd=on&loo=on"></a>
-</td></tr>
-</table>
+	<p>
+	<div  class="genpad ctr m" style="background-color:#<?= $ifchgcol ?>" title="<?= $cnclbl ?> <?= $updlbl ?>"><a href="Nodes-List.php?in[]=ifupdate&op[]==&st[]=<?= $n[8] ?>"><?= date($_SESSION['timf'],$n[8]) ?></a></div>
+	<div style="background-color:<?= $lnkcol ?>;height:<?= ($lnkhgt*4) ?>px;"></div>
+	<?php if($shg) IfGraphs($ud, $ui, $n[23],4); ?>
+</td><td class="helper xl">
+	<table class="content">
+		<tr class="bgsub">
+			<td colspan="2">
+				<h2>Device</h2>
+			</td>
+		</tr>
+		<tr class="txta">
+			<td class="imga s b">
+				<?= $namlbl ?>
+			</td>
+			<td>
+				<a href="Devices-Status.php?dev=<?= $ud ?>&pop=on"><img src="img/dev/<?= $n[16] ?>.png" title="Devices-Status"></a>
+				<a href="Devices-List.php?in[]=device&op[]==&st[]=<?= $ud ?>" title="Devices-List"><strong><?= $n[4] ?></strong></a>
+			</td>
+		</tr>
+		<tr class="txtb">
+			<td class="imgb s b">
+				<?= $typlbl ?>
+			</td>
+			<td>
+				<a href="http://www.google.com/search?q=<?= urlencode($n[17]) ?>&btnI=1" target="window"><img src="img/oui/<?= $vndic ?>.png" title="<?= $devnd ?>"></a>
+				<a href="Devices-List.php?in[]=type&op[]==&st[]=<?= urlencode($n[12]) ?>" title="Devices-List"><?= $n[12] ?></a>
+			</td>
+		</tr>
+		<tr class="txta">
+			<td class="imga s b">
+				<?= $conlbl ?>
+			</td>
+			<td>
+				<a href="Devices-List.php?in[]=contact&op[]==&st[]=<?= urlencode($n[14]) ?>"><?= $n[14] ?></a>
+			</td>
+		</tr>
+		<tr class="txtb">
+			<td class="imgb s b">
+				<?= $loclbl ?>
+			</td>
+			<td>
+				<?= $loc[1] ?>,<?= $loc[0] ?> <?= $loc[2] ?>, <?= $place['f'] ?> <?= $loc[3] ?>
+			</td>
+		</tr>
+		<tr class="<?= ($ifbg)?$ifbg:"txtb" ?>">
+			<td class="imga s b">
+				<?= $porlbl ?>
+			</td>
+			<td>
+				<img src="img/<?= $ifimg ?>" title="<?= $iftyp ?> - <?= $ifst ?>, <?= $laslbl ?> <?= $stalbl ?> <?= $chglbl ?> <?= date($_SESSION['timf'],$n[26]) ?>">
+				<strong><?= $n[5] ?></strong> <?= $n[21] ?> <span class="gry"><?= $n[20] ?></span>
+			</td>
+		</tr>
+		<tr class="txtb">
+			<td class="imgb s b">
+				Vlan
+			</td>
+			<td>
+				<a href="Devices-Vlans.php?in[]=vlanid&op[]==&st[]=<?= $n[6] ?>"><?= $n[6] ?></a> - <?= $vl[2] ?>
+			</td>
+		</tr>
+<?php
+		TblRow('imga');
+?>
+			<td class="ctr b" colspan="2">
+				<?= $stslbl ?> <?= $totlbl ?> / <?= $laslbl ?><p>
+				<div class="full ctr">
+					<?php IfRadar('radtot',4,'248',$n[27],$n[28],$n[29],$n[30],$n[31],$n[32],$n[33],1); ?>
+					<?php IfRadar('radlast',4,'284',$n[34],$n[35],$n[36],$n[37],$n[38],$n[39],$n[40],1); ?>
+				</div>
+			</td>
+		</tr>
+	</table>
+</td>
+</tr></table>
 
 <table class="full fixed">
 <tr><td class="helper">
 
-<h2>IP <?= $chglbl ?></h2>
+	<h2>IP <?= $chglbl ?></h2>
 
 <?php
-		$query	= GenQuery('iptrack','s','*','ipupdate','',array('mac'),array('='),array($n[2]) );
+		$query	= GenQuery('iptrack','s','*','ipupdate','',array('mac'),array('='),array($n[0]) );
 		$res	= DbQuery($query,$link);
 		if( DbNumRows($res) ){
 ?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
-<th colspan=2><img src="img/16/clock.png"><br><?= $updlbl ?></th>
-<th><img src="img/16/abc.png"><br><?= $namlbl ?></th>
-<th><img src="img/16/net.png"><br>IP <?= $adrlbl ?></th>
-</table>
-<div class="scroller">
-<table class="content" >
+	<table class="content">
+		<tr class="bgsub">
+			<th colspan="2"><img src="img/16/clock.png"><br><?= $updlbl ?></th>
+			<th><img src="img/16/abc.png"><br><?= $namlbl ?></th>
+			<th><img src="img/16/net.png"><br>IP <?= $adrlbl ?></th>
+		</tr>
+	</table>
+	<div class="scroller">
+	<table class="content" >
 <?php
 			$row = 0;
-			while( $l = DbFetchRow($res) ){
+			while( $r = DbFetchRow($res) ){
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
-				$lip = long2ip($l[3]);
-				echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-				echo "$row</th><td>". date($_SESSION['timf'],$l[1]) ."</td><td>$l[2]</td><td><a href=\"Nodes-List.php?in[]=nodip&op[]==&st[]=$lip\">$lip</a></td></tr>\n";
+				$lip = long2ip($r[3]);
+				echo "		<tr class=\"$bg\">\n";
+				echo "			<td class=\"$bi ctr b\">\n				$row\n			</td>\n";
+				echo "			<td>\n				".date($_SESSION['timf'],$r[1]) ."\n			</td>\n";
+				echo "			<td>\n				$r[2]\n			</td>\n";
+				echo "			<td>\n				<a href=\"Nodes-List.php?in[]=nodip&op[]==&st[]=$lip\">$lip</a>\n			</td>\n";
+				echo "		</tr>\n";
 			}
 ?>
-</table>
-</div>
-<table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> IP <?= $chglbl ?></td></tr>
-</table>
+	</table>
+	</div>
+	<table class="content">
+		<tr class="bgsub"><td><?= $row ?> IP <?= $chglbl ?></td></tr>
+	</table>
+<?php
+		}else{
+?>
+	<h5><?= $nonlbl ?></h5>
+<?php
+		}
+		DbFreeResult($res);
+?>
+
+</td><td class="helper">
+
+	<h2>IF <?= $chglbl ?></h2>
+
+<?php
+		$query	= GenQuery('iftrack','s','*','ifupdate','',array('mac'),array('='),array($n[0]) );
+		$res	= DbQuery($query,$link);
+		if( DbNumRows($res) ){
+?>
+	<table class="content">
+		<tr class="bgsub">
+			<th colspan="2"><img src="img/16/clock.png"><br><?= $updlbl ?></th>
+			<th><img src="img/16/dev.png"><br>Device</th>
+			<th><img src="img/16/port.png"><br>IF</th>
+			<th><img src="img/16/vlan.png"><br>Vlan</th>
+		</tr>
+	</table>
+	<div class="scroller">
+	<table class="content" >
+<?php
+			$row = 0;
+			while( $r = DbFetchRow($res) ){
+				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+				$row++;
+				$utd = rawurlencode($r[2]);
+				$uti = rawurlencode($r[3]);
+				echo "		<tr class=\"$bg\">\n";
+				echo "			<td class=\"$bi ctr b\">\n				$row\n			</td>\n";
+				echo "			<td>\n				". date($_SESSION['timf'],$r[1]) ."\n			</td>\n";
+				echo "			<td>\n				<a href=\"Devices-Status.php?dev=$utd&shp=on\">$r[2]</a>\n			</td>\n";
+				echo "			<td>\n				<a href=\"Nodes-List.php?in[]=device&op[]==&st[]=$utd&co[]=AND&in[]=ifname&op[]==&st[]=$uti\">$r[3]</a>\n			</td>\n";
+				echo "			<td>\n				$r[4]\n			</td>\n";
+				echo "		</tr>\n";
+			}
+?>
+	</table>
+	</div>
+	<table class="content">
+		<tr class="bgsub"><td><?= $row ?> IF <?= $chglbl ?></td></tr>
+	</table>
 <?php
 		}else{
 ?>
@@ -307,71 +424,14 @@ if ($mac){
 		}
 		DbFreeResult($res);
 ?>
-</td><td class="helper">
 
-<h2>IF <?= $chglbl ?></h2>
-
-<?php
-unset($res);
-		$query	= GenQuery('iftrack','s','*','ifupdate','',array('mac'),array('='),array($n[2]) );
-		$res	= DbQuery($query,$link);
-		if( DbNumRows($res) ){
-?>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
-<th colspan=2><img src="img/16/clock.png"><br><?= $updlbl ?></th>
-<th><img src="img/16/dev.png"><br>Device</th>
-<th><img src="img/16/port.png"><br>IF</th>
-<th><img src="img/16/vlan.png"><br>Vlan</th>
-<th><img src="img/16/dcal.png"><br>Metric</th>
-</table>
-<div class="scroller">
-<table class="content" >
-<?php
-			$row = 0;
-			while( $l = DbFetchRow($res) ){
-				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
-				$row++;
-				$utd = rawurlencode($l[2]);
-				$uti = rawurlencode($l[3]);
-				echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-				echo "$row</th><td>". date($_SESSION['timf'],$l[1]) ."</td>\n";
-				echo "<td><a href=\"Devices-Status.php?dev=$utd&shp=on\">$l[2]</a></td><td>";
-				echo "<a href=\"Nodes-List.php?in[]=device&op[]==&st[]=$utd&co[]=AND&in[]=ifname&op[]==&st[]=$uti\">$l[3]</td><td>$l[4]</td><td>$l[5]</td></tr>\n";
-			}
-?>
-</table>
-</div>
-<table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> IF <?= $chglbl ?></td></tr>
-</table>
-
-<?php
-		}else{
-?>
-<h5><?= $nonlbl ?></h5>
-<?php
-		}
-		#DbFreeResult($res); If uncommented PHP yells: mysql_fetch_row(): 22 is not a valid MySQL result resource wtf?????
-?>
 </td></tr></table>
 <?php
 	}
-}elseif ($wol){
+	DbFreeResult($nres);
+}elseif ($wol and $wip){
 	if(preg_match("/dsk/",$_SESSION['group']) ){
-		$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-		$query	= GenQuery('nodes','s','*','','',array('mac'),array('='),array($wol));
-		$res	= DbQuery($query,$link);
-		$nnod	= DbNumRows($res);
-		if ($nnod != 1) {
-			echo "<h4>$wol: $nnod $vallbl!</h4>";
-			DbFreeResult($res);
-			die;
-		}else{
-			$n  = DbFetchRow($res);
-			DbFreeResult($res);
-			$ip = long2ip($n[1]);
-		}
-		$query	= GenQuery('networks','s','inet_ntoa(ifip|power(2, 32 - prefix )-1)','','1',array('ifip','(ifip|power(2, 32 - prefix )-1)'),array('>','COL ='),array(0,"($n[1]|power(2, 32 - prefix )-1)"),array('AND'));
+		$query	= GenQuery('networks','s','inet_ntoa(ifip|power(2, 32 - prefix )-1)','','1',array('ifip','(ifip|power(2, 32 - prefix )-1)'),array('>','COL ='),array(0,"($wip|power(2, 32 - prefix )-1)"),array('AND'));
 		$bres = DbQuery($query,$link);
 		$bcst = DbFetchRow($bres);
 		Wake($bcst[0],$wol, 9);
@@ -387,12 +447,7 @@ setTimeout("history.go(-1)",3000);
 }elseif ($del){
 	if($isadmin){
 		$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-		$query	= GenQuery('nodes','d','','','',array('mac'),array('='),array($del) );
-		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$del $dellbl OK</h5>";}
-		$query	= GenQuery('iptrack','d','','','',array('mac'),array('='),array($del) );
-		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$del iptrack $dellbl OK</h5>";}
-		$query	= GenQuery('iftrack','d','','','',array('mac'),array('='),array($del) );
-		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$del iptrack $dellbl OK</h5>";}
+		NodDelete($del);
 ?>
 <script language="JavaScript"><!--
 setTimeout("history.go(-2)",3000);

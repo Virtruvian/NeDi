@@ -16,6 +16,11 @@ $ord = isset( $_GET['ord']) ? $_GET['ord'] : "";
 $grp = isset( $_GET['grp']) ? $_GET['grp'] : "";
 $del = isset( $_GET['del']) ? $_GET['del'] : "";
 
+$usr = isset($_GET['usr']) ? $_GET['usr'] : "";
+$usr  = preg_match('/[\'";$?]/',$usr) ? '':$usr;							# Stay in sync with index.php
+$eml = isset($_GET['eml']) ? $_GET['eml'] : "";
+$phn = isset($_GET['phn']) ? $_GET['phn'] : "";
+
 $inv = isset($_GET['inv']) ? $_GET['inv'] : "";
 $opv = isset($_GET['opv']) ? $_GET['opv'] : "";
 $stv = isset($_GET['stv']) ? $_GET['stv'] : "";
@@ -61,14 +66,15 @@ $dcol = array(	"device"=>"Device",
 		);
 
 ?>
-<h1><?= $usrlbl ?> Management</h1>
+<h1><?= $usrlbl ?> <?= $mgtlbl ?></h1>
 
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php">
-<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th><?= $grplbl ?> 
+<table class="content" ><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
+<th><img src="img/16/eyes.png" title="<?= $grplbl ?>">
 <select size="1" name="grp" onchange="this.form.submit();">
 <option value=""><?= $sellbl ?> ->
 <option value="1" <?= ($grp == "1")?" selected":"" ?> ><?= $gnam['1'] ?>
@@ -80,8 +86,13 @@ $dcol = array(	"device"=>"Device",
 </select>
 <input type="hidden" name="ord" value="<?= $ord ?>">
 </th>
-<th><?= $usrlbl ?> 
+<th> 
+<img src="img/16/user.png" title="<?= $usrlbl ?> <?= $namlbl ?>">
 <input type="text" name="usr" class="m">
+<img src="img/16/mail.png" title="<?= $usrlbl ?> <?= $namlbl ?>">
+<input type="text" name="eml" class="l">
+<img src="img/16/sms.png" title="<?= $usrlbl ?> <?= $namlbl ?>">
+<input type="text" name="phn" class="m">&nbsp;
 <input type="submit" class="button" name="add" value="<?= $addlbl ?>">
 <?php  if( strstr($guiauth,'ldap') ) { ?>
 <input type="submit" class="button" name="ldap" value="<?= $addlbl ?> LDAP">
@@ -92,13 +103,13 @@ $dcol = array(	"device"=>"Device",
 <?php
 }
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-if (isset($_GET['add']) and $_GET['usr']){
-	$pass = hash('sha256','NeDi'.$_GET['usr'].$_GET['usr']);
-	$query	= GenQuery('users','i','','','',array('usrname','password','time','language','theme'),'',array($_GET['usr'],$pass,time(),'english','default') );
+if (isset($_GET['add']) and $usr){
+	$pass = hash('sha256','NeDi'.$usr.$usr);
+	$query	= GenQuery('users','i','','','',array('usrname','password','email','phone','time','language','theme'),'',array($usr,$pass,$eml,$phn,time(),'english','default') );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[usr]: $addlbl OK</h5>";}
-}elseif(isset($_GET['ldap']) and $_GET['usr']){
+}elseif(isset($_GET['ldap']) and $usr){
 	$now = time();
-	if ( user_from_ldap_servers($_GET['usr']) ){
+	if ( user_from_ldap_servers($usr) ){
 		$query	= GenQuery('users','i','','','',array('usrname','email','phone','password','time','language','theme'),'',array($fields['ldap_login'] ,$fields['ldap_field_email'],$fields['ldap_field_phone'],'',time(),'english','default') );
 		if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[usr]: $addbtn OK</h5>";}
 	}else{
@@ -123,7 +134,7 @@ if (isset($_GET['add']) and $_GET['usr']){
 <h2><?= $usrlbl ?> <?= $lstlbl ?></h2>
 
 <?php
-TblHead("$modgroup[$self]2",2);
+TblHead("bgsub",2);
 
 if ($grp){
 	$query	= GenQuery('users','s','*',$ord,'',array('groups'),array('&'),array($grp) );
@@ -133,27 +144,27 @@ if ($grp){
 $res	= DbQuery($query,$link);
 if($res){
 	$row = 0;
-	while( ($usr = DbFetchRow($res)) ){
+	while( ($dbu = DbFetchRow($res)) ){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
-		list($cc,$lc) = Agecol($usr[5],$usr[6],$row % 2);
+		list($cc,$lc) = Agecol($dbu[5],$dbu[6],$row % 2);
 		TblRow($bg);
 ?>
 <th class="<?= $bi ?>">
-<?=Smilie($usr[0]) ?><br><?= $usr[0] ?></th>
-<td nowrap><?= $usr[3] ?></td>
-<td nowrap><?= $usr[4] ?></td>
-<td nowrap><?= $usr[7] ?></td>
-<td bgcolor="#<?= $cc ?>"><?= (date($_SESSION['timf'],$usr[5])) ?></td>
-<td bgcolor="#<?= $lc ?>"><?= (date($_SESSION['timf'],$usr[6])) ?></td>
+<?=Smilie($dbu[0]) ?><br><?= $dbu[0] ?></th>
+<td nowrap><?= $dbu[3] ?></td>
+<td nowrap><?= $dbu[4] ?></td>
+<td nowrap><?= $dbu[7] ?></td>
+<td bgcolor="#<?= $cc ?>"><?= (date($_SESSION['timf'],$dbu[5])) ?></td>
+<td bgcolor="#<?= $lc ?>"><?= (date($_SESSION['timf'],$dbu[6])) ?></td>
 <td>
-<?php  if( !($usr[2] & 1) ) { ?>
+<?php  if( !($dbu[2] & 1) ) { ?>
 <form method="get">
-<input type="hidden" name="usr" value="<?= $usr[0] ?>">
+<input type="hidden" name="usr" value="<?= $dbu[0] ?>">
 <select size="1" name="inv">
 <?php
 
-$vid = explode(" ",$usr[15]);
+$vid = explode(" ",$dbu[15]);
 $inv = array_shift($vid);
 $opv = array_shift($vid);										# Operator has no spaces (not regexp is !~ since 1.0.9)
 $stv = implode(' ',preg_replace('/["\']/','',$vid));							# Now string can contain spaces, pre 1.0.9 had quotes
@@ -174,20 +185,20 @@ foreach ($dcol as $k => $v){
 </td>
 <th>
 <?php
-GroupButton($usr[0],$usr[2],1,'ucfg');
-GroupButton($usr[0],$usr[2],2,'net');
-GroupButton($usr[0],$usr[2],4,'ring');
-GroupButton($usr[0],$usr[2],8,'bino');
-GroupButton($usr[0],$usr[2],16,'umgr');
-GroupButton($usr[0],$usr[2],32,'ugrp');
+GroupButton($dbu[0],$dbu[2],1,'ucfg');
+GroupButton($dbu[0],$dbu[2],2,'net');
+GroupButton($dbu[0],$dbu[2],4,'ring');
+GroupButton($dbu[0],$dbu[2],8,'bino');
+GroupButton($dbu[0],$dbu[2],16,'umgr');
+GroupButton($dbu[0],$dbu[2],32,'ugrp');
 ?>
 </th>
-<td><?= $usr[8] ?> <?= $usr[9] ?><br><?= $tzone[substr($usr[14],-3)] ?></td>
+<td><?= $dbu[8] ?> <?= $dbu[9] ?><br><?= $tzone[substr($dbu[14],-3)] ?></td>
 <th>
-<a href="Devices-Inventory.php?lst=us&val=<?= $usr[0] ?>"><img src="img/16/pkg.png" title="<?= $invlbl ?> <?= $lstlbl ?>"></a>
-<a href="Devices-List.php?in[]=contact&op[]=%3D&st[]=<?= $usr[0] ?>"><img src="img/16/dev.png" title="Device <?= $lstlbl ?>"></a>
-<a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&psw=<?= $usr[0] ?>"><img src="img/16/key.png" title="Password <?= $reslbl ?>" onclick="return confirm('<?= $reslbl ?>, <?= $cfmmsg ?>')"></a>
-<a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&del=<?= $usr[0] ?>"><img src="img/16/bcnl.png" title="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')"></a>
+<a href="Assets-Inventory.php?lst=us&val=<?= $dbu[0] ?>"><img src="img/16/pkg.png" title="<?= $invlbl ?> <?= $lstlbl ?>"></a>
+<a href="Devices-List.php?in[]=contact&op[]=%3D&st[]=<?= $dbu[0] ?>"><img src="img/16/dev.png" title="Device <?= $lstlbl ?>"></a>
+<a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&psw=<?= $dbu[0] ?>"><img src="img/16/key.png" title="Password <?= $reslbl ?>" onclick="return confirm('<?= $reslbl ?>, <?= $cfmmsg ?>')"></a>
+<a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&del=<?= $dbu[0] ?>"><img src="img/16/bcnl.png" title="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')"></a>
 </th></tr>
 <?php
 	}
@@ -198,7 +209,7 @@ GroupButton($usr[0],$usr[2],32,'ugrp');
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $usrlbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $usrlbl ?></td></tr>
 </table>
 <?php
 

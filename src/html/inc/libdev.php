@@ -490,19 +490,22 @@ function IfGraphs($ud,$ui,$opt,$sz){
 
 //===================================================================
 // Creates a Radargraph using interface information
-function IfRadar($id,$sz,$c,$ti,$to,$ei,$eo,$di,$do,$bi,$s=0){
+function IfRadar($id,$sz,$c,$ti,$to,$ei,$eo,$di,$do,$bi,$anim=0){
 
-	global $trflbl,$errlbl,$dcalbl,$inblbl,$oublbl;
+	global $trflbl,$errlbl,$dcalbl,$inblbl,$oublbl,$debug;
 
 	if($sz == 4){
 		$w = 220;
 		$h = 200;
+		$f = 9;
 	}elseif($sz == 3){
-		$w = 120;
+		$w = 110;
 		$h = 100;
+		$f = 7;
 	}else{
 		$w = 80;
 		$h = 70;
+		$f = 0;
 	}
 	$in  = substr($inblbl,0,1);
 	$out = substr($oublbl,0,1);
@@ -514,24 +517,72 @@ function IfRadar($id,$sz,$c,$ti,$to,$ei,$eo,$di,$do,$bi,$s=0){
 
 <script language="javascript">
 var data = {
-	<?PHP if($s){?>
+
 	labels : ["<?= $trf ?> <?= $in ?>","<?= $trf ?> <?= $out ?>","<?= $err ?> <?= $in ?>","<?= $err ?> <?= $out ?>","<?= $dca ?>  <?= $in ?>","<?= $dca ?> <?= $out ?>","Bcast"],
-	<?PHP }?>
 	datasets : [
 		{
 			fillColor : "rgba(<?= substr($c,0,1)*30 ?>,<?= substr($c,1,1)*30 ?>,<?= substr($c,2,1)*30 ?>,0.4)",
 			strokeColor : "rgba(<?= substr($c,0,1)*25 ?>,<?= substr($c,1,1)*25 ?>,<?= substr($c,2,1)*25 ?>,1)",
 			pointColor : "rgba(<?= substr($c,0,1)*20 ?>,<?= substr($c,1,1)*20 ?>,<?= substr($c,2,1)*20 ?>,1)",
 			pointStrokeColor : "#fff",
-			data : [<?= $ti ?>,<?= $to ?>,<?= $ei * 1000 ?>,<?= $eo * 1000 ?>,<?= $di * 1000 ?>,<?= $do * 1000 ?>,<?= $bi * 1000 ?>]
+			data : [<?= intval($ti/1000) ?>,<?= intval($to/1000) ?>,<?= $ei ?>,<?= $eo ?>,<?= $di ?>,<?= $do ?>,<?= $bi ?>]
 		}
 	]
 }
 var ctx = document.getElementById("<?= $id ?>").getContext("2d");
-var myNewChart = new Chart(ctx).Radar(data,{pointLabelFontSize : 8});
+var myNewChart = new Chart(ctx).Radar(data,{pointLabelFontSize : <?= $f ?><?= ($anim)?'':',animation: false' ?>});
 </script>
 
-<?PHP
+<?php
+	if($debug){
+		echo "<div class=\"textpad code txta\">\n";
+		echo "$id,$sz,$c,$ti,$to,$ei,$eo,$di,$do,$bi,$anim";
+		echo "</div>\n";
+	}
+}
+
+//===================================================================
+// Return link style based on forward bandwidth or utilisation
+function LinkStyle($bw=0,$utl=0){
+
+	global $lit;
+
+	if($lit == 'l'){
+		$w = 4;
+		if($utl == 0){										# No traffic
+			return array($w,'gainsboro');
+		}elseif($utl < 2){
+			return array($w,'cornflowerblue');
+		}elseif($utl < 5){
+			return array($w,'blue');
+		}elseif($utl < 10){
+			return array($w,'green');
+		}elseif($utl < 25){
+			return array($w,'limegreen');
+		}elseif($utl < 50){
+			return array($w,'yellow');
+		}elseif($utl < 75){
+			return array($w,'orange');
+		}else{
+			return array($w,'red');
+		}
+	}else{
+		if($bw == 0){										# No bandwidth
+			return array('1','lightgray');
+		}elseif($bw == 11000000 or $bw == 54000000 or $bw == 300000000 or $bw == 450000000){	# Most likely Wlan
+			return array('5','gainsboro');
+		}elseif($bw < 10000000){								# Most likely serial links
+			return array(intval($bw/1000000),'limegreen');
+		}elseif($bw < 100000000){								# 10 Mbit Ethernet
+			return array(intval($bw/10000000),'blue');
+		}elseif($bw < 1000000000){								# 100 Mbit Ethernet
+			return array(intval($bw/100000000),'orange');
+		}elseif($bw < 10000000000){								# 1 Gbit Ethernet
+			return array(intval($bw/1000000000),'red');
+		}else{											# 10 Gbit Ethernet
+			return array(intval($bw/10000000000),'purple');
+		}
+	}
 }
 
 //===================================================================
@@ -573,7 +624,7 @@ function NodPop($in,$op,$st,$co){
 
 	global $link,$retire;
 
-	$query = GenQuery('nodes','s','count(mac)','','',$in,$op,$st,$co,'JOIN devices USING (device)' );
+	$query = GenQuery('nodes','s','count(mac)','','',$in,$op,$st,$co,'JOIN devices USING (device) JOIN nodarp USING (mac)' );
 	$res   = DbQuery($query,$link);
 	$lpop  = DbFetchRow($res);
 	DbFreeResult($res);
@@ -604,6 +655,8 @@ function DevVendor($so,$ic=''){
 		return array('Extreme Networks','ext');
 	}elseif( $s[6] == 2636 ){
 		return array('Juniper','jun');
+	}elseif( $s[6] == 890 ){
+		return array('Zyxel','zyx');
 	}elseif( $s[6] == 12356){
 		return array('Fortinet','for');
 	}elseif( $ic == 'v' or $s[6] == 6876 ){
@@ -649,6 +702,39 @@ function Staimg($s){
 		return "<img src=\"img/16/bbox.png\" title=\"$stco[$s]\">";
 	}else{
 		return "<img src=\"img/16/bcls.png\" title=\"$nonlbl $invlbl\">";
+	}
+}
+
+//===================================================================
+// Crosscheck Assets 
+function InvCheck($sn,$ty,$lo){
+
+	global $link,$chglbl,$invlbl,$addlbl,$igrp,$wtylbl,$endlbl;
+
+	$usn    = urlencode($sn);
+	$uty    = urlencode($ty);
+	$ulo    = urlencode($lo);
+
+	$query	= GenQuery('inventory','s','state,endmaint,endwarranty,comment','','',array('serial'),array('='),array($sn));
+	$dires	= DbQuery($query,$link);
+	$dinv = DbFetchRow($dires);
+	DbFreeResult($dires);
+	if( $dinv[0] ){
+		$mst = SupportBg($dinv[1]);
+		$wst = SupportBg($dinv[2]);
+		$ist = '';
+		if($mst == 'crit' or $wst == 'crit'){
+			$ist = 'class="genpad crit"';
+		}elseif($mst == 'warn' or $wst == 'warn'){
+			$ist = 'class="genpad warn"';
+		}elseif($mst == 'good' and $wst == 'good'){
+			$ist = 'class="genpad good"';
+		}elseif($mst == 'good' or $wst == 'good'){
+			$ist = 'class="genpad good part"';
+		}
+		echo "<a href=\"Assets-Inventory.php?chg=$usn\" $ist title=\"$chglbl ($igrp[31]:$mst, $wtylbl:$wst)\">".Staimg($dinv[0])." $sn</a> $dinv[3]";
+	}elseif($sn and $sn != '-'){
+		echo "<a href=\"Assets-Inventory.php?sta=150&sn=$usn&typ=$uty&lst=ty&val=$uty&lo=$ulo\" title=\"$invlbl $addlbl\">$sn</a>";
 	}
 }
 
@@ -727,7 +813,7 @@ function DevDelete($dld,$dtxt){
 		}
 		echo (rmdir("$nedipath/rrd/$devdir"))?"<h5>$nedipath/rrd/$devdir $dellbl OK</h5>":"<h4>$nedipath/rrd/$devdir $dellbl $errlbl</h4>";
 	}
-	if( file_exists ( "$nedipath/rrd/$devdir/*.rrd" ) ){
+	if( file_exists ( "$nedipath/conf/$devdir/*.rrd" ) ){
 		foreach (glob("$nedipath/conf/$devdir/*.cfg") as $cfg){
 			echo (unlink($cfg))?"<h5>$cfg $dellbl OK</h5>":"<h4>$cfg $dellbl $errlbl</h4>";
 		}
@@ -735,7 +821,6 @@ function DevDelete($dld,$dtxt){
 	}
 
 	$query = GenQuery('events','i','','','',array('level','time','source','info','class','device'),array(),array('100',time(),$dld,"device$dtxt deleted by $_SESSION[user]",'usrd',$dld) );
-	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$msglbl $updlbl OK</h5>";}
 }
 
 ?>

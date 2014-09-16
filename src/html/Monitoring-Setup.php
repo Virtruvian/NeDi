@@ -49,7 +49,7 @@ $dps2= isset($_GET['dps2']) ? $_GET['dps2'] : "";
 $cols = array(	"name"=>"Name",
 		"monip"=>"IP $adrlbl",
 		"class"=>$clalbl,
-		"depend"=>$deplbl,
+		"depend1"=>$deplbl,
 		"depend2"=>"${deplbl}2",
 		"test"=>"$tstlbl",
 		"noreply"=>"$nonlbl $rpylbl",
@@ -68,7 +68,7 @@ $cols = array(	"name"=>"Name",
 		"memalert"=>"Mem $mlvl[200]",
 		"tmpalert"=>"$tmplbl $mlvl[200]",
 		"poewarn"=>"PoE $mlvl[150]",
-		"arppoison"=>"ARPpoison",
+		"arppoison"=>"ARPpoison $mlvl[150]",
 		"supplyalert"=>"Supply $mlvl[200]",
 		"type"=>"Device $typlbl",
 		"devos"=>"Device OS",
@@ -101,13 +101,14 @@ function MonUpdate($tgt,$c,$v,$t,$p){
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php" name="mons">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td valign="top" nowrap>
 <h3><?= $fltlbl ?></h3>
 <a href="?in[]=status&op[]=>&st[]=0"><img src="img/16/flag.png" title="<?= $tgtlbl ?> <?= $errlbl ?>"></a>
 <a href="?in[]=test&op[]=%3D&st[]=uptime"><img src="img/16/clock.png" title="SNMP <?= $tgtlbl ?>"></a>
-<a href="?in[]=depend&op[]=%3D&st[]=-"><img src="img/16/ncon.png" title="<?= $nonlbl ?> <?= $deplbl ?>"></a>
+<a href="?in[]=depend1&op[]=%3D&st[]=&in[]=depend1&op[]=%3D&st[]="><img src="img/16/ncon.png" title="<?= $nonlbl ?> <?= $deplbl ?>"></a>
 <a href="?in[]=eventfwd&op[]=~&st[]=."><img src="img/16/mail.png" title="<?= $msglbl ?> <?= $fwdlbl ?>"></a>
 <a href="?in[]=eventdel&op[]=~&st[]=."><img src="img/16/bdis.png" title="<?= $msglbl ?> <?= $dcalbl ?>"></a>
 <a href="?in[]=eventlvl&op[]=!%3D&st[]=0"><img src="img/16/fogy.png" title="<?= $levlbl ?> <?= $limlbl ?>"></a>
@@ -133,7 +134,7 @@ function MonUpdate($tgt,$c,$v,$t,$p){
 <option value="telnet">telnet
 <option value="uptime">uptime
 </select>
-<input type="number" min="1" max="9" name="nrp" class="s" title="# <?= $nonlbl ?> <?= $rpylbl ?>">
+<input type="number" min="1" max="9" name="nrp" class="xs" title="# <?= $nonlbl ?> <?= $rpylbl ?>">
 
 <select size="1" name="al" title="<?= $mlvl['200'] ?>">
 <option value=""><?= $mlvl['200'] ?>->
@@ -147,11 +148,11 @@ function MonUpdate($tgt,$c,$v,$t,$p){
 <br>
 
 <img src="img/16/bbrt.png" title="<?= $tstlbl ?> <?= $sndlbl ?>">
-<input type="text" name="top" class="m">
+<input type="text" name="top" class="l">
 <br>
 <img src="img/16/bblf.png" title="<?= $tstlbl ?> <?= $rcvlbl ?>">
-<input type="text" name="trs" class="m">
-<input type="number" min="0" step="10" name="law" class="s" title="<?= $latlbl ?> <?= $mlvl['150'] ?> [ms]">
+<input type="text" name="trs" class="l">
+<input type="number" min="0" step="10" name="law" class="xs" title="<?= $latlbl ?> <?= $mlvl['150'] ?> [ms]">
 
 </td>
 <td valign="top" nowrap>
@@ -175,24 +176,24 @@ function MonUpdate($tgt,$c,$v,$t,$p){
 </select>
 <br>
 <img src="img/16/abc.png" title="<?= $fltlbl ?>">
-<input type="text" name="inf" class="m">
+<input type="text" name="inf" class="l">
 <br>
 <img src="img/16/radr.png" title="notify">
-<input type="text" name="nfy" class="m">
+<input type="text" name="nfy" class="l">
 
 </td>
 <td valign="top" nowrap>
 
 <h3><?= $dsclbl ?></h3>
 
-<img src="img/16/cpu.png" title="CPU <?= $mlvl['200'] ?>"><input type="number" min="0" step="5" max="100" name="cpa" class="s">
-<img src="img/16/mem.png" title="Mem <?= $mlvl['200'] ?>"><input type="number" min="0" step="5" name="mea" class="s">
+<img src="img/16/cpu.png" title="CPU <?= $mlvl['200'] ?>"><input type="number" min="0" step="5" max="100" name="cpa" class="xs">
+<img src="img/16/mem.png" title="Mem <?= $mlvl['200'] ?>"><input type="number" min="0" step="5" name="mea" class="xs">
 <br>
-<img src="img/16/temp.png" title="<?= $tmplbl ?> <?= $mlvl['200'] ?>"><input type="number" min="0" step="5" max="250" name="tea" class="s">
-<img src="img/16/batt.png" title="PoE <?= $mlvl['150'] ?>"><input type="number" min="0" step="5" max="100" name="pow" class="s">
+<img src="img/16/temp.png" title="<?= $tmplbl ?> <?= $mlvl['200'] ?>"><input type="number" min="0" step="5" max="250" name="tea" class="xs">
+<img src="img/16/batt.png" title="PoE <?= $mlvl['150'] ?>"><input type="number" min="0" step="5" max="100" name="pow" class="xs">
 <br>
-<img src="img/16/drop.png" title="ARPpoison"><input type="number" min="0" max="999" name="arp" class="s">
-<img src="img/16/file.png" title="Supply <?= $mlvl[200] ?>"><input type="number" min="0" step="5" max="100" name="sua" class="s">
+<img src="img/16/drop.png" title="ARPpoison <?= $mlvl['150'] ?>"><input type="number" min="0" max="999" name="arp" class="xs">
+<img src="img/16/file.png" title="Supply <?= $mlvl[200] ?>"><input type="number" min="0" step="5" max="100" name="sua" class="xs">
 
 </td>
 <th valign="top" nowrap>
@@ -228,7 +229,7 @@ if( count($in) ){
 	Condition($in,$op,$st,$co);
 ?>
 
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th colspan="2"><img src="img/16/trgt.png"><br><?= $tgtlbl ?></th>
 <th><img src="img/16/chrt.png"><br><?= $stslbl ?></th>
 <th><img src="img/16/bchk.png"><br><?= $tstlbl ?></th>
@@ -254,12 +255,12 @@ if( count($in) ){
 
 			TblRow($bg);
 			$cmpip = 1;
+			$neb   = array();
 			if ($mon[2] == "dev"){
 				$ndev++;
 				$srcip = $mon[30];
-				$query	= GenQuery('links','s','neighbor,nbrifname','','',array('device'),array('='),array($mon[0]) );
-				$dres	= DbQuery($query,$link);
-				$neb	= array();
+				$query = GenQuery('links','s','neighbor,nbrifname','','',array('device'),array('='),array($mon[0]) );
+				$dres  = DbQuery($query,$link);
 				if($dres){
 					if ( DbNumRows($dres) ) {
 						while( ($l = DbFetchRow($dres)) ){
@@ -273,19 +274,17 @@ if( count($in) ){
 				echo "<th class=\"$statbg\"><a href=\"Devices-Status.php?dev=$una\"><img src=\"img/16/dev.png\" title=\"$stat\"></a>";
 			}elseif($mon[2] == "node"){
 				$nnod++;
-				$query	= GenQuery('nodes','s','nodip,device,ifname','','',array('name'),array('='),array($mon[0]) );
-				$dres	= DbQuery($query,$link);
-				$neb	= array();
+				$query = GenQuery('dns','s','nodip','','',array('aname'),array('='),array($mon[0]) );
+				$dres  = DbQuery($query,$link);
 				if($dres){
 					$nnod = DbNumRows($dres);
 					if($nnod == 1) {
-						echo "<th class=\"$statbg\"><a href=\"Nodes-List.php?in[]=name&op[]=%3D&st[]=$una\"><img src=\"img/16/node.png\"  title=\"$stat\"></a>";
+						echo "<th class=\"$statbg\"><a href=\"Nodes-List.php?in[]=aname&op[]=%3D&st[]=$una\"><img src=\"img/16/node.png\"  title=\"$stat\"></a>";
 						$l = DbFetchRow($dres);
 						$srcip = $l[0];
-						$neb[$l[1]] = $l[2];
 					}elseif($nnod > 1){
 						$cmpip = 0;
-						echo "<th class=\"warn part\"><a href=\"Nodes-List.php?in[]=name&op[]=%3D&st[]=$una\"><img src=\"img/16/nods.png\" title=\"$mullbl Nodes $namlbl!\"></a>";
+						echo "<th class=\"warn part\"><a href=\"Nodes-List.php?in[]=aname&op[]=%3D&st[]=$una\"><img src=\"img/16/nods.png\" title=\"$mullbl Nodes $namlbl!\"></a>";
 					}else{
 						$cmpip = 0;
 						echo "<th class=\"warn part\"><a href=\"Nodes-List.php?in[]=nodip&op[]=%3D&st[]=$mon[1]\"><img src=\"img/16/bcls.png\" title=\"$nonlbl Nodes! (IP $stat)\"></a>";
@@ -306,7 +305,7 @@ if( count($in) ){
 			if($upd){
 				if($adp){
 					if(count(array_keys($neb) ) == 1){
-						$dquery	= GenQuery('monitoring','u',"name = '".DbEscapeString($mon[0])."'",'','',array('depend'),array(),array( key($neb) ) );
+						$dquery	= GenQuery('monitoring','u',"name = '".DbEscapeString($mon[0])."'",'','',array('depend1'),array(),array( key($neb) ) );
 						if( !DbQuery($dquery,$link) ){
 							$depst[0] = "<img src=\"img/16/bcnl.png\" title=\"" .DbError($link)."\">";
 						}else{
@@ -316,7 +315,7 @@ if( count($in) ){
 					}elseif(count(array_keys($neb) ) == 2){
 						$i = 0;
 						foreach ( array_keys($neb) as $nb){
-							$depcol = ($i)?'depend':'depend2';
+							$depcol = ($i)?'depend1':'depend2';
 							$dquery	= GenQuery('monitoring','u',"name = '".DbEscapeString($mon[0])."'",'','',array($depcol),array(),array($nb) );
 							if( !DbQuery($dquery,$link) ){
 								$depst[$i] = "<img src=\"img/16/bcnl.png\" title=\"" .DbError($link)."\">";
@@ -402,7 +401,7 @@ if( count($in) ){
 					list($suast,$mon[29]) = MonUpdate($mon[0],'supplyalert',$sua,"Supply $mlvl[200]",$mon[29]);
 				}
 			}elseif($des and $des ==  $mon[0] and ($dps or $dpt) ){
-				list($depst[0],$mon[18]) = MonUpdate($mon[0],'depend',($dps)?$dps:$dpt,"$deplbl",$mon[18]);
+				list($depst[0],$mon[18]) = MonUpdate($mon[0],'depend1',($dps)?$dps:$dpt,"$deplbl",$mon[18]);
 			}elseif($des and $des ==  $mon[0] and ($dps2 or $dpt2) ){
 				list($depst[1],$mon[19]) = MonUpdate($mon[0],'depend2',($dps2)?$dps2:$dpt2,"$deplbl",$mon[19]);
 			}
@@ -568,7 +567,7 @@ if($mon[16]%2 or $mon[17]){
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $nnod ?> Nodes, <?= $ndev ?> Devices <?= $totlbl ?></td></tr>
+<tr class="bgsub"><td><?= $nnod ?> Nodes, <?= $ndev ?> Devices <?= $totlbl ?></td></tr>
 </table>
 <?php
 }

@@ -19,10 +19,11 @@ $src = isset($_GET['src']) ? $_GET['src'] : "";
 $trc = isset($_GET['trc']) ? $_GET['trc'] : "";
 $vrf = isset($_GET['vrf']) ? $_GET['vrf'] : "";
 
-$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
-$query	= GenQuery('networks','s','*','ifip','',array('ifip'),array('!='),array('2130706433'),array(),'LEFT JOIN devices USING (device)');	# exclude 127.0.0.1
-$res	= DbQuery($query,$link);
+$netif = array();
+$query = GenQuery('networks','s','*','ifip','',array('ifip'),array('!='),array('2130706433'),array(),'LEFT JOIN devices USING (device)');	# exclude 127.0.0.1
+$res   = DbQuery($query,$link);
 if($res){
 	while( ($r = DbFetchRow($res)) ){
 		$netif[long2ip($r[2])] = $r[0];
@@ -32,8 +33,9 @@ if($res){
 	print DbError($link);
 }
 
-$query	= GenQuery('devices','s','device,devip,type,services,readcomm,snmpversion,location,contact,cliport,icon','device','',array('services','snmpversion'),array('>','!='),array('3','0'),array('AND') );
-$res	= DbQuery($query,$link);
+$devtyp = array();
+$query  = GenQuery('devices','s','device,devip,type,services,readcomm,snmpversion,location,contact,cliport,icon','device','',array('services','snmpversion'),array('>','!='),array('3','0'),array('AND') );
+$res    = DbQuery($query,$link);
 if($res){
 	while( ($d = DbFetchRow($res)) ){
 		$devip[$d[0]]  = long2ip($d[1]);
@@ -52,13 +54,14 @@ if($res){
 }
 
 ?>
-<h1><?= $mtitl[0] ?> <?= $mtitl[1] ?></h1>
+<h1><?= $rltlbl ?> Routes</h1>
 
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php" name="rout">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th>
 VRF <input type="text" name="vrf" value="<?= $vrf ?>" class="m">
 </th>
@@ -105,7 +108,7 @@ foreach (array_keys($devtyp) as $r ){
 if($trc){
 ?>
 <h2>Route Trace <?= $src ?> - <?= $dst ?><?= (($vrf)?" VRF $vrf":"") ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th><img src="img/16/dev.png"><br>Device</th>
 <th><img src="img/16/net.png"><br><?= $netlbl ?></th>
 <th><img src="img/16/home.png"><br><?= $dstlbl ?></th>
@@ -172,7 +175,7 @@ if($trc){
 </table>
 
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Hops: <?= $path ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> Hops: <?= $path ?></td></tr>
 </table>
 	<?php
 }elseif($rtr){
@@ -183,10 +186,9 @@ if($trc){
 <tr><th class="imga" width="80">
 <a href=Devices-Status.php?dev=<?= $ud ?> ><img src="img/dev/<?= $devimg[$rtr] ?>.png" title="<?= $stalbl ?>"></a>
 <br><?= $rtr ?></th><td class="txta"><?= (Devcli($devip[$rtr],$devcli[$rtr])) ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $srvlbl ?></th><td class="txtb"><?= ($devsrv[$rtr])?$devsrv[$rtr]:"&nbsp;" ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $loclbl ?></th><td class="txta"><?= $devloc[$rtr] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $conlbl ?></th><td class="txtb"><?= $devcon[$rtr] ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">SNMP</th><td class="txta"><?= $devcom[$rtr] ?> (Version <?= $devver[$rtr] & 7?>)</td></tr>
+<tr><th class="bgsub"><?= $srvlbl ?></th><td class="txtb"><?= ($devsrv[$rtr])?$devsrv[$rtr]:"&nbsp;" ?></td></tr>
+<tr><th class="bgsub"><?= $loclbl ?></th><td class="txta"><?= $devloc[$rtr] ?></td></tr>
+<tr><th class="bgsub"><?= $conlbl ?></th><td class="txtb"><?= $devcon[$rtr] ?></td></tr>
 </table>
 <?php
 	#snmp_set_oid_numeric_print(1);
@@ -204,7 +206,7 @@ if($trc){
 	if($val){
 ?>
 <h2><?= $rtr ?> VRF <?= $lstlbl ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th><img src="img/16/abc.png"><br><?= $namlbl ?></th>
 <th><img src="img/16/find.png"><br><?= $deslbl ?></th>
 <th><img src="img/16/ncon.png" ><br>RD</th>
@@ -223,7 +225,7 @@ if($trc){
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
 <?php
 	}else{
@@ -232,7 +234,7 @@ if($trc){
 ?>
 
 <h2><?= $rtr ?> Routes <?= $lstlbl ?><?= (($vrf)?" VRF $vrf":"") ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th colspan=2><img src="img/16/home.png"><br><?= $dstlbl ?></th>
 <th><img src="img/16/ncon.png" ><br>Next Hop</th>
 <th><img src="img/16/port.png"><br>Interface</th>
@@ -277,7 +279,7 @@ if($trc){
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $vallbl ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $vallbl ?></td></tr>
 </table>
 <?php
 }

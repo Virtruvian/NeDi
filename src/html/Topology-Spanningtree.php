@@ -18,10 +18,13 @@ $dev = isset($_GET['dev']) ? $_GET['dev'] : "";
 $shg = isset($_GET['shg']) ? "checked" : "";
 $vln = isset($_GET['vln']) ? $_GET['vln'] : "";
 ?>
-<h1>Spanningtree Tool</h1>
+
+<h1><?= $rltlbl ?> Spanningtree</h1>
+
 <form method="get" action="<?= $self ?>.php" name="stree">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th>
 Device
 <select size="1" name="dev" onchange="document.stree.vln.value=''">
@@ -116,7 +119,7 @@ if('0.0.0.0' == $ip){
 
 <table class="full fixed"><tr><td class="helper">
 
-<h2>Device <?= $sumlbl ?></h2>
+<h2><?= $sumlbl ?></h2>
 <table class="content">
 <tr><th class="imga" width="80">
 <a href="Devices-Status.php?dev=<?= $ud ?>"><img src="img/dev/<?= $img ?>.png" title="<?= $stalbl ?>"></a>
@@ -130,17 +133,16 @@ if('0.0.0.0' == $ip){
 </div>
 
 <?= (Devcli($ip,$cli)) ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $srvlbl ?></th><td class="txtb"><?= ($sv)?$sv:"&nbsp;" ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $loclbl ?></th><td class="txta"><?= $loc ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= $conlbl ?></th><td class="txtb"><?= $con ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">SNMP</th><td class="txta">v<?= $rv ?> <?= $rc ?></td></tr>
+<tr><th class="bgsub"><?= $srvlbl ?></th><td class="txtb"><?= ($sv)?$sv:"&nbsp;" ?></td></tr>
+<tr><th class="bgsub"><?= $loclbl ?></th><td class="txta"><?= $loc ?></td></tr>
+<tr><th class="bgsub"><?= $conlbl ?></th><td class="txtb"><?= $con ?></td></tr>
 </table>
 
 </td><td class="helper">
 
-<h2>Spanningtree <?= $sumlbl ?><?= ($vln)?" Vlan $vln":"" ?></h2>
+<h2>Spanningtree<?= ($vln)?" Vlan $vln":"" ?></h2>
 <table class="content"><tr>
-<th class="<?= $modgroup[$self] ?>2">Bridge <?= $adrlbl ?></th><td  class="txta">
+<th class="bgsub">Bridge <?= $adrlbl ?></th><td  class="txta">
 <?php
 	$braddr	= str_replace('"','', Get($ip, $rv, $rc, "1.3.6.1.2.1.17.1.1.0") );
 	if ($braddr){
@@ -154,7 +156,7 @@ if('0.0.0.0' == $ip){
 		die;
 	}
 ?>
-<tr><th class="<?= $modgroup[$self] ?>2">STP <?= $prilbl ?></th><td class="txtb">
+<tr><th class="bgsub">STP <?= $prilbl ?></th><td class="txtb">
 <?php
 	if($vln){$rc = "$rc@$vln";}
 	$stppri	= str_replace('"','', Get($ip, $rv, $rc, "1.3.6.1.2.1.17.2.2.0") );
@@ -175,9 +177,9 @@ if('0.0.0.0' == $ip){
 
 	$rootif = strtolower( substr( str_replace(' ','', $droot) ,4) );
 ?>
-<tr><th class="<?= $modgroup[$self] ?>2">Topology <?= $chglbl ?></th><td class="txta"><?= $numchg ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2"><?= ($verb1)?"$laslbl $chglbl":"$chglbl $laslbl" ?></th><td class="txtb"><?= $tcstr ?></td></tr>
-<tr><th class="<?= $modgroup[$self] ?>2">Designated Root</th><td class="txta"><?= $droot ?>
+<tr><th class="bgsub">Topology <?= $chglbl ?></th><td class="txta"><?= $numchg ?></td></tr>
+<tr><th class="bgsub"><?= ($verb1)?"$laslbl $chglbl":"$chglbl $laslbl" ?></th><td class="txtb"><?= $tcstr ?></td></tr>
+<tr><th class="bgsub">Designated Root</th><td class="txta"><?= $droot ?>
 <?php if($brmac != $rootif){
 ?>
 <a href="Devices-Interfaces.php?in[]=ifmac&op[]=%3D&st[]=<?= $rootif ?>"><img src="img/16/port.png" title="IF <?= $lstlbl ?>"></a>
@@ -191,11 +193,16 @@ if('0.0.0.0' == $ip){
 </td></tr>
 </table>
 
+</td><td class="helper ctr">
+<h2><?= $neblbl ?> <?= $maplbl ?></h2>
+	<a href="Topology-Map.php?tit=<?= $ud ?>+<?= $neblbl ?>+Map&in[]=device&op[]==&st[]=<?= $ud ?>&co[]=OR&in[]=neighbor&op[]==&st[]=<?= $ud ?>&fmt=png&mde=f&lev=4&ifi=on"><img class="genpad" src="inc/drawmap.php?dim=320x200&in[]=device&op[]==&st[]=<?= $ud ?>&co[]=OR&in[]=neighbor&op[]==&st[]=<?= $ud ?>&mde=f&lev=4&pos=s&ifi=on&lal=30"></a>
+</td>
+
 </td></tr>
 </table>
 
 <h2>Interfaces <?= $lstlbl ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th colspan="3" valign="bottom"><img src="img/16/swit.png"><br>IF <?= $stalbl ?></th>
 <th valign="bottom"><img src="img/16/dcal.png"><br><?= $coslbl ?></th>
 <th valign="bottom"><img src="img/spd.png" title="<?= $spdlbl ?>"><br><?= substr($spdlbl,0,5) ?></th>
@@ -251,13 +258,13 @@ if('0.0.0.0' == $ip){
 		list($ifimg,$iftit) = Iftype($ift[$ix]);
 		TblRow($bg);
 		echo "<th class=\"$ifstat\" width=\"20\"><img src=\"img/$ifimg\" title=\"$ix - $iftit\"></th>\n";
-		echo "<th class=\"$bi\"  width=\"20\">$pst $sten $rpimg</th><td>\n";
+		echo "<th class=\"$bi\"  width=\"20\">$pst $sten</th><td>\n";
 		if($ifstat == "good" and $guiauth != 'none' and !isset($_GET['print'])){
 			echo "<div style=\"font-weight: bold\" class=\"blu\" title=\"$rltlbl $trflbl\" onclick=\"window.open('inc/rt-popup.php?d=$debug&ip=$ip&v=$rv&c=$rc&i=$ix&t=$ud&in=$ui','$ip_$ix','scrollbars=0,menubar=0,resizable=1,width=600,height=400')\">$ifn[$ix]</div></td>\n";
 		}else{
 			echo "<b>$ifn[$ix]</b></td>\n";
 		}
-		echo "<td align=\"right\">$pcost[$po]</td><td align=\"right\">".DecFix($ifs[$ix])."</td><td>$ifi[$ix]</td>\n";
+		echo "<td align=\"right\">$rpimg $pcost[$po]</td><td align=\"right\">".DecFix($ifs[$ix])."</td><td>$ifi[$ix]</td>\n";
 		if($shg){
 			echo "<td nowrap align=\"center\">\n";
 			IfGraphs($ud, $ui, $ifs[$i], ($_SESSION['gsiz'] == 4)?2:1 );
@@ -268,7 +275,7 @@ if('0.0.0.0' == $ip){
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Interfaces</td></tr>
+<tr class="bgsub"><td><?= $row ?> Interfaces</td></tr>
 </table>
 <?php
 }

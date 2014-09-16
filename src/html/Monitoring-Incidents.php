@@ -19,7 +19,6 @@ $grp = isset($_GET['grp']) ? $_GET['grp'] : "";
 $end = isset($_GET['end']) ? 'checked':'';
 $lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : 20;
 $off = (isset($_GET['off']) and !isset($_GET['sho']))? $_GET['off'] : 0;
-
 $nof = $off;
 
 if( isset($_GET['p']) ){
@@ -27,9 +26,11 @@ if( isset($_GET['p']) ){
 }elseif( isset($_GET['n']) ){
 	$nof = $off + $lim;
 }
-$dlim = ($lim)?"$lim OFFSET $nof":'';
 
-$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+echo "<h1>Monitoring Incidents</h1>\n";
+
+$dlim = ($lim)?"$lim OFFSET $nof":'';
+$link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if($dli){
 	$query	= GenQuery('incidents','d','','','',array('id'),array('='),array($dli) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Incident $dli $dellbl OK</h5>";}
@@ -42,13 +43,12 @@ if($dli){
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> Incident $ucm $updlbl OK</h5>";}
 }
 ?>
-<h1>Monitoring Incidents</h1>
 
 <?php  if( !isset($_GET['print']) ) { ?>
-
 <form method="get" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th>
 <img src="img/16/abc.png" title="<?= $clalbl ?>"> 
 <select name="grp">
@@ -84,7 +84,7 @@ foreach (array_keys($igrp) as $ig){
 
 <h2><?= ($grp)?$igrp[$grp]:"" ?> <?= $inclbl ?> <?= $lstlbl ?></h2>
 
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th width="80" colspan="2"><img src="img/16/eyes.png"><br><?= $inclbl ?></th>
 <th colspan="2"><img src="img/16/trgt.png"><br><?= $tgtlbl ?></th>
 <th><img src="img/16/bblf.png"><br><?= $sttlbl ?></th>
@@ -172,7 +172,7 @@ if($res){
 	?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Incidents</td></tr>
+<tr class="bgsub"><td><?= $row ?> Incidents</td></tr>
 </table>
 	<?php
 

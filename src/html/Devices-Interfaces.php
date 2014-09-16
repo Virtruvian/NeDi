@@ -56,15 +56,15 @@ $cols = array(	"imBL"=>$imglbl,
 		"outoct"=>"$totlbl $trflbl ".substr($oublbl,0,3),
 		"inerr"=>"$totlbl $errlbl ".substr($inblbl,0,3),
 		"outerr"=>"$totlbl $errlbl ".substr($oublbl,0,3),
-		"indis"=>"$totlbl Discards ".substr($inblbl,0,3),
-		"outdis"=>"$totlbl Discards ".substr($oublbl,0,3),
+		"indis"=>"$totlbl $dcalbl ".substr($inblbl,0,3),
+		"outdis"=>"$totlbl $dcalbl ".substr($oublbl,0,3),
 		"inbrc"=>"$totlbl Broadcasts ".substr($inblbl,0,3),
 		"dinoct"=>"$laslbl $trflbl ".substr($inblbl,0,3),
 		"doutoct"=>"$laslbl $trflbl ".substr($oublbl,0,3),
 		"dinerr"=>"$laslbl $errlbl ".substr($inblbl,0,3),
 		"douterr"=>"$laslbl $errlbl ".substr($oublbl,0,3),
-		"dindis"=>"$laslbl Discards ".substr($inblbl,0,3),
-		"doutdis"=>"$laslbl Discards ".substr($oublbl,0,3),
+		"dindis"=>"$laslbl $dcalbl ".substr($inblbl,0,3),
+		"doutdis"=>"$laslbl $dcalbl ".substr($oublbl,0,3),
 		"dinbrc"=>"$laslbl Broadcasts ".substr($inblbl,0,3),
 		"poe"=>'PoE',
 		"comment"=>$cmtlbl,
@@ -84,16 +84,19 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 <form method="get" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content"><tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td>
 <?php Filters(); ?>
 </td>
 <td class="ctr">
-	<h3><?= $fltlbl ?></h3>
 	<a href="?in[]=comment&op[]=~&st[]=Loop!"><img src="img/16/brld.png" title="<?= $cnclbl ?> Loops"></a>
+	<a href="?in[]=linktype&op[]=~&st[]=F%24&col[]=imBL&col[]=ifname&col[]=device&col[]=linktype&col[]=ifdesc&col[]=alias&col[]=comment&col[]=poNS&lim=100&ord=ifname"><img src="img/tel.png" title="VoIP <?= $cnclbl ?>"></a>
+	<br>
+	<a href="?in[]=linktype&op[]=~&st[]=.&co[]=AND&in[]=lastchg&op[]=>&st[]=<?= strtotime("-1 day") ?>&col[]=imBL&col[]=ifname&col[]=device&col[]=linktype&col[]=alias&col[]=lastchg&col[]=rdrNS&lim=10&ord=lastchg+desc" class="warn" ><img src="img/16/link.png" title="<?= $cnclbl ?> <?= $chglbl ?> <?= $tim['t'] ?>"></a>
+	<a href="?in[]=iftype&op[]=~&st[]=^(6|7|117)$&co[]=AND&in[]=ifstat&op[]=%3D&st[]=0&ord=lastchg+desc" class="alrm" ><img src="img/p45.png" title="<?= $porlbl ?> <?= $dsalbl ?>"></a>
 </td>
 <td class="ctr">
 	<select multiple name="col[]" size="6" title="<?= $collbl ?>">
@@ -114,15 +117,15 @@ foreach ($cols as $k => $v){
 	</select>
 	<p>
 	<img src="img/16/bino.png" title="<?= $vallbl ?> <?= $mlvl['200'] ?>">
-	<input type="number" min="0" max="100" step="5" name="tal" class="s" title="<?= $trflbl ?> <?= $mlvl[200] ?> <?= $trslbl ?> %">
-	<input type="number" min="0" max="500" step="5"  name="bal" class="s" title="<?= $inblbl ?> Broadcast  <?= $mlvl[200] ?> <?= $trslbl ?> 1/s">
-	<input type="number" name="maf" class="s" title="MAC <?= $mlvl[200] ?> <?= $trslbl ?>">
+	<input type="number" min="0" max="100" step="5" name="tal" class="xs" title="<?= $trflbl ?> <?= $mlvl[200] ?> <?= $trslbl ?> %">
+	<input type="number" min="0" max="500" step="5"  name="bal" class="xs" title="<?= $inblbl ?> Broadcast  <?= $mlvl[200] ?> <?= $trslbl ?> 1/s">
+	<input type="number" name="maf" class="xs" title="MAC <?= $mlvl[200] ?> <?= $trslbl ?>">
 </td>
 <td class="ctr s">
 	<input type="submit" class="button" value="<?= $sholbl ?>">
-	<p>
+	<br>
 	<input type="submit" class="button" name="trk" value="Track">
-	<p>
+	<br>
 	<input type="submit" class="button" name="upm" value="<?= $updlbl ?>">
 </td>
 </tr></table>
@@ -136,7 +139,7 @@ if( count($in) ){
 		echo "	<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\">\n</div>\n<p>\n";
 	}
 	Condition($in,$op,$st,$co);
-	TblHead("$modgroup[$self]2",1);
+	TblHead("bgsub",1);
 	$query	= GenQuery('interfaces','s','interfaces.*,type,firstdis,lastdis,location,contact',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device)');
 	$res	= DbQuery($query,$link);
 	if($res){
@@ -158,11 +161,11 @@ if( count($in) ){
 			}
 			if($isadmin and $_GET['upm'] and count($colup) ){
 				$query	= GenQuery('interfaces','u',"device = '".DbEscapeString($if[0])."' and ifname = '$if[1]'",'','',array_keys($colup),array(),array_values($colup) );
-				$monst = DbQuery($query,$link)?"<img src=\"img/16/bchk.png\" title=\" $monlbl $updlbl OK\" vspace=\"4\">":"<img src=\"img/16/bcnl.png\" title=\"".DbError($link)."\" vspace=\"4\">";				
+				$monst = DbQuery($query,$link)?"<img src=\"img/16/bchk.png\" title=\" $trslbl $updlbl OK\" vspace=\"4\">":"<img src=\"img/16/bcnl.png\" title=\"".DbError($link)."\" vspace=\"4\">";				
 			}
 
 			TblRow($bg);
-			if(in_array("imBL",$col))	TblCell("<img src=\"img/$ifi\" title=\"$ift - $ifs\">",'',(($ifb)?$ifb:$bi).' ctr s');
+			if(in_array("imBL",$col))	TblCell("<img src=\"img/$ifi\" title=\"$ift - $ifs\">",'',(($ifb)?$ifb:$bi).' ctr xs');
 			if( in_array("ifname",$col) )	TblCell("$if[1] $trkst $monst","?in[]=ifname&op[]==&st[]=$ui","$bi b");
 			if( in_array("ifidx",$col) )	TblCell($if[2],"?in[]=ifidx&op[]==&st[]=$if[2]",'rgt');
 			if( in_array("device",$col) )	TblCell($if[0],"?in[]=device&op[]==&st[]=$ud&ord=ifname",'nw',"<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
@@ -226,13 +229,7 @@ if( count($in) ){
 	}else{
 		print DbError($link);
 	}
-?>
-</table>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
-<?= $row ?> Interfaces<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?>
-
-</td></tr></table>
-<?php
+	TblFoot("bgsub", count($col), "$row Interfaces".(($ord)?", $srtlbl: $ord":"").(($lim)?", $limlbl: $lim":"") );
 }
 include_once ("inc/footer.php");
 ?>

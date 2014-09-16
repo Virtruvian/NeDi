@@ -41,18 +41,20 @@ $cols = array(	"imBL"=>$imglbl,
 		"lastdis"=>"$laslbl $dsclbl",
 		"ifname"=>"IF $namlbl",
 		"vrfname"=>"VRF $namlbl",
+		"vrfrd"=>"VRF RD",
 		"status"=>$stalbl
 		);
 
 $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 ?>
-<h1>Topology <?= $netlbl ?> <?= $lstlbl ?></h1>
+<h1><?= $netlbl ?> <?= $lstlbl ?></h1>
 
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 
 <form method="get" name="list" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 
 <td>
 <?php Filters(); ?>
@@ -96,7 +98,7 @@ if( count($in) ){
 		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
 	}
 	Condition($in,$op,$st,$co);
-	TblHead("$modgroup[$self]2",1);
+	TblHead("bgsub",1);
 	$query	= GenQuery('networks','s','networks.*,type,firstdis,lastdis,location,contact',$ord,$lim,$in,$op,$st,$co,'LEFT JOIN devices USING (device)');
 	$res	= DbQuery($query,$link);
 	if($res){
@@ -110,7 +112,7 @@ if( count($in) ){
 			$ud  = urlencode($m[0]);
 			list($fc,$lc) = Agecol($m[8],$m[9],$row % 2);
 			TblRow($bg);
-			if(in_array("imBL",$col))	TblCell("<img src=\"img/$ntimg\" title=\"$ntit\">",'',"$bi ctr s");
+			if(in_array("imBL",$col))	TblCell("<img src=\"img/$ntimg\" title=\"$ntit\">",'',"$bi ctr xs");
 			if(in_array("ifip",$col))	TblCell($ip,"?in[]=ifip&op[]==&st[]=$ip/$m[4]");
 			if(in_array("ifip6",$col))	TblCell($ip6,'','prp' );
 			if(in_array("prefix",$col))	TblCell($m[4]);
@@ -122,7 +124,8 @@ if( count($in) ){
 			if( in_array("lastdis",$col) )	TblCell( date($_SESSION['timf'],$m[9]),"?in[]=lastdis&op[]==&st[]=$m[10]",'nw','',"background-color:#$lc" );
 			if(in_array("ifname",$col))	TblCell( $m[1],"?in[]=ifname&op[]==&st[]=".urlencode($m[1]) );
 			if(in_array("vrfname",$col))	TblCell( $m[5],"?in[]=vrfname&op[]==&st[]=".urlencode($m[5]) );
-			if(in_array("status",$col))	TblCell( $m[6],"?in[]=status&op[]==&st[]=".urlencode($m[6]) );
+			if(in_array("vrfrd",$col))	TblCell( $m[6],"?in[]=vrfrd&op[]==&st[]=".urlencode($m[6]) );
+			if(in_array("status",$col))	TblCell( $m[7],"?in[]=status&op[]==&st[]=".urlencode($m[7]) );
 			echo "	</tr>\n";
 		}
 		DbFreeResult($res);
@@ -132,7 +135,7 @@ if( count($in) ){
 	?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> <?= $netlbl ?><?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?></td></tr>
+<tr class="bgsub"><td><?= $row ?> <?= $netlbl ?><?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?></td></tr>
 </table>
 	<?php
 }

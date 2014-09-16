@@ -61,9 +61,9 @@ if($res){
 
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 <form method="get" action="<?= $self ?>.php" name="cfg">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
+<table class="content"><tr class="bgmain">
 <td class="ctr s">
-	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 </td>
 <td class="ctr b">
 	<?= $lstlbl ?><p>
@@ -121,6 +121,7 @@ foreach (array_keys($cfgup) as $d){
 </tr></table>
 </form>
 <p>
+
 <?php
 }
 
@@ -171,8 +172,9 @@ if ($gen){
 		foreach ($cmpdev as $ddv){
 			$ud	= rawurlencode($ddv);
 ?>
+
 <table class="content">
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 		<th>
 			<a href="Devices-Status.php?dev=<?= $ud ?>"><img src="img/dev/<?= $devic[$ddv] ?>.png"><br><?= ($ld == $ddv)?"$ddv ($srclbl)":"$ddv" ?></a>
 		</th>
@@ -217,7 +219,7 @@ if ($gen){
 			$ina	='device';
 		}
 		echo "<h3>$cols[$ina] $opa '$sta'</h3>\n\n";
-		TblHead("$modgroup[$self]2",2);
+		TblHead("bgsub",2);
 
 		$query	= GenQuery('configs','s','configs.*,length(config) as cfgl,length(changes) as chgl,inet_ntoa(devip),type,devos,icon,cliport',$ord,$lid,array($ina),array($opa),array($sta),array(),'LEFT JOIN devices USING (device)');
 
@@ -247,7 +249,7 @@ if ($gen){
 		}
 ?>
 </table>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
+<table class="content"><tr class="bgsub"><td>
 <?= $row ?> Devices
 </td></tr></table>
 <?php
@@ -273,7 +275,7 @@ if ($gen){
 	$charr	= preg_replace("/(^\s*[0-9]{1,4}\+.*)$/","<span class='olv'>$1</span>",$charr);
 ?>
 <table class="content">
-	<tr class="<?= $modgroup[$self] ?>2">
+	<tr class="bgsub">
 		<th>
 			<img src="img/32/note.png"><br><?= $cfglbl ?> (<?= date($_SESSION['timf'],$cfg[3]) ?>)
 		</th>

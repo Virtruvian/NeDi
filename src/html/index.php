@@ -37,6 +37,7 @@ if( isset($_GET['goto']) and preg_match('/^\w+-\w+\.php/',$_GET['goto']) ){				#
 }
 $user  = isset($_GET['user'])  ? $_GET['user'] : '';
 $user  = isset($_POST['user']) ? $_POST['user'] : $user;
+$user  = preg_match('/[\'";$?]/',$user) ? '' : $user;							# Avoid SQL injection
 
 if( $guiauth == 'sso' and isset($_SERVER['HTTP_AUTH_USER']) ){
 	$user = $_SERVER['HTTP_AUTH_USER'];
@@ -46,24 +47,23 @@ if( $guiauth == 'sso' and isset($_SERVER['HTTP_AUTH_USER']) ){
 	$_POST['pass'] = 'NO_PASSWD';
 }
 
-$raderr = "";
+$raderr = '';
 
-# if username starts with "/C=" (Certificate), then use $_SERVER['SSL_CLIENT_S_DN_CN'] as suggested by Daniel
-if(isset( $user) and preg_match('/^\/C=/',$user) and isset($_SERVER['SSL_CLIENT_S_DN_CN'])) {
+if($user and preg_match('/^\/C=/',$user) and isset($_SERVER['SSL_CLIENT_S_DN_CN'])) {			# Use $_SERVER['SSL_CLIENT_S_DN_CN'] if username starts with "/C=" (Certificate) as suggested by Daniel
 	$user = $_SERVER['SSL_CLIENT_S_DN_CN'];
 }
 
-if( isset( $user) and preg_match('/^[A-Za-z0-9@\.-_]+$/',$user) ){			# Avoid SQL injection as suggested by Daniel
-	$form_user = $user;									# SSO Code for HTTPAUTH PassTrough by Juergen Vigna
+if($user){
+	$form_user = $user;										# SSO Code for HTTPAUTH PassTrough by Juergen Vigna
 	$form_pass = $_POST['pass'];
 
-	$pass = hash("sha256","NeDi".$user.$_POST['pass']);					# Salt & pw
+	$pass = hash("sha256","NeDi".$user.$_POST['pass']);						# Salt & pw
 	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	if($guiauth == 'none'){
 		$uok	= 1;
 		$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($user) );
 		$res    = DbQuery($query,$link);
-	}elseif( strstr($guiauth,'pam') && $user != "admin" ){					# PAM code by Owen Brotherhood & Bruberg
+	}elseif( strstr($guiauth,'pam') && $user != "admin" ){						# PAM code by Owen Brotherhood & Bruberg
 		if (!extension_loaded ('pam_auth')){dl('pam_auth.so');}					# dl removed in PHP5.3?
 		$uok	= pam_auth($user,$_POST['pass']);
 		$query	= GenQuery('users','s','*','','',array('usrname'),array('='),array($user) );
@@ -144,7 +144,7 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.-_]+$/',$user) ){			# Avoid SQL
 		$_SESSION['group'] = "usr,";
 		$_SESSION['view']  = $usr[15];
 		$_SESSION['bread'] = array();
-		$_SESSION['ver']   = "1.1.155";
+		$_SESSION['ver']   = "1.4.232";
 		if( strstr($guiauth,'ldap') and $user != "admin" and is_array($ldapmap) ){
 			if (($ldapmap[0]) and in_array($ldapmap[0],$ldapusersgrp)){
 				$_SESSION['group']   .= "adm,";
@@ -213,7 +213,7 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.-_]+$/',$user) ){			# Avoid SQL
 			$_SESSION['nip']  = $usr[13] & 256;
 			$_SESSION['timf'] = ($usr[14])?substr($usr[14],0,-3):'j.M y G:i';
 			$_SESSION['tz']   = $tzone[substr($usr[14],-3)];
-			$query	= GenQuery('users','u','usrname','=',$user,array('lastlogin'),array(),array(time()) );
+			$query	= GenQuery('users','u',"usrname='$user'",'','',array('lastlogin'),array(),array(time()) );
 			DbQuery($query,$link);
 		}
 		$_SESSION['datf'] = substr($_SESSION['timf'],0,strrpos($_SESSION['timf'],' '));
@@ -232,8 +232,8 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.-_]+$/',$user) ){			# Avoid SQL
 ?>
 <html>
 <head>
-<title>NeDi 1.1.155</title>
-<meta name="generator" content="NeDi 1.1.155">
+<title>NeDi 1.4.232</title>
+<meta name="generator" content="NeDi 1.4.232">
 <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
 <link href="themes/default.css" type="text/css" rel="stylesheet">
 <link rel="shortcut icon" href="img/favicon.ico">

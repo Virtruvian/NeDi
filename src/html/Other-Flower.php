@@ -45,8 +45,8 @@ $link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <h1>Flower Openflows</h1>
 
 <form method="get" name="ofrm" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 
 </th>
 <td valign="top" align="center"><h3>Flow <?= $sumlbl ?></h3>
@@ -247,7 +247,7 @@ if($jdv){
 }
 ?>
 
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th>Device</th>
 <th><?= $inflbl ?></th>
 <th width="60%">Flows</th>
@@ -340,7 +340,7 @@ if($jdv){
 ?>
 </table></form>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Devices</td></tr>
+<tr class="bgsub"><td><?= $row ?> Devices</td></tr>
 </table>
 <?php
 

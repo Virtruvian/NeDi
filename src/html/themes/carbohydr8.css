@@ -101,6 +101,10 @@ textarea {
 	font: 11px lucida console, fixedsys;
 	color: #666666;
 }
+input.button{
+	padding: 3px;
+	margin : 2px;
+}
 
 /* Image Properties */
 img{
@@ -146,7 +150,7 @@ img.panel{
 }
 /* Topmenu inspired by line25.com */
 #nav {
-	width: 520px;
+	min-width: 50em;
 }
 
 #nav ul ul {
@@ -242,8 +246,24 @@ table.fixed{
 	table-layout:fixed;
 }
 
+.qrt{
+	width: 25%;
+}
+
+.half{
+	width: 50%;
+}
+
+.tqrt{
+	width: 75%;
+}
+
 .full{
 	width: 100%;
+}
+
+.xs{
+	width: 40px;
 }
 
 .s{
@@ -251,15 +271,19 @@ table.fixed{
 }
 
 .m{
-	width: 150px;
+	width: 120px;
 }
 
 .l{
-	width: 300px;
+	width: 220px;
 }
 
 .xl{
-	width: 500px;
+	width: 320px;
+}
+
+.xxl{
+	width: 600px;
 }
 
 .lft{
@@ -290,6 +314,18 @@ table.fixed{
 	white-space: nowrap;
 }
 
+.bctr{
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+.flft{
+	float: left;
+}
+.frgt{
+	float: right;
+}
+
 .genpad{
 	background-color: #fff;
 	border:1px solid black;
@@ -299,7 +335,6 @@ table.fixed{
 
 .textpad{
 	margin: 10px auto;
-	width: 75%;
 	padding: 15px;
 	border-spacing: 1px;
 	border: 3px inset #505050;
@@ -356,12 +391,12 @@ table.fixed{
 .crit{background-color: #f09090}
 .part{background-image:url('../img/dia.png')}
 
-/* Default Group Based Module Colors */
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgtop, .bgmain{
 	background-image: URL(square.png)
 }
 
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	border-radius: 5px;
 	background-color: #999999;
 	-webkit-box-shadow: 0 4px 8px rgba(0,0,0,0.6), inset 0 1px rgba(250,250,250,0.3), inset 0 10px rgba(250,250,250,0.2), inset 0 10px 20px rgba(250,250,250,0.25), inset 0 -16px 32px rgba(0,0,0,0.4);

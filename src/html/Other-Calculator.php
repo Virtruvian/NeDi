@@ -16,8 +16,9 @@ if( !isset($_GET['xls']) ) {
 ?>
 <h1>IP Calculator</h1>
 <form method="get" action="<?= $self ?>.php" name="calc">
-<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content" ><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <th>
 IP <?= $adrlbl ?> <input type="text" name="ip" value="<?= $getip ?>" class="m">
 / <input type="text" name="nmsk" value="<?= $getmsk ?>" class="m">
@@ -76,14 +77,14 @@ if( !isset($_GET['xls']) ) {
 ?>
 <h2>Base Info</h2>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>1"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
-<tr class="txta"><th class="<?= $modgroup[$self] ?>2"><?= $adrlbl ?></th><td class="blu code"><?= $ip ?> (<?= sprintf("%u", ip2long($ip)) ?>)</td><td class="blu code"><?= $bip ?></td><td class="blu code"><?= $hip ?></td></tr>
-<tr class="txtb"><th class="<?= $modgroup[$self] ?>2"><?= $msklbl ?></th><td class="grn code"><?= $mask ?> = <?= $pfix ?> (<?= $dmsk ?>)</td><td class="grn code"><?= $bmsk ?></td><td class="grn code"><?= $hmsk ?></td></tr>
-<tr class="txta"><th class="<?= $modgroup[$self] ?>2">Wildcard</th><td class="grn code"><?= $wmsk ?></td><td class="grn code"><?= $bwmsk ?></td><td class="grn code"><?= $hwmsk ?></td></tr>
-<tr class="txtb"><th class="<?= $modgroup[$self] ?>2"><?= $netlbl ?></th><td class="prp code"><?= $net ?></td><td class="prp code"><?= $bnet ?></td><td class="prp code"><?= $hnet ?></td></tr>
-<tr class="txta"><th class="<?= $modgroup[$self] ?>2">Broadcast</th><td class="prp code"><?= $bc ?></td><td class="prp code"><?= $bbc ?></td><td class="prp code"><?= $hbc ?></td></tr>
-<tr class="txtb"><th class="<?= $modgroup[$self] ?>2">1. Host</th><td class="drd code"><?= $fho ?></td><td class="drd code"><?= $bfho ?></td><td class="drd code"><?= $hfho ?></td></tr>
-<tr class="txta"><th class="<?= $modgroup[$self] ?>2">n. Host</th><td class="drd code"><?= $lho ?> (<?= $nho ?> total)</td><td class="drd code"><?= $blho ?></td><td class="drd code"><?= $hlho ?></td></tr>
+<tr class="bgmain"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
+<tr class="txta"><th class="bgsub"><?= $adrlbl ?></th><td class="blu code"><?= $ip ?> (<?= sprintf("%u", ip2long($ip)) ?>)</td><td class="blu code"><?= $bip ?></td><td class="blu code"><?= $hip ?></td></tr>
+<tr class="txtb"><th class="bgsub"><?= $msklbl ?></th><td class="grn code"><?= $mask ?> = <?= $pfix ?> (<?= $dmsk ?>)</td><td class="grn code"><?= $bmsk ?></td><td class="grn code"><?= $hmsk ?></td></tr>
+<tr class="txta"><th class="bgsub">Wildcard</th><td class="grn code"><?= $wmsk ?></td><td class="grn code"><?= $bwmsk ?></td><td class="grn code"><?= $hwmsk ?></td></tr>
+<tr class="txtb"><th class="bgsub"><?= $netlbl ?></th><td class="prp code"><?= $net ?></td><td class="prp code"><?= $bnet ?></td><td class="prp code"><?= $hnet ?></td></tr>
+<tr class="txta"><th class="bgsub">Broadcast</th><td class="prp code"><?= $bc ?></td><td class="prp code"><?= $bbc ?></td><td class="prp code"><?= $hbc ?></td></tr>
+<tr class="txtb"><th class="bgsub">1. Host</th><td class="drd code"><?= $fho ?></td><td class="drd code"><?= $bfho ?></td><td class="drd code"><?= $hfho ?></td></tr>
+<tr class="txta"><th class="bgsub">n. Host</th><td class="drd code"><?= $lho ?> (<?= $nho ?> total)</td><td class="drd code"><?= $blho ?></td><td class="drd code"><?= $hlho ?></td></tr>
 </table>
 <?php
 }
@@ -104,9 +105,9 @@ if ($getsub){
 ?>
 <h2>Subnet <?= $sumlbl ?></h2>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>1"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
-<tr class="txta"><th class="<?= $modgroup[$self] ?>1">Mask</th><td class="grn code"><?= $smask ?> = <?= $spfix ?></td><td class="grn code"><?= $bsmsk ?></td><td class="grn code"><?= $hsmsk ?></td></tr>
-<tr class="txtb"><th class="<?= $modgroup[$self] ?>1">Wildcard</th><td class="grn code"><?= $wsmsk ?></td><td class="grn code"><?= $bwsmsk ?></td><td class="grn code"><?= $hwsmsk ?></td></tr>
+<tr class="bgmain"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
+<tr class="txta"><th class="bgmain">Mask</th><td class="grn code"><?= $smask ?> = <?= $spfix ?></td><td class="grn code"><?= $bsmsk ?></td><td class="grn code"><?= $hsmsk ?></td></tr>
+<tr class="txtb"><th class="bgmain">Wildcard</th><td class="grn code"><?= $wsmsk ?></td><td class="grn code"><?= $bwsmsk ?></td><td class="grn code"><?= $hwsmsk ?></td></tr>
 </table>
 <p>
 <h2>Subnets</h2>
@@ -121,7 +122,7 @@ if ($getsub){
 				"tot"=>"$totlbl Hosts"
 				);
 
-		TblHead("$modgroup[$self]2",3);
+		TblHead("bgsub",3);
 
 		$nsnets = pow(2, ($spfix-$pfix) );
 		$snoff  = pow(2, (32 - $spfix) );
@@ -160,15 +161,16 @@ if ($getsub){
 ?>
 <h2>Supernet</h2>
 <table class="content" >
-<tr class="<?= $modgroup[$self] ?>1"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
-<tr class="txta"><th class="<?= $modgroup[$self] ?>1">Mask</th><td class="grn code"><?= $smask ?> = <?= $spfix ?></td><td class="grn code"><?= $bsmsk ?></td><td class="grn code"><?= $hsmsk ?></td></tr>
-<tr class="txtb"><th class="<?= $modgroup[$self] ?>1">Wildcard</th><td class="grn code"><?= $wsmsk ?></td><td class="grn code"><?= $bwsmsk ?></td><td class="grn code"><?= $hwsmsk ?></td></tr>
-<tr class="txta"><th class="<?= $modgroup[$self] ?>1">Network</th><td class="prp code"><?= $snet ?></td><td class="prp code"><?= $bsnet ?></td><td class="prp code"><?= $hsnet ?></td></tr>
-<tr class="txtb"><th class="<?= $modgroup[$self] ?>1">Broadcast</th><td class="prp code"><?= $sbc ?></td><td class="prp code"><?= $bsbc ?></td><td class="prp code"><?= $hsbc ?></td></tr>
+<tr class="bgmain"><th width="80">&nbsp;</th><th width="30%">Dotted Decimal</th><th>Binary</th><th>Hexadecimal</th></tr>
+<tr class="txta"><th class="bgmain">Mask</th><td class="grn code"><?= $smask ?> = <?= $spfix ?></td><td class="grn code"><?= $bsmsk ?></td><td class="grn code"><?= $hsmsk ?></td></tr>
+<tr class="txtb"><th class="bgmain">Wildcard</th><td class="grn code"><?= $wsmsk ?></td><td class="grn code"><?= $bwsmsk ?></td><td class="grn code"><?= $hwsmsk ?></td></tr>
+<tr class="txta"><th class="bgmain">Network</th><td class="prp code"><?= $snet ?></td><td class="prp code"><?= $bsnet ?></td><td class="prp code"><?= $hsnet ?></td></tr>
+<tr class="txtb"><th class="bgmain">Broadcast</th><td class="prp code"><?= $sbc ?></td><td class="prp code"><?= $bsbc ?></td><td class="prp code"><?= $hsbc ?></td></tr>
 </table>
 <?php
 	}
 	echo "</table>\n";
 }
+
 include_once ("inc/footer.php");
 ?>

@@ -51,8 +51,9 @@ $cols = array(	"device"=>"Device",
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" name="report" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 <td valign="top">
 
 <?php Filters(1); ?>

@@ -109,8 +109,9 @@ ob_end_flush();
 ?>
 <form name="form" action="<?= $self ?>.php" method="post">
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>1">
-<th width="50" class="<?= $modgroup[$self] ?>1"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<tr class="bgmain">
+<th width="50" class="bgmain"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
+</th>
 
 <?php  foreach (array_keys($mysrv) as $p ) { ?>
 <th><img src="img/32/<?= $mysrv[$p]['ico'] ?>.png" title="<?= $p ?>"><p>
@@ -135,13 +136,13 @@ if ($sys['threads'] and $isadmin){
 </table></td></tr></table>
 
 <h2>Processes</h2>
-<div class="textpad code txta">
+<div class="textpad code txta tqrt">
 <?= $procs ?>
 </div>
 <br><p>
 
 <h2><?= $lodlbl ?></h2>
-<div class="textpad code txta">
+<div class="textpad code txta tqrt">
 <?php
 	if(PHP_OS == "OpenBSD"){
 		system("/usr/bin/top -n -1");
@@ -155,7 +156,7 @@ if ($sys['threads'] and $isadmin){
 <br><p>
 
 <h2>Disks</h2>
-<div class="textpad code txta">
+<div class="textpad code txta tqrt">
 <?php
 	if(preg_match("/OpenBSD|Linux/",PHP_OS) ){
 		system("df -h");
@@ -167,7 +168,7 @@ if ($sys['threads'] and $isadmin){
 <br><p>
 
 <h2><?= $netlbl ?></h2>
-<div class="textpad code txta">
+<div class="textpad code txta tqrt">
 <?php
 	if(PHP_OS == "OpenBSD"){
 		system("/usr/bin/systat -b netstat");
@@ -181,7 +182,7 @@ if ($sys['threads'] and $isadmin){
 <br><p>
 
 <h2>Sensors</h2>
-<div class="textpad code txta">
+<div class="textpad code txta tqrt">
 <?php
 	if(PHP_OS == "OpenBSD"){
 		system("/usr/bin/systat -b sensors");
@@ -193,10 +194,12 @@ if ($sys['threads'] and $isadmin){
 <br><p>
 
 <h2>SMS <?= $oublbl ?></h2>
-<div class="textpad code txta">
+<div class="textpad code txta tqrt">
 <?php
-	if(PHP_OS == "OpenBSD"){
-		system("cat /var/spool/sms/outgoing/*");
+	if( file_exists( '/var/spool/sms/outgoing/') ){
+		if(PHP_OS == "OpenBSD"){
+			system("cat /var/spool/sms/outgoing/*");
+		}
 	}
 ?>
 </div>

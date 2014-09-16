@@ -18,8 +18,8 @@ $opt = isset($_GET['opt']) ? "checked" : "";
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" action="<?= $self ?>.php">
-<table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<table class="content"><tr class="bgmain">
+<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 
 </th>
 <th>
@@ -69,7 +69,7 @@ if($res){
 
 <h2>AP <?= $lstlbl ?></h2>
 
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th colspan="4"><img src="img/16/node.png"><br><?= $namlbl ?> - IP - MAC <?= $fltlbl ?></th>
 <th colspan="3"><img src="img/16/dev.png"><br>Device - IF - Nodes</th>
 <th colspan="2"><img src="img/16/clock.png"><br><?= $fislbl ?> / <?= $laslbl ?></th>
@@ -111,7 +111,7 @@ while( ($n = DbFetchRow($res)) ){
 ?>
 </table>
 <table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> out of <?= $nno ?> Nodes <?= $fltlbl ?> <?= $nwmac ?> MACs</td></tr>
+<tr class="bgsub"><td><?= $row ?> out of <?= $nno ?> Nodes <?= $fltlbl ?> <?= $nwmac ?> MACs</td></tr>
 </table>
 <?php
 include_once ("inc/footer.php");

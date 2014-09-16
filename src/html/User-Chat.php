@@ -22,15 +22,15 @@ if($msg){
 <?php  if( !isset($_GET['print']) ) { ?>
 
 <form method="get" name="dynfrm" action="<?= $self ?>.php">
-<table class="content" ><tr class="<?= $modgroup[$self] ?>1">
+<table class="content" ><tr class="bgmain">
 <th width="50">
 
-<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png" title="<?= $self ?>"></a>
 
 </th>
 <th>
 
-<img src="img/16/say.png"><input type="text" name="msg" class="xl" OnFocus="select();">
+<img src="img/16/say.png"><input type="text" name="msg" class="xl" OnFocus="select();" autofocus>
 
 </th>
 <th width="50">
@@ -41,7 +41,7 @@ if($msg){
 </th>
 <th width="80">
 
-<input type="submit" class="button" name="create" value="<?= $wrtlbl ?>"></th>
+<input type="submit" class="button" name="create" value="<?= $sndlbl ?>"></th>
 </table></form>
 <p>
 <?php
@@ -51,7 +51,7 @@ $res   = DbQuery($query,$link);
 if($res){
 ?>
 <h2><?= $msglbl ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
+<table class="content"><tr class="bgsub">
 <th width="40"><img src="img/16/user.png"><br>User</th>
 <th width="100"><img src="img/16/clock.png"><br><?= $timlbl ?></th>
 <th><img src="img/16/say.png"><br><?= $cmtlbl ?></th>
@@ -61,7 +61,7 @@ if($res){
 		if ($_SESSION['user'] == $m[1]){$bg = "txta"; $bi = "imga";$me=1;}else{$bg = "txtb"; $bi = "imgb";$me=0;}
 		list($fc,$lc) = Agecol($m[0],$m[0],$me);
 		$time = date($_SESSION['timf'],$m[0]);
-		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],1);
+		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],$m[1],1);
 		echo "</th>\n";
 		echo "<td bgcolor=#$fc>$time</td><td>";
 		$lnkmsg = preg_replace('/(http[s]?:\/\/[^\s]*)/',"<a href=\"$1\" target=\"window\">$1</a>",$m[2]);

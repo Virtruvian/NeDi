@@ -101,6 +101,10 @@ input {
 textarea {
 	color: #662222;
 }
+input.button{
+	padding: 4px;
+	margin : 2px;
+}
 
 /* Image Properties */
 img{
@@ -143,7 +147,7 @@ img.panel{
 }
 /* Topmenu inspired by line25.com */
 #nav {
-	width: 520px;
+	min-width: 50em;
 }
 
 #nav ul ul {
@@ -227,10 +231,6 @@ table.content{
 	background-color: #660000;
 }
 
-td.content{
-	text-align: left;
-}
-
 td.helper{
 	padding: 5px 10px;
 	vertical-align: top;
@@ -240,24 +240,44 @@ table.fixed{
 	table-layout:fixed;
 }
 
+.qrt{
+	width: 25%;
+}
+
+.half{
+	width: 50%;
+}
+
+.tqrt{
+	width: 75%;
+}
+
 .full{
 	width: 100%;
 }
 
-.s{
+.xs{
 	width: 40px;
 }
 
+.s{
+	width: 80px;
+}
+
 .m{
-	width: 100px;
+	width: 130px;
 }
 
 .l{
-	width: 180px;
+	width: 190px;
 }
 
 .xl{
 	width: 300px;
+}
+
+.xxl{
+	width: 600px;
 }
 
 .lft{
@@ -288,6 +308,18 @@ table.fixed{
 	white-space: nowrap;
 }
 
+.bctr{
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+.flft{
+	float: left;
+}
+.frgt{
+	float: right;
+}
+
 .genpad{
 	background-color: #fff;
 	border:1px solid black;
@@ -297,7 +329,6 @@ table.fixed{
 
 .textpad{
 	margin: 8px auto;
-	width: 70%;
 	padding: 8px;
 	border-spacing: 2px;
 	border: 2px solid #eecc44;
@@ -357,12 +388,12 @@ table.fixed{
 .crit{background-color: #ff4444}
 .part{background-image:url('../img/dia.png')}
 
-/* Default Group Based Module Colors */
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgtop, .bgmain{
 	background-image: URL(bgruby.png)
 }
 
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	background-color: #901010
 }
 

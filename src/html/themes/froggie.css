@@ -55,6 +55,10 @@ select {
 	color: #004400;
 	background-color: #eeffee;
 }
+input.button{
+	padding: 2px;
+	margin : 2px;
+}
 
 textarea {
 	color: #004400;
@@ -128,19 +132,17 @@ img.panel{
 :link:hover, :visited:hover {color: #078}
 :link:active, :visited:active {color: #066}
 
-/* Header table & Footer div*/
+/* Header table */
 #header{
 	width: 100%;
 	border-spacing: 0px;
 	border: 1px solid rgb(36, 62, 88);
-	background-color: #44606a;
-	border-radius: 6px;
-	-webkit-border-radius: 6px;
+	background-color: rgb(26, 52, 78);
 }
 
 /* Topmenu inspired by line25.com */
 #nav {
-	width: 480px;
+	min-width: 52em;
 }
 
 #nav ul ul {
@@ -238,24 +240,44 @@ table.fixed{
 	table-layout:fixed;
 }
 
+.qrt{
+	width: 25%;
+}
+
+.half{
+	width: 50%;
+}
+
+.tqrt{
+	width: 75%;
+}
+
 .full{
 	width: 100%;
 }
 
+.xs{
+	width: 30px;
+}
+
 .s{
-	width: 40px;
+	width: 70px;
 }
 
 .m{
-	width: 120px;
+	width: 100px;
 }
 
 .l{
-	width: 200px;
+	width: 160px;
 }
 
 .xl{
-	width: 280px;
+	width: 240px;
+}
+
+.xxl{
+	width: 480px;
 }
 
 .lft{
@@ -286,6 +308,18 @@ table.fixed{
 	white-space: nowrap;
 }
 
+.bctr{
+	display:block;
+	margin-left:auto;
+	margin-right:auto;
+}
+.flft{
+	float: left;
+}
+.frgt{
+	float: right;
+}
+
 .genpad{
 	background-color: #fff;
 	border:1px solid black;
@@ -296,7 +330,6 @@ table.fixed{
 .textpad{
 	color: #334;
 	margin: 4px auto;
-	width: 80%;
 	padding: 4px;
 	border-spacing: 1px;
 	border: 1px solid #008800;
@@ -374,8 +407,14 @@ table.fixed{
 .part{background-image:url('../img/dia.png')}
 
 
-/* Module Colors */
-.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+/* Content Colors */
+.bgtop{
+	background: -webkit-linear-gradient( #224466, #082A4C );
+	background: linear-gradient( #224466, #082A4C );
+	border-color: rgb(22, 34, 44) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.25);
+	border-top: 1px solid rgb(22, 34, 44);
+}
+.bgmain{
 	background: -webkit-linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
 	background: linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
 	border-color: rgb(22, 34, 44) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.25);
@@ -385,7 +424,7 @@ table.fixed{
 	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+.bgsub{
 	background: -webkit-linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
 	background: linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
 	border-color: rgb(22, 34, 44) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.25);
@@ -393,6 +432,7 @@ table.fixed{
 }
 
 #footer{
+	color: #888;
 	margin: 6px auto;
 	width: 99%;
 	padding: 4px;

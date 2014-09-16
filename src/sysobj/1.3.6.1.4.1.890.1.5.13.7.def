@@ -2,7 +2,7 @@
  
 # General
 SNMPv	2HC
-Type	IES5005
+Type	IES-5005
 Typoid	
 Sysdes	
 OS	other
