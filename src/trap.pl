@@ -17,7 +17,7 @@ Upon receiving a trap, the script will check whether a device with the source IP
 
 The script conaints some basic mappings to further raise authentication and configuration related events. Look at the source, if you want to add more mappings. Trap handling has not been further pursued in favour of syslog messages.
 
-Test with: echo Test\\n1.2.3.4\\nThis is a test\\nLooking good\\nI think!|/var/nedi/trap.pl
+Test with: echo Test\\n1.2.3.4\\nThis is a test\\nLooking good\\nI think...|/var/nedi/trap.pl
 
 =head2 LICENSE
 
@@ -47,8 +47,8 @@ use strict;
 use vars qw($p $now $info %mon %srcna %opt);
 $now = time;
 
-$opt{'d'} = 1;
-$opt{'v'} = 1;
+#$opt{'d'} = 1;
+#$opt{'v'} = 1;
 
 $p = $0;
 $p =~ s/(.*)\/(.*)/$1/;

@@ -122,7 +122,7 @@ $link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 <?= (Devcli($flc, 22, 2)) ?><p>
 <input type="hidden" name="flc" value="<?= $flc ?>">
-<input type="submit" value="<?= $addlbl ?>">
+<input type="submit" class="button" value="<?= $addlbl ?>">
 
 </th>
 </tr></table>
@@ -130,7 +130,7 @@ $link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 <h2>Openflow Devices</h2>
 
-<?PHP
+<?php
 if($del){
 	$url = "http://$flc:8080/wm/staticflowentrypusher/json";
 	$opt = array('http' =>
@@ -238,7 +238,7 @@ if($jdv){
 			$ofd[$d[0]]['typ'] = $d[3];
 			$ofd[$d[0]]['po'] = $d[16];
 			$ofd[$d[0]]['ico'] = $d[18];
-			$ofd[$d[0]]['stk'] = ($d[29] > 1)?"<img src=\"img/$d[29].png\" title=\"Stack\">":"";
+			$ofd[$d[0]]['stk'] = Digit($dev[29]);
 		}else{
 			echo "<h4>$dsclbl ".$ofdarr[$k]['inetAddress']."!</h4>";
 		}
@@ -259,7 +259,7 @@ if($jdv){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		TblRow($bg);
 		$ud  = urlencode($k);
-		TblCell($k,"","class=\"$bi\" width=\"100px\"","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/".$ofd[$k]['ico'].".png\" title=\"".$ofd[$k]['typ']."\"></a>".$ofd[$k]['stk']."<br>","th-img");
+		TblCell($k,'',"$bi ctr m","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/".$ofd[$k]['ico'].".png\" title=\"".$ofd[$k]['typ']."\"></a>".$ofd[$k]['stk']."<br>");
 		TblCell( $ofd[$k]['id']." ".$ofd[$k]['ma']." ".$ofd[$k]['hw']." ".Devcli($ofd[$k]['ip'],$ofd[$k]['po']) );
 		echo "<td>\n";
 
@@ -342,7 +342,7 @@ if($jdv){
 <table class="content">
 <tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Devices</td></tr>
 </table>
-<?PHP
+<?php
 
 include_once ("inc/footer.php");
 ?>

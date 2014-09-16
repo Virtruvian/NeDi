@@ -10,7 +10,7 @@ $printable = 0;
 $_SESSION['gsiz'] = 6;
 $_SESSION['lsiz'] = 8;
 $_SESSION['view'] = "";
-$_SESSION['date'] = 'j.M y G:i';
+$_SESSION['timf'] = 'j.M y G:i';
 $_SESSION['tz'] = "GMT";
 
 $self = "mh";
@@ -35,7 +35,7 @@ require_once ("inc/libnod.php");
 
 <body>
 
-<?PHP
+<?php
 $link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query = GenQuery('nodes','s','nodes.*,location,speed,duplex,pvid,dinoct,doutoct,dinerr,douterr,dindis,doutdis,dinbrc','lastseen','1',array('nodip'),array('='),array( ip2long($_SERVER[REMOTE_ADDR]) ),array(),'LEFT JOIN devices USING (device) LEFT JOIN interfaces USING (device,ifname)');
 $res   = DbQuery($query,$link);

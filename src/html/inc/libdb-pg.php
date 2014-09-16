@@ -43,7 +43,7 @@ function DbFreeResult($r){
 	if($debug){
 		echo "<div class=\"textpad code good\" style=\"width:600px\">";
 		debug_print_backtrace();
-		echo "</div>\n";
+		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";
 	}
         return pg_free_result($r);
 }
@@ -65,10 +65,6 @@ function DbCast($v,$t){											# Based on GH's idea
 }
 
 function DbIPv6($v){
-# Behold non inet attempts:
-#	return ($v)?pg_unescape_bytea($v):'';
-#	return ($v)?rtrim(chunk_split(pg_unescape_bytea($v),4,':'),':'):'';
-#	return ($v)?inet_ntop( pack("C16", str_split( pg_unescape_bytea($v),2) ) ):'';
 	return $v;
 }
 
@@ -140,7 +136,7 @@ function AdOpVal($c,$o,$v){
 	}else{
 		$v = "'$v'";
 	}
-	if( strstr($o, '~') )$c = "CAST($c AS text)";
+	if( strstr($o, '~') or strstr($o, 'LIKE') )$c = "CAST($c AS text)";
 	
 	return "$c $o $v";
 }
@@ -185,7 +181,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 				if($c){$s[]="$c $o '$st[$x]'";}
 				$x++;
 			}
-			$qry = "UPDATE $tbl SET ". implode(',',$s) ." WHERE $col $ord '$lim'";
+			$qry = "UPDATE $tbl SET ". implode(',',$s) ." WHERE $col $ord $lim";
 		}
 	}elseif($do ==  'b'){
 		$qry = "SELECT datname FROM pg_database WHERE datistemplate = false and datname $col '$tbl'";
@@ -198,7 +194,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 	}elseif($do ==  'o'){
 		$qry = "VACUUM $tbl";
 	}elseif($do == 'c'){
-		$qry = "SELECT column_name,data_type,is_nullable,column_default from INFORMATION_SCHEMA.COLUMNS where table_name = '$tbl' ORDER BY ordinal_position";
+		$qry = "SELECT column_name,data_type,is_nullable,'-',column_default from INFORMATION_SCHEMA.COLUMNS where table_name = '$tbl' ORDER BY ordinal_position";
 	}elseif($do == 'r'){
 		$qry = "VACUUM FULL $tbl";
 	}elseif($do == 'v'){
@@ -249,7 +245,8 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 	if($debug){
 		echo "<div class=\"textpad code warn\" style=\"width:600px\">";
 		debug_print_backtrace();
-		echo "<p><a href=\"System-Export.php?act=c&query=".urlencode($qry)."\">$qry</a></div>\n";
+		echo "<p><a href=\"System-Export.php?act=c&query=".urlencode($qry)."\">$qry</a>\n";
+		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";
 	}
 
 	return $qry;

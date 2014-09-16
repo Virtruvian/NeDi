@@ -53,7 +53,7 @@ if(isset( $user) and preg_match('/^\/C=/',$user) and isset($_SERVER['SSL_CLIENT_
 	$user = $_SERVER['SSL_CLIENT_S_DN_CN'];
 }
 
-if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL injection as suggested by Daniel
+if( isset( $user) and preg_match('/^[A-Za-z0-9@\.-_]+$/',$user) ){			# Avoid SQL injection as suggested by Daniel
 	$form_user = $user;									# SSO Code for HTTPAUTH PassTrough by Juergen Vigna
 	$form_pass = $_POST['pass'];
 
@@ -144,7 +144,7 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL i
 		$_SESSION['group'] = "usr,";
 		$_SESSION['view']  = $usr[15];
 		$_SESSION['bread'] = array();
-		$_SESSION['ver']   = "1.0.9-010";
+		$_SESSION['ver']   = "1.1.155";
 		if( strstr($guiauth,'ldap') and $user != "admin" and is_array($ldapmap) ){
 			if (($ldapmap[0]) and in_array($ldapmap[0],$ldapusersgrp)){
 				$_SESSION['group']   .= "adm,";
@@ -178,7 +178,7 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL i
 				$_SESSION['map']  = $usr[13] & 64;
 				$_SESSION['gneg'] = $usr[13] & 128;
 				$_SESSION['nip']  = $usr[13] & 256;
-				$_SESSION['date'] = ($usr[14])?substr($usr[14],0,-3):'j.M y G:i';
+				$_SESSION['timf'] = ($usr[14])?substr($usr[14],0,-3):'j.M y G:i';
 				$_SESSION['tz']   = $tzone[substr($usr[14],-3)];
 			}else{
 				$_SESSION['lang'] = 'english';
@@ -188,7 +188,7 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL i
 				$_SESSION['col']  = 6;
 				$_SESSION['lim']  = 5;
 				$_SESSION['gsiz'] = 2;
-				$_SESSION['date'] = 'j.M y G:i';
+				$_SESSION['timf'] = 'j.M y G:i';
 			}
 		}else{
 			if ($usr[2] &  1) {$_SESSION['group']	.= "adm,";}
@@ -211,11 +211,12 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL i
 			$_SESSION['map']  = $usr[13] & 64;
 			$_SESSION['gneg'] = $usr[13] & 128;
 			$_SESSION['nip']  = $usr[13] & 256;
-			$_SESSION['date'] = ($usr[14])?substr($usr[14],0,-3):'j.M y G:i';
+			$_SESSION['timf'] = ($usr[14])?substr($usr[14],0,-3):'j.M y G:i';
 			$_SESSION['tz']   = $tzone[substr($usr[14],-3)];
 			$query	= GenQuery('users','u','usrname','=',$user,array('lastlogin'),array(),array(time()) );
 			DbQuery($query,$link);
 		}
+		$_SESSION['datf'] = substr($_SESSION['timf'],0,strrpos($_SESSION['timf'],' '));
 	}else{
 	    print DbError($link);
 	}
@@ -231,8 +232,8 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL i
 ?>
 <html>
 <head>
-<title>NeDi 1.0.9-010</title>
-<meta name="generator" content="NeDi 1.0.9-010">
+<title>NeDi 1.1.155</title>
+<meta name="generator" content="NeDi 1.1.155">
 <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
 <link href="themes/default.css" type="text/css" rel="stylesheet">
 <link rel="shortcut icon" href="img/favicon.ico">
@@ -242,7 +243,7 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL i
 <form name="login" method="post" action="index.php?goto=<?= urlencode($goto) ?>">
 <table class="login">
 <tr class="loginbg"><th colspan="3">
-<?= ( file_exists('themes/custom.png') )?'<img src="themes/custom.png"><br>':'<a href="http://www.nedi.ch"><img src="img/nedib.png"></a>'; ?>
+<a href="http://www.nedi.ch"><img src="img/nedib.png"></a>
 </th></tr>
 <tr>
 <th class="txta" align="center" colspan="3">
@@ -251,9 +252,9 @@ if( isset( $user) and preg_match('/^[A-Za-z0-9@\.]+$/',$user) ){			# Avoid SQL i
 <?= $disc ?>
 </th></tr>
 <tr class="loginbg">
-<th>User <input type="text" name="user" size="15"></th>
-<th>Pass <input type="password" name="pass" size="15"></th>
-<th><input type="submit" value="Login">
+<th>User <input type="text" name="user" style="width:150px"></th>
+<th>Pass <input type="password" name="pass" style="width:150px"></th>
+<th><input type="submit" class="button" value="Login">
 </th>
 </tr>
 </table>

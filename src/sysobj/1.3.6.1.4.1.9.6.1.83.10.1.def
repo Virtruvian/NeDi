@@ -4,18 +4,18 @@
 SNMPv	2HC
 Type	SG300-10
 Typoid	
-Sysdes	
+Sysdes	1.3.6.1.4.1.9.6.1.101.53.14.1.11.1
 OS	other
 Icon	w2bp
 Size	1
 Bridge	normal
 ArpND	
-Dispro	LLDP
+Dispro	CDP
 Serial	1.3.6.1.4.1.9.6.1.101.53.14.1.5.1
-Bimage	1.3.6.1.4.1.9.6.1.101.2.10.0
+Bimage	1.3.6.1.4.1.9.6.1.101.53.14.1.2.1
 CfgChg	
 CfgWrt	
-VLnams	
+VLnams	1.3.6.1.4.1.9.6.1.101.48.70
 VLnamx	
 Group	
 Mode	

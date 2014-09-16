@@ -64,7 +64,7 @@ $cols = array(	"tgtNS"=>"$tgtlbl",
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
 <td>
-<?PHP Filters(); ?>
+<?php Filters(); ?>
 
 </td>
 <th>
@@ -80,9 +80,9 @@ foreach ($cols as $k => $v){
 </th>
 <th width="80">
 
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 <p>
-<input type="submit" name="del" value="<?= $dellbl ?>" onclick="return confirm('Tracker <?= $dellbl ?>?')" >
+<input type="submit" class="button" name="del" value="<?= $dellbl ?>" onclick="return confirm('Tracker <?= $dellbl ?>?')" >
 
 </th>
 </tr></table></form><p>
@@ -175,7 +175,7 @@ if( count($in) ){
 				}elseif($c == $trk['source']){
 					echo "<td class=\"blu\">$trk[$c]</td>";
 				}elseif($c == "time"){
-					echo "<td bgcolor=\"#$cc\">".date($datfmt, $trk[$c])."</td>";
+					echo "<td bgcolor=\"#$cc\">".date($_SESSION['timf'], $trk[$c])."</td>";
 				}elseif($c == 'cfgNS'){
 ?>
 <td>
@@ -215,7 +215,7 @@ if( count($in) ){
 					echo "<td>$trk[$c]</td>";
 				}
 			}
-			echo "</tr>\n";
+			echo "	</tr>\n";
 		}
 		DbFreeResult($res);
 	}else{

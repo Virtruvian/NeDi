@@ -60,7 +60,7 @@ if($res){
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
-VRF <input type="text" name="vrf" value="<?= $vrf ?>" size="12">
+VRF <input type="text" name="vrf" value="<?= $vrf ?>" class="m">
 </th>
 <th>
 <?= $srclbl ?> <select size=1 name="src">
@@ -83,7 +83,7 @@ foreach (array_keys($netif) as $n ){
 }
 ?>
 </select>
-<input type="submit" value="Trace" name="trc">
+<input type="submit" class="button" value="Trace" name="trc">
 </th>
 <th>
 Router
@@ -97,7 +97,7 @@ foreach (array_keys($devtyp) as $r ){
 }
 ?>
 </SELECT>
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 </th>
 </tr></table></form>
 <?php

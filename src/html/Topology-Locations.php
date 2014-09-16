@@ -3,16 +3,16 @@
 # Programmer: Remo Rickli (based on ideas of Steffen Scholz)
 
 $printable = 1;
-$exportxls = 0;
+$exportxls = 1;
 
 include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
-$in = isset($_GET['in']) ? $_GET['in'] : "";
-$op = isset($_GET['op']) ? $_GET['op'] : "";
-$st = isset($_GET['st']) ? $_GET['st'] : "";
-$co = isset($_GET['co']) ? $_GET['co'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
 
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 if($_SESSION['opt'] and !$ord and $in[0]) $ord = $in[0];
@@ -65,7 +65,7 @@ if( isset($_GET['del']) ){
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <td>
 
-<?PHP Filters(); ?>
+<?php Filters(); ?>
 
 </td>
 <th>
@@ -97,16 +97,16 @@ foreach ($cols as $k => $v){
 </td>
 <th width="80">
 
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 <p>
-<input type="submit" name="del" value="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')" >
+<input type="submit" class="button" name="del" value="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')" >
 
 </th>
 </tr></table></form><p>
 <?php
 }
 
-if( is_array($in) ){
+if( count($in) ){
 	Condition($in,$op,$st,$co);
 
 	TblHead("$modgroup[$self]2",1);
@@ -154,21 +154,21 @@ if( is_array($in) ){
 				}
 			}
 			TblRow($bg);
-			if(in_array("locBL",$col)){echo "<th class=\"$bi\" width=\"50\"><img src=\"img/16/$ico.png\" title=\"$tit\"> ".(($map==2)?chr($row+64):'')."</th>\n";}
-			if(in_array("id",$col)){echo "<td><a href=\"?in[]=id&op[]==&st[]=$l[0]&map=$map\">$l[0]</a>";}
-			if(in_array("region",$col)){echo "<td><a href=\"?in[]=region&op[]==&st[]=".urlencode($l[1])."&map=$map\">$l[1]</a>";}
-			if(in_array("city",$col)){echo "<td><a href=\"?in[]=city&op[]==&st[]=".urlencode($l[2])."&map=$map\">$l[2]</a>";}
-			if(in_array("building",$col)){echo "<td><a href=\"?in[]=building&op[]==&st[]=".urlencode($l[3])."&map=$map\">$l[3]</a>";}
-			if(in_array("x",$col)){echo "<td>$l[4]</td>";}
-			if(in_array("y",$col)){echo "<td>$l[5]</td>";}
-			if(in_array("ns",$col)){echo "<td>$ns</td>";}
-			if(in_array("ew",$col)){echo "<td>$ew</td>";}
-			if(in_array("locdesc",$col)){echo "<td>$l[8]</td>";}
+			if(in_array("locBL",$col))	TblCell("<img src=\"img/16/$ico.png\" title=\"$tit\"> ".(($map==2)?chr($row+64):''),'',"$bi ctr s" );
+			if(in_array("id",$col))		TblCell($l[0],"?in[]=id&op[]==&st[]=$l[0]&map=$map",'rgt s');
+			if(in_array("region",$col)) 	TblCell($l[1],"?in[]=region&op[]==&st[]=".urlencode($l[1])."&map=$map");
+			if(in_array("city",$col))	TblCell($l[2],"?in[]=city&op[]==&st[]=".urlencode($l[2])."&map=$map");
+			if(in_array("building",$col))	TblCell($l[3],"?in[]=building&op[]==&st[]=".urlencode($l[3])."&map=$map");
+			if(in_array("x",$col))		TblCell($l[4],'','rgt');
+			if(in_array("y",$col))		TblCell($l[5],'','rgt');
+			if(in_array("ns",$col))		TblCell($ns);
+			if(in_array("ew",$col))		TblCell($ew);
+			if(in_array("locdesc",$col))	TblCell($l[8]);
 			if(in_array("dvNS",$col)){
 				$lor = TopoLoc($l[1],$l[2],$l[3]);
 				$pop = DevPop(array('location'),array('like'),array($lor));
 				if($pop){
-					TblCell($pop,"Devices-List.php?in[]=location&op[]=like&st[]=".urlencode($lor),'',Bar($pop,100,'si'),'td-img');
+					TblCell(' '.$pop,"Devices-List.php?in[]=location&op[]=like&st[]=".urlencode($lor),'','+'.Bar($pop,100,'si'));
 				}else{
 					TblCell();
 				}
@@ -177,13 +177,13 @@ if( is_array($in) ){
 				$lor = TopoLoc($l[1],$l[2],$l[3]);
 				$pop = NodPop( array('location'),array('like'),array($lor),array() );
 				if($pop){
-					TblCell($pop,"Nodes-List.php?in[]=location&op[]=like&st[]=".urlencode($lor),'',Bar($pop,100,'si'),'td-img');
+					TblCell(' '.$pop,"Nodes-List.php?in[]=location&op[]=like&st[]=".urlencode($lor),'','+'.Bar($pop,100,'si'));
 				}else{
 					TblCell();
 				}
 			}
-			if(in_array("filNS",$col)){
-				echo "<td>";
+			if(in_array("filNS",$col) and !isset($_GET['xls']) ){
+				echo "		<td>";
 				$fp = 'topo';
 				if($l[1]) $fp .= '/'.preg_replace('/\W/','', $l[1]);
 				if($l[2]) $fp .= '/'.preg_replace('/\W/','', $l[2]);
@@ -193,14 +193,14 @@ if( is_array($in) ){
 					list($ico,$ed) = FileImg($fil);
 					echo "$ico ";
 				}
-				echo "</td>";
+				echo "		</td>";
 			}
-			if(in_array("cmdNS",$col)){
+			if(in_array("cmdNS",$col) and !isset($_GET['xls']) ){
 				$ur = urlencode($l[1]);
 				$uc = urlencode($l[2]);
 				$ub = urlencode($l[3]);
 				$ul = urlencode(TopoLoc($l[1],$l[2],$l[3]));
-				echo "<td align=\"right\">\n";
+				echo "		<td align=\"right\">\n";
 				if($ns and $ew){
 					echo "<a href=\"http://nominatim.openstreetmap.org/search.php?q=$ns,$ew\" target=\"window\"><img src=\"img/16/osm.png\" title=\"Openstreetmap\"></a>\n";
 					echo "<a href=\"http://www.google.com/maps?q=$ns,$ew\" target=\"window\"><img src=\"img/16/map.png\" title=\"Google Maps, Coords\"></a>\n";
@@ -213,9 +213,9 @@ if( is_array($in) ){
 				if($isadmin){
 					echo "<a href=\"Topology-Loced.php?id=1&del=1\"><img src=\"img/16/bcnl.png\" title=\"$dellbl\"></a>\n";
 				}
-				echo "</td>\n";
+				echo "		</td>\n";
 			}
-			echo "</tr>\n";
+			echo "	</tr>\n";
 		}
 		DbFreeResult($res);
 		?>

@@ -34,11 +34,11 @@ if($dli){
 	$query	= GenQuery('incidents','d','','','',array('id'),array('='),array($dli) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Incident $dli $dellbl OK</h5>";}
 }elseif($ugr){
-	$query	= GenQuery('incidents','u','id','=',$ugr,array('usrname','time','grp'),array(),array($_GET['usr'],$_GET['tme'],$grp) );
+	$query	= GenQuery('incidents','u',"id = '$ugr'",'','',array('usrname','time','grp'),array(),array($_GET['usr'],$_GET['tme'],$grp) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> Incident $ugr $updlbl OK</h5>";}
 	$grp = "";
 }elseif($ucm){
-	$query	= GenQuery('incidents','u','id','=',$ucm,array('usrname','comment'),array(),array($_GET['usr'],$cmt) );
+	$query	= GenQuery('incidents','u',"id = '$ucm'",'','',array('usrname','comment'),array(),array($_GET['usr'],$cmt) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5> Incident $ucm $updlbl OK</h5>";}
 }
 ?>
@@ -73,14 +73,14 @@ foreach (array_keys($igrp) as $ig){
 <?php selectbox("limit",$lim) ?>
 </select>
 </th>
-<th width="80"><input type="submit" name="sho" value="<?= $sholbl ?>">
+<th width="80"><input type="submit" class="button" name="sho" value="<?= $sholbl ?>">
 <p>
 <input type="hidden" name="off" value="<?= $nof ?>">
-<input type="submit" name="p" value=" < ">
-<input type="submit" name="n" value=" > ">
+<input type="submit" class="button" name="p" value=" < ">
+<input type="submit" class="button" name="n" value=" > ">
 </th>
 </tr></table></form><p>
-<?}?>
+<?php } ?>
 
 <h2><?= ($grp)?$igrp[$grp]:"" ?> <?= $inclbl ?> <?= $lstlbl ?></h2>
 

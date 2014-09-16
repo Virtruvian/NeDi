@@ -37,31 +37,45 @@ if( !preg_match("/net/",$_SESSION['group']) ){
 header("Content-type: image/svg+xml");
 include_once ("libmisc.php");
 $_GET = sanitize($_GET);
-$debug  = isset($_GET['debug']) ? $_GET['debug'] : "";
-
 
 /********** HTTP GET Based Conf ***********/
 $ifnum=@$_GET['i'];
 $ifname=@$_GET['in']?$_GET["in"]:"Interface $ifnum";  //Interface name that will be showed on top right of graph
 $ifnum=@$_GET['i'];
-$time_interval=@$_GET['ti'];	//Refresh time Interval
+$time_interval=@$_GET['r'];	//Refresh time Interval
 /********* Other conf *******/
 $scale_type="up";               //Autoscale default setup : "up" = only increase scale; "follow" = increase and decrease scale according to current graphed datas
 $nb_plot=200;                   //NB plot in graph
-$fetch_link = "rt-traffic.php?ip=$_GET[ip]&v=$_GET[v]&c=$_GET[c]&i=$ifnum";
+$fetch_link = "rt-data.php?ip=$_GET[ip]&v=$_GET[v]&c=$_GET[c]&t=$_GET[t]&i=$ifnum";
 
 //SVG attributes
+if($_GET['t'] == 't' or $_GET['t'] == 'u'){
+	$iclr = '36a';
+	$oclr = '69d';
+}elseif($_GET['t'] == 'b'){
+	$iclr = '63a';
+	$oclr = '96d';
+}elseif($_GET['t'] == 'm'){
+	$iclr = '3a6';
+	$oclr = '6d9';
+}elseif($_GET['t'] == 'e'){
+	$iclr = 'a33';
+	$oclr = 'd66';
+}elseif($_GET['t'] == 'd'){
+	$iclr = 'a63';
+	$oclr = 'd96';
+}
 $attribs['axis']='fill="black" stroke="black"';
-$attribs['in']='fill="#435370" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="7"';
-$attribs['out']='fill="#8092B3" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="7"';
-$attribs['graph_in']='fill="none" stroke="#435370" stroke-opacity="0.8"';
-$attribs['graph_out']='fill="none" stroke="#8092B3" stroke-opacity="0.8"';
+$attribs['in']='fill="#'.$iclr.'" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="7"';
+$attribs['out']='fill="#'.$oclr.'" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="7"';
+$attribs['graph_in']='fill="none" stroke="#'.$iclr.'" stroke-opacity="0.8"';
+$attribs['graph_out']='fill="none" stroke="#'.$oclr.'" stroke-opacity="0.8"';
 $attribs['legend']='fill="black" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="4"';
-$attribs['graphname']='fill="#435370" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="8"';
+$attribs['graphname']='fill="#'.$iclr.'" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="8"';
 $attribs['grid_txt']='fill="gray" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="6"';
 $attribs['grid']='stroke="gray" stroke-opacity="0.5"';
-$attribs['switch_unit']='fill="#435370" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="4" text-decoration="underline"';
-$attribs['switch_scale']='fill="#435370" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="4" text-decoration="underline"';
+$attribs['switch_unit']='fill="#'.$iclr.'" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="4" text-decoration="underline"';
+$attribs['switch_scale']='fill="#'.$iclr.'" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="4" text-decoration="underline"';
 $attribs['error']='fill="blue" font-family="Arial" font-size="4"';
 $attribs['collect_initial']='fill="gray" font-family="Tahoma, Verdana, Arial, Helvetica, sans-serif" font-size="4"';
 
@@ -89,7 +103,9 @@ print('<?php xml version="1.0" encoding="iso-8859-1" ?>' . "\n") ?>
     <text id="graph_in_txt" x="20" y="8" <?= $attribs['in'] ?>> </text>
     <text id="graph_out_txt" x="20" y="16" <?= $attribs['out'] ?>> </text>
     <text id="ifname" x="<?= $width ?>" y="8" <?= $attribs['graphname'] ?> text-anchor="end"><?= $ifname ?></text>
-    <text id="switch_unit" x="<?= $width*0.55?>" y="5" <?= $attribs['switch_unit'] ?>>Switch to bytes/s</text>
+<text id="switch_unit" x="<?= $width*0.55?>" y="5" <?= $attribs['switch_unit'] ?>>
+<?= ($_GET['t'] == 't')?'Switch to bytes/s':'' ?>
+</text>
     <text id="switch_scale" x="<?= $width*0.55?>" y="11" <?= $attribs['switch_scale'] ?>>AutoScale (<?= $scale_type ?>)</text>
     <text id="datetime" x="<?= $width*0.33?>" y="5" <?= $attribs['legend'] ?>> </text>
     <text id="graphlast" x="<?= $width*0.55?>" y="17" <?= $attribs['legend'] ?>>Graph shows last <?= $time_interval*$nb_plot ?> seconds</text>
@@ -154,7 +170,13 @@ var plot_out = new Array();
 
 var max_num_points = <?= $nb_plot ?>;  // maximum number of plot data points
 var step = <?= $width ?> / max_num_points ;
-var unit = 'bits';
+<?php
+if($_GET['t'] == 't'){
+	echo "var unit = 'bits';";
+}else{
+	echo "var unit = 'pps';";
+}
+?>
 var scale_type = '<?= $scale_type ?>';
 
 function init(evt) {
@@ -276,7 +298,7 @@ function plot_data(obj) {
   } else {
     /* round up max, such that
          10 KB/s -> 20 KB/s -> 40 KB/s -> 80 KB/s -> 100 KB/s -> 200 KB/s -> 400 KB/s -> 800 KB/s -> 1 MB/s ... */
-    rmax = 10240;
+    rmax = 100;
     i = 0;
     while (max > rmax) {
       i++;
@@ -329,6 +351,8 @@ function formatSpeed(speed, unit) {
     return formatSpeedBits(speed);
   if (unit == 'bytes')
     return formatSpeedBytes(speed);
+  if (unit == 'pps')
+    return formatSpeedPackets(speed);
 }
 
 function formatSpeedBits(speed) {
@@ -349,6 +373,16 @@ function formatSpeedBytes(speed) {
     return Math.round(speed / 10485.76)/100 + " MB/s";
   // else
   return Math.round(speed / 10737418.24)/100 + " GB/s";  /* wow! */
+}
+
+function formatSpeedPackets(speed) {
+  // format speed in packets/sec, input: packets/sec
+  if (speed < 1000)
+   return Math.round(speed) + "pps";
+  if (speed < 1000000)
+   return Math.round(speed / 1000) + " Kpps";
+  // else
+  return Math.round(speed / 1000000)/ + " Mbps";
 }
 
 function LZ(x) {

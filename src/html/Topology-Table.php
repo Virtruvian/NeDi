@@ -20,6 +20,7 @@ $flr = isset($_GET['fl']) ? $_GET['fl'] : "";
 $rom = isset($_GET['rm']) ? $_GET['rm'] : "";
 $nsd = isset($_GET['nsd']) ? $_GET['nsd'] : "";
 $img = isset($_GET['img']) ? $_GET['img'] : "";
+$pop = isset($_GET['pop']) ? $_GET['pop'] : "";
 
 $sub   = 0;
 $alarr = array();
@@ -49,16 +50,27 @@ if( count($dreg) == 1 ){
 
 if( !isset($_GET['print']) ) { ?>
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<td></td>
-<th width="120">
+<td class="ctr s">
+
+<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+
+</td>
+<td>
+
+</td>
+<td class="ctr m">
 
 <?php
 echo "<a href=\"?map=$map\"><img src=\"img/16/bbup.png\" title=\"$toplbl\"></a>";
 if($cty) echo "<a href=\"?reg=".urlencode($reg)."&map=$map\"><img src=\"img/16/glob.png\" title=\"$place[r] $reg\"></a>";
 if($bld) echo "<a href=\"?reg=".urlencode($reg)."&cty=".urlencode($cty)."&map=$map\"><img src=\"img/16/fort.png\" title=\"$place[c] $cty\"></a>";
 if($flr) echo "<a href=\"?reg=".urlencode($reg)."&cty=".urlencode($cty)."&bld=".urlencode($bld)."&map=$map\"><img src=\"img/16/home.png\" title=\"$place[b] $bld\"></a>";
-echo "</th><th width=\"80\">\n";
+echo "\n</td>\n<td class=\"ctr m\">\n";
+if($pop){
+	echo "<img src=\"img/16/bcls.png\" onclick=\"document.location.href='?".str_replace("&pop=1","",$_SERVER[QUERY_STRING])."';\"  title=\"$nonlbl $poplbl\">\n";
+}else{
+	echo "<img src=\"img/16/nods.png\" onclick=\"document.location.href='?$_SERVER[QUERY_STRING]&pop=1';\"  title=\"$poplbl\">\n";
+}
 if($bld){
 	if($nsd){
 		echo "<img src=\"img/16/bcls.png\" onclick=\"document.location.href='?".str_replace("&nsd=1","",$_SERVER[QUERY_STRING])."';\"  title=\"$nonlbl SNMP: hide\">\n";
@@ -72,7 +84,6 @@ if($bld){
 		}else{
 			echo "<img src=\"img/16/foto.png\" onclick=\"document.location.href='?$_SERVER[QUERY_STRING]&img=1';\"  title=\"Device $imglbl\">\n";
 		}
-
 	}
 }else{
 	$extmap = ($_SESSION['map'])?'Googlemap':'Openstreetmap';
@@ -86,7 +97,7 @@ if($bld){
 		echo "<img src=\"img/16/paint.png\" onclick=\"document.location.href='?$_SERVER[QUERY_STRING]&map=1';\"  title=\"NeDimaps\">\n";
 	}
 }
-echo "</th></tr></table><p>\n";
+echo "</td>\n</tr></table>\n<p>\n\n";
 }
 
 if(!$reg){

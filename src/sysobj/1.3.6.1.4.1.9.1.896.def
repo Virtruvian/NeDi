@@ -3,7 +3,7 @@
 
 # General
 SNMPv	2HC
-Type	SW-C6509-VSS-IOS
+Type	WS-C6509-VSS-IOS
 Typoid	
 Sysdes	
 OS	IOS

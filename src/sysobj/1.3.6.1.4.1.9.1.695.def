@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	Catalyst-2960-48
+Type	WS-C2960-48
 OS	IOS
 Icon	w2bn
 Size	1

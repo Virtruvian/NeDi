@@ -41,7 +41,6 @@ use warnings;
 no warnings qw(once);
 
 use Getopt::Std;
-use Net::SNMP qw(ticks_to_time);
 use Data::Dumper;
 
 use vars qw(%opt $p $now $days $from);

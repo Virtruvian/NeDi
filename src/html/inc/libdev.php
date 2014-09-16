@@ -72,10 +72,14 @@ function ModClass($cl){
 // Return Device category based on icon
 function DevCat($i){
 
-	global $mlvl;
+	global $mlvl,$siz;
 
-	if( preg_match('/^r[smb]/',$i) ){
-		return "Router";
+	if( preg_match('/^rs/',$i) ){
+		return "Router $siz[s]";
+	}elseif( preg_match('/^rm/',$i) ){
+		return "Router $siz[m]";
+	}elseif( preg_match('/^rl/',$i) ){
+		return "Router $siz[l]";
 	}elseif( preg_match('/^w2/',$i) ){
 		return "Workgroup L2 Switch";
 	}elseif( preg_match('/^w3/',$i) ){
@@ -154,7 +158,8 @@ function DevMode($m){
 	elseif	($m == 12)	{ return "VoIP Box"; }
 	elseif	($m == 15)	{ return "Wlan AP"; }
 	elseif	($m == 17)	{ return "Wlan Bridge"; }
-	elseif	($m == 20)	{ return "Camera"; }
+	elseif	($m == 20)	{ return "Video Camera"; }
+	elseif	($m == 21)	{ return "Video Conference"; }
 	elseif	($m == 30)	{ return "Virtual Bridge"; }
 	else			{ return $m; }
 }
@@ -226,6 +231,7 @@ function Iftype($it){
 	}elseif ($it == "7"){$img = "p45";$tit="iso88023Csmacd";
 	}elseif ($it == "18"){$img = "tel";$tit="ds1";
 	}elseif ($it == "19"){$img = "tel";$tit="E1";
+	}elseif ($it == "20"){$img = "tel";$tit="basicISDN";
 	}elseif ($it == "22"){$img = "ppp";$tit="Point to Point Serial";
 	}elseif ($it == "23"){$img = "ppp";$tit="PPP";
 	}elseif ($it == "24"){$img = "tape";$tit="Software Loopback";
@@ -287,20 +293,22 @@ function Ifdbstat($s){
 }
 
 //===================================================================
-// Generate location string for DB query
+// Generate location string for DB query. Now supporting sub-buildings
+// like Ricklicollege_Campus1
 function TopoLoc($reg="",$cty="",$bld="",$flr="",$rom=""){
 
 	global $locsep;
 
-	$l = '';
-	if($reg or $cty or $bld){								# Any sub locations?
-		$l  = "$reg$locsep";								# Start at region level
-		$l .= ($cty)?"$cty$locsep":"";							# Append city if set
-		$l .= ($bld)?"$bld$locsep":"";							# Append building if set
-		$l .= ($flr)?"$flr$locsep":"";							# Append floor if set
-		$l .= ($rom)?"$rom$locsep":"";							# Append room if set
+	if($rom){
+		return "$reg$locsep$cty$locsep$bld$locsep$flr$locsep$rom$locsep%";
+	}elseif($bld){
+		$b = explode('_', $bld);
+		return "$reg$locsep$cty$locsep$b[0]%";
+	}elseif($cty){
+		return "$reg$locsep$cty$locsep%";
+	}elseif($reg){
+		return "$reg$locsep%";
 	}
-	return ($l)?"$l%":'';
 }
 
 //===================================================================
@@ -354,26 +362,9 @@ function DevPanel($t,$i,$s=1){
 		return "img/panel/gen-cloud.jpg";
 	}elseif( preg_match('/^(wc|cs|vp)/',$i) ){
 		return "img/panel/gen-ctrl.jpg";
-	}elseif( preg_match('/^hv/',$i) ){
-		return "img/panel/gen-srv1.jpg";
-	}elseif( preg_match('/^sv/',$i) ){
-		if( $s == 1 ){
-			return "img/panel/gen-srv1.jpg";
-		}elseif( $s == 2 ){
-			return "img/panel/gen-srv2.jpg";
-		}elseif( $s == 3 ){
-			return "img/panel/gen-srv3.jpg";
-		}else{
-			return "img/panel/gen-srv4.jpg";
-		}
-	}elseif( preg_match('/^pp/',$i) ){
-		if( $s == 1 ){
-			return "img/panel/gen-patch1.jpg";
-		}elseif( $s == 2 ){
-			return "img/panel/gen-patch2.jpg";
-		}else{
-			return "img/panel/gen-patch4.jpg";
-		}
+	}elseif( preg_match('/^(hv|sv)/',$i) ){
+		$s = ($s > 4)?4:$s;
+		return "img/panel/gen-srv$s.jpg";
 	}else{
 		return "img/panel/gen-switch.jpg";
 	}
@@ -414,9 +405,9 @@ function Shoconf($l,$smo,$lnr){
 	elseif( preg_match("/capabilities|vrf|mpls|vpn/i",$l) )
 		$l = "<span class='sbu'>$l</span>";
 	if($lnr)
-		return sprintf("<span class='txtb'>%3d</span>",$lnr) . " $l<br>";
+		return sprintf("<span class='txtb'>%3d</span>",$lnr) . " $l\n";
 	else
-		return "$l<br>";
+		return "$l\n";
 }
 
 //===================================================================
@@ -519,7 +510,7 @@ function IfRadar($id,$sz,$c,$ti,$to,$ei,$eo,$di,$do,$bi,$s=0){
 	$err = substr($errlbl,0,3);
 	$dca = substr($dcalbl,0,3);
 ?>
-<canvas id="<?= $id ?>" class="imga" style=";border:1px solid black;" width="<?= $w ?>" height="<?= $h ?>"></canvas>
+<canvas id="<?= $id ?>" class="genpad" width="<?= $w ?>" height="<?= $h ?>"></canvas>
 
 <script language="javascript">
 var data = {
@@ -564,7 +555,7 @@ function IfFree($dv){
 
 //===================================================================
 // Count devices
-function DevPop($in,$op,$st,$co){
+function DevPop($in,$op,$st,$co=array() ){
 
 	global $link,$retire;
 
@@ -601,7 +592,7 @@ function DevVendor($so,$ic=''){
 		return array('Cisco','cis');
 	}elseif( $ic == 'c' or $s[6] == 674 or $s[6] == 6027 ){
 		return array('Dell','de');
-	}elseif( $ic == 'g' or $s[6] == 11 or $s[6] == 43 or $s[6] == 8744 or $s[6] == 25506  ){
+	}elseif( $ic == 'g' or $ic == 'h' or $s[6] == 11 or $s[6] == 43 or $s[6] == 8744 or $s[6] == 25506  ){
 		return array('Hewlett-Packard','hp');
 	}elseif( $ic == 'r' or $s[6] == 1991 ){
 		return array('Brocade','brc');
@@ -619,6 +610,45 @@ function DevVendor($so,$ic=''){
 		return array('VMware','vm');
 	}else{
 		return array($mlvl['10'],'gend');
+	}
+}
+
+//===================================================================
+// Returns support status background
+function SupportBg($d){
+	if($d){
+		if( time() > $d ){
+			return "crit";
+		}elseif( time() + 30 * 86400 > $d ){
+			return "warn";
+		}else{
+			return "good";
+		}
+	}else{
+		return '';
+	}
+}
+
+//===================================================================
+// Returns asset status icon
+function Staimg($s){
+
+	global $stco,$nonlbl,$invlbl;
+
+	if($s == 10){
+		return "<img src=\"img/16/star.png\" title=\"$stco[$s]\">";
+	}elseif($s == 100){
+		return "<img src=\"img/16/flas.png\" title=\"$stco[$s]\">";
+	}elseif($s == 150){
+		return "<img src=\"img/16/warn.png\" title=\"$stco[$s]\">";
+	}elseif($s == 160){
+		return "<img src=\"img/16/ring.png\" title=\"$stco[$s]\">";
+	}elseif($s == 200){
+		return "<img src=\"img/16/bstp.png\" title=\"$stco[$s]\">";
+	}elseif($s == 250){
+		return "<img src=\"img/16/bbox.png\" title=\"$stco[$s]\">";
+	}else{
+		return "<img src=\"img/16/bcls.png\" title=\"$nonlbl $invlbl\">";
 	}
 }
 

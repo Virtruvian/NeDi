@@ -4,7 +4,6 @@
 //===============================
 
 session_start(); 
-$debug  = isset($_GET['d']) ? $_GET['d'] : "";
 $nedipath = preg_replace( "/^(\/.+)\/html\/.+.php/","$1",$_SERVER['SCRIPT_FILENAME']);			# Guess NeDi path for nedi.conf
 
 if( !preg_match("/net/",$_SESSION['group']) ){
@@ -17,7 +16,7 @@ require_once ("libsnmp.php");
 require_once ("../languages/$_SESSION[lang]/gui.php");
 
 $_GET  = sanitize($_GET);
-$debug = isset($_GET['debug']) ? $_GET['debug'] : "";
+$debug = isset($_GET['d']) ? $_GET['d'] : "";
 $ver   = ($_GET['v'] > 1 and $comms[$_GET['c']]['pprot'])?'3':$_GET['v'];
 ?>
 <html>
@@ -31,7 +30,7 @@ $ver   = ($_GET['v'] > 1 and $comms[$_GET['c']]['pprot'])?'3':$_GET['v'];
 <h2><img src="../img/32/bdwn.png" hspace="10"> <?= $_GET['oid'] ?></h2>
 </div>
 <div class="net2 code">
-<?
+<?php
 if($_GET['ip'] and $ver and $_GET['c'] and $_GET['oid']){
 	$cutoid = strlen($_GET['oid'])+2;
 	snmp_set_oid_numeric_print(1);

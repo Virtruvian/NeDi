@@ -37,6 +37,7 @@ $qstr = strpos($_SERVER['QUERY_STRING'], "sta")?$_SERVER['QUERY_STRING']:$_SERVE
 $cols = array(	"info"=>"Info",
 		"id"=>"ID",
 		"level"=>"$levlbl",
+		"time"=>$timlbl,
 		"source"=>$srclbl,
 		"class"=>$clalbl,
 		"type"=>"Device $typlbl",
@@ -59,13 +60,13 @@ $cols = array(	"info"=>"Info",
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <td valign="top">
 
-<?PHP Filters(1); ?>
+<?php Filters(1); ?>
 
 </td>
 <td>
 
 <img src="img/16/ugrp.png" title="<?= $grplbl ?>">
-<select size="1" name="det" onchange="this.form.submit();">
+<select size="1" name="det">
 <option value=""><?= $nonlbl ?>
 <option value="level" <?= ($det == "level")?" selected":"" ?>><?= $levlbl ?>
 <option value="source" <?= ($det == "source")?" selected":"" ?>><?= $srclbl ?>
@@ -73,7 +74,7 @@ $cols = array(	"info"=>"Info",
 </select>
 <br>
 <img src="img/16/clock.png" title="<?= $timlbl ?> <?= $sizlbl ?>">
-<select size="1" name="gra" onchange="this.form.submit();">
+<select size="1" name="gra">
 <option value="3600"><?= $tim['h'] ?>
 <option value="86400" <?= ($gra == "86400")?" selected":"" ?>><?= $tim['d'] ?>
 <option value="604800" <?= ($gra == "604800")?" selected":"" ?>><?= $tim['w'] ?>
@@ -81,7 +82,7 @@ $cols = array(	"info"=>"Info",
 </select>
 <br>
 <img src="img/16/form.png" title="<?= $frmlbl ?>">
-<select size="1" name="fmt" onchange="this.form.submit();">
+<select size="1" name="fmt">
 <option value="si"><?= (($verb1)?"$siz[s] $imglbl":"$imglbl $siz[s]") ?>
 <option value="mi" <?= ($fmt == "mi")?" selected":"" ?>><?= (($verb1)?"$siz[m] $imglbl":"$imglbl $siz[m]") ?>
 <option value="li" <?= ($fmt == "li")?" selected":"" ?>><?= (($verb1)?"$siz[l] $imglbl":"$imglbl $siz[l]") ?>
@@ -143,7 +144,7 @@ new datepickr('end', {'dateFormat': 'm/d/y'});
 <img src="img/16/exit.png" title="Stop" onClick="stop_countdown(interval);">
 <p>
 
-<input type="submit" name="sho" value="<?= $sholbl ?>">
+<input type="submit" class="button" name="sho" value="<?= $sholbl ?>">
 </th>
 </tr>
 </table></form>
@@ -161,7 +162,13 @@ if( !strpos($fmt,'g') ){
 <?php
 }
 $istart	= $sta;
+if( $st[0] ){
+	$monev	= "Monitoring-Events.php?in[]=$in[0]&op[]=$op[0]&st[]=".urldecode($st[0])."&co[]=AND&";
+}else{
+	$monev	= "Monitoring-Events.php?";
+}
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+
 $tmsg = 0;
 $row = 0;
 while($istart < $end){
@@ -181,7 +188,7 @@ while($istart < $end){
 	if( !strpos($fmt,'g') ){
 		TblRow($bg);
 		echo "<th class=\"$bi\" nowrap>\n";
-		echo "<a href=\"Monitoring-Events.php?in[]=time&op[]=%3E=&st[]=$fs&co[]=AND&in[]=time&op[]=%3C&st[]=$fe&elm=$listlim\">".date("j.M G:i",$istart)."</a></th><td>\n";
+		echo "<a href=\"${monev}in[]=time&op[]=%3E=&st[]=$fs&co[]=AND&in[]=time&op[]=%3C&st[]=$fe&elm=$listlim\">".date("j.M G:i",$istart)."</a></th><td>\n";
 	}
 	if($det){
 		# Postgres dictates that all columns must appear in the GROUP BY clause or be used in an aggregate function, so we "happily" givem that...%&/(ç(*"*&
@@ -206,7 +213,7 @@ while($istart < $end){
 					$gico = "<img src=\"img/16/$ei.png\" title=\"$et\">";
 				}
 				if( !strpos($fmt,'g') ){
-					echo "<a href=\"Monitoring-Events.php?in[]=time&op[]=%3E=&st[]=$fs&co[]=AND&in[]=time&op[]=%3C&st[]=$fe&in[]=$det&op[]==&st[]=".urlencode($m[$det])."&co[]=AND&elm=$listlim\">";
+					echo "<a href=\"${monev}in[]=time&op[]=%3E=&st[]=$fs&co[]=AND&in[]=time&op[]=%3C&st[]=$fe&in[]=$det&op[]==&st[]=".urlencode($m[$det])."&co[]=AND&elm=$listlim\">";
 					if( strpos($fmt,'i') ) echo $gico;
 					echo Bar($m['cnt'],($det == 'level')?"lvl$m[level]":0,$fmt,$m['cnt'])."</a>\n";
 				}
@@ -269,7 +276,7 @@ if( strpos($fmt,'g') ){
 			}
 		}
 		echo "<span style=\"background-color:rgb($rgba);padding:5px\">\n";
-		echo "<a href=\"Monitoring-Events.php?in[]=time&op[]=%3E=&st[]=$strsta&co[]=AND&in[]=time&op[]=%3C&st[]=$strend&in[]=$det&op[]==&st[]=".urlencode($dsgrp)."&co[]=AND&elm=$listlim\">";
+		echo "<a href=\"${monev}in[]=time&op[]=%3E=&st[]=$strsta&co[]=AND&in[]=time&op[]=%3C&st[]=$strend&in[]=$det&op[]==&st[]=".urlencode($dsgrp)."&co[]=AND&elm=$listlim\">";
 		echo "$dsico[$dsgrp]</a></span>\n";
 		ksort( $dsval[$dsgrp] );
 		$cds['fillColor'] = "rgba($rgba,0.5)";

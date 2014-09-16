@@ -47,43 +47,43 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
 <form method="get" name="list" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<td>
-
-<?PHP Filters(); ?>
-
+<td class="ctr s">
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
 </td>
-<th>
-
-<select multiple name="col[]" size="6" title="<?= $collbl ?>">
+<td>
+<?php Filters(); ?>
+</td>
+<td class="ctr">
+	<select multiple name="col[]" size="6" title="<?= $collbl ?>">
 <?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
+       echo "		<option value=\"$k\"".((in_array($k,$col))?" selected":"").">$v\n";
 }
 ?>
-</select>
-
-</th>
-<td>
-<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
-<input type="checkbox" name="map" <?= $map ?>><br>
-<img src="img/16/form.png" title="<?= $limlbl ?>"> 
-<select size="1" name="lim">
-<?php selectbox("limit",$lim) ?>
-</select>
+	</select>
 </td>
-<th width="80">
-
-<input type="submit" value="<?= $sholbl ?>">
-</th>
-</tr></table></form><p>
+<td class="ctr">
+	<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
+	<input type="checkbox" name="map" <?= $map ?>>
+	<br>
+	<img src="img/16/form.png" title="<?= $limlbl ?>"> 
+	<select size="1" name="lim">
+<?php selectbox("limit",$lim) ?>
+	</select>
+</td>
+<td class="ctr s">
+	<input type="submit" class="button" value="<?= $sholbl ?>">
+</td>
+</tr></table>
+</form>
+<p>
 <?php
 }
 
 if( count($in) ){
 	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
-		echo "<center><h2>$netlbl Map</h2>\n";
-		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
+		echo "<div class=\"ctr\">\n	<h2>$netlbl Map</h2>\n";
+		echo "	<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\">\n</div>\n<p>\n";
 	}
 	Condition($in,$op,$st,$co);
 	TblHead("$modgroup[$self]2",1);
@@ -97,29 +97,23 @@ if( count($in) ){
 			$ud = urlencode($v[0]);
 			list($fc,$lc) = Agecol($v[4],$v[5],$row % 2);
 			TblRow($bg);
-			if(in_array("device",$col)){
-				TblCell($v[0],"?in[]=device&op[]==&st[]=$ud&ord=vlanid","","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
-			}
-			if(in_array("vlanid",$col)){TblCell($v[1],"?in[]=vlanid&op[]==&st[]=".urlencode($v[1]));}
-			if(in_array("vlanname",$col)){TblCell($v[2],"?in[]=vlanname&op[]==&st[]=".urlencode($v[2]));}
-			if(in_array("type",$col)){TblCell($v[3],"?in[]=type&op[]==&st[]=".urlencode($v[3]));}
-			if( in_array("firstdis",$col) ){
-				TblCell( date($datfmt,$v[4]),"?in[]=firstdis&op[]==&st[]=$v[4]","bgcolor=\"#$fc\"" );
-			}
-			if( in_array("lastdis",$col) ){
-				TblCell( date($datfmt,$v[5]),"?in[]=lastdis&op[]==&st[]=$v[5]","bgcolor=\"#$lc\"" );
-			}
-			if(in_array("location",$col)){TblCell($v[6],"?in[]=location&op[]==&st[]=".urlencode($v[6]));}
-			if(in_array("contact",$col)){TblCell($v[7],"?in[]=contact&op[]==&st[]=".urlencode($v[7]));}
+			if(in_array("device",$col))	TblCell($v[0],"?in[]=device&op[]==&st[]=$ud&ord=vlanid",'',"<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
+			if(in_array("vlanid",$col))	TblCell($v[1],"?in[]=vlanid&op[]==&st[]=".urlencode($v[1]),"$bi rgt b");
+			if(in_array("vlanname",$col))	TblCell($v[2],"?in[]=vlanname&op[]==&st[]=".urlencode($v[2]),'b');
+			if(in_array("type",$col))	TblCell($v[3],"?in[]=type&op[]==&st[]=".urlencode($v[3]));
+			if( in_array("firstdis",$col) )	TblCell( date($_SESSION['timf'],$v[4]),"?in[]=firstdis&op[]==&st[]=$v[4]",'nw','',"background-color:#$fc" );
+			if( in_array("lastdis",$col) )	TblCell( date($_SESSION['timf'],$v[5]),"?in[]=lastdis&op[]==&st[]=$v[5]",'nw','',"background-color:#$lc" );
+			if(in_array("location",$col))	TblCell($v[6],"?in[]=location&op[]==&st[]=".urlencode($v[6]));
+			if(in_array("contact",$col))	TblCell($v[7],"?in[]=contact&op[]==&st[]=".urlencode($v[7]));
 			if(in_array("poNS",$col)){
 				$pop = NodPop( array('device','vlanid'),array('=','='),array($v[0],$v[1]),array('AND') );
 				if($pop){
-					TblCell($pop,"Nodes-List.php?in[]=device&in[]=vlanid&op[]==&op[]==&st[]=$ud&st[]=$v[1]&co[]=AND",'',Bar($pop,100,'si'),'td-img');
+					TblCell(" $pop","Nodes-List.php?in[]=device&in[]=vlanid&op[]==&op[]==&st[]=$ud&st[]=$v[1]&co[]=AND",'','+'.Bar($pop,100,'si'),'td-img');
 				}else{
 					TblCell();
 				}
 			}
-			echo "</tr>\n";
+			echo "	</tr>\n";
 		}
 		DbFreeResult($res);
 	}else{
@@ -128,11 +122,11 @@ if( count($in) ){
 	
 ?>
 </table>
-<table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Vlans<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?></td></tr>
-</table>
+<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
+<?= $row ?> Vlans<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?>
+
+</td></tr></table>
 <?php
 }
-
 include_once ("inc/footer.php");
 ?>

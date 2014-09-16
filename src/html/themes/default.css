@@ -1,6 +1,6 @@
 /* General Classes */
 body {
-	font: 11px verdana, arial, sans-serif; 
+	font: 12px verdana, arial, sans-serif; 
 	background-color: #666666;
 	background-repeat: repeat;
 	background-image: URL(bgsteel.jpg);
@@ -13,7 +13,7 @@ td{
 
 th{
 	padding: 6px;
-	font: 12px verdana, arial, sans-serif; 
+	font-size: 12px;
 	font-weight: bold;
 	color: #333333;
 }
@@ -73,7 +73,6 @@ img{
 	vertical-align: middle;
 	border: none;
 }
-
 img.bigbar{
 	height : 20px;
 	margin : 4px;
@@ -81,13 +80,16 @@ img.bigbar{
 	border: 1px solid #333333;
 	border-radius: 3px;
 }
-
 img.smallbar{
 	height : 8px;
 	margin : 2px;
 	vertical-align: middle;
 	border: 1px solid #333333;
 	border-radius: 2px;
+}
+img.panel{
+	margin : 4px;
+	box-shadow:1px 5px 5px #555;
 }
 
 /* Form Properties */
@@ -103,40 +105,97 @@ img.smallbar{
 }
 :link:active, :visited:active {color: #0088dd}
 
-/* Login (only used in default.css)  */
-.loginbg {
-	background: -webkit-linear-gradient(#6688aa, #88aacc, #446688);
-	background: linear-gradient(#6688aa, #88aacc, #446688);
-}
-
-table.login{
-	width: 50%;
-	border-spacing: 0px;
-	background-color: #7090b0;
-	margin: 50px auto;
-	-webkit-box-shadow: 4px 4px 8px #555;
-	box-shadow: 4px 4px 8px #555;
-}
-
 /* Header table & Footer div*/
 #header{
 	width: 100%;
 	border-spacing: 0px;
-	background-color: #99aabb;
 	border-radius: 5px;
+	background-color: #99aabb;
 	-webkit-box-shadow: 4px 4px 8px #555;
 	box-shadow: 4px 4px 8px #555;
 }
 
-#footer{
-	margin: 20px 2px;
-	width:98%;
-	padding: 8px;
-	border-radius: 5px;
-	text-align: right;
-	font-style: italic;
+/* Topmenu inspired by line25.com */
+#nav {
+	width: 540px;
+}
+
+#nav ul ul {
+	display: none;
+}
+
+#nav ul li:hover > ul {
+	z-index:100;
+ 	display: block;
+}
+
+#nav ul {
+	margin : 0px;
+	padding: 0px;
+	list-style: none;
+	position: relative;
+	display: inline-table;
+}
+#nav ul:after {
+	content: ""; clear: both; display: block;
+}
+
+#nav ul li {
+	float: left;
+}
+#nav ul li:hover {
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	background: #4b545f;
+	background: linear-gradient(#3B5065 0%, #475E76 40%);
+	background: -webkit-linear-gradient(#4f5964 0%,#5f6975 40%);
+}
+
+#nav ul li:hover a {
+	color: #dde;
+}
+
+#nav ul li a {
+	display: block; padding: 5px 10px;
+	color: #004;
+}		
+		
+#nav ul ul {
+	background: #475E76; padding: 0;
+	position: absolute; top: 100%;
 	-webkit-box-shadow: 4px 4px 8px #555;
 	box-shadow: 4px 4px 8px #555;
+}
+#nav ul ul li {
+	float: none; 
+	white-space: nowrap;
+	border-top: 1px solid #546F8B;
+	border-bottom: 1px solid #374E67;
+}
+#nav ul ul li a {
+	padding: 5px 10px;
+	color: #fff;
+}	
+#nav ul ul li a:hover {
+	background: #6183AD;
+}
+	
+#nav ul ul ul {
+	position: absolute; left: 100%; top:0;
+}
+
+#noodlebox{
+	width: 20px;
+	margin: -2px;
+	background:#acd;
+	border-radius:1em;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
+}
+
+#noodlebox:focus{
+	width: 100px;
+	background:#eee;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
 }
 
 /* Actual Module */
@@ -150,7 +209,6 @@ table.content{
 	box-shadow: 4px 4px 8px #555;
 }
 
-/* Helper td */
 td.helper{
 	padding: 10px;
 	vertical-align: top;
@@ -163,11 +221,61 @@ table.fixed{
 	table-layout:fixed;
 }
 
-table.full{
+.full{
 	width: 100%;
 }
 
-/* Style for logs etc. */
+.s{
+	width: 40px;
+}
+
+.m{
+	width: 100px;
+}
+
+.l{
+	width: 180px;
+}
+
+.xl{
+	width: 300px;
+}
+
+.lft{
+	text-align: left;
+}
+
+.ctr{
+	text-align: center;
+}
+
+.rgt{
+	text-align: right;
+}
+
+.top{
+	vertical-align:top;
+}
+
+.btm{
+	vertical-align:bottom;
+}
+
+.b{
+	font-weight: bold;
+}
+
+.nw{
+	white-space: nowrap;
+}
+
+.genpad{
+	background-color: #fff;
+	border:1px solid black;
+	border-radius: 6px;
+	padding : 2px;
+}
+
 .textpad{
 	margin: 10px auto;
 	width: 70%;
@@ -219,11 +327,14 @@ table.full{
 .imga{
 	background: -webkit-linear-gradient( #f8f8f8 25%, #eaeaea);
 	background: linear-gradient( #f8f8f8 25%, #eaeaea);
+	background-color: #f0f0f0
 }
 .imgb{
 	background: -webkit-linear-gradient( #d7d7d7 25%, #e6e6e6);
 	background: linear-gradient( #d7d7d7 25%, #e6e6e6);
+	background-color: #e0e0e0
 }
+.imgw{background-color: #fff}
 
 /* Status Fields */
 .good{
@@ -265,119 +376,31 @@ table.full{
 	background-color: #7090b0
 }
 
-/* ThemeNMenu Style Sheet */
-.ThemeNMenu,.ThemeNSubMenuTable
-{
-	cursor:		default;
-	font-family:	verdana, arial, sans-serif;
-	font-size:	13px;
-
-	padding:	2px;
-	border:		0px;
-	white-space:	nowrap;
-}
-
-.ThemeNMenu
-{
-/*	background-color:	#F7F3EF; */
-	text-shadow: 0 1px 1px rgba(220, 220, 220, .8);
-}
-
-.ThemeNSubMenu
-{
-	position:	absolute;
-	visibility:	hidden;
-
-	/*
-	   Netscape/Mozilla renders borders by increasing
-	   their z-index.  The following line is necessary
-	   to cover any borders underneath
-	*/
-	z-index:	100;
-	border:		0px;
-	padding:	0px;
-	text-shadow: 0 1px 1px rgba(220, 220, 220, .8);
-
-	/*filter:progid:DXImageTransform.Microsoft.Shadow(color=#454545, Direction=135, Strength=4);*/
-}
-
-.ThemeNSubMenuTable
-{
-	border:      1px solid #44607b;
-	background:  -webkit-linear-gradient(#d0e0f0, #80a0c0);
-	background:  linear-gradient(#d0e0f0, #80a0c0);
+#footer{
+	margin: 20px 2px;
+	width:98%;
+	padding: 8px;
+	border-radius: 5px;
+	text-align: right;
+	font-style: italic;
 	background-color: #6688aa;
-	border-radius: 4px;
+	background: -webkit-linear-gradient(#bbccdd, #6688aa);
+	background: linear-gradient(#bbccdd, #6688aa);
 	-webkit-box-shadow: 4px 4px 8px #555;
 	box-shadow: 4px 4px 8px #555;
 }
 
-.ThemeNSubMenuTable td
-{
-	white-space:	nowrap;
-	padding:	2px;
+/* Login (only used in default.css)  */
+.loginbg {
+	background: -webkit-linear-gradient(#6688aa, #88aacc, #446688);
+	background: linear-gradient(#6688aa, #88aacc, #446688);
 }
 
-.ThemeNMainItem,.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItem,.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	padding-left:	6px;
-	padding-right:	6px;
-	white-space:	nowrap;
-}
-
-.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	border:      1px solid #44607b;
-	background-color:#7090b0;
-	border-radius: 2px;
-	box-shadow: 0 1px 0 rgba(255,255,255, 0.3), inset 0 1px 0 rgba(255,255,255, 0.3);
-}
-
-.ThemeNMenuSplit
-{
-	height:		1px;
-	margin-top:	1px;
-	margin-bottom:	1px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-top:	1px solid #adaa9c;
-}
-
-.ThemeNMenuVSplit
-{
-	width:		1px;
-	margin:		0px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-right:	1px solid #adaa9c;
-}
-
-/* image shadow animation */
-
-/*
-	seq1:	image for normal
-	seq2:	image for hover and active
-
-	To use, in the icon field, input the following:
-	<img class="seq1" src="normal.gif" /><img class="seq2" src="hover.gif" />
-*/
-
-.ThemeNMenuItem img.seq1
-{
-	display:	inline;
-}
-
-.ThemeNMenuItemHover seq2,
-.ThemeNMenuItemActive seq2
-{
-	display:	inline;
-}
-
-.ThemeNMenuItem .seq2,
-.ThemeNMenuItemHover .seq1,
-.ThemeNMenuItemActive .seq1
-{
-	display:	none;
+table.login{
+	width: 50%;
+	border-spacing: 0px;
+	background-color: #7090b0;
+	margin: 50px auto;
+	-webkit-box-shadow: 4px 4px 8px #555;
+	box-shadow: 4px 4px 8px #555;
 }

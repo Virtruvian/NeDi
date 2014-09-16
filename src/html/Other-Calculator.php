@@ -19,13 +19,13 @@ if( !isset($_GET['xls']) ) {
 <table class="content" ><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
-IP <?= $adrlbl ?> <input type="text" name="ip" value="<?= $getip ?>" size="15">
-/ <input type="text" name="nmsk" value="<?= $getmsk ?>" size="15">
+IP <?= $adrlbl ?> <input type="text" name="ip" value="<?= $getip ?>" class="m">
+/ <input type="text" name="nmsk" value="<?= $getmsk ?>" class="m">
 </th><th>
-Sub/Supernet <?= $msklbl ?> <input type="text" name="smsk" value="<?= $getsub ?>" size="15">
+Sub/Supernet <?= $msklbl ?> <input type="text" name="smsk" value="<?= $getsub ?>" class="m">
 </th>
 <th width="80">
-<input type="submit" value="<?= $sholbl ?>" name="calc">
+<input type="submit" class="button" value="<?= $sholbl ?>" name="calc">
 </th>
 </tr>
 </table></form>
@@ -138,13 +138,13 @@ if ($getsub){
 			$nsho	+= $snoff - 2;
 
 			TblRow($bg);
-			TblCell($s,'',"class=\"$bi\" width=\"50px\"","<img src=\"img/$ntimg\" title=\"$ntit\">",'th');
-			TblCell("$snet/$spfix",'','class="prp code"');
-			TblCell("$fsho",'','class="drd code"');
-			TblCell("$lsho",'','class="drd code"');
-			TblCell("$sbc",'','class="prp code"');
-			TblCell("$nsho",'','class="blu code"');
-			echo "</tr>\n";
+			TblCell($s,'',"$bi s b","+<img src=\"img/$ntimg\" title=\"$ntit\">");
+			TblCell("$snet/$spfix",'','prp code');
+			TblCell("$fsho",'','drd code');
+			TblCell("$lsho",'','drd code');
+			TblCell("$sbc",'','prp code');
+			TblCell("$nsho",'','blu code');
+			echo "	</tr>\n";
 		}
 	}elseif($pfix > $spfix){
 		$snet	= long2ip($dip & $dsmsk);

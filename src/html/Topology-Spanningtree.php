@@ -85,7 +85,7 @@ if ($dev) {
 </th>
 <th width="80">
 
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 </th>
 </tr></table></form>
 <p>
@@ -200,7 +200,7 @@ if('0.0.0.0' == $ip){
 <th valign="bottom"><img src="img/16/dcal.png"><br><?= $coslbl ?></th>
 <th valign="bottom"><img src="img/spd.png" title="<?= $spdlbl ?>"><br><?= substr($spdlbl,0,5) ?></th>
 <th valign="bottom"><img src="img/16/find.png"><br><?= $deslbl ?></th>
-<?php if($shg) { ?><th><img src="img/16/grph.png"><br>IF <?= $gralbl ?></th><?}?>
+<?php if($shg) { ?><th><img src="img/16/grph.png"><br>IF <?= $gralbl ?></th><?php } ?>
 <?php
 	if( !is_array($ifn) ){
 		echo "</table>\n";

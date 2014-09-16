@@ -7,7 +7,7 @@
 // Read configuration
 function ReadConf($group=''){
 
-	global $locsep,$lang,$redbuild,$modgroup,$disc,$fahrtmp;
+	global $locsep,$bldsep,$lang,$redbuild,$modgroup,$disc,$fahrtmp;
 	global $comms,$mod,$backend,$dbhost,$dbname,$dbuser,$dbpass,$retire;
 	global $timeout,$ignoredvlans,$useivl,$cpua,$mema,$tmpa,$trfa,$trfw;
 	global $mapip,$poew,$pause,$latw,$rrdcmd,$nedipath,$rrdstep;
@@ -27,6 +27,7 @@ function ReadConf($group=''){
 
 	$mapip  = array();
 	$locsep	= " ";
+	$bldsep	= "_";
 	foreach ($conf as $cl) {
 		if ( !preg_match("/^#|^$/",$cl) ){
 			$v =  preg_split('/[\t\s]+/', rtrim($cl,"\n\r\0") );
@@ -69,7 +70,7 @@ function ReadConf($group=''){
 			elseif ($v[0] == "nedipath")	{$nedipath = $v[1];}
 			elseif ($v[0] == "rrdstep")	{$rrdstep  = $v[1];}
 
-			elseif ($v[0] == "locsep")	{$locsep   = $v[1];}
+			elseif ($v[0] == "locsep")	{$locsep   = $v[1];if($v[2])$bldsep   = $v[2];}
 			elseif ($v[0] == "guiauth")	{$guiauth  = $v[1];}
 			elseif ($v[0] == "radserver")	{$radsrv[] = array($v[1],$v[2],$v[3],$v[4],$v[5]);}
 			elseif ($v[0] == "ldapsrv")	{$ldapsrv  = array($v[1],$v[2],$v[3],$v[4],$v[5],$v[6]);}
@@ -89,15 +90,16 @@ function ReadConf($group=''){
 }
 
 //===================================================================
-// Avoid directory traversal attacks (../ or ..\)
+// Avoid directory traversal attacks (../ or ..\) TODO consider sanitize switch for DB fields and system commands?
 // Remove <script> tags
-//       Avoid condition exclusion (e.g. attacking viewdev) with mysql comment --
+// Avoid condition exclusion (e.g. attacking viewdev) with mysql comment --
+// Avoid Javascript injection
 // Recursive because array elements can be array as well
 function sanitize( $arr ){
 	if ( is_array($arr) ){
 		return array_map( 'sanitize', $arr );
 	}
-	return preg_replace( "/\.\.\/|<\/?(java)?script>/i","", $arr );
+	return preg_replace( "/\.\.\/|--|<\/?(java)?script>/i","", $arr );
 }
 
 //===================================================================
@@ -169,15 +171,15 @@ function Masker($in){
 
 //===================================================================
 // Replace ridiculously big numbers with readable ones
-function DecFix($n){
+function DecFix($n,$d=0){
 
 	if($n >= 1000000000){
-		return round($n/1000000000)."G";
+		return round($n/1000000000,$d)."G";
 	}elseif($n >= 1000000){
-		return round($n/1000000)."M";
+		return round($n/1000000,$d)."M";
 	}elseif($n >= 1000){
-		return round($n/1000)."k";
-	}else{
+		return round($n/1000,$d)."k";
+	}elseif($n){
 		return $n;
 	}
 
@@ -242,7 +244,7 @@ function selectbox($type,$sel){
 	global $cndlbl;
 	
 	if($type == "oper"){
-		$options = array("~"=>"~","!~"=>"!~","like"=>"like",">"=>">","="=>"=","!="=>"!=",">="=>">=","<"=>"<","&"=>"and","|"=>"or");
+		$options = array("~"=>"~","!~"=>"!~","LIKE"=>"like","NOT LIKE"=>"!like",">"=>">","="=>"=","!="=>"!=",">="=>">=","<"=>"<","&"=>"and","|"=>"or");
 	}elseif($type == "comop"){
 		$options = array(""=>"-","AND"=>"and","OR"=>"or",">"=>"Col > Col","="=>"Col = Col","!="=>"Col != Col","<"=>"Col < Col");
 	}elseif($type == "limit"){
@@ -250,7 +252,7 @@ function selectbox($type,$sel){
 	}
 	foreach ($options as $key => $txt){
 	       $selopt = ($sel == "$key")?" selected":"";
-	       echo "<option value=\"$key\"$selopt>$txt\n";
+	       echo "	<option value=\"$key\"$selopt>$txt\n";
 	}
 	#TODO add this and opening tag to function? echo "</select>\n" or just return array, which can be used for sanity checks?
 }
@@ -269,69 +271,77 @@ function Filters($num=4){
 <select name="in[]" title="<?= $collbl ?> 1">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "<option value=\"$k\"".( ($in[0] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[0] == $k)?" selected":"").">$v\n";
 	}
 }?>
 </select>
-<select name="op[]" id="oa1"><?php selectbox("oper",$op[0]) ?></select>
+<select name="op[]" id="oa1">
+<?php selectbox("oper",$op[0]) ?>
+</select>
 <?php	if( $num == 1 ) echo '<br>'; ?>
-<input  name="st[]" id="sa1" type="text" value="<?= $st[0] ?>" placeholder="<?= $cndlbl ?> 1" onfocus="select();" size="20">
+<input  name="st[]" id="sa1" type="text" value="<?= $st[0] ?>" placeholder="<?= $cndlbl ?> 1" onfocus="select();" class="m">
 <script>new datepickr('sa1', {'dateFormat': 'm/d/y'});</script>
 <?php	if( $num == 1 ){ echo '</div>';return;} ?>
 <select name="co[]" onchange="convis('1',this.value);">
-<option value="">
-<option value="AND"<?= ($co[0] == 'AND')?'selected':'' ?>>and
-<option value="OR"<?=  ($co[0] == 'OR' )?'selected':'' ?>>or
-<option value=">"<?=   ($co[0] == '>'  )?'selected':'' ?>>1 > 2
-<option value="="<?=   ($co[0] == '='  )?'selected':'' ?>>1 = 2
-<option value="!="<?=  ($co[0] == '!=' )?'selected':'' ?>>1 != 2
-<option value="<"<?=   ($co[0] == '<'  )?'selected':'' ?>>1 < 2
+	<option value="">
+	<option value="AND"<?= ($co[0] == 'AND')?'selected':'' ?>>and
+	<option value="OR"<?=  ($co[0] == 'OR' )?'selected':'' ?>>or
+	<option value=">"<?=   ($co[0] == '>'  )?'selected':'' ?>>1 > 2
+	<option value="="<?=   ($co[0] == '='  )?'selected':'' ?>>1 = 2
+	<option value="!="<?=  ($co[0] == '!=' )?'selected':'' ?>>1 != 2
+	<option value="<"<?=   ($co[0] == '<'  )?'selected':'' ?>>1 < 2
 </select>
 <br>
 <select name="in[]" id="ib1" title="<?= $collbl ?> 2">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "<option value=\"$k\"".( ($in[1] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[1] == $k)?" selected":"").">$v\n";
 	}
 }?>
 </select>
-<select name="op[]" id="ob1"><?php selectbox("oper",$op[1]) ?></select>
-<input  name="st[]" id="sb1" type="text" value="<?= $st[1] ?>" placeholder="<?= $cndlbl ?> 2" onfocus="select();" size="20">
+<select name="op[]" id="ob1">
+<?php selectbox("oper",$op[1]) ?>
+</select>
+<input  name="st[]" id="sb1" type="text" value="<?= $st[1] ?>" placeholder="<?= $cndlbl ?> 2" onfocus="select();" class="m">
 <select name="co[]" id="cb1" onchange="fltvis(this.value);">
-<option value="">
-<option value="AND"<?= ($co[1] == 'AND')?' selected':'' ?>>and
-<option value="OR"<?= ($co[1] == 'OR')?'selected':'' ?>>or
+	<option value="">
+	<option value="AND"<?= ($co[1] == 'AND')?' selected':'' ?>>and
+	<option value="OR"<?= ($co[1] == 'OR')?'selected':'' ?>>or
 </select>
 </div>
 <div id="flt2" style="margin: 2px 8px;padding: 2px 8px;visibility: hidden">
 <select name="in[]" id="ia2" title="<?= $collbl ?> 3">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "<option value=\"$k\"".( ($in[2] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[2] == $k)?" selected":"").">$v\n";
 	}
 }?>
 </select>
-<select name="op[]" id="oa2" ><?php selectbox("oper",$op[2]) ?></select>
-<input  name="st[]" id="sa2"  type="text" value="<?= $st[2] ?>" placeholder="<?= $cndlbl ?> 3" onfocus="select();" size="20">
+<select name="op[]" id="oa2" >
+<?php selectbox("oper",$op[2]) ?>
+</select>
+<input  name="st[]" id="sa2"  type="text" value="<?= $st[2] ?>" placeholder="<?= $cndlbl ?> 3" onfocus="select();" class="m">
 <select name="co[]" id="ca2"  onchange="convis('2',this.value);">
-<option value="">
-<option value="AND"<?= ($co[2] == 'AND')?' selected':'' ?>>and
-<option value="OR"<?=  ($co[2] == 'OR' )?'selected':'' ?>>or
-<option value=">"<?=   ($co[2] == '>'  )?'selected':'' ?>>3 > 4
-<option value="="<?=   ($co[2] == '='  )?'selected':'' ?>>3 = 4
-<option value="!="<?=  ($co[2] == '!=' )?'selected':'' ?>>3 != 4
-<option value="<"<?=   ($co[2] == '<'  )?'selected':'' ?>>3 < 4
+	<option value="">
+	<option value="AND"<?= ($co[2] == 'AND')?' selected':'' ?>>and
+	<option value="OR"<?=  ($co[2] == 'OR' )?'selected':'' ?>>or
+	<option value=">"<?=   ($co[2] == '>'  )?'selected':'' ?>>3 > 4
+	<option value="="<?=   ($co[2] == '='  )?'selected':'' ?>>3 = 4
+	<option value="!="<?=  ($co[2] == '!=' )?'selected':'' ?>>3 != 4
+	<option value="<"<?=   ($co[2] == '<'  )?'selected':'' ?>>3 < 4
 </select>
 <br>
 <select name="in[]" id="ib2" title="<?= $collbl ?> 4">
 <?php foreach ($cols as $k => $v){
 	if( !preg_match('/(BL|IG|NS|NF)$/',$k) ){
-		echo "<option value=\"$k\"".( ($in[3] == $k)?" selected":"").">$v\n";
+		echo "	<option value=\"$k\"".( ($in[3] == $k)?" selected":"").">$v\n";
 	}
 }?>
 </select>
-<select name="op[]" id="ob2" style="visibility: hidden"><?php selectbox("oper",$op[3]) ?></select>
-<input  name="st[]" id="sb2" type="text" value="<?= $st[3] ?>" placeholder="<?= $cndlbl ?> 4" onfocus="select();" size="20">
+<select name="op[]" id="ob2" style="visibility: hidden">
+<?php selectbox("oper",$op[3]) ?>
+</select>
+<input  name="st[]" id="sb2" type="text" value="<?= $st[3] ?>" placeholder="<?= $cndlbl ?> 4" onfocus="select();" class="m">
 </div>
 
 <script>
@@ -387,7 +397,6 @@ window.onload = fltvis('<?= $co[1] ?>');
 new datepickr('sb1', {'dateFormat': 'm/d/y'});
 new datepickr('sa2', {'dateFormat': 'm/d/y'});
 new datepickr('sb2', {'dateFormat': 'm/d/y'});
-
 </script>
 <?PHP
 }
@@ -417,7 +426,7 @@ function Condition($in,$op,$st,$co,$mod=0){
 			$comok = 1;
 		}
 	}
-	if($comok and $co[1] ){										# Combining subconditions
+	if($comok and array_key_exists(1,$co) and $co[1] ){						# Combining subconditions TODO turn into loop for unlimited combinations?
 		if( preg_match('/[<>=]/',$co[2]) ){							# subconditions 3 and 4 compares columns
 			$w .= " $co[1] ".$in[2]." $co[2] ".$in[3];
 			$h .= " $co[1] ".$cols[$in[2]]." $co[2] ".$cols[$in[3]];
@@ -438,7 +447,7 @@ function Condition($in,$op,$st,$co,$mod=0){
 	}elseif($mod){
 		 return $h;
 	}else{
-		if($h) echo "<h3>$h</h3>";
+		if($h) echo "<h3>$h</h3>\n";
 	}
 }
 
@@ -451,9 +460,9 @@ function TblHead($bkg,$mode = 0){
 	global $ord,$cols,$col,$altlbl,$srtlbl;
 
 	if( isset($_GET['xls']) ){
-		echo "<table><tr>";
+		echo "<table>\n	<tr>\n";
 	}else{
-		echo "<table class=\"content\"><tr>";
+		echo "<table class=\"content\">\n	<tr>\n";
 	}
 
 	if($mode == 2 or $mode == 3){
@@ -464,32 +473,32 @@ function TblHead($bkg,$mode = 0){
 	foreach( $mycol as $n ){
 		if( !preg_match('/IG$/',$n) ){
 			if( preg_match('/BL$/',$n) ){
-				echo "<th class=\"$bkg\">&nbsp;</th>";
+				echo "		<th class=\"$bkg\">&nbsp;</th>\n";
 			}elseif( isset($_GET['xls']) or preg_match('/NS$/',$n) or $mode == 3 or !$mode ){
-				echo "<th class=\"$bkg\">$cols[$n]</th>";
+				echo "		<th class=\"$bkg\">$cols[$n]</th>\n";
 			}elseif( !array_key_exists($n,$cols) ){
-				echo "<th class=\"$bkg\">$n</th>";
+				echo "		<th class=\"$bkg\">$n</th>\n";
 			}else{
 				$nclr = preg_replace('/NF$/','',$n);
 				if( !$ord ){
-					echo "<th nowrap class=\"$bkg\">$cols[$n]<a href=\"?$_SERVER[QUERY_STRING]&ord=$nclr+desc\"><img src=img/dwn.png title=\"Sort by $nclr\"></a></th>\n";
+					echo "		<th class=\"$bkg nw\">$cols[$n] <a href=\"?$_SERVER[QUERY_STRING]&ord=$nclr+desc\"><img src=img/dwn.png title=\"Sort by $nclr\"></a></th>\n";
 				}elseif($ord == $nclr){
-					echo "<th nowrap class=\"$bkg mrn\">$cols[$n] <a href=\"?";
+					echo "		<th class=\"$bkg mrn nw\">$cols[$n] <a href=\"?";
 					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
 					echo "&ord=$nclr+desc\"><img src=\"img/up.png\" title=\"$srtlbl\"></a></th>\n";
 				}elseif($ord == "$nclr desc"){
-					echo "<th nowrap class=\"$bkg mrn\">$cols[$n] <a href=\"?";
+					echo "		<th class=\"$bkg mrn nw\">$cols[$n] <a href=\"?";
 					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
 					echo "&ord=$nclr\"><img src=\"img/dwn.png\" title=\"$altlbl $srtlbl\"></a></th>\n";
 				}else{
-					echo "<th nowrap class=\"$bkg\">$cols[$n] <a href=\"?";
+					echo "		<th class=\"$bkg nw\">$cols[$n] <a href=\"?";
 					echo preg_replace('/&ord=[\w+]+/',"",$_SERVER['QUERY_STRING']);
 					echo "&ord=$nclr+desc\"><img src=\"img/dwn.png\" title=\"$srtlbl $nclr\"></a></th>\n";
 				}
 			}
 		}
 	}
-	echo "</tr>\n";
+	echo "	</tr>\n";
 }
 
 //===================================================================
@@ -498,41 +507,42 @@ function TblRow($bg,$static=0){
 
 
 	if( isset($_GET['xls']) ){
-		echo "<tr>";
+		echo "	<tr>\n";
 	}elseif($static){
-		echo "<tr class=\"$bg\">";
+		echo "	<tr class=\"$bg\">\n";
 	}elseif(isset($_GET['print']) ){
-		echo "<tr class=\"$bg\" onclick=\"this.className='warn'\" ondblclick=\"this.className='$bg'\">";
+		echo "	<tr class=\"$bg\" onclick=\"this.className = (this.className=='warn part')?'$bg':'warn part';\">\n";
 	}else{
-		echo "<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">";
+		echo "	<tr class=\"$bg\" onmouseover=\"this.className='imga'\" onmouseout=\"this.className='$bg'\">\n";
 	}
 }
 
 //===================================================================
-// Generate table cell
-function TblCell($val="",$href="",$fmt="",$img="",$typ=""){
+// Generate table cell (Argmuents sorted by relevance)
+// Value, Class and Style are always shown, href not in print and XLS
+// Image is not shown in XLS
+// If image is preceeded by a +, it's shown in print and href will include
+// it in normal lists (e.g. device icon in Devices-List)
+function TblCell($val="",$href="",$cla="",$img="",$sty=""){
 
-	$cval = '';
-	$cfmt = '';
-	$cimg = '';
+	$pimg = '';
+	if( strpos($img,'+') === 0 ){
+		$pimg = substr($img,1);
+		$img = '';
+	}		
 	if( isset($_GET['xls']) ){
 		$cval = $val;
 	}else{
 		if( isset($_GET['print']) ){
-			if( !strstr($typ,"-imx") ) $cval = $val;
-			if( $img and preg_match('/-im[gx]$/',$typ) ) $cimg = $img;
+			$cval = $pimg.$val;
 		}else{
-			if( !strstr($typ,"-imx") ) $cval = ( $href )?"<a href=\"$href\">$val</a>":$val;
-			if( $img ) $cimg = $img;
+			$cval = ( $href )?"$img<a href=\"$href\">$pimg$val</a>":$val;
 		}
-		$cfmt = ($fmt)?" $fmt":'';
 	}
+	$ccla = ($cla)?" class=\"$cla\"":'';
+	$csty = ($sty)?" style=\"$sty\"":'';
 
-	if( strstr($typ,"th") ){
-		echo "<th$cfmt>$cimg$cval</th>";
-	}else{
-		echo "<td$cfmt>$cimg$cval</td>";
-	}
+	echo "		<td$ccla$csty>$cval</td>\n";
 }
 
 //===================================================================
@@ -595,7 +605,7 @@ function Bar($val=1,$mode='',$style='',$tit=''){
 		$bar = "<img src=img/$img.png width=".round(log(round($val)+1)*4)." class=\"smallbar\" title=\"$tit\">";
 	}else{
 		if($val > 1000){
-			$wdh = round(160+sqrt($val));
+			$wdh = round(200+sqrt($val));
 		}elseif($val > 100){
 			$wdh = round(100+$val/6);
 		}else{
@@ -656,6 +666,16 @@ function Smilie($usr,$s=0){
 		$si = ( ord($n) + ord(substr($n,1)) + ord(substr($n,-1)) + ord(substr($n,-2)) ) % 99;
 		return "<img src=\"img/usr/$si.png\"".($s?"width=\"20\"":"")." title=\"$n\">";
 	}
+}
+
+//===================================================================
+// Return digital numbers
+function Digit($n){
+	$i = '';
+	foreach (str_split($n) as $d){
+		if($n > 1) $i .= "<img src=\"img/$d.png\">";
+	}
+	return $i;
 }
 
 //===================================================================

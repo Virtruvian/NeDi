@@ -46,7 +46,7 @@ if ($res) {
 }
 
 if($cu == "u"){
-	$cuf = 0.95;
+	$cuf = 0.9;
 	$cul = 'USD';
 	$ibn = 'CH72 0070 0130 0072 8546 9';
 }elseif($cu == "e"){
@@ -81,7 +81,7 @@ $tot = $sda + $nda + $noa;
 </td>
 <th width="80">
 
-<input type="submit" value="<?= $updlbl ?>">
+<input type="submit" class="button" value="<?= $updlbl ?>">
 </th>
 </tr></table>
 <p></p>
@@ -105,7 +105,7 @@ Switzerland<br>
 <td align="right">
 
 <?= $icelbl ?> #<?= $inr ?><br>
-<?= date("l, j.F Y") ?>
+<?= date($_SESSION['datf']) ?>
 
 </td></tr>
 <tr class="txtb"><td valign="top">
@@ -141,32 +141,32 @@ if( isset($_GET['print']) ){
 <table class="full">
 <tr class="<?= $modgroup[$self] ?>1">
 
-<?PHP
-TblCell($deslbl,'','','','th');
-TblCell($qtylbl,'','','','th');
-TblCell($metlbl,'','','','th');
-TblCell($totlbl,'','','','th');
-echo "</tr>\n";
+<?php
+TblCell($deslbl,'','ctr b');
+TblCell($qtylbl,'','ctr b');
+TblCell($metlbl,'','ctr b');
+TblCell($totlbl,'','ctr b');
+echo "	</tr>\n";
 TblRow('txta');
 TblCell( 'SNMP Devices' );
-TblCell( $sdv[0],"",'align="right"' );
-TblCell( $sdr,"",'align="right"' );
-TblCell( $sda,"",'align="right"' );
-echo "</tr>\n";
+TblCell( $sdv[0],'','rgt' );
+TblCell( $sdr,'','rgt' );
+TblCell( $sda,'','rgt' );
+echo "	</tr>\n";
 TblRow('txtb');
 TblCell( "$nonlbl-SNMP Devices" );
-TblCell( $ndv[0],"",'align="right"' );
-TblCell( $ndr,"",'align="right"' );
-TblCell( $nda,"",'align="right"' );
-echo "</tr>\n";
+TblCell( $ndv[0],'','rgt' );
+TblCell( $ndr,'','rgt' );
+TblCell( $nda,'','rgt' );
+echo "	</tr>\n";
 TblRow('txta');
 TblCell( 'Nodes' );
-TblCell( $nod[0],"",'align="right"' );
-TblCell( $nor,"",'align="right"' );
-TblCell( $noa,"",'style="border-bottom:solid 1px #444" align="right"' );
-echo "</tr>\n";
+TblCell( $nod[0],'','rgt' );
+TblCell( $nor,'','rgt' );
+TblCell( $noa,'','rgt','border-bottom:solid 1px #444' );
+echo "	</tr>\n";
 TblRow('txtb');
-TblCell($totlbl,'','align="right"','','th');
+TblCell($totlbl,'','rgt');
 echo "<td></td><td >";
 if( isset($_GET['print']) ){
 	echo $cul;
@@ -178,7 +178,7 @@ if( isset($_GET['print']) ){
 	echo "</select>\n";
 }
 echo "</td>";
-TblCell($tot,'','style="border-bottom:double 4px #444" align="right"','','th');
+TblCell($tot,'','rgt','','border-bottom:double 4px #444');
 ?>
 </tr>
 </table>

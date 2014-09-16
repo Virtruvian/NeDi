@@ -9,10 +9,10 @@ include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
-$st = isset($_GET['st']) ? $_GET['st'] : "";
-$in = isset($_GET['in']) ? $_GET['in'] : "";
-$op = isset($_GET['op']) ? $_GET['op'] : "";
-$co = isset($_GET['co']) ? $_GET['co'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
 
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 if($_SESSION['opt'] and !$ord and $in[0]) $ord = $in[0];
@@ -59,7 +59,7 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
 <td>
-<?PHP Filters(); ?>
+<?php Filters(); ?>
 
 </td>
 <th valign="top">
@@ -94,12 +94,12 @@ foreach ($cols as $k => $v){
 </th>
 <th width="80">
 
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 </th>
 </tr></table></form><p>
 <?php
 }
-if( is_array($in) ){
+if( count($in) ){
 	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
 		echo "<center><h2>$netlbl Map</h2>\n";
 		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
@@ -119,58 +119,24 @@ if( is_array($in) ){
 			list($tc,$tc) = Agecol($l[10],$l[10],$row % 2);
 
 			TblRow($bg);
-			if(in_array("id",$col)){
-				TblCell($l[0]);
-			}
-			if( in_array("device",$col) ){
-				TblCell($l[1],"?in[]=device&op[]==&st[]=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a><a href=\"Topology-Linked.php?dv=$ud\"><img src=\"img/16/ncfg.png\"></a>");
-			}
-			if(in_array("ifname",$col)){
-				TblCell($l[2]);
-			}
-			if(in_array("type",$col)){
-				TblCell( $l[11],"?in[]=type&op[]==&st[]=".urlencode($l[11]) );
-			}
-			if(in_array("location",$col)){
-				TblCell( $l[14],"?in[]=location&op[]==&st[]=".urlencode($l[14]) );
-			}
-			if(in_array("contact",$col)){
-				TblCell( $l[15],"?in[]=contact&op[]==&st[]=".urlencode($l[15]) );
-			}
-			if(in_array("devgroup",$col)){
-				TblCell( $l[16],"?in[]=contact&op[]==&st[]=".urlencode($l[16]) );
-			}
-			if( in_array("firstdis",$col) ){
-				TblCell( date($datfmt,$l[12]),"?in[]=firstdis&op[]==&st[]=$l[12]","bgcolor=\"#$fc\"" );
-			}
-			if( in_array("lastdis",$col) ){
-				TblCell( date($datfmt,$l[13]),"?in[]=lastdis&op[]==&st[]=$l[13]","bgcolor=\"#$lc\"" );
-			}
-			if( in_array("neighbor",$col) ){
-				TblCell($l[3],"?in[]=device&op[]==&st[]=$un&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a><a href=\"Topology-Linked.php?dv=$un\"><img src=\"img/16/ncfg.png\"></a>");
-			}
-			if(in_array("nbrifname",$col)){
-				TblCell($l[4]);
-			}
-			if(in_array("bandwidth",$col)){
-				TblCell( DecFix($l[5]) );
-			}
-			if(in_array("linktype",$col)){
-				TblCell( $l[6],"?in[]=linktype&op[]==&st[]=$l[6]");
-			}
-			if(in_array("linkdesc",$col)){
-				TblCell($l[7]);
-			}
-			if(in_array("nbrduplex",$col)){
-				TblCell($l[8]);
-			}
-			if(in_array("nbrvlanid",$col)){
-				TblCell($l[9]);
-			}
-			if(in_array("time",$col)){
-				TblCell( date($datfmt,$l[10]),"?in[]=time&op[]==&st[]=$l[10]","bgcolor=\"#$tc\"" );
-			}
-			echo "</tr>\n";
+			if(in_array("id",$col))		TblCell($l[0]);
+			if( in_array("device",$col) )	TblCell($l[1],"?in[]=device&op[]==&st[]=$ud&ord=ifname",'nw',"<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a><a href=\"Topology-Linked.php?dv=$ud\"><img src=\"img/16/ncon.png\"></a>");
+			if(in_array("ifname",$col))	TblCell($l[2]);
+			if(in_array("type",$col))	TblCell( $l[11],"?in[]=type&op[]==&st[]=".urlencode($l[11]) );
+			if(in_array("location",$col))	TblCell( $l[14],"?in[]=location&op[]==&st[]=".urlencode($l[14]) );
+			if(in_array("contact",$col))	TblCell( $l[15],"?in[]=contact&op[]==&st[]=".urlencode($l[15]) );
+			if(in_array("devgroup",$col))	TblCell( $l[16],"?in[]=contact&op[]==&st[]=".urlencode($l[16]) );
+			if( in_array("firstdis",$col) )	TblCell( date($_SESSION['timf'],$l[12]),"?in[]=firstdis&op[]==&st[]=$l[12]",'','',"background-color:#$fc" );
+			if( in_array("lastdis",$col) )	TblCell( date($_SESSION['timf'],$l[13]),"?in[]=lastdis&op[]==&st[]=$l[13]",'','',"background-color:#$lc" );
+			if( in_array("neighbor",$col) )	TblCell($l[3],"?in[]=device&op[]==&st[]=$un&ord=ifname",'nw',"<a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a><a href=\"Topology-Linked.php?dv=$un\"><img src=\"img/16/ncon.png\"></a>");
+			if(in_array("nbrifname",$col))	TblCell($l[4]);
+			if(in_array("bandwidth",$col))	TblCell( DecFix($l[5]),'','rgt' );
+			if(in_array("linktype",$col))	TblCell( $l[6],"?in[]=linktype&op[]==&st[]=$l[6]");
+			if(in_array("linkdesc",$col))	TblCell($l[7]);
+			if(in_array("nbrduplex",$col))	TblCell($l[8],'','ctr');
+			if(in_array("nbrvlanid",$col))	TblCell($l[9],'','rgt');
+			if(in_array("time",$col))	TblCell( date($_SESSION['timf'],$l[10]),"?in[]=time&op[]==&st[]=$l[10]",'','',"background-color:#$tc" );
+			echo "	</tr>\n";
 		}
 		DbFreeResult($res);
 	}else{

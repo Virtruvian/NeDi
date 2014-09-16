@@ -51,7 +51,7 @@ if( !isset($_GET['print']) ){
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <td valign="top">
 
-<?PHP Filters(1); ?>
+<?php Filters(1); ?>
 
 </td>
 <th>
@@ -70,12 +70,14 @@ if( !isset($_GET['print']) ){
 <option value="prt" <?php if(in_array("prt",$rep)){echo "selected";} ?> >Print Supplies
 <option value="vms" <?php if(in_array("vms",$rep)){echo "selected";} ?> >Virtual Machines
 <?php
-$tquery = GenQuery("cisco_contracts", "t");					# Not printable yet :-(
+$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+$tquery = GenQuery('cisco_contracts', 'c');					# Not printable yet :-(
 $res    = DbQuery($tquery, $link);
-if( DbFetchRow($res) ){								# Show item only, if cisco_contracts table exists
+
+if($res){									# Show item only, if cisco_contracts table exists
 ?>
 <OPTION VALUE="ves" <?= (in_array("ves",$rep))?" selected":"" ?> ><?= $wtylbl ?> <?= $stalbl ?>
-<?}?>
+<?php } ?>
 </SELECT>
 
 </th>
@@ -95,7 +97,7 @@ if( DbFetchRow($res) ){								# Show item only, if cisco_contracts table exists
 <input type="checkbox" name="ord" <?= $ord ?>><br>
 
 </th>
-<th width="80"><input type="submit" name="do" value="<?= $sholbl ?>"></th>
+<th width="80"><input type="submit" class="button" name="do" value="<?= $sholbl ?>"></th>
 </tr></table></form><p>
 	
 <?php
@@ -108,7 +110,6 @@ if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")
 if($rep){
 	Condition($in,$op,$st,$co);
 
-	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	if ( in_array("sum",$rep) ){
 		ModDist($in[0],$op[0],$st[0],$lim,$ord);
 	}

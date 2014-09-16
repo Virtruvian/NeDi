@@ -21,9 +21,8 @@ function WritePNG($flt,$mod=0){
 
        	$map  = ($mod)?"":"<?PHP\n";
 	$map .= "session_start();\n";
-	#$map .= "if(!isset(\$_SESSION['group'])){exit;}\n"; TODO implement for stricter security?
+	#$map .= "if(!isset(\$_SESSION['group'])){exit;}\n"; #TODO implement for stricter security?
 	$map .= "# PNG map created on $now by $_SESSION[user] using NeDi (visit http://www.nedi.ch for more info)\n";
-	$map .= "ini_set(\"memory_limit\",\"64M\");\n";
 	$map .= "header(\"Content-type: image/png\");\n";
 	$map .= "error_reporting(0);\n";
 	if($mde == "g"){
@@ -55,6 +54,7 @@ function WritePNG($flt,$mod=0){
 	$map .= "\$blue      = ImageColorAllocate(\$image, 80, 100, 250);\n";
 	$map .= "\$burlywood = ImageColorAllocate(\$image,222,184,135);\n";
 	$map .= "\$cornflowerblue      = ImageColorAllocate(\$image, 100, 150, 220);\n";
+	$map .= "\$cyan      = ImageColorAllocate(\$image, 0, 220, 220);\n";
 	$map .= "\$gray      = ImageColorAllocate(\$image, 100, 100, 100);\n";
 	$map .= "\$lightgray = ImageColorAllocate(\$image, 211, 211, 211);\n";
 	$map .= "\$black     = ImageColorAllocate(\$image, 0, 0, 0);\n";
@@ -93,7 +93,7 @@ function WriteSVG($flt){
 	$map .= "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/SVG/DTD/svg10.dtd\">\n";
 	$map .= "<svg viewBox=\"0 0 $xm $ym\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n";
 	$map .= "<g id=\"main\" font-size=\"9\">\n";
-	$map .= "<rect id=\"canvas\" width=\"$xm\" height=\"$ym\" x=\"0\" y=\"0\" stroke=\"black\" fill=\"white\" />\n";
+	$map .= "<rect id=\"canvas\" width=\"$xm\" height=\"$ym\" x=\"0\" y=\"0\" fill=\"white\" />\n";
 	$map .= "<g id=\"title\">\n";
 	$map .= "	<text x=\"8\" y=\"20\" font-size=\"16\" font-weight=\"bold\">$tit</text>\n";
 	$map .= "	<text x=\"8\" y=\"32\" style=\"fill:gray;\">".count($dev)." Devices $flt</text>\n";
@@ -182,14 +182,16 @@ function DrawLink($x1,$y1,$x2,$y2,$opt) {
 	#$maplinks .= "ImageString(\$image, 3, $xctr,$yctr,\"C\", \$blue);\n";
 	#$maplinks .= "ImageString(\$image, 3, $xedg,$yedg,\"E\", \$blue);\n";
 
-	$futl = round($opt['ftr']*800/$opt['fbw']/$rrdstep,1);
+	$futl = ($opt['fbw'])?round($opt['ftr']*800/$opt['fbw']/$rrdstep,1):0;
 	list($t,$cf)  = LinkStyle( $opt['fbw'],$futl );
 	if( is_numeric($opt['rbw']) and $opt['rbw'] > 0 ){
 		$rutl = round($opt['rtr']*800/$opt['rbw']/$rrdstep,1);
 		list($tr,$cr) = LinkStyle( $opt['rbw'],$rutl );
-	}else{
+	}elseif( is_numeric($opt['fbw']) and $opt['fbw'] > 0 ){
 		$rutl = round($opt['rtr']*800/$opt['fbw']/$rrdstep,1);
 		list($tr,$cr) = LinkStyle( $opt['fbw'],$rutl );
+	}else{
+		$cr = 'black';
 	}
 
 	#$maplinks .= "ImageString(\$image, 3, $x1,$y1,\"Start\", \$blue);\n";
@@ -308,7 +310,6 @@ function DrawLink($x1,$y1,$x2,$y2,$opt) {
 			$mapitems .= DrawLabel(	$x1+cos($alpha)*$lal,
 						$y1+sin($alpha)*$lal+$yof,
 						Safelabel("$ifl$ipl$ifal"),1,"gray");
-			$yof += 9;
 		}
 	}
 	if( is_array($opt['rif']) ){
@@ -326,7 +327,6 @@ function DrawLink($x1,$y1,$x2,$y2,$opt) {
 			$mapitems .= DrawLabel(	$x2+cos($alpha)*$lal,
 						$y2+sin($alpha)*$lal+$yof,
 						Safelabel("$ifl$ipl$ifal"),1,"gray");
-			$yof += 9;
 		}
 	}
 
@@ -483,6 +483,8 @@ function Devshape($ico="xxan"){
 
 	if($col == "b"){
 		return array("blue",$x,$y,$shp);
+	}elseif($col == "c"){
+		return array("cyan",$x,$y,$shp);
 	}elseif($col == "g"){
 		return array("green",$x,$y,$shp);
 	}elseif($col == "o"){
@@ -660,13 +662,13 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 				$itxt .= IconCircle($x,$y,8,4,"gray");
 			}elseif($dev[$label]['sta'] == 0){
 				$itxt = IconRect($x,$y,18,6,"green");
-				$itxt .= DrawLabel($x-4,$y-4,$stco['100'],1,"whitesmoke");
+				$itxt .= DrawLabel($x,$y-4,$stco['100'],1,"whitesmoke");
 			}elseif($dev[$label]['sta'] == 1){
 				$itxt = IconRect($x,$y,24,8,"yellow");
-				$itxt .= DrawLabel($x-4,$y-4,$stco['250'],1,"black");
+				$itxt .= DrawLabel($x,$y-4,$stco['250'],1,"black");
 			}else{
 				$itxt = IconRect($x,$y,24,8,"red");
-				$itxt .= DrawLabel($x-4,$y-6,$stco['200'],3,"whitesmoke");
+				$itxt .= DrawLabel($x,$y-6,$stco['200'],3,"whitesmoke");
 			}
 			if($dev[$label]['stk'] > 1){
 				$itxt .= DrawLabel($x+20,$y-6,$dev[$label]['stk'],2,"blue");
@@ -701,8 +703,9 @@ function DrawItem($x,$y,$opt,$label,$typ) {
 				$devl .= DrawLabel($x,$y+26,$dev[$label]['ip'],1,"blue");
 			}
 			if($dvi){
+				$dvil = '';
 				if($dvi == 1){
-					$dvil = $dev[$label]['con'];
+					$dvil = $dev[$label]['con'];# TODO why is len 6, if contact is empty???
 				}elseif($dvi == 2){
 					$dvil = $dev[$label]['mod'];
 				}elseif($dvi == 3){
@@ -802,11 +805,7 @@ function DrawNodes($dv){
 	global $link,$fsz,$fco,$fmt,$len,$lsf,$in,$op,$st,$imas;
 	global $dev,$nod,$nlnk,$mapframes,$mapitems,$imgmap,$sub,$cud,$jnod;
 
-	if($sub){
-		include_once ('libnod.php');
-	}else{
-		include_once ('inc/libnod.php');
-	}
+	include_once ( (($sub)?'libnod.php':'inc/libnod.php') );
 
 	if($in[0] == "vlanid" or $in[0] == "mac" or $in[0] == 'nodip' or $in[0] == 'name' or $in[0] == 'oui'){
 		$nquery	= GenQuery('nodes','s','name,nodip,mac,oui,ifname,ifmetric,iftype,speed,duplex,pvid,alias,dinoct,doutoct','ifname','',array('device',$in[0]),array('=',$op[0]),array($dv,$st[0]),array('AND'),'LEFT JOIN interfaces USING (device,ifname)');
@@ -818,7 +817,7 @@ function DrawNodes($dv){
 		$cun = 0;
 		$nn  = DbNumRows($nres);
 		while( ($n = DbFetchRow($nres)) ){
-			$nod[$n[2]]['nam'] = $n[0];
+			$nod[$n[2]]['nam']  = substr($n[0],0,$_SESSION['lsiz']);
 			$nod[$n[2]]['ip'] = long2ip($n[1]).(($n[9])?" Vl$n[9]":"");
 			$nod[$n[2]]['ico'] = Nimg("$n[2];$n[3]");
 			list($nod[$n[2]]['x'],$nod[$n[2]]['y']) = CircleCoords($dev[$dv]['x'],$dev[$dv]['y'],$cun,$nn,8*($cun % 2),$len/pow($lsf/10,3),0,0);
@@ -1017,7 +1016,7 @@ function LinkStyle($bw=0,$utl=0){
 # Generate the map.
 function Map(){
 
-	global $debug,$link,$locsep,$vallbl,$sholbl,$sumlbl,$imas,$fmt,$lit,$fsz,$pos;
+	global $sub,$debug,$link,$locsep,$vallbl,$maplbl,$sumlbl,$imas,$fmt,$lit,$fsz,$pos;
 	global $xm,$ym,$xo,$yo,$rot,$cro,$bro,$len,$lsf,$mde,$in,$op,$st,$co,$lev,$loo,$loa,$loi,$ipi,$ifa;
 	global $mapbg,$mapitems,$maplinks,$mapinfo,$imgmap,$reg,$cty,$bld,$flr,$dev,$nod,$nlnk,$jnod,$cud;
 
@@ -1035,18 +1034,9 @@ function Map(){
 	if( in_array('vlanid', $in) or in_array('vlanname', $in) ) $join .= 'LEFT JOIN vlans USING (device) ';
 	if( in_array('mac', $in) or in_array('nodip', $in) or in_array('name', $in)  or in_array('oui', $in) ) $join .= 'LEFT JOIN nodes USING (device) ';
 	if( in_array('ifip', $in) or in_array('vrfname', $in) )	$join .= 'LEFT JOIN networks USING (device) ';
-	if( in_array('neighbor', $in) )	$join .= 'LEFT JOIN links USING (device) ';
+	if( in_array('neighbor', $in) )	$join .= 'LEFT JOIN links USING (device) ';#TODO this can be very sloooow (dev*links) Simply load all links?
 
-	$query .= GenQuery('devices','s',"distinct device,devip,type,location,contact,devmode,icon,cpu,temp,devopts,size,stack$acol,snmpversion",'','',$in,$op,$st,$co,$join);# Postgres requires ordercolumn (snmpversion)!
-	if($lev < 5){
-		if( strpos($query,'WHERE') ){
-			$query .= ' AND snmpversion != 0';
-		}else{
-			$query .= ' WHERE snmpversion != 0';
-		}
-	}
-	$query .= ' order by snmpversion desc';
-
+	$query .= GenQuery('devices','s',"distinct device,devip,type,location,contact,devmode,icon,cpu,temp,devopts,size,stack,snmpversion$acol",'snmpversion desc','',$in,$op,$st,$co,$join);
 	$res	= DbQuery($query,$link);
 	if($res){
 		while( ($d = DbFetchRow($res)) ){
@@ -1054,7 +1044,7 @@ function Map(){
 			$reg[$l[0]]['ndv']++;
 			$cty[$l[0]][$l[1]]['ndv']++;
 			$dev[$d[0]]['reg'] = $l[0];
-			if($d[6] and $ipi){								# Get IP info for interfaces on snmpdevs
+			if($d[12] and $ipi){								# Get IP info for interfaces on snmpdevs
 				$nquery	= GenQuery('networks','s','ifname,ifip,ifip6,vrfname','','',array('device'),array('='),array($d[0]) );
 				$nres	= DbQuery($nquery,$link);
 				if($nres){
@@ -1066,23 +1056,7 @@ function Map(){
 						}
 					}
 				}else{
-					echo DbError($nlink);
-				}
-				DbFreeResult($nres);
-			}
-			if($d[6] and ($ifa or $lit == 'l') ){						# Get IF alias TODO use iftype to determine links?
-				$nquery	= GenQuery('interfaces','s','ifname,ifidx,iftype,alias,dinoct,doutoct','','',array('device'),array('='),array($d[0]) );
-				$nres	= DbQuery($nquery,$link);
-				if($nres){
-					while( ($n = DbFetchRow($nres)) ){
-						$dev[$d[0]]['ifty'][$n[0]] = $n[1];
-						$dev[$d[0]]['ifix'][$n[0]] = $n[2];
-						$dev[$d[0]]['ifal'][$n[0]] = $n[3];
-						$dev[$d[0]]['ifin'][$n[0]] = $n[4];
-						$dev[$d[0]]['ifout'][$n[0]] = $n[5];
-					}
-				}else{
-					echo DbError($nlink);
+					echo DbError($link);
 				}
 				DbFreeResult($nres);
 			}
@@ -1119,7 +1093,8 @@ function Map(){
 				}
 				$dev[$d[0]]['stk'] = ($d[11] > 1)?$d[11]:1;
 				$dev[$d[0]]['siz'] = $d[10] * $dev[$d[0]]['stk'];
-				if($pos == 'a') $dev[$d[0]]['sta'] = $d[12];
+				$dev[$d[0]]['ver'] = $d[12];
+				if($pos == 'a') $dev[$d[0]]['sta'] = $d[13];
 			}
 		}
 		DbFreeResult($res);
@@ -1129,32 +1104,28 @@ function Map(){
 
 # Precalculate Links
 	foreach(array_keys($dev) as $d){								# Devs sorted by snmpversion creates links with stats first!
-		$lquery	= GenQuery('links','s','*','','',array('device'),array('='),array($d));
+		if($dev[$d]['ver'] and ($ifa or $lit == 'l') ){						# Get IF alias
+			#$lquery = GenQuery('links','s','id,device,ifname,neighbor,nbrifname,bandwidth,links.linktype,linkdesc,nbrduplex,nbrvlanid,time,iftype,alias,dinoct,doutoct','','',array('device','neighbor'),array('=','='),array($d,$d),array('OR'),"LEFT JOIN interfaces USING (device,ifname)");
+			$lquery = GenQuery('links','s','id,device,ifname,neighbor,nbrifname,bandwidth,links.linktype,linkdesc,nbrduplex,nbrvlanid,time,iftype,alias,dinoct,doutoct','','',array('device'),array('='),array($d),array(),'LEFT JOIN interfaces USING (device,ifname)');
+		}else{
+			#$lquery = GenQuery('links','s','*','','',array('device','neighbor'),array('=','='),array($d,$d),array('OR'));
+			$lquery = GenQuery('links','s','*','','',array('device'),array('='),array($d));
+		}
 		$lres	= DbQuery($lquery,$link);
 		while( ($k = DbFetchRow($lres)) ){
+			#$dev[$d]['ifty'][$k[2]] = $k[11];TODO use iftype to determine links?
+			if($ifa) $dev[$d]['ifal'][$k[2]] = $k[12];
+			if($lit == 'l'){
+				$dev[$d]['ifin'][$k[2]] = $k[13];
+				$dev[$d]['ifout'][$k[2]] = $k[14];
+			}
 			if( isset($dev[$k[3]]['reg']) ){						# Only use, if we have complete devs
 				$rlquery = GenQuery('links','s','*','','',array('device','neighbor'),array('=','='),array($k[3],$k[1]),array('AND'));
 				$rlres	 = DbQuery($rlquery,$link);
 				$rlnum   = DbNumRows($rlres);
+				DbFreeResult($rlres);
 				if($debug){echo "<div class=\"textpad good\">LINK:$k[1] to $k[3] with BW of $k[5]</div>\n";}
-				if( array_key_exists("$k[3];;$k[1]",$dlnk) ){
-					$dlnk["$k[3];;$k[1]"]['rbw'] += $k[5];
-					$dlnk["$k[3];;$k[1]"]['rtr'] += $dev[$k[3]]['ifin'][$k[4]];
-					$dlnk["$k[3];;$k[1]"]['rif'][] = "$k[1];;$k[2]";
-					$dlnk["$k[3];;$k[1]"]['rty']["$k[6]:".date('j.M',$k[10])]++;
-				}elseif( isset($dev[$k[3]]['ico']) ){
-					if(!$rlnum){
-						if($debug){echo "<div class=\"textpad alrm\">LNK: Fixing missing link from $k[3] to $k[1]</div>\n";}
-						$dlnk["$k[1];;$k[3]"]['rbw'] += $k[5];
-						$dlnk["$k[1];;$k[3]"]['rtr'] += $dev[$k[1]]['ifin'][$k[2]];
-						$dlnk["$k[1];;$k[3]"]['rif'][] = "$k[3];;$k[4]";
-						$dlnk["$k[1];;$k[3]"]['fty']["$k[6]:".date('j.M',$k[10])]++;
-					}
-					$dlnk["$k[1];;$k[3]"]['fbw'] += $k[5];
-					$dlnk["$k[1];;$k[3]"]['ftr'] += $dev[$k[1]]['ifout'][$k[2]];
-					$dlnk["$k[1];;$k[3]"]['fif'][] = "$k[1];;$k[2]";
-					$dlnk["$k[1];;$k[3]"]['fty']["$k[6]:".date('j.M',$k[10])]++;
-				}
+
 				$ra = $dev[$k[1]]['reg'];
 				$rb = $dev[$k[3]]['reg'];
 				$ca = $dev[$k[1]]['cty'];
@@ -1162,7 +1133,35 @@ function Map(){
 				$ba = $dev[$k[1]]['bld'];
 				$bb = $dev[$k[3]]['bld'];
 
-				if($mde != "f" and $ra != $rb ){
+				if($mde == "f" or $lev > 3){
+					if( array_key_exists("$k[3];;$k[1]",$dlnk) ){
+						$dlnk["$k[3];;$k[1]"]['rbw'] += $k[5];
+						$dlnk["$k[3];;$k[1]"]['rtr'] += $dev[$k[3]]['ifin'][$k[4]];
+						$dlnk["$k[3];;$k[1]"]['rif'][] = "$k[1];;$k[2]";
+						$dlnk["$k[3];;$k[1]"]['rty']["$k[6]:".date('j.M',$k[10])]++;
+					}elseif( isset($dev[$k[3]]['ico']) ){
+						if(!$rlnum){
+							if($debug){echo "<div class=\"textpad alrm\">LNK: Fixing missing link from $k[3] to $k[1]</div>\n";}
+							$dlnk["$k[1];;$k[3]"]['rbw'] += $k[5];
+							$dlnk["$k[1];;$k[3]"]['rtr'] += $dev[$k[1]]['ifin'][$k[2]];
+							$dlnk["$k[1];;$k[3]"]['rif'][] = "$k[3];;$k[4]";
+							$dlnk["$k[1];;$k[3]"]['fty']["$k[6]:".date('j.M',$k[10])]++;
+						}
+						$dlnk["$k[1];;$k[3]"]['fbw'] += $k[5];
+						$dlnk["$k[1];;$k[3]"]['ftr'] += $dev[$k[1]]['ifout'][$k[2]];
+						$dlnk["$k[1];;$k[3]"]['fif'][] = "$k[1];;$k[2]";
+						$dlnk["$k[1];;$k[3]"]['fty']["$k[6]:".date('j.M',$k[10])]++;
+					}
+					$dev[$k[1]]['nlk']++;						# Count devlinks for flatmode
+					$dev[$k[1]]['alk'][$k[3]]++;					# Needed for arranging
+					#if ($mde == "r") {# TODO find arrange method for building rings (only links within bld matter!)
+					#	$flr[$l[0]][$l[1]][$l[2]][$k[1]]['alk'][$k[3]]++;
+					#}
+					if(!$rlnum){
+						$dev[$k[3]]['nlk']++;
+						$dev[$k[3]]['alk'][$k[1]]++;
+					}
+				}elseif($ra != $rb and $lev == 1){
 					$reg[$ra]['nlk']++;
 					$reg[$ra]['alk'][$rb]++;					# Needed for arranging
 					if( array_key_exists("$rb;;$ra",$rlnk) ){			# Reverse link exists?
@@ -1184,8 +1183,7 @@ function Map(){
 						$rlnk["$ra;;$rb"]['fif'][] = "$k[1];;$k[2]";
 						$rlnk["$ra;;$rb"]['fty']["$k[6]:".date('j.M',$k[10])]++;
 					}
-				}
-				if($mde != "f" and $lev > 1){
+				}elseif($lev == 2){
 					if("$ra;;$ca" != "$rb;;$cb"){
 						$cty[$ra][$ca]['nlk']++;
 						if($ra == $rb){$cty[$ra][$ca]['alk'][$cb]++;}#TODO test whether this improves arranging!
@@ -1209,8 +1207,7 @@ function Map(){
 							$clnk["$ra;;$ca;;$rb;;$cb"]['fty']["$k[6]:".date('j.M',$k[10])]++;
 						}
 					}
-				}
-				if($mde != "f" and $lev > 2){
+				}elseif($lev == 3){
 					if("$ra;;$ca;;$ba" != "$rb;;$cb;;$bb"){
 						$bld[$ra][$ca][$ba]['nlk']++;
 						if("$ra;;$ca" == "$rb;;$cb"){$bld[$ra][$ca][$ba]['alk'][$bb]++;}
@@ -1233,17 +1230,6 @@ function Map(){
 							$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['fif'][] = "$k[1];;$k[2]";
 							$blnk["$ra;;$ca;;$ba;;$rb;;$cb;;$bb"]['fty']["$k[6]:".date('j.M',$k[10])]++;
 						}
-					}
-				}
-				if($lev > 3){
-					$dev[$k[1]]['nlk']++;						# Count devlinks for flatmode
-					$dev[$k[1]]['alk'][$k[3]]++;					# Needed for arranging
-					#if ($mde == "r") {# TODO find arrange method for building rings (only links within bld matter!)
-					#	$flr[$l[0]][$l[1]][$l[2]][$k[1]]['alk'][$k[3]]++;
-					#}
-					if(!$rlnum){
-						$dev[$k[3]]['nlk']++;
-						$dev[$k[3]]['alk'][$k[1]]++;
 					}
 				}
 			}
@@ -1286,12 +1272,11 @@ function Map(){
 			}else{
 				$mapbg = TopoMap();
 			}
-			$bg = Imagecreatefromjpeg("../topo/$mapbg");
+			$bg = Imagecreatefromjpeg( (($sub)?"../topo/$mapbg":"topo/$mapbg") );
 			$xm = Imagesx($bg);
 			$ym = Imagesy($bg);
 			Imagedestroy($bg);
 		}
-
 		$cur = 0;
 		$toc = 0;
 		$tob = 0;
@@ -1305,7 +1290,7 @@ function Map(){
 			if( $lev == 1){
 				$jreg[$r] = $cur;
 				$mapitems .= DrawItem($reg[$r]['x'],$reg[$r]['y'],$reg[$r]['ndv'],$r,1);
-				$imgmap   .= "<area href=\"?lev=2&mde=$mde&fmt=png&loo=$loo&loa=$loa&st[]=". urlencode( TopoLoc($r) ) ."\" coords=\"".($reg[$r]['x']-$imas) .",". ($reg[$r]['y']-$imas) .",". ($reg[$r]['x']+$imas) .",". ($reg[$r]['y']+$imas)."\" shape=\"rect\" title=\"$sholbl\">\n";
+				$imgmap   .= "<area href=\"?lev=2&mde=$mde&fmt=png&loo=$loo&loa=$loa&st[]=". urlencode( TopoLoc($r) ) ."\" coords=\"".($reg[$r]['x']-$imas) .",". ($reg[$r]['y']-$imas) .",". ($reg[$r]['x']+$imas) .",". ($reg[$r]['y']+$imas)."\" shape=\"rect\" title=\"$r $maplbl\">\n";
 			}else{
 				if ($loi){
 					if(count($cty[$r]) > 1){
@@ -1326,7 +1311,7 @@ function Map(){
 					if( $lev == 2){
 						$jcty["$r;;$c"] = $toc;
 						$mapitems .= DrawItem($cty[$r][$c]['x'],$cty[$r][$c]['y'],$cty[$r][$c]['ndv'],$c,2);
-						$imgmap   .= "<area href=\"?lev=3&mde=$mde&fmt=png&loo=$loo&loa=$loa&st[]=". urlencode( TopoLoc($r,$c) ) ."\" coords=\"".($cty[$r][$c]['x']-$imas) .",". ($cty[$r][$c]['y']-$imas) .",". ($cty[$r][$c]['x']+$imas) .",". ($cty[$r][$c]['y']+$imas)."\" shape=\"rect\" title=\"$sholbl\">\n";
+						$imgmap   .= "<area href=\"?lev=3&mde=$mde&fmt=png&loo=$loo&loa=$loa&st[]=". urlencode( TopoLoc($r,$c) ) ."\" coords=\"".($cty[$r][$c]['x']-$imas) .",". ($cty[$r][$c]['y']-$imas) .",". ($cty[$r][$c]['x']+$imas) .",". ($cty[$r][$c]['y']+$imas)."\" shape=\"rect\" title=\"$c $maplbl\">\n";
 					}else{
 						if ($loi){
 							if(count($bld[$r][$c]) > 1){
@@ -1347,7 +1332,7 @@ function Map(){
 							if($lev == 3){
 								$jbld["$r;;$c;;$b"] = $tob;
 								$mapitems .= DrawItem($bld[$r][$c][$b]['x'],$bld[$r][$c][$b]['y'],$bld[$r][$c][$b]['ndv'],$b,3);
-								$imgmap   .= "<area href=\"?lev=4&mde=$mde&fmt=png&loo=$loo&loa=$loa&st[]=". urlencode( TopoLoc($r,$c,$b) ) ."\" coords=\"".($bld[$r][$c][$b]['x']-$imas) .",". ($bld[$r][$c][$b]['y']-$imas) .",". ($bld[$r][$c][$b]['x']+$imas) .",". ($bld[$r][$c][$b]['y']+$imas)."\" shape=\"rect\" title=\"$sholbl\">\n";
+								$imgmap   .= "<area href=\"?lev=4&mde=$mde&fmt=png&loo=$loo&loa=$loa&st[]=". urlencode( TopoLoc($r,$c,$b) ) ."\" coords=\"".($bld[$r][$c][$b]['x']-$imas) .",". ($bld[$r][$c][$b]['y']-$imas) .",". ($bld[$r][$c][$b]['x']+$imas) .",". ($bld[$r][$c][$b]['y']+$imas)."\" shape=\"rect\" title=\"$b $maplbl\">\n";
 							}elseif ($mde == "b" or $mde == "g"){
 								DrawBuilding($bld[$r][$c][$b]['x'],$bld[$r][$c][$b]['y'],$r,$c,$b);
 							}else{
@@ -1493,7 +1478,9 @@ function DbCoords($r='', $c='', $b=''){
 # Arrange locations according to links
 function Arrange($circle){
 
-	global $debug;
+	global $debug, $fmt;
+
+	if($fmt == "json") return array_keys($circle);
 
 	$nodcircle  = array();
 	$sortednod  = array();

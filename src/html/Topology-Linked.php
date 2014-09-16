@@ -23,6 +23,8 @@ $nbw = isset($_GET['nbw']) ? $_GET['nbw'] : "";
 $typ = isset($_GET['typ']) ? $_GET['typ'] : "";
 $lde = isset($_GET['lde']) ? $_GET['lde'] : "Added $now by $_SESSION[user]";
 
+echo "<h1>$cnclbl $edilbl</h1>\n";
+
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if ( $add and $dv and $if and $nb and $ni){
 	$query	= GenQuery('links','i','','','',array('device','ifname','neighbor','nbrifname','bandwidth','linktype','linkdesc','nbrduplex','nbrvlanid','time'),'',array($dv,$if,$nb,$ni,$dbw,'STAT',$lde,$ndu,$nvl,time() ) );
@@ -34,15 +36,14 @@ if ( $add and $dv and $if and $nb and $ni){
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Link $_GET[del] $dellbl OK</h5>";}
 }
 ?>
-<h1>Topology Link Editor</h1>
 
 <?php  if( !isset($_GET['print']) ) { ?>
-
 <form method="get" action="<?= $self ?>.php" name="li">
 <table class="content" ><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th valign="top"><h3>Device</h3>
-<select size="6" name="dv" onchange="this.form.submit();">
+<th valign="top">
+<select name="dv" onchange="this.form.submit();">
+<option value="">Device ->
 <?php
 $dquery	= GenQuery('devices','s','*','device','',array('devopts'),array('~'),array('^...I') );
 $res	= DbQuery($dquery,$link);
@@ -65,7 +66,8 @@ if ($dv) {
 	$res	= DbQuery($query,$link);
 	if($res){
 ?>
-<select size="6" name="if" onchange="this.form.submit();">
+<select name="if" onchange="this.form.submit();">
+<option value="">IF <?= $namlbl ?> ->
 <?php
 		while( ($i = DbFetchRow($res)) ){
 			echo "<OPTION VALUE=\"$i[1]\" ";
@@ -84,9 +86,8 @@ if ($dv) {
 if ($if) {
 ?>
 <hr>
-Duplex/Vlan
-<input type="text" name="ddu" size="4" value="<?= $ddu ?>">
-<input type="text" name="dvl" size="4" value="<?= $dvl ?>">
+Duplex <input type="text" name="ddu" class="s" value="<?= $ddu ?>">
+PVID <input type="number" name="dvl" class="s" value="<?= $dvl ?>">
 <select size="1" name="dbs" onchange="document.li.dbw.value=document.li.dbs.options[document.li.dbs.selectedIndex].value">
 <option value=""><?= $bwdlbl ?> ->
 <option value="1544000">T1
@@ -98,13 +99,14 @@ Duplex/Vlan
 <option value="10000000000">10G
 
 </select>
-<input type="text" name="dbw" size=12 value="<?= $dbw ?>">
+<input type="number" min="0" step="1000" name="dbw" class="m" value="<?= $dbw ?>">
 </th>
 <?php
 }
 ?>
-<th valign="top"><h3><?= $neblbl ?></h3>
-<select size="6" name="nb" onchange="this.form.submit();">
+<th valign="top">
+<select name="nb" onchange="this.form.submit();">
+<option value=""><?= $neblbl ?> ->
 <?php
 
 foreach ($devs as $ndv){
@@ -121,7 +123,8 @@ if ($nb) {
 	$res	= DbQuery($query,$link);
 	if($res){
 ?>
-<select size="6" name="ni" onchange="this.form.submit();">
+<select name="ni" onchange="this.form.submit();">
+<option>IF <?= $namlbl ?> ->
 <?php
 		while( ($i = DbFetchRow($res)) ){
 			echo "<OPTION VALUE=\"$i[1]\" ";
@@ -140,9 +143,8 @@ if ($nb) {
 if ($ni) {
 ?>
 <hr>
-Duplex/Vlan
-<input type="text" name="ndu" size="4" value="<?= $ndu ?>">
-<input type="text" name="nvl" size="4" value="<?= $nvl ?>">
+Duplex <input type="text" name="ndu" class="s" value="<?= $ndu ?>">
+PVID <input type="number" name="nvl" class="s" value="<?= $nvl ?>">
 <select size="1" name="nbs" onchange="document.li.nbw.value=document.li.nbs.options[document.li.nbs.selectedIndex].value">
 <option value=""><?= $bwdlbl ?> ->
 <option value="1544000">T1
@@ -152,8 +154,8 @@ Duplex/Vlan
 <option value="1000000000">1G
 <option value="10000000000">10G
 </select>
-<input type="text" name="nbw" size="12" value="<?= $nbw ?>">
-<?= $cmtlbl ?> <input type="text" name="lde" size="20" value="<?= $lde ?>">
+<input type="number" min="0" step="1000" name="nbw" class="m" value="<?= $nbw ?>">
+<?= $cmtlbl ?> <input type="text" name="lde" class="l" value="<?= $lde ?>">
 <?php
 }
 ?>
@@ -172,7 +174,7 @@ Duplex/Vlan
 <option value="ISO"><?= $isolbl ?>
 </select>
 <p>
-<input type="submit" name="add" value="<?= $addlbl ?>">
+<input type="submit" class="button" name="add" value="<?= $addlbl ?>">
 </th>
 </tr></table></form><p>
 <?php
@@ -210,12 +212,12 @@ if ($dv or $typ){
 			$row++;
 			TblRow($bg);
 			list($tc,$tc) = Agecol($l[10],$l[10],$row % 2);
-			TblCell($l[1],"?dv=$ud","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
+			TblCell($l[1],"?dv=$ud",'nw',"<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
 			echo "<td>$l[2]</td>\n";
 			echo "<th>$l[6]</th>\n";
 			echo "<td align=right>" . DecFix($l[5]) . "</td>\n";
-			TblCell($l[3],"?dv=$un","nowrap","<a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a>");
-			echo "<td>$l[4] (Vl$l[9] $l[8])</td><td>$l[7]</td><td bgcolor=\"$tc\" width=\"100\" nowrap>".date($datfmt,$l[10])."</td>\n";
+			TblCell($l[3],"?dv=$un",'nw',"<a href=\"Devices-Status.php?dev=$un\"><img src=\"img/16/sys.png\"></a>");
+			echo "<td>$l[4] (Vl$l[9] $l[8])</td><td>$l[7]</td><td bgcolor=\"$tc\" width=\"100\" nowrap>".date($_SESSION['timf'],$l[10])."</td>\n";
 			echo "<th><a href=\"?del=$l[0]&dv=$ud\"><img src=\"img/16/bcnl.png\" onclick=\"return confirm('Link $l[0] $dellbl?');\" title=\"$l[0] $dellbl\"></a></th></tr>\n";
 			$nli++;
 		}

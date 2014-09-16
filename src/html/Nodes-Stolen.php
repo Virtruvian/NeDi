@@ -20,7 +20,7 @@ $del = isset($_GET['del']) ? $_GET['del'] : "";
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 
 if ($stl){
-	$query	= GenQuery('stolen','i','','','',array('name','stlip','mac','device','ifname','user','time'),'',array($na,ip2long($ip),$stl,$dev,$ifn,$_SESSION['user'],time()) );
+	$query	= GenQuery('stolen','i','','','',array('name','stlip','mac','device','ifname','usrname','time'),'',array($na,ip2long($ip),$stl,$dev,$ifn,$_SESSION['user'],time()) );
 	if( !DbQuery($query,$link) ){echo "<h4 align=center>".DbError($link)."</h4>";}else{echo "<h5>$stl $updlbl OK</h5>";}
 }elseif ($del){
 	$query	= GenQuery('stolen','d','','','',array('mac'),array('='),array($del) );
@@ -47,15 +47,15 @@ Sort
 </th>
 <th align="right">
 <form method="get" action="<?= $self ?>.php">
-<?= $namlbl ?> <input type="text" name="na" value="<?= $na ?>" size="20">
-IP <input type="text" name="stlip" value="<?= $ip ?>" size="15">
-MAC <input type="text" name="stl" value="<?= $stl ?>" size="12">
+<?= $namlbl ?> <input type="text" name="na" value="<?= $na ?>" class="m">
+IP <input type="text" name="stlip" value="<?= $ip ?>" class="m">
+MAC <input type="text" name="stl" value="<?= $stl ?>" class="m">
 <p>
-Device <input type="text" name="dev" value="<?= $dev ?>" size="20">
-IF <input type="text" name="ifn" value="<?= $ifn ?>" size="8">
+Device <input type="text" name="dev" value="<?= $dev ?>" class="m">
+IF <input type="text" name="ifn" value="<?= $ifn ?>" class="m">
 
 </th>
-<th width="80"><input type="submit" value="<?= $addlbl ?>">
+<th width="80"><input type="submit" class="button" value="<?= $addlbl ?>">
 </form>
 </th>
 </tr></table><p>

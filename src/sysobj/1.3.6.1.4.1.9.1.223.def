@@ -5,7 +5,7 @@ SNMPv	2HC
 Type	cisco7204VXR
 OS	IOS
 Icon	rmbn
-Size	4
+Size	3
 Bridge	
 ArpND	old
 Dispro	CDP

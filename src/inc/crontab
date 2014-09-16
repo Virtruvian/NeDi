@@ -1,6 +1,7 @@
-# example for hourly discovery with a config backup at midnight
-#0 0    * * *	/var/nedi/nedi.pl -vpB5 > /tmp/nedi-00.bup 2>&1
-#0 1-23 * * *	/var/nedi/nedi.pl -vp > /tmp/nedi-`date +\%H`.run 2>&1
+# Example for hourly discovery (skipping modules, vlans and IF IPs)
+# and config verbose backup at midnight (skipping arp and forwarding tables)
+#0 1-23 * * *	/var/nedi/nedi.pl -Aall -Smvj > /tmp/nedi-`date +\%H`.run 2>&1
+#0 0    * * *	/var/nedi/nedi.pl -v -b -Aall -Saf > /tmp/nedi-00.bup 2>&1
 
 # or 5 min interval (for very small networks)
 */5 * * * *	/var/nedi/nedi.pl -vp > /tmp/nedi-`date +\%H\%M`.run 2>&1

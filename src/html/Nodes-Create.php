@@ -95,18 +95,18 @@ if($dev){
 <input type="checkbox" name="chw" <?= $chw ?> title="<?= $coplbl ?> #CPU & Mem" onchange="this.form.submit();">
 <p>
 <img src="img/16/trgt.png" title="<?= $tgtlbl ?> VM">
-<input type="text" name="nvm" size="20" value="<?= $nvm ?>" >
+<input type="text" name="nvm" class="m" value="<?= $nvm ?>" >
 
 </td>
 <td valign="top">
 
 <h3>Node HW</h3>
 <img src="img/16/cpu.png" title="# CPUs">
-<input type="number" min="1" max="8" name="cpu" value="<?= $cpu ?>" size="3">
+<input type="number" min="1" max="8" name="cpu" value="<?= $cpu ?>" class="s">
 
 <p>
 <img src="img/16/mem.png" title="Mem <?= $sizlbl ?>">
-<input type="number" min="256" max="65535" step="256" name="mem" value="<?= $mem ?>" size="6">
+<input type="number" min="256" max="65535" step="256" name="mem" value="<?= $mem ?>" class="s">
 <p>
 <img src="img/16/db.png" title="HDD <?= $sizlbl ?>">
 <select size="1" name="hdd">
@@ -124,22 +124,22 @@ if($dev){
 
 <h3><?= $srvlbl ?></h3>
 <img src="img/16/cog.png" title="Boot <?= $latlbl ?>">
-<input type="number" min="0" max="8" name="dly" value="<?= $dly ?>" size="3">
+<input type="number" min="0" max="8" name="dly" value="<?= $dly ?>" class="s">
 <p>
 <img src="img/16/node.png" title="VNC Port/Password">
-<input type="number" min="0" max="99" name="vnc" value="<?= $vnc ?>" size="3">
-<input type="text" name="vnp" size="12" value="<?= $vnp ?>" >
+<input type="number" min="0" max="99" name="vnc" value="<?= $vnc ?>" class="s">
+<input type="text" name="vnp" class="m" value="<?= $vnp ?>" >
 <input type="checkbox" name="sxg" <?= $sxg ?> title="SXGA Screen">
 <p>
 <img src="img/16/cbox.png" title="ISO <?= $fillbl ?>">
-<input type="text" name="iso" size="32" value="<?= $iso ?>" >
+<input type="text" name="iso" class="l" value="<?= $iso ?>" >
 
 </td>
 <th width="80">
 
-<input type="submit" name="sho" value="<?= $sholbl ?>">
+<input type="submit" class="button" name="sho" value="<?= $sholbl ?>">
 <p>
-<input type="submit" name="add" value="<?= $addlbl ?>">
+<input type="submit" class="button" name="add" value="<?= $addlbl ?>">
 
 </th>
 </tr></table></form>

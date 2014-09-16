@@ -108,19 +108,21 @@ img{
 	vertical-align: middle;
 	border: none;
 }
-
 img.bigbar{
 	height : 16px;
 	margin : 4px;
 	vertical-align: middle;
 	border: 1px solid #662222;
 }
-
 img.smallbar{
 	height : 6px;
 	margin : 1px;
 	vertical-align: middle;
 	border: 1px solid #662222;
+}
+img.panel{
+	margin : 4px;
+	box-shadow:1px 5px 5px #555;
 }
 
 /* Form Properties */
@@ -136,18 +138,86 @@ img.smallbar{
 /* Header table & Footer div*/
 #header{
 	width: 100%;
-	border-spacing: 1px;
-	background-color: #660000;
+	border-spacing: 0px;
+	background-color: #b61414;
+}
+/* Topmenu inspired by line25.com */
+#nav {
+	width: 520px;
 }
 
-#footer{
-	margin: 20px auto;
-	width:50%;
-	border: 1px solid #660000;
-	padding: 8px;
-	text-align: right;
-	font: 8px verdana, arial, serif;
-	color: #ee0000;
+#nav ul ul {
+	display: none;
+}
+
+#nav ul li:hover > ul {
+	z-index:100;
+ 	display: block;
+}
+
+#nav ul {
+	margin : 0px;
+	padding: 0px;
+	list-style: none;
+	position: relative;
+	display: inline-table;
+}
+#nav ul:after {
+	content: ""; clear: both; display: block;
+}
+
+#nav ul li {
+	float: left;
+}
+#nav ul li:hover {
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	background: #555;
+}
+
+#nav ul li:hover a {
+	color: #dde;
+}
+
+#nav ul li a {
+	display: block; padding: 5px 10px;
+	color: #200;
+}		
+		
+#nav ul ul {
+	background: #767676; padding: 0;
+	position: absolute; top: 100%;
+}
+#nav ul ul li {
+	float: none; 
+	white-space: nowrap;
+	border-top: 1px solid #8B8B8B;
+	border-bottom: 1px solid #676767;
+}
+#nav ul ul li a {
+	padding: 5px 10px;
+	color: #fff;
+}	
+#nav ul ul li a:hover {
+	background: #b61414;
+}
+	
+#nav ul ul ul {
+	position: absolute; left: 100%; top:0;
+}
+
+#noodlebox{
+	width: 20px;
+	margin: -2px;
+	background:#ccc;
+	border-radius:1em;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
+}
+
+#noodlebox:focus{
+	width: 100px;
+	background:#eee;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
 }
 
 /* Actual Module */
@@ -161,7 +231,6 @@ td.content{
 	text-align: left;
 }
 
-/* Helper td */
 td.helper{
 	padding: 5px 10px;
 	vertical-align: top;
@@ -171,11 +240,61 @@ table.fixed{
 	table-layout:fixed;
 }
 
-table.full{
+.full{
 	width: 100%;
 }
 
-/* Style for logs etc. */
+.s{
+	width: 40px;
+}
+
+.m{
+	width: 100px;
+}
+
+.l{
+	width: 180px;
+}
+
+.xl{
+	width: 300px;
+}
+
+.lft{
+	text-align: left;
+}
+
+.ctr{
+	text-align: center;
+}
+
+.rgt{
+	text-align: right;
+}
+
+.top{
+	vertical-align:top;
+}
+
+.btm{
+	vertical-align:bottom;
+}
+
+.b{
+	font-weight: bold;
+}
+
+.nw{
+	white-space: nowrap;
+}
+
+.genpad{
+	background-color: #fff;
+	border:1px solid black;
+	border-radius: 6px;
+	padding : 2px;
+}
+
 .textpad{
 	margin: 8px auto;
 	width: 70%;
@@ -228,6 +347,7 @@ table.full{
 /* Image Fields */
 .imga{background-color: #f0f0f0}
 .imgb{background-color: #e6e6e6}
+.imgw{background-color: #fff}
 
 /* Status Fields */
 .good{background-color: #44ff44}
@@ -238,131 +358,20 @@ table.full{
 .part{background-image:url('../img/dia.png')}
 
 /* Default Group Based Module Colors */
-.adm1{background-image: URL(bgruby.png)}
-.adm2{background-color: #bb2222}
-
-.net1{background-image: URL(bgruby.png)}
-.net2{background-color: #901010}
-
-.dsk1{background-image: URL(bgruby.png)}
-.dsk2{background-color: #901010}
-
-.mon1{background-image: URL(bgruby.png)}
-.mon2{background-color: #901010}
-
-.mgr1{background-image: URL(bgruby.png)}
-.mgr2{background-color: #901010}
-
-.oth1{background-image: URL(bgruby.png)}
-.oth2{background-color: #901010}
-
-.usr1{background-image: URL(bgruby.png)}
-.usr2{background-color: #901010}
-/* ThemeNMenu Style Sheet */
-
-.ThemeNMenu,.ThemeNSubMenuTable
-{
-	cursor:		default;
-	font-family:	verdana, arial, sans-serif;
-	font-size:	13px;
-
-	padding:	2px;
-	border:		0px;
-	white-space:	nowrap;
+.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+	background-image: URL(bgruby.png)
 }
 
-.ThemeNMenu
-{
-/*	background-color:	#F7F3EF; */
+.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+	background-color: #901010
 }
 
-.ThemeNSubMenu
-{
-	position:	absolute;
-	visibility:	hidden;
-
-	/*
-	   Netscape/Mozilla renders borders by increasing
-	   their z-index.  The following line is necessary
-	   to cover any borders underneath
-	*/
-	z-index:	100;
-	border:		0px;
-	padding:	0px;
-
-	/*filter:progid:DXImageTransform.Microsoft.Shadow(color=#454545, Direction=135, Strength=4);*/
-}
-
-.ThemeNSubMenuTable
-{
-	border:		1px solid #444444;
-	background-color:	#eeeeee;
-}
-
-.ThemeNSubMenuTable td
-{
-	white-space:	nowrap;
-	padding:	2px;
-}
-
-.ThemeNMainItem,.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItem,.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	padding-left:	6px;
-	padding-right:	6px;
-	white-space:	nowrap;
-}
-
-.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	color:		#888888;
-	background-color:	#ffffff;
-}
-
-.ThemeNMenuSplit
-{
-	height:		1px;
-	margin-top:	1px;
-	margin-bottom:	1px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-top:	1px solid #ADAA9C;
-}
-
-.ThemeNMenuVSplit
-{
-	width:		1px;
-	margin:		0px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-right:	1px solid #ADAA9C;
-}
-
-/* image shadow animation */
-
-/*
-	seq1:	image for normal
-	seq2:	image for hover and active
-
-	To use, in the icon field, input the following:
-	<img class="seq1" src="normal.gif" /><img class="seq2" src="hover.gif" />
-*/
-
-.ThemeNMenuItem img.seq1
-{
-	display:	inline;
-}
-
-.ThemeNMenuItemHover seq2,
-.ThemeNMenuItemActive seq2
-{
-	display:	inline;
-}
-
-.ThemeNMenuItem .seq2,
-.ThemeNMenuItemHover .seq1,
-.ThemeNMenuItemActive .seq1
-{
-	display:	none;
+#footer{
+	margin: 20px auto;
+	width:50%;
+	border: 1px solid #660000;
+	padding: 8px;
+	text-align: right;
+	color: #ee8888;
+	background-color: #b61414;
 }

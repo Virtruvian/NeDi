@@ -73,6 +73,9 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='uprcom') {
 					document.forms['export'].query.value='UPDATE devices set readcomm=<new> where readcomm=<old>';
 				}
+				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='ipupres') {
+					document.forms['export'].query.value='UPDATE nodes set ipupdate=0';
+				}
 				else if(document.forms['export'].exptbl.options[document.forms['export'].exptbl.selectedIndex].value=='flush') {
 					document.forms['export'].query.value='FLUSH LOGS';
 				}
@@ -99,6 +102,7 @@ $dblink = DbConnect($dbhost, $dbuser, $dbpass, $dbname);
 				echo "<option value=\"iptrkret\"".($exptbl=="iptrkret"?" selected":"").">$dellbl IPtrack $agelbl > $retire $tim[d]</option>\n";
 				echo "<option value=\"lnkret\"".($exptbl=="lnkret"?" selected":"").">$dellbl Links $laslbl $updlbl > $retire $tim[d]</option>\n";
 				echo "<option value=\"uprcom\"".($exptbl=="uprcom"?" selected":"").">$updlbl SNMP $realbl Community</option>\n";
+				echo "<option value=\"ipupres\"".($exptbl=="ipupres"?" selected":"").">$reslbl IP $updlbl</option>\n";
 				echo "<option value=\"flush\"".($exptbl=="flush"?" selected":"").">$dellbl bin-logs</option>\n";
 				echo "<option value=\"reset\"".($exptbl=="reset"?" selected":"").">$reslbl DB</option>\n";
 			?>
@@ -158,7 +162,7 @@ if( 0 and $backend == 'mysql'){// doesn't work properly and ipv6-bin need conver
 }
 ?>
 			<p>
-			<input type="submit" value="<?= $cmdlbl ?>">
+			<input type="submit" class="button" value="<?= $cmdlbl ?>">
 		</th>
 	</tr>
 </table>
@@ -243,7 +247,7 @@ if($isadmin and $act == "c") {
 				}elseif($field and $timest and  preg_match("/^(orig|dev|if|nod|mon)ip$/",$id) ){
 					echo "<td>".long2ip($field)."</td>";
 				}elseif($timest and preg_match("/^(first|last|time|(if|ip|os)?update)/",$id) ){
-					echo "<td>".date($_SESSION['date'],$field)."</td>";
+					echo "<td>".date($_SESSION['timf'],$field)."</td>";
 				}else{
 					echo "<td>$field</td>";
 				}
@@ -373,12 +377,12 @@ if($isadmin and $act == "c") {
 
 <?php  if($recs[0]) { ?>
 <a href="?act=c&exptbl=links&sep=%3B&query=SELECT+*+FROM+<?= $tab[0] ?> limit <?= $listlim ?>"><img src="img/16/eyes.png" title="<?= $sholbl ?>"></a>
-<?}
+<?php } 
 if($isadmin) { ?>
 <a href="?act=opt&sqltbl[]=<?= $tab[0] ?>"><img src="img/16/hat2.png" title="<?= $optlbl ?>"></a>
 <a href="?act=rep&sqltbl[]=<?= $tab[0] ?>"><img src="img/16/dril.png" title="<?= $replbl ?>"></a>
 <a href="?act=trunc&sqltbl[]=<?= $tab[0] ?>"><img src="img/16/bcnl.png" onclick="return confirm('<?= (($verb1)?"$dellbl $vallbl":"$vallbl $dellbl") ?>, <?= $cfmmsg ?>')" title="<?= (($verb1)?"$dellbl $vallbl":"$vallbl $dellbl") ?>"></a>
-<?}?>
+<?php } ?>
 </div>
 
 <?= $recs[0] ?> <?= $vallbl ?></td></tr>
@@ -421,7 +425,6 @@ include_once("inc/footer.php");
 
 function DbCsv($res, $sep, $quotes, $outfile, $head) {
 
-	global $datfmt;
 	// The CSV file is created and opened
 	$csvfile = fopen($outfile, "w");
 
@@ -451,7 +454,7 @@ function DbCsv($res, $sep, $quotes, $outfile, $head) {
 		// Each element is added to the string individually
 		foreach($row as $id => $field) {
 			if(preg_match("/^(origip|ip)$/",$id) ){$field = long2ip($field);}
-			if(preg_match("/^(firstseen|lastseen|time|i[fp]update)$/",$id) ){$field = date($datfmt,$field);}
+			if(preg_match("/^(firstseen|lastseen|time|i[fp]update)$/",$id) ){$field = date($_SESSION['timf'],$field);}
 			// If quotes are wished, they are put around the element
 			if($quotes == "on") $csv .= "\"";
 			$csv .= $field;

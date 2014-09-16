@@ -11,8 +11,8 @@ Size	0
 Bridge	
 ArpND	
 Dispro	LLDPXN
-Serial	
-Bimage	
+Serial	1.3.6.1.2.1.47.1.1.1.1.11.2
+Bimage	1.3.6.1.2.1.47.1.1.1.1.10.2
 CfgChg	
 CfgWrt	
 VLnams	

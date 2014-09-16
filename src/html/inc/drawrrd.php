@@ -13,9 +13,17 @@ $nedipath = preg_replace( "/^(\/.+)\/html\/.+.php/","$1",$_SERVER['SCRIPT_FILENA
 include_once ("libmisc.php");
 ReadConf('nomenu');
 
-if( !$rrdcmd or !isset($_SESSION['group']) ){
-	die;
+if( !$rrdcmd or !isset($_SESSION['group']) ) die;
+if( isset($_SESSION['snap']) ){
+	header("Content-type: image/png");
+	$image = Imagecreatefrompng("../img/32/grph.png");
+	$icon = Imagecreatefrompng("../img/16/foto.png");
+	Imagecopy($image, $icon,8,8,0,0,16,16);
+	Imagedestroy($icon);
+	Imagepng($image);
+	Imagedestroy($image);
 }
+
 date_default_timezone_set($_SESSION['tz']);
 
 include_once ("librrd.php");

@@ -1,7 +1,7 @@
 /* General Classes */
 body {
 	font: 10px verdana, arial, sans-serif; 
-	background-color: #444444;
+	background-color: #555;
 }
 
 td{
@@ -81,7 +81,6 @@ img{
 	vertical-align: middle;
 	border: none;
 }
-
 img.bigbar{
 	height : 16px;
 	margin : 2px 8px;
@@ -95,7 +94,6 @@ img.bigbar{
 	-moz-opacity:0.6;
 	-webkit-box-shadow: 2px 2px 2px rgba(0,0,0,0.6);
 }
-
 img.smallbar{
 	height : 6px;
 	margin : 2px;
@@ -107,6 +105,10 @@ img.smallbar{
 	opacity:0.6;
 	/* for Mozilla */
 	-moz-opacity:0.6;
+}
+img.panel{
+	margin : 4px;
+	box-shadow:1px 5px 5px #555;
 }
 
 /* Form Properties */
@@ -122,25 +124,96 @@ img.smallbar{
 /* Header table & Footer div*/
 #header{
 	width: 100%;
-	border-spacing: 1px;
-	background-color: #555555;
+	border-spacing: 0px;
+	border: 1px solid #444;
 }
 
-#footer{
-	margin: 20px auto;
-	width:50%;
-	border: 1px solid #555555;
-	padding: 8px;
-	text-align: center;
-	font: 9px verdana, arial, sans-serif;
-	color: #444444;
+/* Topmenu inspired by line25.com */
+#nav {
+	width: 520px;
+}
+
+#nav ul ul {
+	display: none;
+}
+
+#nav ul li:hover > ul {
+	z-index:100;
+ 	display: block;
+}
+
+#nav ul {
+	margin : 0px;
+	padding: 0px;
+	list-style: none;
+	position: relative;
+	display: inline-table;
+}
+#nav ul:after {
+	content: ""; clear: both; display: block;
+}
+
+#nav ul li {
+	float: left;
+}
+#nav ul li:hover {
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	background: #5F5F5F;
+	background: linear-gradient(#656565 0%, #767676 40%);
+	background: -webkit-linear-gradient(#656565 0%, #767676 40%);
+}
+
+#nav ul li:hover a {
+	color: #dde;
+}
+
+#nav ul li a {
+	display: block; padding: 5px 10px;
+	color: #222;
+}		
+		
+#nav ul ul {
+	background: #767676; padding: 0;
+	position: absolute; top: 100%;
+}
+#nav ul ul li {
+	float: none; 
+	white-space: nowrap;
+	border-top: 1px solid #8B8B8B;
+	border-bottom: 1px solid #676767;
+}
+#nav ul ul li a {
+	padding: 5px 10px;
+	color: #fff;
+}	
+#nav ul ul li a:hover {
+	background: #6183AD;
+}
+	
+#nav ul ul ul {
+	position: absolute; left: 100%; top:0;
+}
+
+#noodlebox{
+	width: 20px;
+	margin: -2px;
+	background:#aaa;
+	border-radius:1em;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
+}
+
+#noodlebox:focus{
+	width: 100px;
+	background:#eee;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
 }
 
 /* Actual Module */
 table.content{
 	width: 100%;
 	border-spacing: 1px;
-	background-color: #505050;
+	background-color: #444;
 }
 
 /* Helper td */
@@ -153,11 +226,61 @@ table.fixed{
 	table-layout:fixed;
 }
 
-table.full{
+.s{
+	width: 50px;
+}
+
+.m{
+	width: 150px;
+}
+
+.l{
+	width: 250px;
+}
+
+.xl{
+	width: 350px;
+}
+
+.full{
 	width: 100%;
 }
 
-/* Style for logs etc. */
+.lft{
+	text-align: left;
+}
+
+.ctr{
+	text-align: center;
+}
+
+.rgt{
+	text-align: right;
+}
+
+.top{
+	vertical-align:top;
+}
+
+.btm{
+	vertical-align:bottom;
+}
+
+.b{
+	font-weight: bold;
+}
+
+.nw{
+	white-space: nowrap;
+}
+
+.genpad{
+	background-color: #fff;
+	border:1px solid black;
+	border-radius: 6px;
+	padding : 2px;
+}
+
 .textpad{
 	margin: 10px auto;
 	width: 70%;
@@ -210,6 +333,7 @@ table.full{
 /* Image Fields */
 .imga{background-color: #f0f0f0}
 .imgb{background-color: #e6e6e6}
+.imgw{background-color: #fff}
 
 /* Status Fields */
 .good{background-color: #90f080}
@@ -240,111 +364,14 @@ table.full{
 
 .usr1{background-image: URL(bgsteel.jpg)}
 .usr2{background-color: #aaaaaa}
-/* ThemeNMenu Style Sheet */
 
-.ThemeNMenu,.ThemeNSubMenuTable
-{
-	cursor:		default;
-	font-family:	verdana, arial, sans-serif;
-	font-size:	13px;
-
-	padding:	2px;
-	border:		0px;
-	white-space:	nowrap;
-}
-
-.ThemeNMenu
-{
-/*	background-color:	#F7F3EF; */
-}
-
-.ThemeNSubMenu
-{
-	position:	absolute;
-	visibility:	hidden;
-
-	/*
-	   Netscape/Mozilla renders borders by increasing
-	   their z-index.  The following line is necessary
-	   to cover any borders underneath
-	*/
-	z-index:	100;
-	border:		0px;
-	padding:	0px;
-
-	/*filter:progid:DXImageTransform.Microsoft.Shadow(color=#454545, Direction=135, Strength=4);*/
-}
-
-.ThemeNSubMenuTable
-{
-	border:		1px solid #444444;
-	background-color:	#eeeeee;
-}
-
-.ThemeNSubMenuTable td
-{
-	white-space:	nowrap;
-	padding:	2px;
-}
-
-.ThemeNMainItem,.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItem,.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	padding-left:	6px;
-	padding-right:	6px;
-	white-space:	nowrap;
-}
-
-.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	color:		#888888;
-	background-color:	#ffffff;
-}
-
-.ThemeNMenuSplit
-{
-	height:		1px;
-	margin-top:	1px;
-	margin-bottom:	1px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-top:	1px solid #ADAA9C;
-}
-
-.ThemeNMenuVSplit
-{
-	width:		1px;
-	margin:		0px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-right:	1px solid #ADAA9C;
-}
-
-/* image shadow animation */
-
-/*
-	seq1:	image for normal
-	seq2:	image for hover and active
-
-	To use, in the icon field, input the following:
-	<img class="seq1" src="normal.gif" /><img class="seq2" src="hover.gif" />
-*/
-
-.ThemeNMenuItem img.seq1
-{
-	display:	inline;
-}
-
-.ThemeNMenuItemHover seq2,
-.ThemeNMenuItemActive seq2
-{
-	display:	inline;
-}
-
-.ThemeNMenuItem .seq2,
-.ThemeNMenuItemHover .seq1,
-.ThemeNMenuItemActive .seq1
-{
-	display:	none;
+#footer{
+	margin: 20px auto;
+	width:50%;
+	border: 1px solid #555555;
+	padding: 8px;
+	text-align: center;
+	font: 9px verdana, arial, sans-serif;
+	background-image: URL(bgsteel.jpg);
+	color: #444444;
 }

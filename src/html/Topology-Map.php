@@ -24,7 +24,7 @@ $mapitems = "";
 $_GET = sanitize($_GET);
 $st = isset($_GET['st']) ? $_GET['st'] : array('%');
 $in = isset($_GET['in']) ? $_GET['in'] : array('location');
-$op = isset($_GET['op']) ? $_GET['op'] : array('like');
+$op = isset($_GET['op']) ? $_GET['op'] : array('LIKE');
 $co = isset($_GET['co']) ? $_GET['co'] : array();
 
 $fmt = isset($_GET['fmt']) ? $_GET['fmt'] : "";
@@ -94,7 +94,7 @@ $cols = array(	"device"=>"Device",
 		"cpu"=>"% CPU",
 		"temp"=>$tmplbl,
 		"vlanid"=>"Vlan ID",
-		"vlanname"=>"Vlan $name",
+		"vlanname"=>"Vlan $namlbl",
 		"vrfname"=>"VRF",
 		"ifip"=>$netlbl,
 		"neighbor"=>$neblbl,
@@ -117,14 +117,14 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <td valign="top">
 <h3><?= $fltlbl ?></h3>
 
-<?PHP Filters(); ?>
+<?php Filters(); ?>
 
 </td>
 <td valign="top" nowrap>
 
 <h3><?= $manlbl ?></h3>
 <img src="img/16/say.png" title="Map <?= $namlbl ?>">
-<input type="text" <?= $oc ?> name="tit" value="<?= $tit ?>" size="18">
+<input type="text" <?= $oc ?> name="tit" value="<?= $tit ?>" class="l">
 <br>
 
 <img src="img/16/img.png" title="<?= $sizlbl ?> & <?= $frmlbl ?>">
@@ -156,8 +156,7 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <option value="1"><?= $place['r'] ?>
 <option value="2" <?= ($lev == "2")?" selected":"" ?>><?= $place['c'] ?>
 <option value="3" <?= ($lev == "3")?" selected":"" ?>><?= $place['b'] ?>
-<option value="4" <?= ($lev == "4")?" selected":"" ?>>SNMP Dev
-<option value="5" <?= ($lev == "5")?" selected":"" ?>><?= $alllbl ?>  Dev
+<option value="4" <?= ($lev == "4")?" selected":"" ?>>Devices
 <option value="6" <?= ($lev == "6")?" selected":"" ?>>Nodes
 </select>
 <select size="1" <?= $oc ?> name="mde" title="Map <?= $typlbl ?>">
@@ -169,20 +168,20 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <br>
 
 <img src="img/16/geom.png" title="Map <?= $loclbl ?>">
-<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="xo" value="<?= $xo ?>" size="3" title="X <?= $loclbl ?>">
-<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="yo" value="<?= $yo ?>" size="3" title="Y <?= $loclbl ?>">
+<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="xo" value="<?= $xo ?>" class="s" title="X <?= $loclbl ?>">
+<input type="number" min="-1000" max="1000" step="10" <?= $oi ?> name="yo" value="<?= $yo ?>" class="s" title="Y <?= $loclbl ?>">
 <br>
 
 <img src="img/16/brld.png" title="Map <?= $rotlbl ?>">
-<input type="number" min="-180" max="180" <?= $oi ?> name="rot" value="<?= $rot ?>" size="3" title="<?= $place['r'] ?>">
-<input type="number" min="-180" max="180" <?= $oi ?> name="cro" <?= ($mde == "f" or $lev < 2 and $dyn)?"disabled":"" ?> value="<?= $cro ?>" size="3" title="<?= $place['c'] ?>">
-<input type="number" min="-180" max="180" <?= $oi ?> name="bro" <?= ($mde == "f" or $lev < 3 and $dyn)?"disabled":"" ?> value="<?= $bro ?>" size="3" title="<?= $place['b'] ?>">
+<input type="number" min="-180" max="180" <?= $oi ?> name="rot" value="<?= $rot ?>" class="s" title="<?= $place['r'] ?>">
+<input type="number" min="-180" max="180" <?= $oi ?> name="cro" <?= ($mde == "f" or $lev < 2 and $dyn)?"disabled":"" ?> value="<?= $cro ?>" class="s" title="<?= $place['c'] ?>">
+<input type="number" min="-180" max="180" <?= $oi ?> name="bro" <?= ($mde == "f" or $lev < 3 and $dyn)?"disabled":"" ?> value="<?= $bro ?>" class="s" title="<?= $place['b'] ?>">
 
 </td>
 <td valign="top" nowrap><h3>Layout</h3>
 
 <img src="img/16/ncfg.png" title="<?= $cnclbl ?> <?= $frmlbl ?>">
-<input type="number" min="0" max="1000"  <?= $oi ?> step="10" name="len" value="<?= $len ?>" size="3" title="<?= $lenlbl ?>">
+<input type="number" min="0" max="1000"  <?= $oi ?> step="10" name="len" value="<?= $len ?>" class="s" title="<?= $lenlbl ?>">
 <select size="1" <?= $oc ?> name="lis">
 <option value=""><?= $strlbl ?>
 <option value="a1" <?= ($lis == "a1")?" selected":"" ?>><?= $arclbl ?>
@@ -193,7 +192,7 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <br>
 
 <img src="img/16/ncon.png" title="<?= $cnclbl ?> <?= $inflbl ?>">
-<input type="number" min="-100" max="100" <?= $oi ?> name="lil" <?= ($fmt == "json" or !$lit and $dyn)?"disabled":"" ?> value="<?= $lil ?>" size="3" title="<?= $inflbl ?> <?= $loclbl ?>">
+<input type="number" min="-100" max="100" <?= $oi ?> name="lil" <?= ($fmt == "json" or !$lit and $dyn)?"disabled":"" ?> value="<?= $lil ?>" class="s" title="<?= $inflbl ?> <?= $loclbl ?>">
 <select size="1" <?= $oc ?> name="lit">
 <option value=""><?= $inflbl ?>
 <option value="w" <?= ($lit == "w")?" selected":"" ?>><?= $bwdlbl ?>
@@ -220,17 +219,17 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <option value="d2" <?= ($lit == "d2")?" selected":"" ?>> <?= $siz['s'] ?>
 <option value="d3" <?= ($lit == "d3")?" selected":"" ?>> <?= $siz['m'] ?>
 <option value="d4" <?= ($lit == "d4")?" selected":"" ?>> <?= $siz['l'] ?>
-<?}?>
+<?php } ?>
 </select>
 <br>
 
 <img src="img/16/link.png" title="<?= $cnclbl ?> <?= $endlbl ?>">
-<input type="number" min="1" max="100"  <?= $oi ?> name="lsf" <?= ($mde == "f" and $lev < 6 and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lsf ?>" size="3" title="<?= ($fmt == 'json')?$cnclbl:"$lenlbl/$levlbl" ?>">
-<input type="number" min="0" max="100" <?= $oi ?> step="5" name="lal" <?= (!$ifi and !$ifa and !$ipi and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lal ?>" size="3" title="<?= ($fmt == 'json')?$metlbl:"IF/IP $loclbl" ?>">
+<input type="number" min="1" max="100"  <?= $oi ?> name="lsf" <?= ($mde == "f" and $lev < 6 and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lsf ?>" class="s" title="<?= ($fmt == 'json')?$cnclbl:"$lenlbl/$levlbl" ?>">
+<input type="number" min="0" <?= $oi ?> step="5" name="lal" <?= (!$ifi and !$ifa and !$ipi and $dyn and $fmt != "json")?"disabled":"" ?> value="<?= $lal ?>" class="s" title="<?= ($fmt == 'json')?$metlbl:"IF/IP $loclbl" ?>">
 <br>
 
 <img src="img/16/dev.png" title="<?= $nodlbl ?> <?= $cfglbl ?>">
-<input type="number" min="0" max="100" <?= $oi ?> name="pwt" <?= ($fmt == "json")?"disabled":"" ?> value="<?= $pwt ?>" size="3" title="<?= $nodlbl ?> <?= $loclbl ?>/#<?= $cnclbl ?>">
+<input type="number" min="0" max="100" <?= $oi ?> name="pwt" <?= ($fmt == "json")?"disabled":"" ?> value="<?= $pwt ?>" class="s" title="<?= $nodlbl ?> <?= $loclbl ?>/#<?= $cnclbl ?>">
 <select size="1" <?= $oc ?> name="pos" title="<?= $nodlbl ?> <?= $typlbl ?>">
 <option value="">Icon
 <option value="d" <?= ($pos == "d")?" selected":"" ?>><?= $shplbl ?> <?= $siz['t'] ?>
@@ -245,8 +244,8 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 </select>
 <br>
 <img src="img/16/home.png" title="<?= $place['b'] ?> <?= $cfglbl ?>">
-<input type="number" min="6" max="1000" <?= $oi ?> name="fsz" <?= ($mde == "f" or $fmt == "json" or $lev < 4 and $dyn)?"disabled":"" ?> value="<?= $fsz ?>" size="3" title="<?= $place['f'] ?> <?= $sizlbl ?>">
-<input type="number" min="1" max="50" <?= $oi ?> name="fco" <?= ($mde == "f" or $fmt == "json" or $lev < 4 and $dyn)?"disabled":"" ?> value="<?= $fco ?>" size="2" title="<?= $collbl ?>">
+<input type="number" min="6" max="1000" <?= $oi ?> name="fsz" <?= ($mde == "f" or $fmt == "json" or $lev < 4 and $dyn)?"disabled":"" ?> value="<?= $fsz ?>" class="s" title="<?= $place['f'] ?> <?= $sizlbl ?>">
+<input type="number" min="1" max="50" <?= $oi ?> name="fco" <?= ($mde == "f" or $fmt == "json" or $lev < 4 and $dyn)?"disabled":"" ?> value="<?= $fco ?>" class="s" title="<?= $collbl ?>">
 
 </td>
 <td valign="top" nowrap><h3><?= $sholbl ?></h3>
@@ -269,7 +268,7 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <img src="img/16/walk.png" title="Dynamic-<?= $edilbl ?>"> <input type="checkbox" onchange="this.form.submit();" name="dyn" <?= $dyn ?>><br>
 
 <p>
-<input type="submit" value="<?= $cmdlbl ?>">
+<input type="submit" class="button" value="<?= $cmdlbl ?>">
 
 </th></tr>
 </table></form><p>
@@ -284,10 +283,8 @@ if($fmt == 'json'){
 
 <style>
 .chart {
-	background-color: white;
 	display:block;
 	margin: 0 auto;
-	border:1px solid black;
 }
 .node {
 	stroke: #222;
@@ -315,7 +312,7 @@ var force = d3.layout.force()
 
 var svg = d3.select("body")
 	.append("svg")
-	.attr("class", "chart")
+	.attr("class", "chart genpad")
 	.attr("width", width)
 	.attr("height", height);
 
@@ -370,16 +367,16 @@ d3.json("map/map_<?= $_SESSION['user'] ?>.json", function(error, graph){
 	.attr("width", function(d) { return d.width; })
 	.attr("height", function(d) { return d.height; });
 
-<?PHP if($pos == "d"){?>
+<?php if($pos == "d"){?>
 
 		node.append("title")
 			.text(function(d) { return d.name; });
-<?PHP }else{ ?>
+<?php }else{ ?>
 		node.append("text")
 			.attr("dx", function(d) { return -d.name.length * 2 })
 			.attr("dy", function(d) { return Math.floor(d.height/8+16); })
 			.text(function(d) { return d.name });
-<?PHP } # Cheating on this one ;-) ?>
+<?php } # Cheating on this one ;-) ?>
 
 		force.on("tick", function() {
 			link.attr("x1", function(d) { return d.source.x; })
@@ -393,13 +390,13 @@ d3.json("map/map_<?= $_SESSION['user'] ?>.json", function(error, graph){
 });
 
 </script>
-<?PHP	
+<?php	
 }elseif($fmt == 'svg'){
 	if( !isset($_GET['print']) ){echo "<h2>SVG Map</h2>";}
 	Map();
 	WriteSVG( Condition($in,$op,$st,$co,1) );
 ?>
-	<embed width="<?= $xm ?>" height="<?= $ym ?>" src="map/map_<?= $_SESSION[user] ?>.svg" name="SVG Map" type="image/svg+xml" style="display:block;margin-left:auto;margin-right:auto;border:1px solid black">
+	<embed width="<?= $xm ?>" height="<?= $ym ?>" src="map/map_<?= $_SESSION[user] ?>.svg" name="SVG Map" type="image/svg+xml" class="genpad"  style="display:block;margin-left:auto;margin-right:auto">
 <?php
 }else{
 	if($fmt){
@@ -413,7 +410,7 @@ d3.json("map/map_<?= $_SESSION['user'] ?>.json", function(error, graph){
 	}
 	if (file_exists("map/map_$_SESSION[user].php")) {
 ?>
-<img style="display:block;margin-left:auto;margin-right:auto;border:1px solid black" usemap="#net" src="map/map_<?= $_SESSION['user'] ?>.php">
+<img class="genpad" style="display:block;margin-left:auto;margin-right:auto" usemap="#net" src="map/map_<?= $_SESSION['user'] ?>.php">
 <map name="net">
 <?= $imgmap ?>
 </map>

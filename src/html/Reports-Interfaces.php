@@ -55,11 +55,13 @@ $cols = array(	"device"=>"Device",
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <td valign="top">
 
-<?PHP Filters(1); ?>
+<?php Filters(1); ?>
 
 </td>
 <th>
 
+<a href="?in[]=iftype&op[]=~&st[]=^(6|7|117)$"><img src="img/p45.png" title=" Ethernet IF"></a>
+<a href="?in[]=linktype&op[]==&st[]="><img src="img/16/nods.png" title=" <?= $acslbl ?> IF"></a>
 <a href="?in[]=snmpversion&op[]=>&st[]=0"><img src="img/16/dev.png" title="SNMP Devices"></a>
 <a href="?in[]=devmode&op[]==&st[]=8"><img src="img/16/wlan.png" title="Controlled APs"></a>
 <a href="?in[]=lastdis&op[]=<&st[]=<?= time()-2*$rrdstep ?>&co[]=&in[]=lastdis&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&co[]=&in[]=device&op[]=~&st[]=&col[]=device&col[]=devip&col[]=location&col[]=contact&col[]=firstdis&col[]=lastdis&ord=lastdis+desc"><img src="img/16/date.png" title="<?= $undlbl ?> Devices"></a>
@@ -101,7 +103,7 @@ $cols = array(	"device"=>"Device",
 </th>
 <th width="80">
 
-<input type="submit" name="do" value="<?= $sholbl ?>"></th>
+<input type="submit" class="button" name="do" value="<?= $sholbl ?>"></th>
 </tr></table></form><p>
 <?php
 }

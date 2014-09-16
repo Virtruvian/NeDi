@@ -28,18 +28,39 @@ function Get($ip, $ver, $cm, $oid, $t=1000000, $r=2){
 
 	global $debug, $comms;
 
+	$next = '';
+	if( strpos($oid, 'N') ){
+		$next = 'next';
+		$oid = substr($oid,0,-1);
+	}
 	if($ver == 3 and $comms[$cm]['pprot']){
-		if($debug){echo "<div class=\"textpad noti \">snmpget -v3 -c$cm ".$comms[$cm]['aprot']."/".$comms[$cm]['pprot']." $ip $oid ($t usec * $r)</div>";}
-		return snmp3_get($ip, $cm, 'authPriv', $comms[$cm]['aprot'], $comms[$cm]['apass'], $comms[$cm]['pprot'], $comms[$cm]['ppass'], ".$oid", $t, $r);
+		if($debug){echo "<div class=\"textpad noti \">snmpget$next -v3 -c$cm ".$comms[$cm]['aprot']."/".$comms[$cm]['pprot']." $ip $oid ($t usec * $r)</div>";}
+		if($next){
+			return snmp3_getnext($ip, $cm, 'authPriv', $comms[$cm]['aprot'], $comms[$cm]['apass'], $comms[$cm]['pprot'], $comms[$cm]['ppass'], ".$oid", $t, $r);
+		}else{
+			return snmp3_get($ip, $cm, 'authPriv', $comms[$cm]['aprot'], $comms[$cm]['apass'], $comms[$cm]['pprot'], $comms[$cm]['ppass'], ".$oid", $t, $r);
+		}
 	}elseif ($ver == 3 and $comms[$cm]['aprot']){
-		if($debug){echo "<div class=\"textpad noti \">snmpget -v3 -c$cm ".$comms[$cm]['aprot']." $ip $oid ($t usec * $r)</div>";}
-		return snmp3_get($ip, $cm, 'authNoPriv', $comms[$cm]['aprot'], $comms[$cm]['apass'], 'DES', '', ".$oid", $t, $r);
+		if($debug){echo "<div class=\"textpad noti \">snmpget$next -v3 -c$cm ".$comms[$cm]['aprot']." $ip $oid ($t usec * $r)</div>";}
+		if($next){
+			return snmp3_getnext($ip, $cm, 'authNoPriv', $comms[$cm]['aprot'], $comms[$cm]['apass'], 'DES', '', ".$oid", $t, $r);
+		}else{
+			return snmp3_get($ip, $cm, 'authNoPriv', $comms[$cm]['aprot'], $comms[$cm]['apass'], 'DES', '', ".$oid", $t, $r);
+		}
 	}elseif ($ver == 2){
-		if($debug){echo "<div class=\"textpad noti \">snmpget -v2c -c$cm $ip $oid ($t usec * $r)</div>";}
-		return snmp2_get($ip, $cm, ".$oid", $t, $r);
+		if($debug){echo "<div class=\"textpad noti \">snmpget$next -v2c -c$cm $ip $oid ($t usec * $r)</div>";}
+		if($next){
+			return snmp2_getnext($ip, $cm, ".$oid", $t, $r);
+		}else{
+			return snmp2_get($ip, $cm, ".$oid", $t, $r);
+		}
 	}else{
-		if($debug){echo "<div class=\"textpad noti \">snmpget -v1 -c$cm $ip $oid ($t usec * $r)</div>";}
-		return snmpget($ip, $cm, ".$oid", $t, $r);
+		if($debug){echo "<div class=\"textpad noti \">snmpget$next -v1 -c$cm $ip $oid ($t usec * $r)</div>";}
+		if($next){
+			return snmpget($ip, $cm, ".$oid", $t, $r);
+		}else{
+			return snmpget($ip, $cm, ".$oid", $t, $r);
+		}
 	}
 }
 

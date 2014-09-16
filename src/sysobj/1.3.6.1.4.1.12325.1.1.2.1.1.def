@@ -1,4 +1,4 @@
-# Definition for 1.3.6.1.4.1.12325.1.1.2.1.1 created by Defgen 1.8 on 3.Jan 2014 (admin)
+# Definition for 1.3.6.1.4.1.12325.1.1.2.1.1 created by Defgen 1.8 on 18.Jan 2014 (admin)
  
 # General
 SNMPv	2HC
@@ -7,7 +7,7 @@ Typoid
 Sysdes	
 OS	other
 Icon	csan
-Size	10
+Size	1
 Bridge	
 ArpND	old
 Dispro	

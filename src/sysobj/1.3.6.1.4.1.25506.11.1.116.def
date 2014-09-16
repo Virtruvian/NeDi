@@ -11,8 +11,8 @@ Size	1
 Bridge	qbri
 ArpND	
 Dispro	LLDP
-Serial	1.3.6.1.2.1.47.1.1.1.1.11.1
-Bimage	
+Serial	1.3.6.1.2.1.47.1.1.1.1.11.2
+Bimage	1.3.6.1.2.1.47.1.1.1.1.10.2
 
 VLnams	
 VLnamx	

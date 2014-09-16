@@ -10,7 +10,7 @@ include_once ("inc/libdev.php");
 include_once ("inc/libsnmp.php");
 
 $_GET = sanitize($_GET);
-$dev = isset($_GET['dev']) ? $_GET['dev'] : "";
+$mdv = isset($_GET['dev']) ? $_GET['dev'] : "";
 
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('devices','s','*','device','',array('services','snmpversion'),array('>','!='),array('3','0'),array('AND') );
@@ -39,23 +39,23 @@ if($res){
 <?php
 foreach (array_keys($devtyp) as $r ){
 	echo "<OPTION VALUE=\"$r\" ";
-	if($dev == $r){echo "selected";}
+	if($mdv == $r){echo "selected";}
 	echo " >$r\n";
 }
 echo "</select>";
 ?>
 </th><th width="80">
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 </th>
 </tr></table></form>
 <?php
 }
-if ($dev) {
-	$query	= GenQuery('devices','s','*','','',array('device'),array('='),array($dev) );
+if ($mdv) {
+	$query	= GenQuery('devices','s','*','','',array('device'),array('='),array($mdv) );
 	$res	= DbQuery($query,$link);
 	$ndev	= DbNumRows($res);
 	if ($ndev != 1) {
-		echo "<h4>$dev $mullbl $vallbl</h4>";
+		echo "<h4>$mdv $mullbl $vallbl</h4>";
 		DbFreeResult($res);
 		die;
 	}else{
@@ -65,7 +65,7 @@ if ($dev) {
 		$ud = rawurlencode($dev[0]);
 		DbFreeResult($res);
 
-		$query	= GenQuery('interfaces','s','ifidx,ifname,iftype,alias,comment','','',array('device'),array('='),array($rtr) );
+		$query	= GenQuery('interfaces','s','ifidx,ifname,iftype,alias,comment','','',array('device'),array('='),array($mdv) );
 		$res	= DbQuery($query,$link);
 		while( ($i = DbFetchRow($res)) ){
 			$ifn[$i[0]] = $i[1];
@@ -143,7 +143,7 @@ if ($dev) {
 				$ix = explode(".", $grp);
 				list($ifimg,$iftit) = Iftype($ift[$ix[4]]);
 				list($ntimg,$ntit)  = Nettype($grp);
-				echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
+				echo "<tr class=\"$bg\"><th class=\"$bi\" width=\"40px\">\n";
 				echo "<img src=\"img/$ifimg\" title=\"$iftit\"></th><td><b>".$ifn[$ix[4]]."</b> ".$ifi[$ix[4]]."</th>\n";
 				echo "<td><img src=\"img/$ntimg\" title=\"$ntit\"> $ix[0].$ix[1].$ix[2].$ix[3]</td>\n";
 				echo "<td>$a</td><td>$lve[$grp]</td>\n";

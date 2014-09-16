@@ -2,7 +2,7 @@
 
 # General
 SNMPv	2HC
-Type	HP5120-24G-PoE+EI
+Type	HP5120-24G-EI-PoE+
 Typoid	
 Sysdes	
 OS	Comware
@@ -12,7 +12,7 @@ Bridge	qbriX
 ArpND	oldip6
 Dispro	LLDPXN
 Serial	1.3.6.1.2.1.47.1.1.1.1.11.2
-Bimage	1.3.6.1.4.1.25506.2.3.1.4.2.1.2.1966081
+Bimage	1.3.6.1.2.1.47.1.1.1.1.10.2
 CfgChg	1.3.6.1.4.1.25506.2.4.1.1.1.0
 CfgWrt	1.3.6.1.4.1.25506.2.4.1.1.3.0
 VLnams	1.3.6.1.2.1.17.7.1.4.3.1.1

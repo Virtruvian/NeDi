@@ -17,8 +17,7 @@ if( isset($_SESSION['group']) ){
 	$mos     = explode("-", $self);
 	$selfi   = $mod[$mos[0]][$mos[1]];
 	$nipl    = $_SESSION['nip'];									# Disables telnet:// and ssh:// links to allow browser add-ons
-	$datfmt  = $_SESSION['date'];
-	$now     = date($_SESSION['date']);
+	$now     = date($_SESSION['timef']);
 	$isadmin = (preg_match("/adm/",$_SESSION['group']) )?1:0;
 	$debug   = (isset($_GET['debug']) and $isadmin)?1:0;
 }else{

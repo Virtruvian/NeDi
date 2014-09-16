@@ -87,13 +87,34 @@ input, select, textarea {
 	border-radius: 1em;
 }
 
+input.button{
+	background-color: #e42;
+	background: -webkit-linear-gradient(#e82 0%, #c83 50%, #b70 50%, #860 100%);
+	background: linear-gradient(#e82 0%, #c83 50%, #b70 50%, #860 100%);
+	border: 1px solid #530;
+	border-radius: 1em;
+	-webkit-box-shadow: inset 0 0 0 1px rgba(255, 115, 100, 0.4), 0 1px 3px #333333;
+	box-shadow: inset 0 0 0 1px rgba(255, 115, 100, 0.4), 0 1px 3px #333333;
+	color: #ffd;
+	font-weight: bold;
+	padding: 7px;
+	text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.8);
+}
+input.button:hover {
+	border: 1px solid #642;
+	cursor: pointer;
+}
+input.button:active {
+	background: -webkit-linear-gradient(#860 0%, #b70 50%, #c83 50%, #e82 100%);
+	background: linear-gradient(#860 0%, #b70 50%, #c83 50%, #e82 100%);
+}
+
 /* Image Properties */
 img{
 	margin : 3px;
 	vertical-align: middle;
 	border: none;
 }
-
 img.bigbar{
 	height : 20px;
 	margin : 5px;
@@ -102,12 +123,15 @@ img.bigbar{
 	-moz-box-shadow: #666 2px 2px 2px;
 	-webkit-box-shadow: 2px 2px 2px rgba(0,0,0,0.6);
 }
-
 img.smallbar{
 	height : 8px;
 	margin : 2px;
 	vertical-align: middle;
 	border: 1px solid #662222;
+}
+img.panel{
+	margin : 4px;
+	box-shadow:1px 5px 5px #555;
 }
 
 /* Form Properties */
@@ -124,23 +148,93 @@ img.smallbar{
 #header{
 	padding: 2px;
 	width: 100%;
-	border-spacing: 1px;
-	background-color: #76521F;
+	border-spacing: 0px;
+	border: 2px solid #AE8D65;
+	border: 2px solid #76521F;
+	background: linear-gradient(#dcc794, #ae8b39);
 	border-radius: 1em;
 	-webkit-border-radius: 1em;
 }
 
-#footer{
-	padding: 2px;
-	margin: 20px auto;
-	width:40%;
-	border: 1px solid #76521F;
-	padding: 10px;
-	text-align: left;
-	color: #663F17;
-	font-style: italic;
-	border-radius: 1em;
-	-webkit-border-radius: 1em;
+/* Topmenu inspired by line25.com */
+#nav {
+	width: 540px;
+	font-style:italic
+}
+
+#nav ul ul {
+	display: none;
+}
+
+#nav ul li:hover > ul {
+	z-index:100;
+ 	display: block;
+}
+
+#nav ul {
+	margin : 0px;
+	padding: 0px;
+	list-style: none;
+	position: relative;
+	display: inline-table;
+}
+#nav ul:after {
+	content: ""; clear: both; display: block;
+}
+
+#nav ul li {
+	float: left;
+}
+#nav ul li:hover {
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	background: #B09455;
+	opacity:		0.9;
+	filter:			alpha(opacity=90);
+	-moz-opacity:		0.9;
+}
+
+#nav ul li:hover a {
+	color: #200;
+}
+
+#nav ul li a {
+	display: block; padding: 5px 10px;
+	color: #200;
+}		
+		
+#nav ul ul {
+	background: #B09455; padding: 0;
+	position: absolute; top: 100%;
+}
+#nav ul ul li {
+	float: none; 
+	white-space: nowrap;
+}
+#nav ul ul li a {
+	padding: 5px 10px;
+	color: #fff;
+}	
+#nav ul ul li a:hover {
+	background: #deca9a;
+}
+	
+#nav ul ul ul {
+	position: absolute; left: 100%; top:0;
+}
+
+#noodlebox{
+	width: 20px;
+	margin: -2px;
+	background:#ccc;
+	border-radius:1em;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
+}
+
+#noodlebox:focus{
+	width: 100px;
+	background:#eee;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
 }
 
 /* Actual Module */
@@ -159,7 +253,6 @@ td.content{
 	-webkit-border-radius: 8px;
 }
 
-/* Helper td */
 td.helper{
 	padding: 10px 10px;
 	vertical-align: top;
@@ -173,11 +266,61 @@ table.fixed{
 	table-layout:fixed;
 }
 
-table.full{
+.full{
 	width: 100%;
 }
 
-/* Style for logs etc. */
+.s{
+	width: 60px;
+}
+
+.m{
+	width: 150px;
+}
+
+.l{
+	width: 300px;
+}
+
+.xl{
+	width: 500px;
+}
+
+.lft{
+	text-align: left;
+}
+
+.ctr{
+	text-align: center;
+}
+
+.rgt{
+	text-align: right;
+}
+
+.b{
+	font-weight: bold;
+}
+
+.top{
+	vertical-align:top;
+}
+
+.btm{
+	vertical-align:bottom;
+}
+
+.nw{
+	white-space: nowrap;
+}
+
+.genpad{
+	background-color: #fff;
+	border:1px solid #AE8D65;
+	border-radius: 8px;
+	padding : 4px;
+}
+
 .textpad{
 	margin: 10px auto;
 	width: 70%;
@@ -230,6 +373,7 @@ table.full{
 /* Image Fields */
 .imga{background-color: #fff0f0}
 .imgb{background-color: #eee6e6}
+.imgw{background-color: #fff}
 
 /* Status Fields */
 .good{	-webkit-box-shadow: inset 0 -5px 15px #30a020, 0 1px 1px #888888;
@@ -267,115 +411,17 @@ table.full{
 	background-color: #cdae67
 }
 
-/* ThemeNMenu Style Sheet */
-
-.ThemeNMenu,.ThemeNSubMenuTable
-{
-	cursor:			default;
-	font-size:		13px;
-
-	padding:		2px;
-	border:			0px;
-	white-space:		nowrap;
-}
-
-.ThemeNMenu
-{
-/*	background-color:	#F7F3EF; */
-}
-
-.ThemeNSubMenu
-{
-	position:		absolute;
-	visibility:		hidden;
-
-	/*
-	   Netscape/Mozilla renders borders by increasing
-	   their z-index.  The following line is necessary
-	   to cover any borders underneath
-	*/
-	z-index:		100;
-	border:			0px;
-	padding:		0px;
-
-	/*filter:progid:DXImageTransform.Microsoft.Shadow(color=#454545, Direction=135, Strength=4);*/
-}
-
-.ThemeNSubMenuTable
-{
-	border:			1px solid #444444;
-	background-color:	#DCCCB8;
-	border-radius:		0.5em;
-	-webkit-border-radius:	0.5em;
-	opacity:		0.9;
-	filter:			alpha(opacity=90);
-	-moz-opacity:		0.9;
-}
-
-.ThemeNSubMenuTable td
-{
-	white-space:		nowrap;
-	padding:		2px;
-}
-
-.ThemeNMainItem,.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItem,.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	padding-left:		6px;
-	padding-right:		6px;
-	white-space:		nowrap;
-}
-
-.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	color:			#888888;
-	background-color:	#ECDCC8;
-}
-
-.ThemeNMenuSplit
-{
-	height:			1px;
-	margin-top:		1px;
-	margin-bottom:		1px;
-	overflow:		hidden;
-	background-color:	inherit;
-	border-top:		1px solid #ADAA9C;
-}
-
-.ThemeNMenuVSplit
-{
-	width:			1px;
-	margin:			0px;
-	overflow:		hidden;
-	background-color:	inherit;
-	border-right:		1px solid #ADAA9C;
-}
-
-/* image shadow animation */
-
-/*
-	seq1:	image for normal
-	seq2:	image for hover and active
-
-	To use, in the icon field, input the following:
-	<img class="seq1" src="normal.gif" /><img class="seq2" src="hover.gif" />
-*/
-
-.ThemeNMenuItem img.seq1
-{
-	display:		inline;
-}
-
-.ThemeNMenuItemHover seq2,
-.ThemeNMenuItemActive seq2
-{
-	display:		inline;
-}
-
-.ThemeNMenuItem .seq2,
-.ThemeNMenuItemHover .seq1,
-.ThemeNMenuItemActive .seq1
-{
-	display:		none;
+#footer{
+	padding: 2px;
+	margin: 20px auto;
+	width:40%;
+	border: 2px solid #76521F;
+	padding: 10px;
+	text-align: left;
+	color: #663F17;
+	background: -webkit-linear-gradient(#dcc794, #ae8b39);
+	background: linear-gradient(#dcc794, #ae8b39);
+	font-style: italic;
+	border-radius: 1em;
+	-webkit-border-radius: 1em;
 }

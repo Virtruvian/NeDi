@@ -83,7 +83,7 @@ function GraphTraffic($rrd,$t){
 			$drawout .= "CDEF:$odef$c=outgr$c,${outdir}1,* $outmod:$odef$c". GetCol($t,$c,3) .":\"$il out";
 		}
 
-		if ($t == 'trf' and $n == 1 ){#and !$_SESSION['gneg']){# Couldn't figure out yet, why 95% is incorrect on negative traffic??!?
+		if ($t == 'trf' and $n == 1 and !$_SESSION['gneg']){# Couldn't figure out yet, why 95% is incorrect on negative traffic??!?
 			$drawin  .= "\" VDEF:tio95=$idef$c,95,PERCENT GPRINT:tio95:\"%7.2lf%s\" HRULE:tio95#ffcc44:\"95%\" ";
 			$drawout .= "\" VDEF:too95=$odef$c,95,PERCENT GPRINT:too95:\"%7.2lf%s\" HRULE:too95#ff4444:\"95%\" ";
 			$drawin  .= "GPRINT:$idef$c:MIN:\" %7.2lf%s min\" GPRINT:$idef$c:MAX:\" %7.2lf%s max\" GPRINT:$idef$c:AVERAGE:\" %7.2lf%s avg ";
@@ -116,8 +116,6 @@ function GraphTraffic($rrd,$t){
 #===================================================================
 function GraphOpts($siz,$sta,$end,$tit,$opt){
 
-	global $datfmt;
-
 	if($siz < 2){
 		if($opt == 1){					# error graph
 			return "-w50 -h30 -j -c CANVAS#eeccbb";
@@ -140,7 +138,7 @@ function GraphOpts($siz,$sta,$end,$tit,$opt){
 	}else{
 		$sta = ($sta)?$sta:('date' - 7 * 86400);
 		$dur = "-s${sta}".(($end)?" -e${end} ":"");
-		return "--title=\"$tit ". date($datfmt,$sta)."\" -w800 -h200 $dur -L6";
+		return "--title=\"$tit ". date($_SESSION['timf'],$sta)."\" -w800 -h200 $dur -L6";
 	}
 }
 

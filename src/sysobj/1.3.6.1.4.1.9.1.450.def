@@ -1,0 +1,57 @@
+# Definition for 1.3.6.1.4.1.9.1.450 created by Defgen 1.8 on 2.May 2014 (admin)
+ 
+# General
+SNMPv	1
+Type	PIX-506E
+Typoid	
+Sysdes	
+OS	IOS-asa
+Icon	fwbn
+Size	0
+Bridge	
+ArpND	phy
+Dispro	
+Serial	
+Bimage	
+CfgChg	1.3.6.1.4.1.9.9.43.1.1.1.0
+CfgWrt	1.3.6.1.4.1.9.9.43.1.1.3.0
+VLnams	
+VLnamx	
+Group	
+Mode	
+ 
+# Interfaces
+StartX	
+EndX	
+IFname	1.3.6.1.2.1.31.1.1.1.1
+IFaddr	old	
+IFalia	1.3.6.1.2.1.31.1.1.1.18
+IFalix	
+InBcast	1.3.6.1.2.1.31.1.1.1.3
+InDisc	1.3.6.1.2.1.2.2.1.13
+OutDisc	1.3.6.1.2.1.2.2.1.19
+IFvlan	
+IFvlix	
+IFpowr		
+IFpwix	
+IFdupl	
+IFduix	
+Halfdp	
+Fulldp	
+ 
+# Modules
+Modesc	
+Moclas	
+Movalu	
+Moslot	
+Modhw	
+Modsw	
+Modfw	
+Modser	
+Momodl	
+ 
+# RRD Graphing
+CPUutl	1.3.6.1.4.1.9.9.109.1.1.1.1.5.1	
+Temp		
+MemCPU	1.3.6.1.4.1.9.9.48.1.1.1.6.1	
+Custom	Connections;G;#	1.3.6.1.4.1.9.9.147.1.2.2.2.1.4.40.6

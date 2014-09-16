@@ -57,9 +57,12 @@ $cols = array(	"info"=>"Info",
 
 <form method="get" name="dynfrm" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<td class="ctr s">
+<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+
+</td>
 <td>
-<?PHP Filters(); ?>
+<?php Filters(); ?>
 
 </td>
 <?php
@@ -74,20 +77,19 @@ if($st[0]){
 	echo "</th>";
 }
 ?>
-<th valign="top">
-
-<h3><?= $fltlbl ?></h3>
-<a href="?in[]=class&op[]=like&st[]=ned%&elm=<?= $elm ?>"><img src="img/16/radr.png" title="<?= $dsclbl ?>"></a>
-<a href="?in[]=class&op[]=like&st[]=sec%&elm=<?= $elm ?>"><img src="img/16/hat.png" title="Security <?= $msglbl ?>"></a>
-<a href="?in[]=class&op[]=like&st[]=usr%&elm=<?= $elm ?>"><img src="img/16/user.png" title="<?= $usrlbl ?> <?= $msglbl ?>"></a>
-<a href="?in[]=class&op[]=like&st[]=cfg%&elm=<?= $elm ?>"><img src="img/16/conf.png" title="<?= $cfglbl ?>"></a>
-<br>
-<a href="?in[]=class&op[]=like&st[]=mon%&elm=<?= $elm ?>"><img src="img/16/bino.png" title="Monitoring"></a>
-<a href="?in[]=class&op[]==&st[]=trap&elm=<?= $elm ?>"><img src="img/16/warn.png" title="Traps"></a>
-<a href="?in[]=class&op[]==&st[]=dev&elm=<?= $elm ?>"><img src="img/16/dev.png" title="Device <?= $msglbl ?>"></a>
-<a href="?in[]=class&op[]==&st[]=node&elm=<?= $elm ?>"><img src="img/16/node.png" title="Node <?= $msglbl ?>"></a>
-
-</th>
+<td class="ctr">
+	<a href="?in[]=class&op[]=LIKE&st[]=ned%&elm=<?= $elm ?>"><img src="img/16/radr.png" title="<?= $dsclbl ?>"></a>
+	<a href="?in[]=class&op[]=LIKE&st[]=sec%&elm=<?= $elm ?>"><img src="img/16/hat.png" title="Security <?= $msglbl ?>"></a>
+	<br>
+	<a href="?in[]=class&op[]=LIKE&st[]=usr%&elm=<?= $elm ?>"><img src="img/16/user.png" title="<?= $usrlbl ?> <?= $msglbl ?>"></a>
+	<a href="?in[]=class&op[]=LIKE&st[]=cfg%&elm=<?= $elm ?>"><img src="img/16/conf.png" title="<?= $cfglbl ?>"></a>
+	<br>
+	<a href="?in[]=class&op[]=LIKE&st[]=mon%&elm=<?= $elm ?>"><img src="img/16/bino.png" title="Monitoring"></a>
+	<a href="?in[]=class&op[]==&st[]=trap&elm=<?= $elm ?>"><img src="img/16/warn.png" title="Traps"></a>
+	<br>
+	<a href="?in[]=class&op[]==&st[]=dev&elm=<?= $elm ?>"><img src="img/16/dev.png" title="Device <?= $loglbl ?>"></a>
+	<a href="?in[]=class&op[]==&st[]=node&elm=<?= $elm ?>"><img src="img/16/node.png" title="Node <?= $loglbl ?>"></a>
+</td>
 <td valign="top">
 
 <h3>
@@ -102,14 +104,14 @@ if($st[0]){
 </td>
 <th width="80">
 	
-<input type="submit" name="sho" value="<?= $sholbl ?>">
+<input type="submit" class="button" name="sho" value="<?= $sholbl ?>">
 <p>
 <input type="hidden" name="off" value="<?= $nof ?>">
-<input type="submit" name="p" value=" < ">
-<input type="submit" name="n" value=" > ">
+<input type="submit" class="button" name="p" value=" < ">
+<input type="submit" class="button" name="n" value=" > ">
 <p>
 
-<input type="submit" name="del" value="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')" >
+<input type="submit" class="button" name="del" value="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')" >
 </th></tr>
 </table></form>
 <p>
@@ -117,7 +119,7 @@ if($st[0]){
 }
 Condition($in,$op,$st,$co);
 
-Events($dlim,$in,$op,$st,$co);
+Events($dlim,$in,$op,$st,$co,1);
 
 include_once ("inc/footer.php");
 ?>

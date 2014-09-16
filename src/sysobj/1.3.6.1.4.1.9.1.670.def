@@ -5,7 +5,7 @@ SNMPv	2HC
 Type	ASA5520
 Typoid	
 Sysdes	
-OS	IOS-fw
+OS	IOS-asa
 Icon	vpbn
 Size	1
 Bridge	

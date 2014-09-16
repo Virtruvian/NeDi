@@ -24,12 +24,15 @@ $map  = isset($_GET['map']) ? 'checked' : '';
 $dem  = isset($_GET['dem']) ? 'checked' : '';
 
 $bgm  = "background.jpg";
+
+echo "<h1>$loclbl $edilbl</h1>\n";
+
 $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if (isset($_GET['add']) and $reg){
 	$query	= GenQuery('locations','i','','','',array('region','city','building','x','y','ns','ew','locdesc'),array(),array($reg,$cty,$bld,$x,$y,round($ns*10000000),round($ew*10000000),$com) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$addlbl $reg $cty $bld OK</h5>";}
 }elseif (isset($_GET['up']) and $id){
-	$query	= GenQuery('locations','u','id','=',$id,array('region','city','building','x','y','ns','ew','locdesc'),array(),array($reg,$cty,$bld,$x,$y,round($ns*10000000),round($ew*10000000),$com) );
+	$query	= GenQuery('locations','u',"id = '$id'",'','',array('region','city','building','x','y','ns','ew','locdesc'),array(),array($reg,$cty,$bld,$x,$y,round($ns*10000000),round($ew*10000000),$com) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$updlbl $reg $cty $bld OK</h5>";}
 }elseif(isset($_GET['del']) and $id){
 	$query	= GenQuery('locations','d','','','',array('id'),array('='),array($id) );
@@ -55,15 +58,16 @@ if($reg){
 	$nam = $reg;
 	$ico = 'img/regg.png';
 	$res = DbQuery( GenQuery('locations','s','id,x,y,ns,ew,locdesc','','',array('region','city','building'),array('=','=','='),array($reg,'',''),array('AND','AND') ),$link);
-	if ( DbNumRows($res) == 1){
-		$locex = 1;
+	$locex = DbNumRows($res);
+	if ( $locex ){
 		list($id,$x,$y,$ns,$ew,$com) = DbFetchRow($res);
 		$geost = ($dem)?$com:$nam;
 	}else{
-		$locex = 0;
 		$geost = $nam;
 		$com   = "$place[r], ".count(array_keys($lopt[$reg]))." cities ($now)";
 	}
+}else{
+	$nam = "$sellbl $place[r], $place[c], $place[b]";
 }
 if($cty){
 	$z   = "12";
@@ -71,12 +75,11 @@ if($cty){
 	if(!$map) $bgm = TopoMap($reg);
 	$ico = 'img/cityg.png';
 	$res = DbQuery( GenQuery('locations','s','id,x,y,ns,ew,locdesc','','',array('region','city','building'),array('=','=','='),array($reg,$cty,''),array('AND','AND') ),$link);
-	if ( DbNumRows($res) == 1){
-		$locex = 1;
+	$locex = DbNumRows($res);
+	if ( $locex ){
 		list($id,$x,$y,$ns,$ew,$com) = DbFetchRow($res);
 		$geost = ($dem)?"$com, $geost":$nam;
 	}else{
-		$locex = 0;
 		$geost = ($dem)?"$cty, $geost":$nam;
 		$com = "$place[c], ".count(array_keys($lopt[$reg][$cty]))." buildings ($now)";
 	}
@@ -87,12 +90,11 @@ if($bld){
 	if(!$map) $bgm = TopoMap($reg,$cty);
 	$ico = preg_match("/$redbuild/",$bld)?'img/bldsr.png':'img/blds.png';
 	$res = DbQuery( GenQuery('locations','s','id,x,y,ns,ew,locdesc','','',array('region','city','building'),array('=','=','='),array($reg,$cty,$bld),array('AND','AND') ),$link);
-	if ( DbNumRows($res) == 1){
-		$locex = 1;
+	$locex = DbNumRows($res);
+	if ( $locex ){
 		list($id,$x,$y,$ns,$ew,$com) = DbFetchRow($res);
 		$geost = ($dem)?"$com $geost":$nam;
 	}else{
-		$locex = 0;
 		$geost = ($dem)?"$bld $geost":$nam;
 		$com = "$place[b], ".$lopt[$reg][$cty][$bld] ." devices ($now)";
 	}
@@ -102,11 +104,10 @@ $ns /= 10000000;
 $ew /= 10000000;
 
 ?>
-<h1>Topology <?= $loclbl ?> Editor</h1>
 <form method="get" action="<?= $self ?>.php" name="lof">
 <table class="content" ><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th valign="top"><h3>Region</h3>
+<th valign="top"><h3><?= $place['r'] ?></h3>
 <select size="4" name="reg" onchange="document.lof.cty.selectedIndex = -1; document.lof.bld.selectedIndex = -1;this.form.submit();">
 <?php
 ksort($lopt);
@@ -151,15 +152,15 @@ ksort($lopt[$reg][$cty]);
 
 <h3><?= $nam ?></h3>
 <img src="img/16/img.png" title="<?= $imglbl ?>">
-<input type="text" name="x" size="3" value="<?= $x ?>">X 
-<input type="text" name="y" size="3" value="<?= $y ?>">Y
+<input type="number" min="0" name="x" class="s" value="<?= $x ?>">X 
+<input type="number" min="0" name="y" class="s" value="<?= $y ?>">Y
 <br>
 <img src="img/16/map.png" title="GIS">
-<input type="text" name="ns" size="15" value="<?= $ns ?>">NS 
-<input type="text" name="ew" size="15" value="<?= $ew ?>">EW
+<input type="text" name="ns" class="m" value="<?= $ns ?>">NS 
+<input type="text" name="ew" class="m" value="<?= $ew ?>">EW
 <br>
 <img src="img/16/find.png" title="<?= $deslbl ?>">
-<input type="text" name="com" size="40" value="<?= $com ?>" onfocus="select();">
+<input type="text" name="com" class="l" value="<?= $com ?>" onfocus="select();">
 
 </th>
 <th width="80">
@@ -172,13 +173,18 @@ ksort($lopt[$reg][$cty]);
 <th width="80">
 <?php 
 
-if($locex) { ?>
+if($locex > 1) {
+?><a href="Topology-Locations.php?in[]=region&op[]=%3D&st[]=<?= urlencode($reg) ?>&co[]=AND&in[]=city&op[]=%3D&st[]=<?= urlencode($cty) ?>&co[]=AND&in[]=building&op[]=%3D&st[]=<?= urlencode($bld) ?>">
+<img title="<?= $mullbl ?> <?= $loclbl ?> Topology-Locations.php" src="img/16/home.png">
+</a>
+<?php 
+}elseif($locex) { ?>
 <input type="hidden" name="id" value="<?= $id ?>">
-<input type="submit" name="up" value="<?= $updlbl ?>"><p>
-<input type="submit" name="del" value="<?= $dellbl ?>">
-<?}else{?>
-<input type="submit" name="add" value="<?= $addlbl ?>"><p>
-<?}?>
+<input type="submit" class="button" name="up" value="<?= $updlbl ?>"><p>
+<input type="submit" class="button" name="del" value="<?= $dellbl ?>">
+<?php } else{?>
+<input type="submit" class="button" name="add" value="<?= $addlbl ?>"><p>
+<?php } ?>
 
 </th>
 </tr></table></form><p>
@@ -216,13 +222,12 @@ function initialize(){
 			alert("Geocode <?= $errlbl ?>: " + status);
 		}
 	});
-<?	}else{?>
-
+<?php	}else{ ?>
 	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 	var image = '<?= $ico ?>';
 	var marker = new google.maps.Marker({map: map,draggable:true,animation: google.maps.Animation.DROP,position: coords,title:"<?= $com ?>",icon: image});
 	google.maps.event.addListener(marker, 'dragend', function(event){posup(event.latLng);});
-<?	}?>
+<?php	} ?>
 }
 </script>
 
@@ -234,9 +239,9 @@ window.onload = function() {
 }
 </script>
 <center><div id="map_canvas" style="width:800px; height:500px;border:1px solid black"></div></center>
-<?}?>
+<?php } ?>
 
-<?}else{
+<?php } else{
 	$bgsize = getimagesize("topo/$bgm");	
 ?>
 
@@ -262,10 +267,10 @@ function getcoord(event){
 document.getElementById("loc").style.left = "<?= ($x-$bgsize[0]/2) ?>px";
 document.getElementById("loc").style.top = "<?= ($y-15) ?>px" ;
 document.getElementById("loc").style.visibility = "visible" ;
-<?}?>
+<?php } ?>
 
 </script>
-<?}?>
+<?php } ?>
 
 <?php
 include_once ("inc/footer.php");

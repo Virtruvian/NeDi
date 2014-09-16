@@ -104,7 +104,7 @@
 		<th rowspan="2"><img src="img/32/nag.png"></td>
 		<th>Export configuration script for:</th>
 		<th>Export options:</th>
-		<th rowspan="2"><input type="submit" name="mkconf" value="Export"></th>
+		<th rowspan="2"><input type="submit" class="button" name="mkconf" value="Export"></th>
 	</tr>
 	<tr class="<?= $modgroup[$self] ?>1">
 		<td>
@@ -148,7 +148,7 @@
 </select><br>
 <br>
 <input type="radio" name="exptype" value="r"<?= $_POST['exptype'] == "r" ? " checked" : NULL ?>> All devices matching following regular expression:
-	<input type="text" name="expression" value="<?= $_POST['expression'] ?>"> <input type="submit" name="~" value="Show devices">
+	<input type="text" name="expression" value="<?= $_POST['expression'] ?>"> <input type="submit" class="button" name="~" value="Show devices">
 <br>
 <br>
 <input type="radio" name="exptype" value="a"> All devices

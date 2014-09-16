@@ -51,8 +51,10 @@ function GetPID($srv){
 if(preg_match("/OpenBSD|Linux/",PHP_OS) ){
 	$pscmd = "ps -axo pid,command";
 }
-$procs = shell_exec($pscmd);							# Get PIDs first
+$procs  = shell_exec($pscmd);							# Get PIDs first
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
+
+echo "<h1>NeDi $srvlbl</h1>\n";
 
 if($start and $isadmin){
 	if( $pid = GetPID($mysrv[$start]['cmd']) ){
@@ -77,9 +79,9 @@ if($start and $isadmin){
 		echo "<h4>$stop not running!</h4>";
 	}
 }elseif($clear and $isadmin){
-	$query	= GenQuery('system','u','name','=','threads',array('value'),array(),array('0') );
+	$query	= GenQuery('system','u',"name = 'threads'",'','',array('value'),array(),array('0') );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$dellbl threads OK</h5>";}
-	$query	= GenQuery('system','u','name','=','nodlock',array('value'),array(),array('0') );
+	$query	= GenQuery('system','u',"name = 'nodlock'",'','',array('value'),array(),array('0') );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$reslbl nodlock OK</h5>";}
 
 	if( $pid = GetPID('nedi.pl') ){
@@ -105,8 +107,6 @@ DbFreeResult($res);
 
 ob_end_flush();
 ?>
-<h1>NeDi <?= $srvlbl ?></h1>
-<p>
 <form name="form" action="<?= $self ?>.php" method="post">
 <table class="content">
 <tr class="<?= $modgroup[$self] ?>1">
@@ -116,10 +116,10 @@ ob_end_flush();
 <th><img src="img/32/<?= $mysrv[$p]['ico'] ?>.png" title="<?= $p ?>"><p>
 <a href="<?= ( GetPID($mysrv[$p]['cmd']) )?"?stop=$p\"><img src=\"img/32/walk.png\" title=\"$endlbl\">":"?start=$p\"><img src=\"img/32/bcls.png\" title=\"$cmdlbl\">" ?></a>
 </th>
-<?}?>
+<?php } ?>
 
 <th><img src="img/32/radr.png" title="NeDi"><p>
-<?= $sys['threads']?"<img src=\"img/32/walk.png\" ":"<img src=\"img/32/bcls.png\" " ?> title="<?= $sys['threads'] ?> threads, 1st:<?= (date($datfmt,$sys['first'])) ?>">
+<?= $sys['threads']?"<img src=\"img/32/walk.png\" ":"<img src=\"img/32/bcls.png\" " ?> title="<?= $sys['threads'] ?> threads, 1st:<?= (date($_SESSION['timf'],$sys['first'])) ?>">
 <?php
 if ($sys['nodlock']){
 	echo "<img src=\"img/32/lokc.png\" title=\"Nodes locked by PID $sys[nodlock]\">";
@@ -129,7 +129,7 @@ if ($sys['nodlock']){
 if ($sys['threads'] and $isadmin){
 ?>
 <a href="?clear=1"><img src="img/16/bcnl.png" align="right" onclick="return confirm('<?= $reslbl ?>, <?= $cfmmsg ?>?')" title="<?= $reslbl ?>!"></a>
-<?}?>
+<?php } ?>
 </th>
 </tr>
 </table></td></tr></table>

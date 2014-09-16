@@ -19,6 +19,8 @@ $_POST= sanitize($_POST);
 $msg = isset($_POST['msg']) ? $_POST['msg'] : "";
 $eam = isset($_GET['eam'])  ? $_GET['eam']  : "";
 
+echo "<h1>$usrlbl Profile</h1>\n";
+
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 if(isset($_POST['up']) ){
 	if($_POST['curp'] AND $_POST['newp'] AND $_POST['ackp']){
@@ -34,7 +36,7 @@ if(isset($_POST['up']) ){
 				die;
 			}
 			if($usr[1] == hash("sha256","NeDi".$name.$_POST['curp']) ){
-				$query	= GenQuery('users','u','usrname','=',$name,array('password'),array(),array($pass) );
+				$query	= GenQuery('users','u',"usrname = '$name'",'','',array('password'),array(),array($pass) );
 				if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Password $updlbl OK</h5>";}
 			}else{
 				echo "<h4>Password: $stco[100] $errlbl!</h4>";
@@ -45,7 +47,7 @@ if(isset($_POST['up']) ){
 	}
 	$mopts = $_POST['gsiz'] + ($_POST['gbit']?8:0) + ($_POST['far']?16:0) + ($_POST['opt']?32:0) + ($_POST['map']?64:0) + ($_POST['gneg']?128:0) + ($_POST['nip']?256:0);
 	$lsiz  = (($_POST['lsiz'] > 31)?31:$_POST['lsiz']);
-	$query = GenQuery('users','u','usrname','=',$name,array('email','phone','comment','language','theme','volume','columns','msglimit','miscopts','dateformat'),array(),array($_POST['email'],$_POST['phone'],$_POST['cmt'],$_POST['lang'],$_POST['theme'],$_POST['vol']+$lsiz*4,$_POST['col'],$_POST['lim'],$mopts,$_POST['date'].$_POST['tz']) );
+	$query = GenQuery('users','u',"usrname = '$name'",'','',array('email','phone','comment','language','theme','volume','columns','msglimit','miscopts','dateformat'),array(),array($_POST['email'],$_POST['phone'],$_POST['cmt'],$_POST['lang'],$_POST['theme'],$_POST['vol']+$lsiz*4,$_POST['col'],$_POST['lim'],$mopts,$_POST['timf'].$_POST['tz']) );
 	if( !DbQuery($query,$link) ){
 		echo "<h4>".DbError($link)."</h4>";
 	}else{
@@ -63,7 +65,8 @@ if(isset($_POST['up']) ){
 		$_SESSION['far'] = $_POST['far'];
 		$_SESSION['map'] = $_POST['map'];
 		$_SESSION['gneg'] = $_POST['gneg'];
-		$_SESSION['date'] = $_POST['date'];
+		$_SESSION['timf'] = $_POST['timf'];
+		$_SESSION['datf'] = substr($_SESSION['timf'],0,strrpos($_SESSION['timf'],' '));
 		$_SESSION['tz']   = $tzone[$_POST['tz']];
 	}
 }
@@ -78,21 +81,21 @@ if ($uok == 1) {
 	die;
 }
 ?>
-<h1><?= $usrlbl ?> Profile</h1>
+
 <form method="post" action="<?= $self ?>.php" name="pro">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><?=Smilie($usr[0]) ?></a>
 <br><?= $name ?></th>
 <td valign="top">
 <h3><?= $stalbl ?> / <?= $paslbl ?></h3>
-<img src="img/16/add.png" title="<?= $usrlbl ?> <?= $addlbl ?>"> <?= date($datfmt,$usr[5]) ?>
+<img src="img/16/add.png" title="<?= $usrlbl ?> <?= $addlbl ?>"> <?= date($_SESSION['timf'],$usr[5]) ?>
 <p>
 <img src="img/16/loko.png" title="<?= $paslbl ?> <?= $stco['100'] ?>">
-<input type="password" name="curp" size="10"><p>
+<input type="password" name="curp" class="m"><p>
 <img src="img/16/lokc.png" title="<?= $paslbl ?> <?= $stco['10'] ?>">
-<input type="password" name="newp" size="10"><p>
+<input type="password" name="newp" class="m"><p>
 <img src="img/16/lokc.png" title="<?= $paslbl ?> <?= $acklbl ?>">
-<input type="password" name="ackp" size="10">
+<input type="password" name="ackp" class="m">
 
 </td>
 <td valign="top">
@@ -108,13 +111,13 @@ if ($uok == 1) {
 </div>
 <p>
 <img src="img/16/sms.png" title="Phone #">
-<input type="text" name="phone" size="20" value="<?= $usr[4] ?>" >
+<input type="text" name="phone" class="l" value="<?= $usr[4] ?>" >
 <p>
 <img src="img/16/mail.png" title="Email <?= $adrlbl ?>">
-<input type="email" name="email" size="20" value="<?= $usr[3] ?>" >
+<input type="email" name="email" class="l" value="<?= $usr[3] ?>" >
 <p>
 <img src="img/16/say.png" title="<?= $cmtlbl ?>">
-<input type="text" name="cmt" size="20" value="<?= $usr[7] ?>" >
+<input type="text" name="cmt" class="l" value="<?= $usr[7] ?>" >
 
 </td>
 <td valign="top">
@@ -128,13 +131,13 @@ if ($uok == 1) {
 <input type="checkbox" name="map" <?= ($_SESSION['map'])?"checked":"" ?>>
 <p>
 <img src="img/16/form.png" title="# <?= $toplbl ?> <?= $msglbl ?>">
-<input type="number" min="0" max="31" name="lim" size="3" value="<?= $_SESSION['lim'] ?>">
+<input type="number" min="0" max="31" name="lim" class="s" value="<?= $_SESSION['lim'] ?>">
 <br>
 <img src="img/16/icon.png" title="# <?= $collbl ?> (0-31)">
-<input type="number" min="0" max="31" name="col" size="3" value="<?= $_SESSION['col'] ?>">
+<input type="number" min="0" max="31" name="col" class="s" value="<?= $_SESSION['col'] ?>">
 <br>
 <img src="img/16/abc.png" title="<?= $namlbl ?> <?= $sizlbl ?> (3-31)">
-<input type="number" min="3" max="31" name="lsiz" size="3" value="<?= $_SESSION['lsiz'] ?>">
+<input type="number" min="3" max="31" name="lsiz" class="s" value="<?= $_SESSION['lsiz'] ?>">
 
 </td>
 <td valign="top">
@@ -144,7 +147,7 @@ if ($uok == 1) {
 <input type="checkbox" name="far" <?= ($_SESSION['far'])?"checked":"" ?>>
 <p>
 <a href="http://php.net/manual/en/function.date.php" target="window"><img src="img/16/date.png" title="<?= $timlbl ?> <?= $frmlbl ?>"></a>
-<input type="text" name="date" size="5" value="<?= $_SESSION['date'] ?>" >
+<input type="text" name="timf" class="s" value="<?= $_SESSION['timf'] ?>" >
 
 <select name="tz">
 <?php
@@ -204,7 +207,7 @@ foreach (glob("themes/*.css") as $f) {
 <input type="checkbox" name="gneg" <?= ($_SESSION['gneg'])?"checked":"" ?>  title="<?= $sholbl ?> -Y <?= $vallbl ?>">
 
 </td>
-<th width="80"><input type="submit" name="up" value="<?= $updlbl ?>"></th>
+<th width="80"><input type="submit" class="button" name="up" value="<?= $updlbl ?>"></th>
 </tr></table></form>
 <p>
 <?php
@@ -241,14 +244,14 @@ if($isadmin){
 		if ( file_exists($msgfile) ){
 			readfile($msgfile);
 		}
-		if($eam != 1) echo "<br>\n<a href=\"$eam\">EDIT</a>";
+		if($eam != 1) echo "<a href=\"$eam\">EDIT</a>\n<br>\n";
 ?>
 </textarea>
 </th>
 <th width="80">
-<input type="submit" name="cam" value="<?= $dellbl ?>">
+<input type="submit" class="button" name="cam" value="<?= $dellbl ?>">
 <p>
-<input type="submit" name="sam" value="<?= $wrtlbl ?>">
+<input type="submit" class="button" name="sam" value="<?= $wrtlbl ?>">
 </th></table>
 <?php
 	}else{
@@ -283,7 +286,7 @@ if($nchat){
 	while( ($m = DbFetchRow($res)) ){
 		if ($_SESSION['user'] == $m[1]){$bg = "txta"; $bi = "imga";$me=1;}else{$bg = "txtb"; $bi = "imgb";$me=0;}
 		list($fc,$lc) = Agecol($m[0],$m[0],$me);
-		$time = date($datfmt,$m[0]);
+		$time = date($_SESSION['timf'],$m[0]);
 		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],1);
 		echo "</th>\n";
 		echo "<td bgcolor=#$fc>$time</td><td>".preg_replace('/(http[s]?:\/\/[^\s]*)/',"<a href=\"$1\" target=\"window\">$1</a>",$m[2])."</td></tr>\n";

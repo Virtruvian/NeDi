@@ -38,7 +38,7 @@ $tftpboot = "/var/tftpboot";
 $_GET = sanitize($_GET);
 $del  = isset($_GET['del']) ? $_GET['del'] : '';
 $mde  = isset($_GET['mde']) ? $_GET['mde'] : '';
-$sub  = isset($_GET['sub']) ? $_GET['sub'] : 'topo/';
+$sub  = isset($_GET['sub']) ? $_GET['sub'] : 'topo';
 $tft  = isset($_GET['tft']) ? preg_replace('/[<>\/\\\]/','',$_GET['tft']) : "";
 
 $_POST= sanitize($_POST);
@@ -54,7 +54,7 @@ $all  = isset($_POST['all']) ? "checked" : "";
 
 if( $mde == 'o' and !preg_match('/^topo/',$sub) ){							# Only allow topo/
 	$mde = '';
-	$sub = 'topo/';
+	$sub = 'topo';
 }
 
 $editable = 0;
@@ -189,7 +189,7 @@ foreach (glob("/tmp/nedi*") as $f) {
 }
 ?>
 </select>
-<?}?>
+<?php } ?>
 
 </td>
 <th>
@@ -200,7 +200,7 @@ foreach (glob("/tmp/nedi*") as $f) {
 <option value="b" <?= ($mde == "b")?" selected":""?>><?= (($verb1)?"$updlbl NeDi":"NeDi $updlbl") ?> (<?= (($verb1)?"$buplbl $cfglbl":"$cfglbl $buplbl") ?>)
 <option value="g" <?= ($mde == "g")?" selected":""?>><?= (($verb1)?"$updlbl $imglbl":"$imglbl $updlbl") ?>
 <option value="i" <?= ($mde == "i")?" selected":""?>><?= (($verb1)?"$implbl DB":"DB $implbl") ?>
-<option value="r" <?= ($mde == "r")?" selected":""?>><?= $dellbl ?> <?= $stco['200'] ?> RRDs
+<option value="r" <?= ($mde == "r")?" selected":""?>><?= $dellbl ?> <?= $stco['160'] ?> RRDs
 <option value="l" <?= ($mde == "l")?" selected":""?>><?= $upllbl ?>-log
 <option value="t" <?= ($mde == "t")?" selected":""?>><?= $upllbl ?>-tftp
 <option value="o" <?= ($mde == "o")?" selected":""?>><?= $upllbl ?>-<?= $sub ?>
@@ -212,7 +212,7 @@ foreach (glob("/tmp/nedi*") as $f) {
 <th>
 
 <input type="hidden" name="sub" value="<?= $sub ?>">
-<input type="submit" name="up" value="<?= $cmdlbl ?>">
+<input type="submit" class="button" name="up" value="<?= $cmdlbl ?>">
 
 </td>
 </tr></table>
@@ -286,14 +286,14 @@ if($file){
 <?php
 			if($tftpable){
 ?>
-<input type="text" name="tft" value="<?= basename($file) ?>" onfocus="select();" >
+<input type="text" class="m" name="tft" value="<?= basename($file) ?>" onfocus="select();" >
 <input type="checkbox" name="all" <?= $all ?> title="<?= $alllbl ?> <?= $wrtlbl ?> <?= $acslbl ?>">
-<input type="submit" name="wrt" value="<?= $wrtlbl ?> TFTP">
+<input type="submit" class="button" name="wrt" value="<?= $wrtlbl ?> TFTP">
 <?php
 			}else{
 ?>
 <input type="hidden" name="file" value="<?= $file ?>">
-<input type="submit" name="wrt" value="<?= $wrtlbl ?>">
+<input type="submit" class="button" name="wrt" value="<?= $wrtlbl ?>">
 <?php
 			}
 		}
@@ -518,7 +518,7 @@ if($file){
 				$mtime = filemtime($rrd);
 				if( $mtime < (time() - $retire * 86400) ){
 					$dstat = (unlink($rrd))?"OK":"$errlbl";
-					echo date($_SESSION[date],$mtime)." $rrd: $dellbl $dstat\n";
+					echo date($_SESSION['timf'],$mtime)." $rrd: $dellbl $dstat\n";
 				}
 			}
 		}
@@ -585,15 +585,14 @@ function DirList($dir,$opt,$lvl){
 		$plen = strlen($dir);
 		$t = substr($f,$plen+1);
 		TblRow($bg);
-		echo "<td class=\"$bi\" width=\"20\" nowrap>";
+		echo "<td class=\"$bi s nw\">";
 		$i=0;
 		while ($i < $lvl) {
 			echo "<img src=\"img/sub.png\">";
 			$i++;
 		}
-		$i=0;
 		if(is_dir($f)){
-			if($lvl and $opt == "web"){
+			if($opt == "web"){
 				echo "<a href=\"?sub=$f&mde=o\"><img src=\"img/16/".(($f == $sub)?'foye':'fogy').".png\" title=\"$upllbl $levlbl $lvl\"></a></td>";
 			}else{
 				echo "<img src=\"img/16/fogy.png\" title=\"Folder $levlbl $lvl\">";
@@ -614,7 +613,7 @@ function DirList($dir,$opt,$lvl){
 			}
 			$siz = filesize($f);
 			$tsiz += $siz;
-			echo "<td align=\"right\">".DecFix($siz)."</td><td align=\"right\">".date ($_SESSION['date'],filemtime($f))."<td align=\"right\">";
+			echo "<td align=\"right\">".DecFix($siz)."</td><td align=\"right\">".date ($_SESSION['timf'],filemtime($f))."<td align=\"right\">";
 			if($isadmin){
 				if($opt == "tftp" and $ed){
 					echo "<a href=\"?tft=".urlencode($t)."\"><img src=\"img/16/note.png\" title=\"$edilbl\"></a>";

@@ -63,7 +63,6 @@ function Nimg($m) {
 	elseif (stristr($m,"ELECTRONICS FOR IMAGING"))		{return  "efi";}
 	elseif (stristr($m,"Elitegroup"))			{return  "ecs";}
 	elseif (stristr($m,"EMULEX"))				{return  "emx";}
-	elseif (stristr($m,"Enterasys"))			{return  "esy";}
 	elseif (stristr($m,"ENTRADA"))				{return  "ent";}
 	elseif (stristr($m,"EPSON"))				{return  "eps";}
 	elseif (stristr($m,"EqualLogic"))			{return  "de";}
@@ -218,6 +217,7 @@ function Nimg($m) {
 	elseif (preg_match("/AVAYA|LANNET/i",$m))		{return  "ava";}
 	elseif (preg_match("/BAY|NORTEL|NETICS|XYLOGICS/i",$m))	{return  "nort";}
 	elseif (preg_match("/EMC|CLARIION/i",$m))		{return  "emc";}
+	elseif (preg_match("/Enterasys|EXTREME/i",$m))		{return  "ext";}
 	elseif (stristr($m,"Emerson Network|ROSEMOUNT CONTROLS"))	{return  "eme";}
 	elseif (preg_match("/Floware|ALVARION|Breeze/i",$m))	{return	 "aln";}
 	elseif (preg_match("/^(Funkwerk|Bintec|Artem|Teldat)/i",$m))	{return	 "aln";}

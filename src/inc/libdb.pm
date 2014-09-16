@@ -26,7 +26,7 @@ if ($@){
 	&misc::Prt("DB  :Socket6 loaded\n");
 }
 
-use vars qw($dbh);
+use vars qw($dbh $ac);
 
 =head2 FUNCTION Connect()
 
@@ -41,10 +41,11 @@ B<Returns> -
 =cut
 sub Connect{
 
-	my ($dbname,$dbhost,$dbuser,$dbpass,$ac) = @_;
-	$ac = (!defined $ac)?0:$ac;
+	my ($dbname,$dbhost,$dbuser,$dbpass,$setac) = @_;
+	$ac = (!defined $setac)?0:$setac;								# Set $db::ac so functions like Insert() are autocommit aware
+	&misc::Prt("DB  :Connecting to '$dbname\@$dbhost' as '$dbuser' with".(($ac)?'':'out')." autocommit\n") if $main::opt{'d'};
 	$dbh = DBI->connect("DBI:$misc::backend:dbname=$dbname;host=$dbhost", $dbuser, $dbpass, { RaiseError => 1, AutoCommit => $ac} ) or die $DBI::errstr;
-	&misc::Prt("DB  :Connecting to '$dbname\@$dbhost' as '$dbuser' with".(($ac)?'':'out')." autocommit ".((defined $dbh)?'OK':'FAIL')."\n") if $main::opt{'d'};
+	&misc::Prt("DB  :Connection ".((defined $dbh)?'OK':'FAIL')."\n") if $main::opt{'d'};
 }
 
 =head2 FUNCTION Commit()
@@ -172,7 +173,7 @@ sub InitDB{
 	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
 
 	print "TABLES\ndevices\n";
-	my $index = ($misc::backend eq 'Pg')?'':',INDEX (device(8)),PRIMARY KEY (device)';
+	my $index = ($misc::backend eq 'Pg')?'':',INDEX (device),PRIMARY KEY (device)';
 	$dbh->do("CREATE TABLE devices(
 		device $vchar(64) NOT NULL UNIQUE,
 		devip $intun DEFAULT 0,
@@ -212,7 +213,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "modules\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(device(8)), INDEX(slot(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(device), INDEX(slot(8))';
 	$dbh->do("CREATE TABLE modules(
 		device $vchar(64) NOT NULL,
 		slot $vchar(64) DEFAULT '',
@@ -230,7 +231,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "interfaces\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(device(8)), INDEX(ifname(8)), INDEX(ifidx)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(device), INDEX(ifname), INDEX(ifidx)';
 	$dbh->do("CREATE TABLE interfaces(
 		device $vchar(64) NOT NULL,
 		ifname $vchar(32) NOT NULL,
@@ -268,7 +269,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "networks\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(device(8)), INDEX(ifname(8)), INDEX(ifip)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(device), INDEX(ifname), INDEX(ifip)';
 	$dbh->do("CREATE TABLE networks(
 		device $vchar(64) NOT NULL,
 		ifname $vchar(32) DEFAULT '',
@@ -281,18 +282,18 @@ sub InitDB{
  	$dbh->commit;
 
 	print "configs\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(device(8)), PRIMARY KEY(device)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(device), PRIMARY KEY(device)';
 	$dbh->do("CREATE TABLE configs(
 		device $vchar(64) NOT NULL UNIQUE,
-		config $text DEFAULT '',
-		changes $text DEFAULT '',
+		config $text,
+		changes $text,
 		time $intun DEFAULT 0
 		$index)" );
  	$dbh->commit;
 
-	print "stock\n";
+	print "inventory\n";
 	$index = ($misc::backend eq 'Pg')?'':', INDEX(serial)';
-	$dbh->do("CREATE TABLE stock(
+	$dbh->do("CREATE TABLE inventory(
 		state $tinun DEFAULT 0,
 		serial $vchar(32) NOT NULL UNIQUE,
 		type $vchar(32) DEFAULT 0,
@@ -307,13 +308,13 @@ sub InitDB{
 		endmaint $intun DEFAULT 0,
 		lastwty $intun DEFAULT 0,
 		comment $vchar(255) DEFAULT '',
-		usrname $vchar(32) DEFAULT 0,
+		usrname $vchar(32) DEFAULT '-',
 		asupdate $intun DEFAULT 0
 		$index)" );
  	$dbh->commit;
 
 	print "vlans\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(vlanid), INDEX(device(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(vlanid), INDEX(device)';
 	$dbh->do("CREATE TABLE vlans(
 		device $vchar(64) NOT NULL,
 		vlanid $smaun DEFAULT 0,
@@ -322,7 +323,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "links\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(id), INDEX(device(8)), INDEX(ifname(8)), INDEX(neighbor(8)), INDEX(nbrifname(8)), PRIMARY KEY(id)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(id), INDEX(device), INDEX(ifname), INDEX(neighbor), INDEX(nbrifname), PRIMARY KEY(id)';
 	$dbh->do("CREATE TABLE links(
 		id $serid,
 		device $vchar(64) NOT NULL,
@@ -354,7 +355,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "events\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(id), INDEX(source(8)), INDEX(level), INDEX(time), INDEX(class), INDEX(device(8)), PRIMARY KEY(id)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(id), INDEX(source), INDEX(level), INDEX(time), INDEX(class), INDEX(device), PRIMARY KEY(id)';
 	$dbh->do("CREATE TABLE events(
 		id $serid,
 		level $tinun DEFAULT 0,
@@ -367,7 +368,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "monitoring\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(name(8)), INDEX(device(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(name), INDEX(device)';
 	$dbh->do("CREATE TABLE monitoring(
 		name $vchar(64) NOT NULL UNIQUE,
 		monip $intun,
@@ -387,22 +388,23 @@ sub InitDB{
 		eventfwd $vchar(255) DEFAULT '',
 		eventlvl $tinun DEFAULT 0,
 		eventdel $vchar(255) DEFAULT '',
-		depend $vchar(64) DEFAULT '-',
+		depend $vchar(64) DEFAULT '',
+		depend2 $vchar(64) DEFAULT '',
 		device $vchar(64) NOT NULL,
 		notify $char(32) DEFAULT '',
-		lostalert $tinun DEFAULT 2,
+		noreply $tinun DEFAULT 2,
 		latwarn $smaun DEFAULT 100,
 		cpualert $tinun DEFAULT 75,
 		memalert $intun DEFAULT 1024,
 		tempalert $tinun DEFAULT 60,
-		poewarn $tinun DEFAULT 8,
+		poewarn $tinun DEFAULT 75,
 		arppoison $smaun DEFAULT 1,
 		supplyalert $tinun DEFAULT 5
 		$index)" );
  	$dbh->commit;
 
 	print "incidents\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(id), INDEX(name(8)), INDEX(device(8)), PRIMARY KEY(id)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(id), INDEX(name), INDEX(device), PRIMARY KEY(id)';
 	$dbh->do("CREATE TABLE incidents(
 		id $serid,
 		level $tinun DEFAULT 0,
@@ -419,7 +421,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "nodes\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(name(8)), INDEX(nodip), INDEX(mac), INDEX(vlanid), INDEX(device(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(name), INDEX(nodip), INDEX(mac), INDEX(vlanid), INDEX(device)';
 	$dbh->do("CREATE TABLE nodes(
 		name $vchar(64) DEFAULT '',
 		nodip $intun DEFAULT 0,
@@ -448,7 +450,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "nodetrack\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(device(8)), INDEX(ifname(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(device), INDEX(ifname)';
 	$dbh->do("CREATE TABLE nodetrack(
 		device $vchar(64) DEFAULT '',
 		ifname $vchar(32) DEFAULT '',
@@ -460,7 +462,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "iftrack\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(vlanid), INDEX(device(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(vlanid), INDEX(device)';
 	$dbh->do("CREATE TABLE iftrack(
 		mac $vchar(16) NOT NULL,
 		ifupdate $intun DEFAULT 0,
@@ -472,7 +474,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "iptrack\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(vlanid), INDEX(device(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(vlanid), INDEX(device)';
 	$dbh->do("CREATE TABLE iptrack(
 		mac $vchar(16) NOT NULL,
 		ipupdate $intun DEFAULT 0,
@@ -484,11 +486,11 @@ sub InitDB{
  	$dbh->commit;
 
 	print "stolen\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(device(8)), PRIMARY KEY(mac)';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(mac), INDEX(device), PRIMARY KEY(mac)';
 	$dbh->do("CREATE TABLE stolen(
 		name $vchar(64) DEFAULT '',
 		stlip $intun DEFAULT 0,
-		mac $char(12) NOT NULL,
+		mac $char(12) NOT NULL UNIQUE,
 		device $vchar(64) DEFAULT '',
 		ifname $vchar(32) DEFAULT '',
 		usrname $vchar(32) DEFAULT '',
@@ -534,7 +536,7 @@ sub InitDB{
  	$dbh->commit;
 
 	print "chat\n";
-	$index = ($misc::backend eq 'Pg')?'':', INDEX(time), INDEX (usrname(8))';
+	$index = ($misc::backend eq 'Pg')?'':', INDEX(time), INDEX (usrname)';
 	$dbh->do("CREATE TABLE chat (
 		time $intun,
 		usrname $vchar(32) DEFAULT '',
@@ -593,10 +595,10 @@ B<Returns> -
 sub ReadDev{
 
 	my $npdev = 0;
-	my $where = (defined $_[0])?$_[0]:"";
+	my $where = (defined $_[0])?$_[0]:'';
 
 	if($where eq 'all'){
-		$where = "";
+		$where = '';
 		&misc::Prt("RDEV:Reading all devices\n");
 	}elsif($where){
 		$where = "WHERE $where";
@@ -771,7 +773,7 @@ sub BackupCfg{
 	my $cfg  = join("\n",@misc::curcfg);
 	my $chg  = "";
 
-	my $sth = $dbh->prepare("SELECT config,changes FROM configs where device = '$dv'");
+	my $sth = $dbh->prepare("SELECT config,changes FROM configs where device = ".$dbh->quote($dv) );
 	$sth->execute();
 
 	if($sth->rows == 0 and !$main::opt{'t'}){								# No previous config found, therefore write new.
@@ -787,13 +789,13 @@ sub BackupCfg{
 		if(!$main::opt{'t'}){
 			if($achg){									# Only write new, if changed
 				$chg  = $pc[1] . "#--- " . localtime($main::now) ." ---#\n". $achg;
-				$dbh->do("DELETE FROM configs where device = '$dv'");
+				$dbh->do("DELETE FROM configs where device = ".$dbh->quote($dv) );
 				$sth = $dbh->prepare("INSERT INTO configs(device,config,changes,time) VALUES ( ?,?,?,? )");
 				$sth->execute ($dv,$cfg,$chg,$main::now);
 				&misc::WriteCfg($dv) if defined $main::opt{'B'};
 				my $len = length($achg);
 				$achg =~ s/["']//g;
-				my $msg = "Config changed by $len characters:\n$achg";
+				my $msg = "Config changed by $len characters $achg";
 				my $lvl = ($len > 1000)?100:50;
 				$misc::mq += &mon::Event('B',$lvl,'cfgc',$dv,$dv,$msg);
 				&misc::Prt('',"Bu");
@@ -821,7 +823,7 @@ sub WriteDev{
 
 	my ($dv) = @_;
 
-	$dbh->do("DELETE FROM  devices where device = '$dv'");
+	$dbh->do("DELETE FROM  devices where device = ".$dbh->quote($dv) );
 	$sth = $dbh->prepare("INSERT INTO devices(	device,devip,serial,type,firstdis,lastdis,services,
 							description,devos,bootimage,location,contact,
 							devgroup,devmode,snmpversion,readcomm,cliport,login,icon,
@@ -834,7 +836,7 @@ sub WriteDev{
 			$main::dev{$dv}{fs},
 			$main::dev{$dv}{ls},
 			(defined $main::dev{$dv}{sv})?$main::dev{$dv}{sv}:0,
-			(defined $main::dev{$dv}{de})?$main::dev{$dv}{de}:'',
+			(defined $main::dev{$dv}{de})?substr($main::dev{$dv}{de},0,255):'',
 			(defined $main::dev{$dv}{os})?$main::dev{$dv}{os}:'',
 			(defined $main::dev{$dv}{bi})?$main::dev{$dv}{bi}:'',
 			(defined $main::dev{$dv}{lo})?$main::dev{$dv}{lo}:'',
@@ -866,8 +868,11 @@ sub WriteDev{
 	$sth->finish if $sth;
 
 	&misc::Prt("WDEV:$dv written to $misc::dbname.devices\n");
+	
+	&Inventory($dv) if $main::opt{'Y'};
+
 	my $regex = ($misc::backend eq 'Pg')?'~':'regexp';
-	my $ldel = &db::Delete('links',"device = '$dv' AND linktype $regex '^[a-z]{1,2}DP\$' AND time < '$misc::retire'");
+	my $ldel = &db::Delete('links',"device = ".$dbh->quote($dv)." AND linktype $regex '^[CFNL]{1,2}DP\$' AND time < '$misc::retire'");
 	$mq += &mon::Event('l',100,'nedl',$dv,$dv,"$ldel links older than ".localtime($misc::retire)." have been retired") if $ldel;
 }
 
@@ -995,7 +1000,7 @@ sub WriteInt{
 	my ($dv,$skip) = @_;
 	my $tint = 0;
 
-	$dbh->do("DELETE FROM  interfaces where device = '$dv'");
+	$dbh->do("DELETE FROM  interfaces where device = ".$dbh->quote($dv) );
 	$sth = $dbh->prepare("INSERT INTO interfaces(	device,ifname,ifidx,linktype,iftype,ifmac,ifdesc,alias,ifstat,speed,duplex,pvid,
 							inoct,inerr,outoct,outerr,dinoct,dinerr,doutoct,douterr,indis,outdis,dindis,doutdis,inbrc,dinbrc,lastchg,poe,comment)
 							VALUES ( ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )");
@@ -1061,7 +1066,7 @@ sub WriteMod{
 	my %dbmod= ();
 
 	if(exists $main::mon{$dv} and $misc::notify =~ /m/i){						# Track existing mods if enabled
-		my $sth = $dbh->prepare("SELECT * FROM modules WHERE device = '$dv'");
+		my $sth = $dbh->prepare("SELECT * FROM modules WHERE device = ".$dbh->quote($dv) );
 		$sth->execute();
 		while ((my @f) = $sth->fetchrow_array) {
 			$dbmod{$f[8]} = 1;
@@ -1077,7 +1082,7 @@ sub WriteMod{
 		}
 	}
 	$sth->finish if $sth;
-	$dbh->do("DELETE FROM  modules where device = '$dv'");
+	$dbh->do("DELETE FROM  modules where device = ".$dbh->quote($dv) );
 	my $sth = $dbh->prepare("INSERT INTO modules(device,slot,model,moddesc,serial,hw,fw,sw,modidx,modclass,status) VALUES ( ?,?,?,?,?,?,?,?,?,?,? )");
 	foreach my $i ( sort keys %{$main::mod{$dv}} ){
 		$sth->execute (	$dv,
@@ -1120,10 +1125,13 @@ sub WriteVlan{
 	my ($dv) = @_;
 	my $nvlans = 0;
 
-	$dbh->do("DELETE FROM  vlans where device = '$dv'");
+	$dbh->do("DELETE FROM  vlans where device = ".$dbh->quote($dv) );
 	my $sth = $dbh->prepare("INSERT INTO vlans(device,vlanid,vlanname) VALUES ( ?,?,? )");
 	foreach my $i ( sort keys %{$main::vlan{$dv}} ){
-		$sth->execute ( $dv,$i,$main::vlan{$dv}{$i} );
+		$sth->execute ( $dv,
+				$i,
+				$main::vlan{$dv}{$i}
+				);
 		$nvlans++;
 	}
 	$dbh->commit;
@@ -1149,7 +1157,7 @@ sub WriteNet{
 	my ($dv) = @_;
 	my $nip  = 0;
 
-	$dbh->do("DELETE FROM  networks where device = '$dv'");
+	$dbh->do("DELETE FROM  networks where device = ".$dbh->quote($dv) );
 	my $sth = $dbh->prepare("INSERT INTO networks( device,ifname,ifip,ifip6,prefix,vrfname,status ) VALUES ( ?,?,?,?,?,?,? )");
 	foreach my $n ( sort keys %{$main::net{$dv}} ){
 		$sth->execute (	$dv,
@@ -1170,8 +1178,7 @@ sub WriteNet{
 
 =head2 FUNCTION WriteLink()
 
-Writes the links of a given device. Will just return without argument
-or if there are no links for this device.
+Writes the links of a given device.
 
 B<Options> devicename
 
@@ -1184,23 +1191,29 @@ sub WriteLink{
 
 	my ($dv,$i,$ne,$ni) = @_;
 
-	my $sth = $dbh->prepare("SELECT * FROM links WHERE device='$dv' AND ifname='$i' AND neighbor='$ne' AND nbrifname='$ni' AND linktype='$main::link{$dv}{$i}{$ne}{$ni}{ty}'");
+	my $sth = $dbh->prepare("SELECT * FROM links WHERE device=".$dbh->quote($dv)." AND ifname='$i' AND neighbor=".$dbh->quote($ne)." AND nbrifname='$ni' AND linktype='$main::link{$dv}{$i}{$ne}{$ni}{ty}'");
 	$sth->execute();
 	if($sth->rows){
 		&misc::Prt("WLNK:Link exists from $dv,$i to $ne,$ni. Updating $main::link{$dv}{$i}{$ne}{$ni}{ty} link\n");
 		$sth = $dbh->prepare("UPDATE links SET	device=?,ifname=?,neighbor=?,nbrifname=?,bandwidth=?,linktype=?,
-					linkdesc=?,nbrduplex=?,nbrvlanid=?,time=? WHERE device='$dv' AND ifname='$i' AND neighbor='$ne' AND nbrifname='$ni' AND linktype='$main::link{$dv}{$i}{$ne}{$ni}{ty}'");
-		$sth->execute (	$dv,$i,$ne,$ni,
+					linkdesc=?,nbrduplex=?,nbrvlanid=?,time=? WHERE device=".$dbh->quote($dv)." AND ifname='$i' AND neighbor=".$dbh->quote($ne)." AND nbrifname='$ni' AND linktype='$main::link{$dv}{$i}{$ne}{$ni}{ty}'");
+		$sth->execute ( $dv,
+				$i,
+				$ne,
+				$ni,
 				$main::link{$dv}{$i}{$ne}{$ni}{bw},
 				$main::link{$dv}{$i}{$ne}{$ni}{ty},
-				$main::link{$dv}{$i}{$ne}{$ni}{de},
+				substr($main::link{$dv}{$i}{$ne}{$ni}{de},0,255),
 				$main::link{$dv}{$i}{$ne}{$ni}{du},
 				$main::link{$dv}{$i}{$ne}{$ni}{vl},
 				$main::now );
 	}else{
 		&misc::Prt("WLNK:No link from $dv,$i to $ne,$ni. Creating $main::link{$dv}{$i}{$ne}{$ni}{ty} link\n");
 		$sth = $dbh->prepare("INSERT INTO links(device,ifname,neighbor,nbrifname,bandwidth,linktype,linkdesc,nbrduplex,nbrvlanid,time) VALUES ( ?,?,?,?,?,?,?,?,?,? )");
-		$sth->execute (	$dv,$i,$ne,$ni,
+		$sth->execute (	$dv,
+				$i,
+				$ne,
+				$ni,
 				$main::link{$dv}{$i}{$ne}{$ni}{bw},
 				$main::link{$dv}{$i}{$ne}{$ni}{ty},
 				$main::link{$dv}{$i}{$ne}{$ni}{de},
@@ -1213,7 +1226,7 @@ sub WriteLink{
 }
 
 
-=head2 FUNCTION UnStock()
+=head2 FUNCTION Inventory()
 
 Update Devices/Modules in Stock, which are discovered on the network.
 
@@ -1224,20 +1237,38 @@ B<Globals> -
 B<Returns> -
 
 =cut
-sub UnStock{
+sub Inventory{
 
-	my $dv = $_[0];
+	my $dv     = $_[0];
+	my $notnew = ($main::opt{'Y'} =~ /n/ and $main::dev{$dv}{pls})?1:0;
 
-	if( $dbh->do("UPDATE stock SET time='$main::now',comment='Discovered as $dv with IP $main::dev{$dv}{ip}',state=100 where serial = '$main::dev{$dv}{sn}' and state != 100") + 0){
-		&misc::Prt("STOK:Discovered device $main::dev{$dv}{sn} set active in $misc::dbname.stock\n");
+	if( $dbh->do("UPDATE inventory SET asupdate=$main::now,comment=".$dbh->quote("Rediscovered as $dv with IP $main::dev{$dv}{ip}").",state=100 where serial = '$main::dev{$dv}{sn}' ") + 0){
+		&misc::Prt("INV :Device $main::dev{$dv}{sn} ($dv) updated in $misc::dbname.inventory\n");
+	}elsif( $main::opt{'Y'} =~/[a]/ or $main::opt{'Y'} =~/[s]/ and $main::dev{$dv}{rv} ){
+		if( $notnew ){
+			&misc::Prt("INV :Only adding new devices (due to -Yn)\n");
+		}elsif($main::dev{$dv}{sn}){
+			$r = $dbh->do("INSERT INTO inventory (state,serial,type,location,comment,asupdate) VALUES
+			(100,'$main::dev{$dv}{sn}','$main::dev{$dv}{ty}',".$dbh->quote($main::dev{$dv}{lo}).",".$dbh->quote("Discovered as $dv with IP $main::dev{$dv}{ip}").",".$main::now.')' );
+			&misc::Prt("INV :Device $main::dev{$dv}{sn} ($dv) added to $misc::dbname.inventory\n") if $r;
+		}
 	}
 	foreach my $i ( sort keys %{$main::mod{$dv}} ){
 		if($main::mod{$dv}{$i}{sn}){
-			if( $dbh->do("UPDATE stock SET time='$main::now',comment='Discovered in $dv $main::mod{$dv}{$i}{sl}',state=100 where serial = '$main::mod{$dv}{$i}{sn}' and state != 100") + 0){
-				&misc::Prt("STOK:Discovered module $main::mod{$dv}{$i}{sn} set active in $misc::dbname.stock\n");
+			if( $dbh->do("UPDATE inventory SET asupdate=$main::now,comment=".$dbh->quote("Rediscovered in $dv $main::mod{$dv}{$i}{sl}").",state=100 where serial = '$main::mod{$dv}{$i}{sn}'") + 0){
+				&misc::Prt("INV :Module $i $main::mod{$dv}{$i}{sn} updated in $misc::dbname.inventory\n");
+			}elsif( $main::opt{'Y'} =~/[m]/ ){
+				if( $notnew ){
+					&misc::Prt("INV :Only adding modules of new devices (due to -Yn)\n");
+				}else{
+					$r = $dbh->do("INSERT INTO inventory (state,serial,type,location,comment,asupdate) VALUES
+					(100,'$main::mod{$dv}{$i}{sn}','$main::mod{$dv}{$i}{mo}',".$dbh->quote($main::dev{$dv}{lo}).",".$dbh->quote("Discovered in $dv $main::mod{$dv}{$i}{sl}").",".$main::now.')' );
+					&misc::Prt("INV :Device $main::dev{$dv}{sn} ($dv) added to $misc::dbname.inventory\n") if $r;
+				}
 			}
 		}
 	}
+	$dbh->commit;
 }
 
 
@@ -1390,22 +1421,23 @@ sub ReadMon{
 		$main::mon{$na}{ef} = $f[15];
 		$main::mon{$na}{el} = $f[16];
 		$main::mon{$na}{ed} = $f[17];
-		$main::mon{$na}{dy} = $f[18];
-		$main::mon{$na}{dv} = $f[19];								# Used for viewdev
-		$main::mon{$na}{no} = $f[20];								# Per Target notify string
-		$main::mon{$na}{nr} = $f[21];								# Per Target no-reply threshold
-		$main::mon{$na}{lw} = $f[22];
-		$main::mon{$na}{ca} = $f[23];
-		$main::mon{$na}{ma} = $f[24];
-		$main::mon{$na}{ta} = $f[25];
-		$main::mon{$na}{pw} = $f[26];
-		$main::mon{$na}{ap} = $f[27];
-		$main::mon{$na}{sa} = $f[28];
+		$main::mon{$na}{d1} = $f[18];
+		$main::mon{$na}{d2} = $f[19];
+		$main::mon{$na}{dv} = $f[20];								# Used for viewdev
+		$main::mon{$na}{no} = $f[21];								# Per Target notify string
+		$main::mon{$na}{nr} = $f[22];								# Per Target no-reply threshold
+		$main::mon{$na}{lw} = $f[23];
+		$main::mon{$na}{ca} = $f[24];
+		$main::mon{$na}{ma} = $f[25];
+		$main::mon{$na}{ta} = $f[26];
+		$main::mon{$na}{pw} = $f[27];
+		$main::mon{$na}{ap} = $f[28];
+		$main::mon{$na}{sa} = $f[29];
 		$main::mon{$na}{dc} = 0;								# Dependendant count
-		$main::mon{$na}{ds} = 'up';								# Dependency status
-		$main::mon{$na}{ty} = ($f[2] eq 'dev')?$f[29]:0;
-		$main::mon{$na}{rv} = ($f[2] eq 'dev')?$f[30]:0;
-		$main::mon{$na}{rc} = ($f[2] eq 'dev')?$f[31]:'';
+		$main::mon{$na}{ds} = ($f[18] ne '' and $f[19] ne '')?2:1;				# Dependency status, 2 if both are set
+		$main::mon{$na}{ty} = ($f[2] eq 'dev')?$f[30]:0;
+		$main::mon{$na}{rv} = ($f[2] eq 'dev')?$f[31]:0;
+		$main::mon{$na}{rc} = ($f[2] eq 'dev')?$f[32]:'';
 		$nmon++;
 	}
 	$sth->finish if $sth;
@@ -1479,13 +1511,16 @@ B<Returns> -
 =cut
 sub Insert{# TODO consider using hashref as argument, with that this can be used for writing stuff with ' and " (like configs) or simply try dbh->quote!!!
 
-	&misc::NagPipe($_[2]) if $_[0] eq 'events' and $misc::nagpipe;
+	my ($table, $cols, $vals) = @_;
+
+	&misc::NagPipe($vals) if $table eq 'events' and $misc::nagpipe;
 
 	my $r = '(only testing)';
-	unless($main::opt{'t'}){
-		$r = $dbh->do("INSERT INTO $_[0] ($_[1]) VALUES ($_[2])") || die "ERR :INSERT INTO $_[0] ($_[1]) VALUES ($_[2])\n";
+	if(!$main::opt{'t'} or $main::opt{'t'} eq 'a'){
+		$r = $dbh->do("INSERT INTO $table ($cols) VALUES ($vals)") || die "ERR :INSERT INTO $table ($cols) VALUES ($vals)\n";
+		$dbh->commit unless $ac;
 	}
-	&misc::Prt("INS :$r ROWS INTO $_[0] ($_[1]) VALUES ($_[2])\n") if $main::opt{'d'};
+	&misc::Prt("INS :$r ROWS INTO $table ($cols) VALUES ($vals)\n") if $main::opt{'d'};
 
 	return $r;
 }
@@ -1504,12 +1539,15 @@ B<Returns> -
 =cut
 sub Delete{
 
-	my $r = $dbh->do("DELETE FROM  $_[0] WHERE $_[1]") || die "ERR : DELETE FROM  $_[0] WHERE $_[1]\n";
+	my ($table, $match) = @_;
+
+	my $r = $dbh->do("DELETE FROM  $table WHERE $match") || die "ERR : DELETE FROM  $table WHERE $match\n";
+	$dbh->commit unless $ac;
 
 	&misc::Prt("ERR :$dbh->errstr\n") if(!$r);							# Something went wrong
 	$r = 0 if($r eq '0E0');										# 0E0 actually means 0
 
-	&misc::Prt("DEL :$r ROWS FROM $_[0] WHERE $_[1]\n") if $main::opt{'d'};
+	&misc::Prt("DEL :$r ROWS FROM $table WHERE $match\n") if $main::opt{'d'};
 	return $r;
 }
 
@@ -1530,6 +1568,7 @@ sub Update{
 	my ($table, $set, $match) = @_;
 
 	my $r = $dbh->do("UPDATE $table SET $set WHERE $match") || die "ERR : UPDATE $table SET $set WHERE $match\n";
+	$dbh->commit unless $ac;
 
 	&misc::Prt("UPDT:$r ROWS FROM $table SET $set WHERE $match\n") if $main::opt{'d'};
 	return $r;

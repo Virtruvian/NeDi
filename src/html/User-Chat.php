@@ -30,7 +30,7 @@ if($msg){
 </th>
 <th>
 
-<img src="img/16/say.png"><input type="text" name="msg" size="80" OnFocus="select();">
+<img src="img/16/say.png"><input type="text" name="msg" class="xl" OnFocus="select();">
 
 </th>
 <th width="50">
@@ -41,7 +41,7 @@ if($msg){
 </th>
 <th width="80">
 
-<input type="submit" name="create" value="<?= $wrtlbl ?>"></th>
+<input type="submit" class="button" name="create" value="<?= $wrtlbl ?>"></th>
 </table></form>
 <p>
 <?php
@@ -60,7 +60,7 @@ if($res){
 	while( ($m = DbFetchRow($res)) ){
 		if ($_SESSION['user'] == $m[1]){$bg = "txta"; $bi = "imga";$me=1;}else{$bg = "txtb"; $bi = "imgb";$me=0;}
 		list($fc,$lc) = Agecol($m[0],$m[0],$me);
-		$time = date($datfmt,$m[0]);
+		$time = date($_SESSION['timf'],$m[0]);
 		echo "<tr class=\"$bg\"><th class=\"$bi\">" . Smilie($m[1],1);
 		echo "</th>\n";
 		echo "<td bgcolor=#$fc>$time</td><td>";

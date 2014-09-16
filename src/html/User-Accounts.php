@@ -81,11 +81,11 @@ $dcol = array(	"device"=>"Device",
 <input type="hidden" name="ord" value="<?= $ord ?>">
 </th>
 <th><?= $usrlbl ?> 
-<input type="text" name="usr" size="12">
-<input type="submit" name="add" value="<?= $addlbl ?>">
+<input type="text" name="usr" class="m">
+<input type="submit" class="button" name="add" value="<?= $addlbl ?>">
 <?php  if( strstr($guiauth,'ldap') ) { ?>
-<input type="submit" name="ldap" value="<?= $addlbl ?> LDAP">
-<?}?>
+<input type="submit" class="button" name="ldap" value="<?= $addlbl ?> LDAP">
+<?php } ?>
 </th>
 </table></form>
 <p>
@@ -106,17 +106,17 @@ if (isset($_GET['add']) and $_GET['usr']){
 	}
 }elseif(isset($_GET['psw']) ){
 	$pass = hash("sha256","NeDi".$_GET['psw'].$_GET['psw']);
-	$query	= GenQuery('users','u','usrname','=',$_GET[psw],array('password'),array(),array($pass) );
+	$query	= GenQuery('users','u',"usrname = '$_GET[psw]'",'','',array('password'),array(),array($pass) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[psw]: $reslbl password OK</h5>";}
 }elseif(isset($_GET['gup']) ){
-	$query	= GenQuery('users','u','usrname','=',$_GET[usr],array('groups'),array(),array($_GET['gup']) );
+	$query	= GenQuery('users','u',"usrname = '$_GET[usr]'",'','',array('groups'),array(),array($_GET['gup']) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $grplbl $updlbl OK</h5>";}
 }elseif($del){
 	$query	= GenQuery('users','d','','','',array('usrname'),array('='),array($_GET['del']) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>$usrlbl $_GET[del]: $dellbl OK</h5>";}
 }elseif($stv){
 	$viewdev = ($stv == '-')?'':"$inv $opv $stv";
-	$query	= GenQuery('users','u','usrname','=',$_GET[usr],array('viewdev'),array(),array($viewdev) );
+	$query	= GenQuery('users','u',"usrname = '$_GET[usr]'",'','',array('viewdev'),array(),array($viewdev) );
 	if( !DbQuery($query,$link) ){echo "<h4>".DbError($link)."</h4>";}else{echo "<h5>Device $acslbl $updlbl OK</h5>";}
 }
 ?>
@@ -144,8 +144,8 @@ if($res){
 <td nowrap><?= $usr[3] ?></td>
 <td nowrap><?= $usr[4] ?></td>
 <td nowrap><?= $usr[7] ?></td>
-<td bgcolor="#<?= $cc ?>"><?= (date($datfmt,$usr[5])) ?></td>
-<td bgcolor="#<?= $lc ?>"><?= (date($datfmt,$usr[6])) ?></td>
+<td bgcolor="#<?= $cc ?>"><?= (date($_SESSION['timf'],$usr[5])) ?></td>
+<td bgcolor="#<?= $lc ?>"><?= (date($_SESSION['timf'],$usr[6])) ?></td>
 <td>
 <?php  if( !($usr[2] & 1) ) { ?>
 <form method="get">
@@ -169,7 +169,7 @@ foreach ($dcol as $k => $v){
 <input type="text" name="stv" size="16" value="<?= $stv ?>" onfocus="select();"  onchange="this.form.submit();" title="Device <?= $acslbl ?> <?= $limlbl ?>">
 <?= (($stv)?"<a href=\"Devices-List.php?in[]=$inv&op[]=$opv&st[]=$stv\"><img src=\"img/16/eyes.png\" title=\"Device $lstlbl\"></a>":"") ?>
 </form> 
-<?}?>
+<?php } ?>
 
 </td>
 <th>
@@ -184,7 +184,7 @@ GroupButton($usr[0],$usr[2],32,'ugrp');
 </th>
 <td><?= $usr[8] ?> <?= $usr[9] ?><br><?= $tzone[substr($usr[14],-3)] ?></td>
 <th>
-<a href="Devices-Stock.php?lst=us&val=<?= $usr[0] ?>"><img src="img/16/pkg.png" title="Stock <?= $lstlbl ?>"></a>
+<a href="Devices-Inventory.php?lst=us&val=<?= $usr[0] ?>"><img src="img/16/pkg.png" title="<?= $invlbl ?> <?= $lstlbl ?>"></a>
 <a href="Devices-List.php?in[]=contact&op[]=%3D&st[]=<?= $usr[0] ?>"><img src="img/16/dev.png" title="Device <?= $lstlbl ?>"></a>
 <a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&psw=<?= $usr[0] ?>"><img src="img/16/key.png" title="Password <?= $reslbl ?>" onclick="return confirm('<?= $reslbl ?>, <?= $cfmmsg ?>')"></a>
 <a href="?grp=<?= $grp ?>&ord=<?= $ord ?>&del=<?= $usr[0] ?>"><img src="img/16/bcnl.png" title="<?= $dellbl ?>" onclick="return confirm('<?= $dellbl ?>, <?= $cfmmsg ?>')"></a>

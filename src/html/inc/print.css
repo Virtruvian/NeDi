@@ -19,35 +19,31 @@ th{
 
 /* Headings */
 h1   {
-	font: 14px;
+	font-size: 14px;
 	color: #000000; 
 	font-weight: bold;
 	text-align: center;
 }
 
 h2   {
-	font: 12px;
 	color: #000000;
 	font-weight: bold;
 	text-align: center;
 }
 
 h3   {
-	font: 12px;
 	color: #000000;
 	font-weight: bold;
 	text-align: center;
 }
 
 h4   {
-	font: 12px;
 	color: #660000;
 	font-weight: bold;
 	text-align: center;
 }
 
 h5   {
-	font: 12px;
 	color: #006600;
 	font-weight: bold;
 	text-align: center;
@@ -72,7 +68,6 @@ img{
 	vertical-align: middle;
 	border: none;
 }
-
 img.bigbar{
 	height : 20px;
 	margin : 4px;
@@ -80,13 +75,15 @@ img.bigbar{
 	border: 1px solid #333333;
 	border-radius: 4px;
 }
-
 img.smallbar{
 	height : 8px;
 	margin : 2px;
 	vertical-align: middle;
 	border: 1px solid #333333;
 	border-radius: 2px;
+}
+img.panel{
+	margin : 5px;
 }
 
 /* Form Properties */
@@ -105,7 +102,6 @@ img.smallbar{
 	border: 1px solid #888;
 	padding: 8px;
 	background-color: #d4d4d4;
-	border-radius: 6px;
 }
 
 #footer{
@@ -115,7 +111,6 @@ img.smallbar{
 	border: 1px solid #888;
 	padding: 8px;
 	background-color: #d4d4d4;
-	border-radius: 6px;
 }
 
 /* Actual Module */
@@ -136,11 +131,61 @@ table.fixed{
 	table-layout:fixed;
 }
 
-table.full{
+.full{
 	width: 100%;
 }
 
-/* Style for logs etc. */
+.s{
+	width: 40px;
+}
+
+.m{
+	width: 100px;
+}
+
+.l{
+	width: 180px;
+}
+
+.xl{
+	width: 300px;
+}
+
+.lft{
+	text-align: left;
+}
+
+.ctr{
+	text-align: center;
+}
+
+.rgt{
+	text-align: right;
+}
+
+.top{
+	vertical-align:top;
+}
+
+.btm{
+	vertical-align:bottom;
+}
+
+.b{
+	font-weight: bold;
+}
+
+.nw{
+	white-space: nowrap;
+}
+
+.genpad{
+	background-color: #fff;
+	border:1px solid #444;
+	border-radius: 6px;
+	padding : 2px;
+}
+
 .textpad{
 	margin: 10px auto;
 	width: 60%;
@@ -175,11 +220,12 @@ table.full{
 
 /* Text Fields */
 .txta{background-color: #eeeeee}
-.txtb{background-color: #eaeaea}
+.txtb{background-color: #e8e8e8}
 
 /* Image Fields */
-.imga{background-color: #f8f8f8}
-.imgb{background-color: #f4f4f4}
+.imga{background-color: #fefefe}
+.imgb{background-color: #f8f8f8}
+.imgw{background-color: #fff}
 
 /* Status Fields */
 .good{background-color: #88ff88}
@@ -187,20 +233,22 @@ table.full{
 .warn{background-color: #ffff88}
 .alrm{background-color: #ffaa88}
 .crit{background-color: #ff8888}
-.part{background-image:url('../img/dia.png')}
+.part{
+ opacity:0.8;
+/*filter:alpha(opacity=80); /* For IE8 and earlier */
+}
 
 /* Module Colors */
 .adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
 	background-color: #bbbbbb;
+	background: linear-gradient(#cccccc, #b0b0b0);
 	background: -webkit-linear-gradient(90deg, #b0b0b0 25%, #cccccc 75%);
-	background: -moz-linear-gradient(25% 75% 90deg, #b0b0b0, #cccccc);
 	background: -ms-linear-gradient(25% 75% 90deg, #b0b0b0, #cccccc);
 }
 
 .adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
 	background-color: #cccccc;
+	background: linear-gradient(#dddddd, #c0c0c0);
 	background: -webkit-linear-gradient(90deg, #c0c0c0 25%, #dddddd 75%);
-	background: -moz-linear-gradient(25% 75% 90deg, #c0c0c0, #dddddd);
 	background: -ms-linear-gradient(25% 75% 90deg, #c0c0c0, #dddddd);
 }
-

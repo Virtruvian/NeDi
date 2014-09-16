@@ -1,51 +1,36 @@
 /* General Classes */
 body {
 	font: 9px verdana, arial, sans-serif; 
-	color: #004400;
-	background-color: #688367;
+	background-color: #012;
 }
 
 td{
 	padding: 2px;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
 }
 
 th{
 	padding: 3px;
+	color: #efe;
 	font-weight: bold;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
-}
-
-tr{
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
 }
 
 /* Headings */
 h1   {
-	color: #003300; 
+	color: #eff; 
 	font-size: 12px;
 	font-weight: bold;
 	text-align: center;
 }
 
 h2   {
-	color: #003300;
+	color: #eef;
 	font-size: 11px;
 	font-weight: bold;
 	text-align: center;
 }
 
 h3   {
-	color: #000033;
+	color: #eff;
 	font-size: 10px;
 	font-weight: bold;
 	text-align: center;
@@ -76,90 +61,240 @@ textarea {
 	background-color: #eeffee;
 }
 
+/* Input Fields */
+input, select, textarea {
+	font-size: 10px;
+	color: #020;
+	background-color: #aca;
+	padding : 2px;
+	border-radius: 4px;
+}
+
+input.button{
+	background-color: #485;
+	background: -webkit-linear-gradient(#697, #485);
+	background: linear-gradient(#687, #475);
+	border-top: 1px solid #798;
+	border-left: 1px solid #798;
+	border-bottom: 1px solid #243;
+	border-right: 1px solid #243;
+	border-radius: 4px;
+	color: #cdd;
+	font-weight: bold;
+	padding: 4px;
+}
+input.button:hover {
+	background-color: #586;
+	background: -webkit-linear-gradient(#798, #586);
+	background: linear-gradient(#798, #586);
+	cursor: pointer;
+}
+input.button:active {
+	background-color: #586;
+	background: -webkit-linear-gradient(#586, #798);
+	background: linear-gradient(#586, #798);
+}
+
 /* Image Properties */
 img{
 	margin : 1px 2px;
 	vertical-align: middle;
 	border: none;
 }
-
 img.bigbar{
 	height : 15px;
 	margin : 2px;
 	vertical-align: middle;
 	border: 1px solid #003300;
 }
-
 img.smallbar{
 	height : 7px;
 	margin : 2px;
 	vertical-align: middle;
 	border: 1px solid #003300;
 }
+img.panel{
+	margin : 4px;
+	box-shadow:1px 2px 2px #555;
+}
 
 /* Form Properties */
 :focus {background-color: #f0f0a0}
 
 /* Link Properties */
-:link {color: #009559;text-decoration: none;}
-:visited {color: #00804D;text-decoration: none;}
-:link:focus, :visited:focus {color: #68C811}
-:link:hover, :visited:hover {color: #B6F521}
-:link:active, :visited:active {color: #66FE01}
+:link {color: #056;text-decoration: none;}
+:visited {color: #045;text-decoration: none;}
+:link:focus, :visited:focus {color: #067}
+:link:hover, :visited:hover {color: #078}
+:link:active, :visited:active {color: #066}
 
 /* Header table & Footer div*/
 #header{
 	width: 100%;
-	border-spacing: 2px;
-	background-color: #ACC4AC;
+	border-spacing: 0px;
+	border: 1px solid rgb(36, 62, 88);
+	background-color: #44606a;
 	border-radius: 6px;
-	-moz-border-radius: 6px;
 	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
 }
 
-#footer{
-	margin: 6px auto;
-	width: 90%;
-	border: 2px solid #ACC4AC;
-	padding: 4px;
-	text-align: right;
-	font-style: italic;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
+/* Topmenu inspired by line25.com */
+#nav {
+	width: 480px;
+}
+
+#nav ul ul {
+	display: none;
+}
+
+#nav ul li:hover > ul {
+	z-index:100;
+ 	display: block;
+}
+
+#nav ul {
+	margin : 0px;
+	padding: 0px;
+	list-style: none;
+	position: relative;
+	display: inline-table;
+}
+#nav ul:after {
+	content: ""; clear: both; display: block;
+}
+
+#nav ul li {
+	float: left;
+}
+#nav ul li:hover {
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	background: #5F5F5F;
+	background: linear-gradient(#1a324e 0%, #041526 40%);
+	background: -webkit-linear-gradient(#1a324e 0%, #041526 40%);
+}
+
+#nav ul li:hover a {
+	color: #dde;
+}
+
+#nav ul li a {
+	display: block; padding: 5px 10px;
+	color: #ccd;
+}		
+		
+#nav ul ul {
+	background: #041526; padding: 0;
+	position: absolute; top: 100%;
+}
+#nav ul ul li {
+	float: none; 
+	white-space: nowrap;
+	border-top: 1px solid #18293a;
+	border-bottom: 1px solid #041526;
+}
+#nav ul ul li a {
+	padding: 5px 10px;
+	color: #fff;
+}	
+#nav ul ul li a:hover {
+	background: #6183AD;
+}
+	
+#nav ul ul ul {
+	position: absolute; left: 100%; top:0;
+}
+
+#noodlebox{
+	width: 15px;
+	margin: -2px;
+	background:#1A344E;
+	border-radius:1em;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
+}
+
+#noodlebox:focus{
+	width: 100px;
+	background:#eee;
+	transition: 300ms ease-in-out, height 300ms ease-in-out;
 }
 
 /* Actual Module */
 table.content{
 	width: 100%;
-	border-spacing: 2px;
-	background-color: #ACC4AC;
-	border-radius: 6px;
-	-moz-border-radius: 6px;
-	-webkit-border-radius: 6px;
-	-khtml-border-radius: 6px;
+	border-spacing: 0px;
+	border: 1px solid rgb(36, 62, 88);
+	background-color: rgb(26, 52, 78);
 }
 
-/* Helper td */
 td.helper{
 	padding: 4px;
 	vertical-align: top;
-	border: 1px solid #ACC4AC;
-	background-color: #B1CBB1;
+	background: -webkit-linear-gradient( rgba(180, 200, 180, 0.5), rgba(180, 200, 180, 0) );
+	background: linear-gradient( rgba(180, 200, 180, 0.5), rgba(180, 200, 180, 0) );
 }
 
 table.fixed{
 	table-layout:fixed;
 }
 
-table.full{
+.full{
 	width: 100%;
 }
 
-/* Style for logs etc. */
+.s{
+	width: 40px;
+}
+
+.m{
+	width: 120px;
+}
+
+.l{
+	width: 200px;
+}
+
+.xl{
+	width: 280px;
+}
+
+.lft{
+	text-align: left;
+}
+
+.ctr{
+	text-align: center;
+}
+
+.rgt{
+	text-align: right;
+}
+
+.top{
+	vertical-align:top;
+}
+
+.btm{
+	vertical-align:bottom;
+}
+
+.b{
+	font-weight: bold;
+}
+
+.nw{
+	white-space: nowrap;
+}
+
+.genpad{
+	background-color: #fff;
+	border:1px solid black;
+	border-radius: 3px;
+	padding : 1px;
+}
+
 .textpad{
+	color: #334;
 	margin: 4px auto;
 	width: 80%;
 	padding: 4px;
@@ -201,147 +336,66 @@ table.full{
 .olv {color: olive }
 
 /* Text Fields */
-.txta{background-color: #e0e0e0}
-.txtb{background-color: #d0d0d0}
+.txta{
+	color: #334;
+	background-color: #e0e0e0;
+}
+.txtb{
+	color: #334;
+	background-color: #d0d0d0;
+}
 
 /* Image Fields */
 .imga{background-color: #f0f0f0}
 .imgb{background-color: #e6e6e6}
+.imgw{background-color: #fff}
 
 /* Status Fields */
-.good{background-color: #00ff00}
-.noti{background-color: #0000ff}
-.warn{background-color: #ffff00}
-.alrm{background-color: #ff8800}
-.crit{background-color: #ff0000}
+.good{	-webkit-box-shadow: inset 0 -5px 15px #30a020, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #30a020, 0 1px 1px #333333;
+	background-color: #70d060
+}
+.noti{	-webkit-box-shadow: inset 0 -5px 15px #2030a0, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #2030a0, 0 1px 1px #333333;
+	background-color: #6070d0
+}
+.warn{	-webkit-box-shadow: inset 0 -5px 15px #a0a020, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #a0a020, 0 1px 1px #333333;
+	background-color: #d0d060
+}
+.alrm{	-webkit-box-shadow: inset 0 -5px 15px #a08020, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #a08020, 0 1px 1px #333333;
+	background-color: #d0b060
+}
+.crit{	-webkit-box-shadow: inset 0 -5px 15px #a03030, 0 1px 1px #333333;
+	box-shadow: inset 0 -5px 15px #a03030, 0 1px 1px #333333;
+	background-color: #d07070
+}
 .part{background-image:url('../img/dia.png')}
 
-/* Default Group Based Module Colors */
-.adm1{background-color: #aa7}
-.adm2{background-color: #aa8}
 
-.net1{background-color: #7a7}
-.net2{background-color: #8a8}
-
-.dsk1{background-color: #7b8}
-.dsk2{background-color: #8d9}
-
-.mon1{background-color: #7aa}
-.mon2{background-color: #8aa}
-
-.mgr1{background-color: #7a7}
-.mgr2{background-color: #8a8}
-
-.oth1{background-color: #797}
-.oth2{background-color: #898}
-
-.usr1{background-color: #5a7}
-.usr2{background-color: #6a8}
-/* ThemeNMenu Style Sheet */
-
-.ThemeNMenu,.ThemeNSubMenuTable
-{
-	cursor:		default;
-	font-family:	verdana, arial, sans-serif;
-	font-size:	11px;
-
-	padding:	1px;
-	border:		0;
-	white-space:	nowrap;
+/* Module Colors */
+.adm1, .net1, .dsk1, .mon1, .mgr1, .oth1, .usr1{
+	background: -webkit-linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
+	background: linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
+	border-color: rgb(22, 34, 44) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.25);
+	color: rgb(255, 255, 255);
+	border-top: 1px solid rgb(22, 34, 44);
+	box-shadow: 0px 1px 0px rgba(255, 255, 255, 0.25) inset;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.ThemeNMenu
-{
-/*	background-color:	#F7F3EF; */
+.adm2, .net2, .dsk2, .mon2, .mgr2, .oth2, .usr2{
+	background: -webkit-linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
+	background: linear-gradient( rgb(26, 52, 78), rgb(4, 21, 38) );
+	border-color: rgb(22, 34, 44) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.25);
+	border-top: 1px solid rgb(22, 34, 44);
 }
 
-.ThemeNSubMenu
-{
-	position:	absolute;
-	visibility:	hidden;
-
-	/*
-	   Netscape/Mozilla renders borders by increasing
-	   their z-index.  The following line is necessary
-	   to cover any borders underneath
-	*/
-	z-index:	100;
-	border:		0px;
-	padding:	0px;
-
-	/*filter:progid:DXImageTransform.Microsoft.Shadow(color=#454545, Direction=135, Strength=4);*/
-}
-
-.ThemeNSubMenuTable
-{
-	border:		1px solid #444444;
-	background-color:	#eeeeee;
-}
-
-.ThemeNSubMenuTable td
-{
-	white-space:	nowrap;
-	padding:	1px;
-}
-
-.ThemeNMainItem,.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItem,.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	padding-left:	6px;
-	padding-right:	6px;
-	white-space:	nowrap;
-}
-
-.ThemeNMainItemHover,.ThemeNMainItemActive,
-.ThemeNMenuItemHover,.ThemeNMenuItemActive
-{
-	color:		#888888;
-	background-color:	#ffffff;
-}
-
-.ThemeNMenuSplit
-{
-	height:		1px;
-	margin-top:	1px;
-	margin-bottom:	1px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-top:	1px solid #ADAA9C;
-}
-
-.ThemeNMenuVSplit
-{
-	width:		1px;
-	margin:		0px;
-	overflow:	hidden;
-	background-color:	inherit;
-	border-right:	1px solid #ADAA9C;
-}
-
-/* image shadow animation */
-
-/*
-	seq1:	image for normal
-	seq2:	image for hover and active
-
-	To use, in the icon field, input the following:
-	<img class="seq1" src="normal.gif" /><img class="seq2" src="hover.gif" />
-*/
-
-.ThemeNMenuItem img.seq1
-{
-	display:	inline;
-}
-
-.ThemeNMenuItemHover seq2,
-.ThemeNMenuItemActive seq2
-{
-	display:	inline;
-}
-
-.ThemeNMenuItem .seq2,
-.ThemeNMenuItemHover .seq1,
-.ThemeNMenuItemActive .seq1
-{
-	display:	none;
+#footer{
+	margin: 6px auto;
+	width: 99%;
+	padding: 4px;
+	text-align: right;
+	font-style: italic;
 }

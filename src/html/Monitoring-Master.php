@@ -37,8 +37,8 @@ $bld = isset($_GET['bld']) ? $_GET['bld'] : "";
 <?php
 $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 list($nmon,$lastok,$monal,$deval,$slow) = TopoMon($loc);
-StatusMon($nmon,$lastok,$monal,$deval);
-StatusSlow($slow);
+StatusMon($nmon,$lastok,$monal,$_SESSION['gsiz'],$deval);
+StatusSlow($slow,$_SESSION['gsiz']);
 ?>
 
 </td>
@@ -46,7 +46,7 @@ StatusSlow($slow);
 
 <h3>Incidents <?= $notlbl ?> <?= $acklbl ?></h3>
 <?php
-StatusIncidents($loc,1);
+StatusIncidents($loc,$_SESSION['gsiz'],1);
 ?>
 
 </td>
@@ -109,7 +109,7 @@ StatusIncidents($loc,1);
 <h3><?= $mlvl[200] ?> & <?= $mlvl[250] ?> <?= $lstlbl ?></h3>
 <?php
 
-Events($_SESSION['lim'],array('level','time','location'),array('>=','>','~'),array(200,$firstmsg,$loc),array('AND','AND'),1);
+Events($_SESSION['lim'],array('level','time','location'),array('>=','>','~'),array(200,$firstmsg,$loc),array('AND','AND'),2);
 
 echo "</td></tr></table>";
 if($_SESSION['opt']){

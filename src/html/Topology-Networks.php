@@ -9,10 +9,10 @@ include_once ("inc/header.php");
 include_once ("inc/libdev.php");
 
 $_GET = sanitize($_GET);
-$st = isset($_GET['st']) ? $_GET['st'] : "";
-$in = isset($_GET['in']) ? $_GET['in'] : "";
-$op = isset($_GET['op']) ? $_GET['op'] : "";
-$co = isset($_GET['co']) ? $_GET['co'] : "";
+$in = isset($_GET['in']) ? $_GET['in'] : array();
+$op = isset($_GET['op']) ? $_GET['op'] : array();
+$st = isset($_GET['st']) ? $_GET['st'] : array();
+$co = isset($_GET['co']) ? $_GET['co'] : array();
 
 $ord = isset($_GET['ord']) ? $_GET['ord'] : "";
 if($_SESSION['opt'] and !$ord and $in[0]) $ord = $in[0];
@@ -55,7 +55,7 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 
 <td>
-<?PHP Filters(); ?>
+<?php Filters(); ?>
 
 </td>
 <th>
@@ -73,22 +73,24 @@ foreach ($cols as $k => $v){
 
 <?= $optlbl ?><p>
 <div align="left">
-<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
-<input type="checkbox" name="map" <?= $map ?>><br>
-<img src="img/16/form.png" title="<?= $limlbl ?>"> 
-<select size="1" name="lim">
-<?php selectbox("limit",$lim) ?>
+	<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
+	<input type="checkbox" name="map" <?= $map ?>><br>
+	<img src="img/16/form.png" title="<?= $limlbl ?>"> 
+	<select size="1" name="lim">
+	<?php selectbox("limit",$lim) ?>
+	</select>
+
 </div>
 
 </th>
 <th width="80">
 
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 </th>
 </tr></table></form><p>
 <?php
 }
-if( is_array($in) ){
+if( count($in) ){
 	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
 		echo "<center><h2>$netlbl Map</h2>\n";
 		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
@@ -108,32 +110,20 @@ if( is_array($in) ){
 			$ud  = urlencode($m[0]);
 			list($fc,$lc) = Agecol($m[8],$m[9],$row % 2);
 			TblRow($bg);
-			if(in_array("imBL",$col)){
-				TblCell("","","class=\"$bi\" width=\"50\"","<img src=\"img/$ntimg\" title=\"$ntit\">","th-img");
-			}
-			if(in_array("ifip",$col)){
-				TblCell($ip,"?in[]=ifip&op[]==&st[]=$ip/$m[4]");
-			}
-			if(in_array("ifip6",$col)){
-				TblCell($ip6,"","class=\"prp\"" );
-			}
-			if(in_array("prefix",$col)){TblCell($m[4]);}
-
-			if( in_array("device",$col) ){
-				TblCell($m[0],"?in[]=device&op[]==&st[]=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
-			}
-			if(in_array("type",$col)){TblCell( $m[7],"?in[]=type&op[]==&st[]=".urlencode($m[7]) );}			if(in_array("location",$col)){TblCell( $m[11],"?in[]=location&op[]==&st[]=".urlencode($m[11]) );}
-			if(in_array("contact",$col)){TblCell( $m[12],"?in[]=contact&op[]==&st[]=".urlencode($m[12]) );}
-			if( in_array("firstdis",$col) ){
-				TblCell( date($datfmt,$m[8]),"?in[]=firstdis&op[]==&st[]=$m[9]","bgcolor=\"#$fc\"" );
-			}
-			if( in_array("lastdis",$col) ){
-				TblCell( date($datfmt,$m[9]),"?in[]=lastdis&op[]==&st[]=$m[10]","bgcolor=\"#$lc\"" );
-			}
-			if(in_array("ifname",$col)){TblCell( $m[1],"?in[]=ifname&op[]==&st[]=".urlencode($m[1]) );}
-			if(in_array("vrfname",$col)){TblCell( $m[5],"?in[]=vrfname&op[]==&st[]=".urlencode($m[5]) );}
-			if(in_array("status",$col)){TblCell( $m[6],"?in[]=status&op[]==&st[]=".urlencode($m[6]) );}
-			echo "</tr>\n";
+			if(in_array("imBL",$col))	TblCell("<img src=\"img/$ntimg\" title=\"$ntit\">",'',"$bi ctr s");
+			if(in_array("ifip",$col))	TblCell($ip,"?in[]=ifip&op[]==&st[]=$ip/$m[4]");
+			if(in_array("ifip6",$col))	TblCell($ip6,'','prp' );
+			if(in_array("prefix",$col))	TblCell($m[4]);
+			if( in_array("device",$col) )	TblCell($m[0],"?in[]=device&op[]==&st[]=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
+			if(in_array("type",$col))	TblCell( $m[7],"?in[]=type&op[]==&st[]=".urlencode($m[7]) );
+			if(in_array("location",$col))	TblCell( $m[11],"?in[]=location&op[]==&st[]=".urlencode($m[11]) );
+			if(in_array("contact",$col))	TblCell( $m[12],"?in[]=contact&op[]==&st[]=".urlencode($m[12]) );
+			if( in_array("firstdis",$col) )	TblCell( date($_SESSION['timf'],$m[8]),"?in[]=firstdis&op[]==&st[]=$m[9]",'nw','',"background-color:#$fc" );
+			if( in_array("lastdis",$col) )	TblCell( date($_SESSION['timf'],$m[9]),"?in[]=lastdis&op[]==&st[]=$m[10]",'nw','',"background-color:#$lc" );
+			if(in_array("ifname",$col))	TblCell( $m[1],"?in[]=ifname&op[]==&st[]=".urlencode($m[1]) );
+			if(in_array("vrfname",$col))	TblCell( $m[5],"?in[]=vrfname&op[]==&st[]=".urlencode($m[5]) );
+			if(in_array("status",$col))	TblCell( $m[6],"?in[]=status&op[]==&st[]=".urlencode($m[6]) );
+			echo "	</tr>\n";
 		}
 		DbFreeResult($res);
 	}else{

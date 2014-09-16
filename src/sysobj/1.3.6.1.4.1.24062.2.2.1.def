@@ -1,0 +1,57 @@
+# Definition for 1.3.6.1.4.1.24062.2.2.1 created by Defgen 1.8 on 13.Feb 2014 (admin)
+ 
+# General
+SNMPv	2HC
+Type	JetNet5010G
+Typoid	
+Sysdes	
+OS	other
+Icon	w2ap
+Size	1
+Bridge	normal
+ArpND	old
+Dispro	
+Serial	
+Bimage	1.3.6.1.4.1.24062.2.2.1.1.5.0
+CfgChg	
+CfgWrt	
+VLnams	
+VLnamx	
+Group	
+Mode	
+ 
+# Interfaces
+StartX	
+EndX	
+IFname	
+IFaddr	old
+IFalia	
+IFalix	
+InBcast	
+InDisc	1.3.6.1.2.1.2.2.1.13
+OutDisc	1.3.6.1.2.1.2.2.1.19
+IFvlan	1.3.6.1.2.1.17.7.1.4.5.1.1
+IFvlix	
+IFpowr		
+IFpwix	
+IFdupl	
+IFduix	
+Halfdp	
+Fulldp	
+ 
+# Modules
+Modesc	
+Moclas	
+Movalu	
+Moslot	
+Modhw	
+Modsw	
+Modfw	
+Modser	
+Momodl	
+ 
+# RRD Graphing
+CPUutl		
+Temp		
+MemCPU		
+Custom		

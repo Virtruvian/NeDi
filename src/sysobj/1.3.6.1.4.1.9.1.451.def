@@ -3,7 +3,7 @@
 # General
 SNMPv	1
 Type	PIX-515
-OS	IOS-fw
+OS	IOS-asa
 Icon	fwbn
 Size	1
 Bridge	

@@ -45,7 +45,7 @@ $opt = isset($_GET['opt']) ? "checked" : "";
 </th>
 <th width="80">
 	
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 
 </th></tr></table></form><p>
 <?php
@@ -94,8 +94,8 @@ while( ($n = DbFetchRow($res)) ){
 				$name	= preg_replace("/^(.*?)\.(.*)/","$1", $n[0]);
 				$ip	= long2ip($n[1]);
 				$img	= Nimg("$n[2];$n[3]");
-				$fs	= date($datfmt,$n[4]);
-				$ls	= date($datfmt,$n[5]);
+				$fs	= date($_SESSION['timf'],$n[4]);
+				$ls	= date($_SESSION['timf'],$n[5]);
 				$pbar	= Bar($macs[$n[6]][$n[7]],5);
 				$ud	= rawurlencode($n[6]);
 				list($fc,$lc)	= Agecol($n[4],$n[5],$row % 2);

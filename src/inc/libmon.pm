@@ -184,44 +184,39 @@ sub AlertFlush{
 	}
 
 	foreach my $u ( keys %main::usr ){
-
 		if($main::usr{$u}{sms}){
-			if (!-e "/var/spool/sms/checked/$u"){						# Skip if previous SMS hasn't been sent, to avoid smsd crash! TODO use timestamp instead?
-				&misc::Prt("SMS :$u/$main::usr{$u}{ph}\n");
-
-				#1. Spooling to smsd:
-				if( exists $misc::sms{'spool'} ){
+			if( exists $misc::sms{'spool'} ){						#1. Spooling to smsd
+				if (!-e "/var/spool/sms/checked/$u"){					# Skip if previous SMS hasn't been sent, to avoid smsd crash! TODO use timestamp instead?
+					&misc::Prt("SMS :$u/$main::usr{$u}{ph}\n");
 					$ns++ if open(SMS, ">$misc::sms{'spool'}/$u");			# User is filename to avoid flooding
 					print SMS "To:$main::usr{$u}{ph}\n\n$main::usr{$u}{sms}\n";
 					close(SMS);
+				}else{
+					&misc::Prt("ERR :SMS skipped since previous message for $u is still being sent!\n");
 				}
-
-				#2. Calling gammu server:
-				if( exists $misc::sms{'gammu'} ){
-					$ns++ if !system "gammu-smsd-inject TEXT $main::usr{$u}{ph} -text \"$main::usr{$u}{sms}\" >/dev/null";
-				}
-
-				#3.SMTP based SMS gateway:
-				if( exists $misc::sms{'smtp'} ){
+			}elsif( exists $misc::sms{'gammu'} ){						#2. Calling gammu server
+				$ns++ if !system "gammu-smsd-inject TEXT $main::usr{$u}{ph} -text \"$main::usr{$u}{sms}\" >/dev/null";
+			}elsif( exists $misc::sms{'smtp'} ){						#3.SMTP based SMS gateway
+				my $smtp = Net::SMTP->new($misc::sms{'smtp'}, Timeout => $misc::timeout) || ($err = 1);
+				if($err){
+					&misc::Prt("ERR :Connecting to SMS gateway $misc::sms{'smtp'} via SMTP\n");
+				}else{
 					$smtp->mail($misc::mailfrom) || &ErrSMTP($smtp,"From");
-					$smtp->to($misc::sms{'smtp'}) || &ErrSMTP($smtp,"To");
+					$smtp->to($main::usr{$u}{ph}) || &ErrSMTP($smtp,"To");
 					$smtp->data();
-					$smtp->datasend("To:Mobile#\n");
+					$smtp->datasend("To:$main::usr{$u}{ph}\n");
 					$smtp->datasend("From: $misc::mailfrom\n");
 					$smtp->datasend("Subject: $sub\n");
-					#$smtp->datasend("MIME-Version: 1.0\n"); 				# Some need it, Exchange doesn't?
+					#$smtp->datasend("MIME-Version: 1.0\n"); 			# Some need it, Exchange doesn't?
 					$smtp->datasend("\n");
 					$smtp->datasend("$main::usr{$u}{sms}\n");
 					$smtp->dataend() || &ErrSMTP($smtp,"End");
+					$smtp->quit;
 				}
-
-				$main::usr{$u}{sms} = '';
-			}else{
-				&misc::Prt("ERR :SMS skipped since previous message for $u is still being sent!\n");
 			}
+			$main::usr{$u}{sms} = '';
 		}
 	}
-
 	&misc::Prt("ALRT:$nm mails and $ns SMS sent with $mq events\n");
 	
 	return $nm;
@@ -309,13 +304,13 @@ B<Returns> # of queued mails
 
 sub Event{
 
-	my ($mode,$level,$class,$tgt,$dev,$msg,$sms) = @_;
+	my ($mode,$level,$class,$tgt,$dv,$msg,$sms) = @_;
 	
 	my $elevate = &Elevate($mode,0,$tgt);
 
 	&misc::Prt("EVNT:CL=$class EL=$elevate TGT=$tgt MSG=$msg\n");
 
-	if($mode =~ /^\d+$/ and $class ne "moni" and exists $main::mon{$tgt}){			# Using alert settings for moni events and never elevate unmonitored sources
+	if($class ne "moni" and exists $main::mon{$tgt}){						# Using alert settings for moni events and never elevate unmonitored sources
 		if($main::mon{$tgt}{ed} and $msg =~ /$main::mon{$tgt}{ed}/){
 			$elevate = 0;
 			&misc::Prt("EINF:$msg contains /$main::mon{$tgt}{ed}/, discarding\n");
@@ -324,7 +319,7 @@ sub Event{
 			if( $level >= $main::mon{$tgt}{el} ){
 				$elevate = 3;
 				&misc::Prt("ELVL:Forward level limit $main::mon{$tgt}{el} <= $level, forwarding\n");
-			}elsif($main::mon{$tgt}{el}%2 and $level > ($main::mon{$tgt}{el}-2) ){			# Deduct 2 and use > instead >=
+			}elsif($main::mon{$tgt}{el}%2 and $level > ($main::mon{$tgt}{el}-2) ){		# Deduct 2 and use > instead >=
 				$elevate = 0;
 				&misc::Prt("ELVL:Discard level limit ".($main::mon{$tgt}{el}-1)." >= event level $level, discarding\n");
 			}
@@ -338,7 +333,7 @@ sub Event{
 	if($elevate){
 		my $info = ((length $msg > 250)?substr($msg,0,250)."...":$msg);
 		$info =~ s/[\r\n]/, /g;
-		&db::Insert('events','level,time,source,info,class,device',"$level,$main::now,'$tgt',".$db::dbh->quote($info).",'$class','$dev'");
+		&db::Insert('events','level,time,source,info,class,device',"$level,$main::now,".$db::dbh->quote($tgt).",".$db::dbh->quote($info).",'$class',".$db::dbh->quote($dv) );
 	}
 
 	if($elevate > 1){
@@ -346,8 +341,8 @@ sub Event{
 		my $ns = 0;
 		foreach my $u ( keys %main::usr ){
 
-			my $viewdev = ($main::usr{$u}{vd})?&db::Select('devices','','device',"device='$dev' AND $main::usr{$u}{vd}"):$dev;
-			if(defined $viewdev and $viewdev eq $dev){					# Send mail only to those who can see the associated device
+			my $viewdev = ($main::usr{$u}{vd})?&db::Select('devices','','device',"device=".$db::dbh->quote($dv)." AND $main::usr{$u}{vd}"):$dv;
+			if(defined $viewdev and $viewdev eq $dv){					# Send mail only to those who can see the associated device
 
 				if($main::usr{$u}{ml} and $msg and $elevate & 2){			# Usr has email, there's a msg and elevation bit 2 is set -> queue mail
 					push (@{$main::usr{$u}{mail}}, "$tgt\t$msg");

@@ -30,22 +30,22 @@ $dbn = explode("_",$dbname);
 <td>
 
 <img src="img/16/abc.png" title=" <?= $namlbl ?>">
-<?= $dbn[0] ?>_<input type="text" name="add" size="20" value="<?= date("YmdHi") ?>">
+<?= $dbn[0] ?>_<input type="text" name="add" class="m" value="<?= date("YmdHi") ?>">
 
 </td>
 <td>
 
-<img src="img/16/ucfg.png" title="DB Admin"> <input type="text" name="usr" size="10"><p>
-<img src="img/16/loko.png" title="Password"> <input type="password" name="psw" size="10">
+<img src="img/16/ucfg.png" title="DB Admin"> <input type="text" name="usr" class="m"><p>
+<img src="img/16/loko.png" title="Password"> <input type="password" name="psw" class="m">
 
 </td>
 <td width="80">
 
-<input type="submit" value="<?= $addlbl ?>"><p>
+<input type="submit" class="button" value="<?= $addlbl ?>"><p>
 
 </td>
 </tr></table></form>
-<?}?>
+<?php } ?>
 
 <?php
 if($isadmin and $del){
@@ -151,7 +151,7 @@ while($ss = DbFetchRow($res)){
 <td><?= Bar($devs[0],'lvl100','mi') ?> <?= $devs[0] ?></td>
 <td><?= Bar($cfgs[0],'lvl150','mi') ?> <?= $cfgs[0] ?></td>
 <td><?= Bar($nods[0],'lvl50','mi') ?> <?= $nods[0] ?></td>
-<td><?= date($_SESSION['date'],$fdis[0]) ?></td>
+<td><?= date($_SESSION['timf'],$fdis[0]) ?></td>
 
 <th width="80">
 <?php 

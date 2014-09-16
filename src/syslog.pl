@@ -86,7 +86,7 @@ my $maxlen	= 512;
 my $port	= ($opt{'p'})?$opt{'p'}:514;
 my $desup	= time;
 
-&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass,1);
+&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass,1);# TODO check performance without autocommit and periodic commits as indicated below
 my $ntgt	= &mon::InitMon();
 
 my $sock = IO::Socket::INET->new(LocalPort => $port, Proto => 'udp') or die "socket: $@";
@@ -102,6 +102,7 @@ while($sock->recv(my $info, $maxlen)) {
 	if($now - $misc::pause > $desup){								# update targets if older than a monitoring cycle, after processing current event
 		$desup = $now;
 		my $ntgt = &mon::InitMon();
+		#&db::Commit();
 	}
 }
 &db::Disconnect();

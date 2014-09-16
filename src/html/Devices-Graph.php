@@ -35,22 +35,23 @@ $qstr = strpos($_SERVER['QUERY_STRING'], "sta")?$_SERVER['QUERY_STRING']:$_SERVE
 <h1>Device <?= $gralbl ?></h1>
 
 <?php if( !isset($_GET['print']) ) { ?>
-
 <form method="get" action="<?= $self ?>.php" name="dynfrm">
 <table class="content">
 <tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th>
-<select size="6" name="dv" onchange="this.form.submit();">
+<td class="ctr s">
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+</td>
+<td class="ctr">
+	<select size="6" name="dv" onchange="this.form.submit();">
 <?php
 $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 $query	= GenQuery('devices','s','device,devip,snmpversion,readcomm,memcpu,temp,cuslabel,cusvalue,devopts','device','',array('snmpversion'),array('!='),array('0') );
 $res	= DbQuery($query,$link);
 if($res){
-	echo "<option value=\"Totals\"".(($dv == "Totals")?" selected":"")."> Network Totals";
-	echo "<option value=\"\" style=\"color: blue\">- Devices -";
+	echo "		<option value=\"Totals\"".(($dv == "Totals")?" selected":"")."> Network Totals\n";
+	echo "		<option value=\"\" style=\"color: blue\">- Devices -\n";
 	while( ($d = DbFetchRow($res)) ){
-		echo "<option value=\"$d[0]\"";
+		echo "		<option value=\"$d[0]\"";
 		if($dv == $d[0]){
 			echo " selected";
 			$ip = long2ip($d[1]);
@@ -59,15 +60,9 @@ if($res){
 			$co = $d[3];
 			$mem = $d[4];
 			$tmp = $d[5];
-			$cg =$d[6];
+			$cg = $d[6];
 			$cv = $d[7];
 			$dop = $d[8];
-			if($cg){
-				list($ct,$cy,$cu) = explode(";", $cg);
-			}else{# TODO should only be necessary until all .defs are discovered with 1.0.6
-				$ct = "Mem IO";
-				$cu = "Bytes free";
-			}
 		}
 		echo " >$d[0]\n";
 	}
@@ -76,143 +71,166 @@ if($res){
 	print DbError($link);
 }
 ?>
-</select>
+	</select>
 <?php
 if ($dv == "Totals") {
 ?>
-<select multiple size="6" name="if[]">
-<option value="msg"<?= (in_array("msg",$if))?" selected":"" ?>> <?= $msglbl ?> <?= $sumlbl ?>
-<option value="mon"<?= (in_array("mon",$if))?" selected":"" ?>> <?= $tgtlbl ?> <?= $avalbl ?>
-<option value="nod"<?= (in_array("nod",$if))?" selected":"" ?>> <?= $totlbl ?> Nodes
-<option value="tpw"<?= (in_array("tpw",$if))?" selected":"" ?>> <?= $totlbl ?> PoE
-<option value="ttr"<?= (in_array("ttr",$if))?" selected":"" ?>> <?= $totlbl ?> <?= $acslbl ?> <?= $trflbl ?>
-<option value="ter"<?= (in_array("ter",$if))?" selected":"" ?>> <?= $totlbl ?> non-Wlan <?= $errlbl ?>
-<option value="tdi"<?= (in_array("tdi",$if))?" selected":"" ?>> <?= $totlbl ?> non-Wlan Discards
-<option value="ifs"<?= (in_array("ifs",$if))?" selected":"" ?>> IF <?= $stalbl ?>  <?= $sumlbl ?>
+	<select multiple size="6" name="if[]">
+		<option value="msg"<?= (in_array("msg",$if))?" selected":"" ?>> <?= $msglbl ?> <?= $sumlbl ?>
+		<option value="mon"<?= (in_array("mon",$if))?" selected":"" ?>> <?= $tgtlbl ?> <?= $avalbl ?>
+		<option value="nod"<?= (in_array("nod",$if))?" selected":"" ?>> <?= $totlbl ?> Nodes
+		<option value="tpw"<?= (in_array("tpw",$if))?" selected":"" ?>> <?= $totlbl ?> PoE
+		<option value="ttr"<?= (in_array("ttr",$if))?" selected":"" ?>> <?= $totlbl ?> <?= $acslbl ?> <?= $trflbl ?>
+		<option value="ter"<?= (in_array("ter",$if))?" selected":"" ?>> <?= $totlbl ?> non-Wlan <?= $errlbl ?>
+		<option value="tdi"<?= (in_array("tdi",$if))?" selected":"" ?>> <?= $totlbl ?> non-Wlan Discards
+		<option value="ifs"<?= (in_array("ifs",$if))?" selected":"" ?>> IF <?= $stalbl ?>  <?= $sumlbl ?>
 <?php
 }elseif($dv){
 ?>
-<select multiple size="6" name="if[]">
+	<select multiple size="6" name="if[]">
 <?php
 if( substr($dop,1,1) == "C" ){
 ?>
-<option value="cpu"<?= (in_array("cpu",$if))?" selected":"" ?>> CPU
+		<option value="cpu"<?= (in_array("cpu",$if))?" selected":"" ?>> CPU
 <?php
 }
 if($mem){
 ?>
-<option value="mem"<?= (in_array("mem",$if))?" selected":"" ?>> Mem
+		<option value="mem"<?= (in_array("mem",$if))?" selected":"" ?>> Mem
 <?php
 }
 if($tmp){
 ?>
-<option value="tmp"<?= (in_array("tmp",$if))?" selected":"" ?>> <?= $tmplbl ?>
+		<option value="tmp"<?= (in_array("tmp",$if))?" selected":"" ?>> <?= $tmplbl ?>
 <?php
 }
-if($ct != "-"){
+if($cg){
+	list($ct,$cy,$cu) = explode(";", $cg);
 ?>
-<option value="cuv"<?= (in_array("cuv",$if))?" selected":"" ?>> <?= $ct ?>
+		<option value="cuv"<?= (in_array("cuv",$if))?" selected":"" ?>> <?= $ct ?>
 <?php
 }
 ?>
-<option value="" style="color: blue">- Interfaces -
+		<option value="" style="color: blue">- Interfaces -
 <?php
 	$query	= GenQuery('interfaces','s','ifname,alias,comment','ifidx','',array('device'),array('='),array($dv) );
 	$res	= DbQuery($query,$link);
 	if($res){
 		while( ($i = DbFetchRow($res)) ){
-			echo "<option value=\"$i[0]\" ";
+			echo "		<option value=\"$i[0]\" ";
 			if(in_array($i[0],$if)){echo "selected";}
-			echo " >$i[0] " . substr("$i[1] $i[2]\n",0,30);
+			echo " >$i[0] " . substr("$i[1] $i[2]",0,30)."\n";
 		}
 		DbFreeResult($res);
 	}
 ?>
-</select>
+	</select>
+	<select multiple size="6" name="it[]">
+		<option value="t"<?= (in_array("t",$it))?" selected":"" ?>> <?= $trflbl ?>
 
-<select multiple size="6" name="it[]">
-<option value="t"<?= (in_array("t",$it))?" selected":"" ?>> <?= $trflbl ?>
-<option value="e"<?= (in_array("e",$it))?" selected":"" ?>> <?= $errlbl ?>
-<option value="d"<?= (in_array("d",$it))?" selected":"" ?>> Discards
-<option value="b"<?= (in_array("b",$it))?" selected":"" ?>> Broadcast
-<option value="s"<?= (in_array("s",$it))?" selected":"" ?>> <?= $stalbl ?>
-</select>
+		<option value="e"<?= (in_array("e",$it))?" selected":"" ?>> <?= $errlbl ?>
 
+		<option value="d"<?= (in_array("d",$it))?" selected":"" ?>> Discards
+		<option value="b"<?= (in_array("b",$it))?" selected":"" ?>> Broadcast
+		<option value="s"<?= (in_array("s",$it))?" selected":"" ?>> <?= $stalbl ?>
+
+	</select>
 <?php
 }
 ?>
-
-</th>
-<td align="center">
-
-<table style="border-spacing: 0px">
-<tr class="<?= $modgroup[$self] ?>2"><td>
-<a href="?<?=SkewTime($qstr,"sta", -7) ?>"><img src="img/16/bbl2.png" title="<?= $sttlbl ?> -<?= $tim['w'] ?>"></a>
-</td><td>
-<a href="?<?=SkewTime($qstr,"sta", -1) ?>"><img src="img/16/bblf.png" title="<?= $sttlbl ?> -<?= $tim['d'] ?>"></a>
-</td><td>
-<input  name="sta" id="start" type="text" value="<?= $strsta ?>" onfocus="select();" size="15" title="<?= $sttlbl ?>">
-</td><td>
-<a href="?<?=SkewTime($qstr,"sta", 1) ?>"><img src="img/16/bbrt.png" title="<?= $sttlbl ?> +<?= $tim['d'] ?>"></a>
-</td><td>
-<a href="?<?=SkewTime($qstr,"sta", 7) ?>"><img src="img/16/bbr2.png" title="<?= $sttlbl ?> +<?= $tim['w'] ?>"></a>
-</td></tr>
-<tr class="<?= $modgroup[$self] ?>2"><td>
-<a href="?<?=SkewTime($qstr,"all", -7) ?>"><img src="img/16/bbl2.png" title="<?= $gralbl ?> -<?= $tim['w'] ?>"></a>
-</td><td>
-<a href="?<?=SkewTime($qstr,"all", -1) ?>"><img src="img/16/bblf.png" title="<?= $gralbl ?> -<?= $tim['d'] ?>"></a>
-</td><th>
-<img src="img/16/date.png" title="<?= $sttlbl ?> & <?= $endlbl ?>">
-</th><td>
-<a href="?<?=SkewTime($qstr,"all", 1) ?>"><img src="img/16/bbrt.png" title="<?= $gralbl ?> +<?= $tim['d'] ?>"></a>
-</td><td>
-<a href="?<?=SkewTime($qstr,"all", 7) ?>"><img src="img/16/bbr2.png" title="<?= $gralbl ?> +<?= $tim['w'] ?>"></a>
-</td></tr>
-<tr class="<?= $modgroup[$self] ?>2"><td>
-<a href="?<?=SkewTime($qstr,"end", -7) ?>"><img src="img/16/bbl2.png" title="<?= $endlbl ?> -<?= $tim['w'] ?>"></a>
-</td><td>
-<a href="?<?=SkewTime($qstr,"end", -1) ?>"><img src="img/16/bblf.png" title="<?= $endlbl ?> -<?= $tim['d'] ?>"></a>
-</td><td>
-<input  name="end" id="end" type="text" value="<?= $strend ?>" onfocus="select();" size="15" title="<?= $endlbl ?>">
-</td><td>
-<a href="?<?=SkewTime($qstr,"end", 1) ?>"><img src="img/16/bbrt.png" title="<?= $endlbl ?> +<?= $tim['d'] ?>"></a>
-</td><td>
-<a href="?<?=SkewTime($qstr,"end", 7) ?>"><img src="img/16/bbr2.png" title="<?= $endlbl ?> +<?= $tim['w'] ?>"></a>
-</table>
-
-<script type="text/javascript" src="inc/datepickr.js"></script>
-<link rel="stylesheet" type="text/css" href="inc/datepickr.css" />
-<script>
-
-new datepickr('start', {'dateFormat': 'm/d/y'});
-new datepickr('end', {'dateFormat': 'm/d/y'});
-</script>
-
+</td>
+<td class="ctr s">
+	<table style="border-spacing: 0px">
+		<tr class="<?= $modgroup[$self] ?>2">
+			<td>
+				<a href="?<?=SkewTime($qstr,"sta", -7) ?>"><img src="img/16/bbl2.png" title="<?= $sttlbl ?> -<?= $tim['w'] ?>"></a>
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"sta", -1) ?>"><img src="img/16/bblf.png" title="<?= $sttlbl ?> -<?= $tim['d'] ?>"></a>
+			</td>
+			<td>
+				<input  name="sta" id="start" type="text" value="<?= $strsta ?>" onfocus="select();" size="15" title="<?= $sttlbl ?>">
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"sta", 1) ?>"><img src="img/16/bbrt.png" title="<?= $sttlbl ?> +<?= $tim['d'] ?>"></a>
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"sta", 7) ?>"><img src="img/16/bbr2.png" title="<?= $sttlbl ?> +<?= $tim['w'] ?>"></a>
+			</td>
+		</tr>
+		<tr class="<?= $modgroup[$self] ?>2">
+			<td>
+				<a href="?<?=SkewTime($qstr,"all", -7) ?>"><img src="img/16/bbl2.png" title="<?= $gralbl ?> -<?= $tim['w'] ?>"></a>
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"all", -1) ?>"><img src="img/16/bblf.png" title="<?= $gralbl ?> -<?= $tim['d'] ?>"></a>
+			</td>
+			<td class="ctr">
+				<img src="img/16/date.png" title="<?= $sttlbl ?> & <?= $endlbl ?>">
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"all", 1) ?>"><img src="img/16/bbrt.png" title="<?= $gralbl ?> +<?= $tim['d'] ?>"></a>
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"all", 7) ?>"><img src="img/16/bbr2.png" title="<?= $gralbl ?> +<?= $tim['w'] ?>"></a>
+			</td>
+		</tr>
+		<tr class="<?= $modgroup[$self] ?>2">
+			<td>
+				<a href="?<?=SkewTime($qstr,"end", -7) ?>"><img src="img/16/bbl2.png" title="<?= $endlbl ?> -<?= $tim['w'] ?>"></a>
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"end", -1) ?>"><img src="img/16/bblf.png" title="<?= $endlbl ?> -<?= $tim['d'] ?>"></a>
+			</td>
+			<td>
+				<input  name="end" id="end" type="text" value="<?= $strend ?>" onfocus="select();" size="15" title="<?= $endlbl ?>">
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"end", 1) ?>"><img src="img/16/bbrt.png" title="<?= $endlbl ?> +<?= $tim['d'] ?>"></a>
+			</td>
+			<td>
+				<a href="?<?=SkewTime($qstr,"end", 7) ?>"><img src="img/16/bbr2.png" title="<?= $endlbl ?> +<?= $tim['w'] ?>"></a>
+			</td>
+		</tr>
+	</table>
+	<script type="text/javascript" src="inc/datepickr.js"></script>
+	<link rel="stylesheet" type="text/css" href="inc/datepickr.css" />
+	<script>
+		new datepickr('start', {'dateFormat': 'm/d/y'});
+		new datepickr('end', {'dateFormat': 'm/d/y'});
+	</script>
 </td>
 <?php  if($cacticli) { ?>
-<td align="center"><h3>Cacti</h3>
-<select size="1" name="tem">
-<option value="2"><?= $trflbl ?>
-<option value="22"><?= $errlbl ?>
-<option value="24">Broadcast
-</select><p>
-<input type="submit" name="cad" value="<?= $addlbl ?>">
+<td class="ctr">
+	<h3>Cacti</h3>
+	<select size="1" name="tem">
+		<option value="2"><?= $trflbl ?>
+		<option value="22"><?= $errlbl ?>
+		<option value="24">Broadcast
+	</select>
+	<p>
+	<input type="submit" class="button" name="cad" value="<?= $addlbl ?>">
 </td>
-<?}?>
-<th width="80">
-<span id="counter"><?= $refresh ?></span>
-<img src="img/16/exit.png" title="Stop" onClick="stop_countdown(interval);">
-<p>
-<select size="1" name="sze">
-<option value=""><?= $siz['x'] ?>
-<option value="4" <?= ($sze == "4")?" selected":"" ?> ><?= $siz['l'] ?>
-<option value="3" <?= ($sze == "3")?" selected":"" ?> ><?= $siz['m'] ?>
-<option value="2" <?= ($sze == "2")?" selected":"" ?> ><?= $siz['s'] ?>
-</select>
-<p>
-<input type="submit" name="sho" value="<?= $sholbl ?>">
-</th>
-</tr></table></form>
+<?php } ?>
+<td class="ctr s">
+	<span id="counter"><?= $refresh ?></span>
+	<img src="img/16/exit.png" title="Stop" onClick="stop_countdown(interval);">
+	<p>
+	<select size="1" name="sze">
+		<option value=""><?= $siz['x'] ?>
+
+		<option value="4" <?= ($sze == "4")?" selected":"" ?> ><?= $siz['l'] ?>
+
+		<option value="3" <?= ($sze == "3")?" selected":"" ?> ><?= $siz['m'] ?>
+
+		<option value="2" <?= ($sze == "2")?" selected":"" ?> ><?= $siz['s'] ?>
+
+	</select>
+	<p>
+	<input type="submit" class="button" name="sho" value="<?= $sholbl ?>">
+</td>
+</tr></table>
+</form>
 
 <?php
 }
@@ -221,18 +239,18 @@ if($dv){
 	if($dv != "Totals" and !isset($_GET['print']) and strpos($_SESSION['group'],$modgroup['Devices-Status']) !== false ){
 		echo "<h2><a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a> $dv</h2>\n";
 	}else{
-		echo "<h2>$dv</h2>";
+		echo "<h2>$dv</h2>\n";
 	}
-	echo "<h3>".date($_SESSION['date'], $sta)." - ".date($_SESSION['date'],$end)."</h3>";
+	echo "<h3>".date($_SESSION['timf'], $sta)." - ".date($_SESSION['timf'],$end)."</h3>\n";
 }
 ?>
-<div align="center"><p>
+<div class="ctr">
 <?php
 
 if($cad){
 	if($debug){echo "$cacticli/add_device.php --description=\"$dv\" --ip=\"$ip\" --template=1 --version=\"$sp\" --community=\"$co\"";}
 	$adev = exec("$cacticli/add_device.php --description=\"$dv\" --ip=\"$ip\" --template=1 --version=\"$sp\" --community=\"$co\"");
-	echo "<div class=\"textpad code txta\">$adev</div>";
+	echo "<div class=\"textpad code txta\">	$adev\n</div>\n";
 	flush();
 	$devid = preg_replace("/.*device-id: \((\d+)\).*/","$1",$adev);
 	if($devid){
@@ -248,13 +266,13 @@ if($cad){
 		foreach ($if as $i){
 			if($debug){echo "$cacticli/add_graphs.php --graph-type=ds --graph-template-id=$tem --host-id=$devid --snmp-query-id=1 --snmp-query-type-id=$qtyp --snmp-field=ifName --snmp-value=\"$i\"";}
 			$agrf = exec("$cacticli/add_graphs.php --graph-type=ds --graph-template-id=$tem --host-id=$devid --snmp-query-id=1 --snmp-query-type-id=$qtyp --snmp-field=ifName --snmp-value=\"$i\"");
-			echo "<div class=\"textpad code txtb\">$agrf</div>";
+			echo "<div class=\"textpad code txtb\">\n	$agrf\n</div>\n";
 			flush();
 		}
 	}
 }elseif ($dv == "Totals") {
 	if( in_array("msg",$if) ){
-		echo "<a href=\"Monitoring-Timeline.php?sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=level\">\n";
+		echo "<a href=\"Monitoring-Timeline.php?sta=".urlencode($strsta)."&end=".urlencode($strend)."&det=level&sho=1\">\n";
 		echo "<img src=\"inc/drawrrd.php?&s=$sze&t=msg&a=$sta&e=$end\" title=\"$sholbl Timeline\"></a>\n";
 	}
 	if( in_array("mon",$if) ){

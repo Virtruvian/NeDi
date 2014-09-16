@@ -88,6 +88,7 @@ $misc::lwpok = 0;
 require "$p/inc/libweb.pm";
 
 if ($opt{'d'}){												# Creates incidents and bails
+	use Data::Dumper;
 	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
 	my $ntgt = &mon::InitMon();
 	my @tgts = keys %mon;
@@ -118,13 +119,24 @@ while(1){# TODO support dependency aware threading for better scalability!
 	my $ntgt = &mon::InitMon();
 	&misc::Prt("\nInitializing " . localtime($now) . " --------------\n");
 	foreach my $d (keys %mon){
-		&misc::Prt(sprintf ("DEPS:%-10.10s = %-8.8s ", $d, $mon{$d}{dy}) );
-		if( $mon{$d}{dy} ne '-' ){								# Dependency configured?
-			if( exists $mon{$mon{$d}{dy}} ){						# Does it exist?
-				push @{$mon{$mon{$d}{dy}}{da}},$d;					# Add to parent dependendants
+		&misc::Prt( sprintf("DEPS:%-10.10s = ",$d ) );
+		if( $mon{$d}{d1} ne '' ){								# Dependency configured?
+			&misc::Prt(sprintf (" %-8.8s ",$mon{$d}{d1}) );
+			if( exists $mon{$mon{$d}{d1}} ){						# Does it exist?
+				push @{$mon{$mon{$d}{d1}}{da}},$d;					# Add to parent's dependendants
 			}else{
-				&db::Update('monitoring',"depend='-'","name ='$d'");
-				&db::Insert('events','level,time,source,info,class,device',"50,$now,'$d','Non existant dependency $mon{$d}{dy} removed.','moni','$mon{$d}{dv}'");
+				&db::Update('monitoring',"depend=''","name ='$d'");
+				&db::Insert('events','level,time,source,info,class,device',"50,$now,'$d','Non existant dependency $mon{$d}{d1} removed.','moni','$mon{$d}{dv}'");
+				&misc::Prt(" doesn't exist!");
+			}
+		}
+		if( $mon{$d}{d2} ne '' ){								# Dependency configured?
+			&misc::Prt(sprintf (" %-8.8s ",$mon{$d}{d2}) );
+			if( exists $mon{$mon{$d}{d2}} ){						# Does it exist?
+				push @{$mon{$mon{$d}{d2}}{da}},$d;					# Add to parent's dependendants
+			}else{
+				&db::Update('monitoring',"depend2=''","name ='$d'");
+				&db::Insert('events','level,time,source,info,class,device',"50,$now,'$d','Non existant dependency $mon{$d}{d2} removed.','moni','$mon{$d}{dv}'");
 				&misc::Prt(" doesn't exist!");
 			}
 		}
@@ -186,7 +198,7 @@ sub TestTgt{
 	my $latency = my $uptime = 0;
 
 	&misc::Prt(sprintf ("\nTRGT:%-12.12s Deps=%-4.4s Test=%-6.6s\n", $d, $mon{$d}{dc}, $mon{$d}{te}) );
-	if($mon{$d}{ds} ne 'up'){									# Check if dep is up
+	if(!$mon{$d}{ds}){									# Check if dep is up
 		&misc::Prt("SKIP:Deps=$mon{$d}{ds}($mon{$d}{dc})\n");
 		return;
 	}elsif($mon{$d}{te} eq "ping"){
@@ -267,8 +279,8 @@ sub TestTgt{
 
 		&db::Update('monitoring',"status=0,lastok=$now,uptime=$uptime,ok=$ok,latency=$latency,latmax=$latmax,latavg=$latavg","name ='$d'");
 		&misc::Prt("UP  :");
-		&MarkDep($d,'up',0);									# Mark everytime to avoid errors when moni is restarted
 		if($mon{$d}{st} >= $mon{$d}{nr}){
+			&MarkDep($d,1,0);								# Add 1 to dependecy status upon recovery
 			my $msg = "recovered".(($mon{$d}{dc})?", affects $mon{$d}{dc} more targets!":"");
 			my $dnt  = sprintf("was down for %.1fh", $mon{$d}{st}*$misc::pause/3600);
 			&db::Update('incidents',"endinc=$now","name ='$d' AND endinc=0");
@@ -276,12 +288,11 @@ sub TestTgt{
 		}else{
 			&misc::Prt("Last status=$mon{$d}{st}\n");
 		}
-		&db::Insert('events','level,time,source,info,class,device',"'150',$now,'$d','Latency ${latency}ms exceeds threshold of $mon{$d}{lw}ms','moni','$mon{$d}{dv}'") if($latency > $mon{$d}{lw});
+		&db::Insert('events','level,time,source,info,class,device',"'150',$now,'$d','Latency ${latency}ms exceeds threshold of $mon{$d}{lw}ms','moni','$mon{$d}{dv}'") if $latency > $mon{$d}{lw} and $mon{$d}{al};
 	}else{
 		my $st = ++$mon{$d}{st};
 		my $lo = ++$mon{$d}{lo};
 		&db::Update('monitoring',"status=$st,lost=$lo","name ='$d'");
-		&MarkDep($d,'down',0);									# Mark everytime to avoid errors when moni is restarted
 
 		my $lvl = 200;
 		my $msg = "is down";
@@ -290,6 +301,7 @@ sub TestTgt{
 			$msg .= ", affects $mon{$d}{dc} more targets!";
 		}
 		if($mon{$d}{st} == $mon{$d}{nr}){
+			&MarkDep($d,-1,0);									# Subtract 1 of dependecy status upon death
 			&db::Insert('incidents','level,name,deps,startinc,endinc,usrname,time,grp,comment,device',"$lvl,'$d',$mon{$d}{dc},$now,0,'',0,1,'','$mon{$d}{dv}'");
 			$mq += &mon::Event($mon{$d}{al},$lvl,'moni',$d,$mon{$d}{dv},$msg,$msg);
 			&misc::Prt("DOWN:For $mon{$d}{nr} times, generated $mq alerts\n");
@@ -321,7 +333,7 @@ sub MarkDep{
 	if($iter < 90 and exists $mon{$d}{da} ){
 		foreach my $d (@{$mon{$d}{da}}){
 #			&misc::Prt(" $d");
-			$mon{$d}{ds} = $stat;
+			$mon{$d}{ds} += $stat;
 			&MarkDep($d,$stat,$iter+1);
 		}
 #	}else{

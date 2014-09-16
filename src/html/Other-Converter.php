@@ -17,10 +17,10 @@ if( !isset($_GET['print']) ) {
 <table class="content" ><tr class="<?= $modgroup[$self] ?>1">
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <th>
-<?= $inflbl ?>: <input type="text" name="txt" value="<?= $txt ?>" size="40">
+<?= $inflbl ?>: <input type="text" name="txt" value="<?= $txt ?>" class="xl">
 </th>
 <th width="80">
-<input type="submit" value="<?= $sholbl ?>">
+<input type="submit" class="button" value="<?= $sholbl ?>">
 </th>
 </tr>
 </table></form>
@@ -28,21 +28,46 @@ if( !isset($_GET['print']) ) {
 }
 
 ?>
-<h2>Decimal 2 ASCII</h2>
-<div class="textpad code txta" name="out">
+<h2>Decimal, ASCII, HEX</h2>
+<table class="content fixed" ><tr class="<?= $modgroup[$self] ?>2">
 <?php
 
 $ord = preg_split('/\D/', $txt);
+for($i=0;$i<count($ord);$i++){
+	echo "<td>$i</td>";
+}
+
+?>
+</tr><tr class="txta code">
+<?php
+
+foreach ($ord as $o){
+	echo "<td>$o</td>";
+}
+
+?>
+</tr><tr class="txtb code">
+<?php
+
 foreach ($ord as $o){
 	if($o > 31 and $o < 122){
-		echo chr($o);
+		echo "<td>".chr($o)."</td>";
 	}else{
-		echo "$o ";
+		echo "<td></td>";
 	}
 }
-echo "\n";
+
 ?>
-</div><br>
+</tr><tr class="txta code">
+<?php
+
+foreach ($ord as $o){
+	echo "<td>".dechex($o)."</td>";
+}
+?>
+
+</tr>
+</table>
 
 <?php
 include_once ("inc/footer.php");

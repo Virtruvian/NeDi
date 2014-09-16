@@ -192,6 +192,8 @@ $cmd{'IOS'}{'end'}  = '^end$';
 $cmd{'IOS'}{'page'} = 'terminal length 0';
 $cmd{'IOS'}{'dfwd'} = 'show mac address-table | e CPU|Switch|Router|/.*,';				# tx colejv
 $cmd{'IOS'}{'tech'} = "show tech-support | redirect tftp://%NeDi%/%FILE%";
+$cmd{'IOS'}{'test'} = "test cable-diagnostics tdr interface";						# TODO Will be available in Nodes-Status some day?
+$cmd{'IOS'}{'tesh'} = "show cable-diagnostics tdr interface";
 
 $cmd{'IOS-old'}{'ropr'} = '[\w+().-]+>\s?$';
 $cmd{'IOS-old'}{'enpr'} = '[\w+().-]+#\s?$';
@@ -237,15 +239,15 @@ $cmd{'IOS-pix'}{'strt'} = '^PIX Version';
 $cmd{'IOS-pix'}{'page'} = 'no pager';									# PIX 6.3
 $cmd{'IOS-pix'}{'arp'} = 'show arp';
 
-$cmd{'IOS-fw'}{'ropr'} = '[\w+().-]+>\s?$';
-$cmd{'IOS-fw'}{'enpr'} = '[\w+().-]+#\s?$';
-$cmd{'IOS-fw'}{'enab'} = 'enable';
-#$cmd{'IOS-fw'}{'conf'} = 'show run';
-$cmd{'IOS-fw'}{'conf'} = 'more system:running-config';							# displays plain-text keys, tx uestueno
-$cmd{'IOS-fw'}{'strt'} = '^PIX|ASA';
-$cmd{'IOS-fw'}{'end'}  = '^: end$';
-$cmd{'IOS-fw'}{'page'} = 'no terminal pager';								# PIX 8.0.3, ASA 8.2
-$cmd{'IOS-fw'}{'arp'} = 'show arp';
+$cmd{'IOS-asa'}{'ropr'} = '[\w+().-]+>\s?$';
+$cmd{'IOS-asa'}{'enpr'} = '[\w+().-]+#\s?$';
+$cmd{'IOS-asa'}{'enab'} = 'enable';
+#$cmd{'IOS-asa'}{'conf'} = 'show run';
+$cmd{'IOS-asa'}{'conf'} = 'more system:running-config';							# displays plain-text keys, tx uestueno
+$cmd{'IOS-asa'}{'strt'} = '^PIX|ASA';
+$cmd{'IOS-asa'}{'end'}  = '^: end$';
+$cmd{'IOS-asa'}{'page'} = 'no terminal pager';								# PIX 8.0.3, ASA 8.2
+$cmd{'IOS-asa'}{'arp'} = 'show arp';
 
 $cmd{'IOS-fv'}{'ropr'} = '[\w+().-]+>\s?$';
 $cmd{'IOS-fv'}{'enpr'} = '[\w+().-]+#\s?$';
@@ -275,6 +277,14 @@ $cmd{'NXOS'}{'conf'} = 'show running-config';
 $cmd{'NXOS'}{'strt'} = '^begin|running-config';
 $cmd{'NXOS'}{'page'} = 'terminal length 0';
 $cmd{'NXOS'}{'arp'} = 'sh ip arp vrf all';
+
+# Dell
+$cmd{'DPC'}{'ropr'} = '[\w+().-]+>\s?$';
+$cmd{'DPC'}{'enpr'} = '[\w+().-]+#\s?$';
+$cmd{'DPC'}{'enab'} = 'enable';
+$cmd{'DPC'}{'conf'} = 'show run';
+$cmd{'DPC'}{'strt'} = '.';
+$cmd{'DPC'}{'page'} = 'terminal datadump';
 
 # ENTERASYS
 $cmd{'EOS'}{'ropr'} = '[\w+().-]+>\s?$';
@@ -472,32 +482,33 @@ sub Connect{
 	my ($session, $err, $pty, $pre, $match);
 	my $next = $err = "";
 	my $errmod = 0?'die':'return';									# set to 1 for debugging, if necessary
-	my $inlog  = $main::opt{'d'}?'input.log':'';
-	my $outlog = $main::opt{'d'}?'output.log':'';
+	my @iolog = $main::opt{'d'}?( Input_log	=> 'input.log', Output_log	=> 'output.log' ):();
 
 	my ($realus,$usidx) = split(/;/,$us);								# This allows for multiple pw for same user indexed by ;x
-	if($po == 22){
+	if($po == 1){
+		&misc::Prt("CLI :connection disabled due to previous error (TCP Port=1)\n","Cd");
+		return (undef, "connection disabled");
+	}elsif($po == 22){
 		my $known = "-o 'StrictHostKeyChecking no'";
 		if($misc::usessh =~ /never/){
-			&misc::Prt("CLI :ssh connection prohibited by usessh policy\n");
+			&misc::Prt("CLI :ssh connection prohibited by usessh policy\n","Cc");
 			return (undef, "connection prohibited by usessh policy");
 		}elsif($misc::usessh =~ /known/){
-			$known = "";
+			$known = '';
 		}
 		&misc::Prt("SSH :$us\@$ip:$po Tout:${misc::timeout}s OS:$os EN:$cmd{$os}{'enpr'}\n");
 		$pty = &Spawn("ssh $known -l $realus $ip");
 		$session = new Net::Telnet(	fhopen		=> $pty,
 						Timeout		=> $misc::timeout + 4,			# Add 4s to factor in auth server and ssh on slow devs
 						Prompt		=> "/$cmd{$os}{'enpr'}/",
-						Output_log	=> $inlog,
-						Input_log	=> $outlog,
 						Telnetmode	=> 0,
 						Cmd_remove_mode => 1,
 						Output_record_separator => "\r",
-						Errmode		=> $errmod);
-	}elsif($po != 1){
+						Errmode		=> $errmod,
+						@iolog);
+	}else{
 		if($misc::usessh =~ /always/){
-			&misc::Prt("CLI :telnet connection prohibited by usessh policy\n");
+			&misc::Prt("CLI :telnet connection prohibited by usessh policy\n","Ci");
 			return (undef, "connection prohibited by usessh policy");
 		}
 		&misc::Prt("TEL :$us\@$ip:$po Tout:${misc::timeout}s OS:$os EN:$cmd{$os}{'enpr'}\n");
@@ -505,12 +516,8 @@ sub Connect{
 						Port		=> $po,
 						Timeout		=> $misc::timeout + 2,			# Add 2s to factor in auth server timeout
 						Prompt		=> "/$cmd{$os}{'enpr'}/",
-						Input_log	=> $inlog,
-						Output_log	=> $outlog,
-						Errmode		=> $errmod);
-	}else{
-		&misc::Prt("CLI :connection disabled\n");
-		return (undef, "connection disabled");
+						Errmode		=> $errmod,
+						@iolog);
 	}
 	return (undef, "connection error on port $po") if !defined $session;				# To catch failed connections
 
@@ -518,31 +525,31 @@ sub Connect{
 	$err = $session->errmsg;
 	if($err){											# on OBSD $err=pattern match read eof
 		$session->close if defined $session;
-		&misc::Prt("ERR0:$err\n");
+		&misc::Prt("ERR0:$err\n","Cc");
 		return (undef, "connection $err");
 	}elsif($match =~ /connection refused/i){
 		$session->close if defined $session;
-		&misc::Prt("CLI0:Connection refused\n");						# on Linux $match=Connection refused
+		&misc::Prt("CLI0:Connection refused\n","Cc");						# on Linux $match=Connection refused
 		return (undef, "connection refused");
 	}elsif($match =~ /Selected cipher type not supported/){
 		$session->close if defined $session;
-		&misc::Prt("CLI0:Selected cipher type not supported\n");				# Sneuser: Juniper with Export image, you need a domestic image!
+		&misc::Prt("CLI0:Selected cipher type not supported\n","Cc");				# Sneuser: Juniper with Export image, you need a domestic image!
 		return (undef, "connection cipher type not supported");
 	}elsif($match =~ /ssh_exchange_identification/i){
 		$session->close if defined $session;
-		&misc::Prt("CLI0:Connection ssh_exchange_identification\n");
+		&misc::Prt("CLI0:Connection ssh_exchange_identification\n","Cc");
 		return (undef, "connection ssh_exchange_identification");
 	}elsif($match =~ /are you sure/i){								# StrictHostKeyChecking
 		$session->close if defined $session;
-		&misc::Prt("CLI0:Turn StrictHostKeyChecking off or add key\n");
+		&misc::Prt("CLI0:Turn StrictHostKeyChecking off or add key\n","Cc");
 		return (undef, "connection hostkey not in known_hosts");
 	}elsif($match =~ /offending key/i){								# Hostkey changed
 		$session->close if defined $session;
-		&misc::Prt("CLI0:Hostkey changed\n");
+		&misc::Prt("CLI0:Hostkey changed\n","Cc");
 		return (undef, "connection hostkey changed");
 	}elsif($match =~ /modulus too small/i){								# Size matters after all...
 		$session->close if defined $session;
-		&misc::Prt("CLI0:Hostkey too small\n");
+		&misc::Prt("CLI0:Hostkey too small\n","Cc");
 		return (undef, "connection hostkey too small");
 	}elsif($match =~ /any key|Ctrl-Y/i){
 		&misc::Prt("CLI1:Matched '$match' sending ctrl-Y\n");
@@ -680,7 +687,7 @@ sub PrepDev{
 			return "no working user";
 		}elsif(exists $misc::login{$main::dev{$na}{us}}){					# OK if in nedi.conf
 			&misc::Prt("PREP:$mod supported and user $main::dev{$na}{us} exists\n");
-			return "OK-DB";									# OK from DB
+			return "OK";
 		}else{
 			&misc::Prt("PREP:No user $main::dev{$na}{us} in nedi.conf\n");			# User not in nedi.conf -> Prep
 		}
@@ -825,7 +832,7 @@ sub BridgeFwd{
 
 =head2 FUNCTION BridgeFwd()
 
-Get Ios-fw arp table
+Get arp table off ASAs, since they don't share via SNMP
 
 B<Options> device name
 
@@ -897,7 +904,7 @@ sub Arp{
 				}
 			}
 
-			foreach my $mc ( keys %myarpc ){
+			foreach my $mc ( keys %myarpc ){# TODO align with libsnmp ARP()
 				if(exists $misc::arpc{$mc}){
 					$misc::arpc{$mc} = $myarpc{$mc} if $misc::arpc{$mc} < $myarpc{$mc};
 				}else{
@@ -943,7 +950,7 @@ sub Config{
 			my @page = $session->cmd($cmd{$os}{page});
 			&misc::Prt("CMD :$cmd{$os}{page}, @page\n");
 		}
-		$session->timeout( ($misc::timeout + (exists $cmd{$os}{ctim})?$cmd{$os}{ctim}:10) );							# Increase for building config
+		$session->timeout( ($misc::timeout + (exists $cmd{$os}{ctim})?$cmd{$os}{ctim}:10) );	# Increase for building config
 		if(!$cmd{$os}{page} and $cmd{$os}{more}){						# No pager, but a more prompt, need to page manually
 			$session->print($cmd{$os}{conf});
 			my $morerun = "";
@@ -973,7 +980,7 @@ sub Config{
 		if ($go){
 			$line =~ s/\x1b\[(42;1H|2K|1;24r|24;1H)//g;					# ProCurve special sauce
 			&misc::Prt("CONF:$line\n");
-			push @misc::curcfg,$line;
+			push @misc::curcfg,$line if $line !~ /$misc::ignoreconf/;
 		}else{
 			&misc::Prt("WAIT:$line\n");
 		}
@@ -1012,15 +1019,14 @@ sub SendCmd{
 	if($misc::guiauth =~ /-pass$/){
 		$misc::login{$us}{pw} = $pw;
 	}
-
 	open  (CFG, "$cf.php" );
 	my @cmd = <CFG>;
 	close(CFG);
-	shift @cmd;
+	shift @cmd;											# 1st line is PHP to hide commands from unauthorized web access
 	chomp @cmd;
-	$misc::timeout *= 10;
+	#$misc::timeout *= 10;
 
-	&misc::Prt("$os $us CMD=$cf(". scalar @cmd .") T:${misc::timeout}s <p>\n");
+	&misc::Prt("CMD :$cf(". scalar @cmd ." lines) OS=$os USR=$us T=${misc::timeout}s\n");
 
 	open  (LOG, ">$cf-$ip.log" ) or print " can't write to $cf-$ip.log";
 
@@ -1036,16 +1042,22 @@ sub SendCmd{
 	}else{
 		my @page = $session->cmd($cmd{$os}{'page'}) if $cmd{$os}{'page'};
 		foreach my $c (@cmd){
-			print LOG "$c\n";
-			&misc::Prt("CMD :$c\n");
-			my @out = $session->cmd($c); 
-			foreach my $line (@out){
-				$line =~ s/\x1b\[(24;1H|2K|1;24r)//g;					# ProCurve clensing...
-				print LOG $line;
-				&misc::Prt("RES :$line");
-				$err = $line if $line =~ /^(\s?% )?(Invalid|Unknown|Failed|cannot)/;	# Catch errors, but ignore "% Warnings" (doesn't seem to work on ProCurve switches using SSH!)
+			if($c =~ /^sleep \d+$/){# TODO add really smart commands here?
+				$c =~ s/^sleep //;
+				&misc::Prt("CMD :sleeping $c seconds\n");
+				sleep $c;
+			}else{
+				print LOG "$c\n";
+				&misc::Prt("CMD :$c\n");
+				my @out = $session->cmd($c); 
+				foreach my $line (@out){
+					$line =~ s/\x1b\[(24;1H|2K|1;24r)//g;					# ProCurve clensing...
+					print LOG $line;
+					&misc::Prt("RES :$line");
+					$err = $line if $line =~ /^(\s?% )?(Invalid|Unknown|Failed|cannot)/;	# Catch errors, but ignore "% Warnings" (doesn't seem to work on ProCurve switches using SSH!)
+				}
+				last if $err;
 			}
-			last if $err;
 		}
 		$session->close;
 		close (LOG);

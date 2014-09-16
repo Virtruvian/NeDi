@@ -54,62 +54,60 @@ $cols = array(	"device"=>" Device $namlbl",
 
 <form method="post" name="list" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
+<td class="ctr s">
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
+</td>
 <td colspan="2">
-<?PHP Filters(); ?>
-
-</td></tr>
-<tr class="<?= $modgroup[$self] ?>2">
-
+<?php Filters(); ?>
+</td>
+</tr><tr class="<?= $modgroup[$self] ?>2">
 <td></td>
-<th valign="top">
-<?= $cmdlbl ?> / <?= $cfglbl ?><p>
-<textarea rows="6" name="cmd" cols="60"><?= $cmd ?></textarea>
-
-</th>
-<th valign="top">
-Interface <?= $cfglbl ?><p>
-
-<select size="1" name="int">
-	<option value=""><?= $sellbl ?> ->
-	<option value="Et" <?php if($int == "Et"){echo "selected";} ?>>Ethernet
-	<option value="Fa" <?php if($int == "Fa"){echo "selected";} ?>>Fastethernet
-	<option value="Gi" <?php if($int == "Gi"){echo "selected";} ?>>Gigabit
-	<option value="Te" <?php if($int == "Te"){echo "selected";} ?>>TenGigabit
-	<option value="Vi" <?php if($int == "Vi"){echo "selected";} ?>>Vlan IF
-	<option value="Vl" <?php if($int == "Vl"){echo "selected";} ?>>Vlan
-</select>
- <input type="text" size="2"name="smod" value="<?= $smod ?>" name="smod" OnFocus="select();">
- / <input type="text" size="2" name="sint" value="<?= $sint ?>" OnFocus="select();">
- / <input type="text" size="2" name="ssub" value="<?= $ssub ?>" OnFocus="select();">
- - <input type="text" size="2" name="emod" value="<?= $emod ?>" OnFocus="select();">
- / <input type="text" size="2" name="eint" value="<?= $eint ?>" OnFocus="select();">
- / <input type="text" size="2" name="esub" value="<?= $esub ?>" OnFocus="select();">
-<p>
-<textarea rows="4" name="icfg" cols="50"><?= $icfg ?></textarea>
-</th>
-
-</tr>
-<tr class="<?= $modgroup[$self] ?>1">
-
-<th valign="top" colspan="3">
+<td class="top ctr b">
+	<?= $cmdlbl ?> / <?= $cfglbl ?>
+	<p>
+	<textarea rows="6" name="cmd" cols="60"><?= $cmd ?></textarea>
+</td>
+<td class="top ctr b">
+	Interface <?= $cfglbl ?>
+	<p>
+	<select size="1" name="int">
+		<option value=""><?= $sellbl ?> ->
+		<option value="Et" <?php if($int == "Et"){echo "selected";} ?>>Ethernet
+		<option value="Fa" <?php if($int == "Fa"){echo "selected";} ?>>Fastethernet
+		<option value="Gi" <?php if($int == "Gi"){echo "selected";} ?>>Gigabit
+		<option value="Te" <?php if($int == "Te"){echo "selected";} ?>>TenGigabit
+		<option value="Vi" <?php if($int == "Vi"){echo "selected";} ?>>Vlan IF
+		<option value="Vl" <?php if($int == "Vl"){echo "selected";} ?>>Vlan
+	</select>
+	   <input type="number" class="s" name="smod" value="<?= $smod ?>" OnFocus="select();">
+	 / <input type="number" class="s" name="sint" value="<?= $sint ?>" OnFocus="select();">
+	 / <input type="number" class="s" name="ssub" value="<?= $ssub ?>" OnFocus="select();">
+	 - <input type="number" class="s" name="emod" value="<?= $emod ?>" OnFocus="select();">
+	 / <input type="number" class="s" name="eint" value="<?= $eint ?>" OnFocus="select();">
+	 / <input type="number" class="s" name="esub" value="<?= $esub ?>" OnFocus="select();">
+	<p>
+	<textarea rows="4" name="icfg" cols="50"><?= $icfg ?></textarea>
+</td>
+</tr><tr class="<?= $modgroup[$self] ?>1">
+<td class="top ctr b" colspan="3">
 <?php
 if ( strstr($guiauth,'-pass') ){
-	?>
+?>
 	Password <input type="password" value="<?= $pwd ?>" name="pwd">
-	<?php
+<?php
 }
 ?>
-<input type="submit" value="<?= $sholbl ?>" name="sim">
-<input type="submit" value="<?= $cmdlbl ?>" name="scm">
-<input type="submit" value="<?= $cfglbl ?>" name="con">
-</th></tr>
-</table>
+	<input type="submit" class="button" value="<?= $sholbl ?>" name="sim">
+	<input type="submit" class="button" value="<?= $cmdlbl ?>" name="scm">
+	<input type="submit" class="button" value="<?= $cfglbl ?>" name="con">
+</td>
+</tr></table>
 </form>
 <p>
 
 <?php
 
+session_write_close();
 if( count($in) ){
 	$link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 	$query	= GenQuery('devices','s','*','','',$in,$op,$st,$co);
@@ -151,26 +149,27 @@ if( count($in) ){
 		echo Buildcmd('',$cfgos);
 		echo "</div><br>\n";
 		Condition($in,$op,$st,$co);
-		echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\">";
-		echo "<th colspan=\"2\">Device</th><th>Device OS</th>";
-		echo "<th>Login</th><th>IP $adrlbl</th><th>$cfglbl $stalbl</th></tr>\n";
+		echo "<table class=\"content\">\n	<tr class=\"$modgroup[$self]2\">\n";
+		echo "		<th colspan=\"2\">Device</th>\n		<th>Device OS</th>\n";
+		echo "		<th>Login</th>\n		<th>IP $adrlbl</th>\n		<th>$cfglbl $stalbl</th>\n	</tr>\n";
 		$row = 0;
 		foreach ($devip as $dv => $ip){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-			echo "$row</th><td><b>$dv</b></td>";
-			echo "<td>$devos[$dv]</td>\n";
-			echo "<td>$devlo[$dv]</td><td>". DevCli($ip,$devpo[$dv]);
-			echo ":$devpo[$dv]</td><td>". DevCfg($devcfg[$dv]).$devcfg[$dv];
-			echo "</td></tr>\n";
+			echo "	<tr class=\"$bg\">\n";
+			echo "		<td class=\"$bi ctr\">\n			$row\n		</td>\n";
+			echo "		<td class=\"b\">\n			$dv\n		</td>\n";
+			echo "		<td>\n			$devos[$dv]\n		</td>\n";
+			echo "		<td>\n			$devlo[$dv]\n		</td>\n";
+			echo "		<td>\n			". DevCli($ip,$devpo[$dv]).":$devpo[$dv]\n		</td>\n";
+			echo "		<td>\n			". DevCfg($devcfg[$dv]).$devcfg[$dv]."\n		</td>\n	</tr>\n";
 		}
 	?>
 </table>
-<table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Devices (<?= $query ?>)</td></tr>
-</table>
-	<?php
+<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
+<?= $row ?> Devices (<?= $query ?>)
+</td></tr></table>
+<?php
 	}elseif($scm or $con){
 		$fd =  @fopen("log/cmd_$_SESSION[user].php","w") or die ("$errlbl $wrtlbl log/cmd_$_SESSION[user].php");
 		fwrite($fd, Buildcmd('',$cfgos,1) );

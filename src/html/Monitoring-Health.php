@@ -23,6 +23,7 @@ $loc   = TopoLoc($reg,$cty,$bld);
 $evloc = ($loc)?"&co[]=AND&in[]=location&op[]=like&st[]=".urlencode($loc):'';
 $rploc = ($loc)?"&in[]=location&op[]=like&st[]=".urlencode($loc):'';
 
+$shrrd = ($reg or !$_SESSION['gsiz'] or $_SESSION['view'])?0:$_SESSION['gsiz'];
 ?>
 <h1>Monitoring Health</h1>
 <form method="get" name="dynfrm" action="<?= $self ?>.php">
@@ -39,13 +40,12 @@ $rploc = ($loc)?"&in[]=location&op[]=like&st[]=".urlencode($loc):'';
 <?php
 
 $link  = DbConnect($dbhost,$dbuser,$dbpass,$dbname);
-list($nmon,$lastok,$talrm) = TopoMon($loc);
+TopoMon($loc);
 
-StatusMon($nmon,$lastok,$talrm,$_SESSION['gsiz']);
+if(!$shrrd){StatusIncidents($loc,0);}
 
-if(!$_SESSION['gsiz']){StatusIncidents($loc);}
+StatusMon($shrrd);
 
-StatusSlow($slow);
 ?>
 </td>
 
@@ -55,17 +55,17 @@ StatusSlow($slow);
 <a href="Reports-Combination.php?rep=poe<?= $rploc ?>"><img src="img/16/batt.png" title="PoE <?= $stslbl ?>"></a>
 <?= $lodlbl ?></h3><p>
 <?php
-if($_SESSION['gsiz']){
+if($shrrd){
 ?>
-<a href="Devices-Graph.php?dv=Totals&if[]=ttr&sho=1"><img src="inc/drawrrd.php?t=ttr&s=<?= $_SESSION['gsiz'] ?>" title="<?= $totlbl ?> <?= $acslbl ?> <?= $trflbl ?>"></a>
-<a href="Devices-Graph.php?dv=Totals&if[]=tpw&sho=1"><img src="inc/drawrrd.php?t=tpw&s=<?= $_SESSION['gsiz'] ?>" title="<?= $totlbl ?> PoE <?= $lodlbl ?>"></a>
+<a href="Devices-Graph.php?dv=Totals&if[]=ttr&sho=1"><img src="inc/drawrrd.php?t=ttr&s=<?= $shrrd ?>" title="<?= $totlbl ?> <?= $acslbl ?> <?= $trflbl ?>"></a>
+<a href="Devices-Graph.php?dv=Totals&if[]=tpw&sho=1"><img src="inc/drawrrd.php?t=tpw&s=<?= $shrrd ?>" title="<?= $totlbl ?> PoE <?= $lodlbl ?>"></a>
 <?php
 }
 
-StatusIf($loc,'bbup');
-StatusIf($loc,'bbdn');
+StatusIf($loc,'bbup',$shrrd);
+StatusIf($loc,'bbdn',$shrrd);
 
-if(!$_SESSION['gsiz']){
+if(!$shrrd){
 		$query	= GenQuery('interfaces','s','count(*),round(sum(poe)/1000)','','',array('poe','location'),array('>','like'),array('0',$loc),array('AND'),'JOIN devices USING (device)');
 		$res	= DbQuery($query,$link);
 		if($res){
@@ -86,15 +86,15 @@ if(!$_SESSION['gsiz']){
 <a href="Reports-Interfaces.php?rep[]=dis<?= $rploc ?>"><img src="img/16/bdis.png" title="<?= $dsalbl ?> IF <?= $tim['t'] ?>"></a>
 <?= $errlbl ?></h3><p>
 <?php
-if($_SESSION['gsiz']){
+if($shrrd){
 ?>
-<a href="Devices-Graph.php?dv=Totals&if[]=ter&sho=1"><img src="inc/drawrrd.php?t=ter&s=<?= $_SESSION['gsiz'] ?>" title="<?= $totlbl ?> non-Wlan <?= $errlbl ?>"></a>
-<a href="Devices-Graph.php?dv=Totals&if[]=ifs&sho=1"><img src="inc/drawrrd.php?t=ifs&s=<?= $_SESSION['gsiz'] ?>" title="IF <?= $stalbl ?> <?= $sumlbl ?>"></a>
+<a href="Devices-Graph.php?dv=Totals&if[]=ter&sho=1"><img src="inc/drawrrd.php?t=ter&s=<?= $shrrd ?>" title="<?= $totlbl ?> non-Wlan <?= $errlbl ?>"></a>
+<a href="Devices-Graph.php?dv=Totals&if[]=ifs&sho=1"><img src="inc/drawrrd.php?t=ifs&s=<?= $shrrd ?>" title="IF <?= $stalbl ?> <?= $sumlbl ?>"></a>
 <?php
 }
-StatusIf($loc,'brup');
-StatusIf($loc,'brdn');
-StatusIf($loc,'bdis');
+StatusIf($loc,'brup',$shrrd);
+StatusIf($loc,'brdn',$shrrd);
+StatusIf($loc,'bdis',$shrrd);
 ?>
 </td>
 
@@ -104,11 +104,11 @@ StatusIf($loc,'bdis');
 <span id="counter"><?= $refresh ?></span>
 </h3>
 <?php
-StatusCpu($loc);
-StatusMem($loc);
-StatusTmp($loc);
+StatusCpu($loc,$shrrd);
+StatusMem($loc,$shrrd);
+StatusTmp($loc,$shrrd);
 
-if($_SESSION['gsiz']){StatusIncidents($loc);}
+if($shrrd){StatusIncidents($loc,$shrrd);}
 
 ?>
 </td></tr></table>
@@ -116,6 +116,7 @@ if($_SESSION['gsiz']){StatusIncidents($loc);}
 <p>
 <?php
 if($_SESSION['lim']){
+	$jdev = ($_SESSION['view'] or $loc)?'LEFT JOIN devices USING (device)':'';			# Only join on devs if required makes it faster!
 ?>
 
 <h2><?= $msglbl ?> <?= $tim['t'] ?></h2>
@@ -125,7 +126,7 @@ if($_SESSION['lim']){
 
 <h3><?= $levlbl ?></h3>
 <?php
-	$query	= GenQuery('events','g','level','level desc',$_SESSION['lim'],array('time','location'),array('>','like'),array($firstmsg,$loc),array('AND'),'LEFT JOIN devices USING (device)');
+	$query	= GenQuery('events','g','level','level desc',$_SESSION['lim'],array('time','location'),array('>','like'),array($firstmsg,$loc),array('AND'),$jdev);
 	$res	= DbQuery($query,$link);
 	if($res){
 		$nlev = DbNumRows($res);
@@ -158,7 +159,7 @@ if($_SESSION['lim']){
 
 <h3><?= $clalbl ?></h3>
 <?php
-	$query	= GenQuery('events','g','class','cnt desc',$_SESSION['lim'],array('time','location'),array('>','like'),array($firstmsg,$loc),array('AND'),'LEFT JOIN devices USING (device)');
+	$query	= GenQuery('events','g','class','cnt desc',$_SESSION['lim'],array('time','location'),array('>','like'),array($firstmsg,$loc),array('AND'),$jdev);
 	$res	= DbQuery($query,$link);
 	if($res){
 		$nlev = DbNumRows($res);
@@ -192,7 +193,7 @@ if($_SESSION['lim']){
 
 <h3><?= $srclbl ?></h3>
 <?php
-	$query	= GenQuery('events','g','source','cnt desc',$_SESSION['lim'],array('time','location'),array('>','like'),array($firstmsg,$loc),array('AND'),'LEFT JOIN devices USING (device)');
+	$query	= GenQuery('events','g','source','cnt desc',$_SESSION['lim'],array('time','location'),array('>','like'),array($firstmsg,$loc),array('AND'),$jdev);
 	$res	= DbQuery($query,$link);
 	if($res){
 		$nlev = DbNumRows($res);
@@ -226,7 +227,7 @@ if($_SESSION['lim']){
 
 <h3><?= $mlvl[200] ?> & <?= $mlvl[250] ?> <?= $lstlbl ?></h3>
 <?php
-	Events($_SESSION['lim'],array('level','time','location'),array('>=','>','like'),array(200,$firstmsg,$loc),array('AND','AND'),2);
+	Events($_SESSION['lim'],array('level','time','location'),array('>=','>','like'),array(200,$firstmsg,$loc),array('AND','AND'),($jdev)?1:0);
 	echo "</td></tr></table>";
 }
 

@@ -46,7 +46,7 @@ if($res){
 <th>User <input type="text" name="us" size="12">
 </th>
 <th width="80">
-<input type="submit" value="<?= $addlbl ?>">
+<input type="submit" class="button" value="<?= $addlbl ?>">
 </th>
 </tr></table></form><p>
 <?php

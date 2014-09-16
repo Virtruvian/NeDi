@@ -4,7 +4,7 @@
 SNMPv	2HC
 Type	ASA5505
 Sysdes	
-OS	IOS-fw
+OS	IOS-asa
 Icon	vpbn
 Size	1
 Bridge	

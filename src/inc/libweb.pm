@@ -60,7 +60,7 @@ sub CiscoPhone{
 			$main::dev{$na}{sn} = $2;
 		}elsif( $devhtml =~ m/:    (000\w+)<\/name>/i ){					# Find Serial  on Cisco 7937
 			$main::dev{$na}{sn} = $1;
-		}elsif( $devhtml =~ m/<td>(FCH\w+|INM\w+)<tr>/i ){					# Find Serial  on Cisco 7912
+		}elsif( $devhtml =~ m/<td>(FCH\w+|INM\w+|COP\w+)<tr>/i ){				# Find Serial  on Cisco 7912
 			$main::dev{$na}{sn} = $1;
 		}
 

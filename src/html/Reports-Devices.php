@@ -49,7 +49,7 @@ $cols = array(	"device"=>"Device $namlbl",
 <th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
 <td valign="top">
 
-<?PHP Filters(1); ?>
+<?php Filters(1); ?>
 
 </td>
 <th>
@@ -97,7 +97,7 @@ $cols = array(	"device"=>"Device $namlbl",
 </th>
 <th width="80">
 	
-<input type="submit" value="<?= $sholbl ?>"></th>
+<input type="submit" class="button" value="<?= $sholbl ?>"></th>
 </tr></table></form><p>
 	
 <?php

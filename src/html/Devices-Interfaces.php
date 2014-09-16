@@ -20,9 +20,9 @@ if($_SESSION['opt'] and !$ord and $in[0]) $ord = $in[0];
 $map = isset($_GET['map']) ? "checked" : "";
 $lim = isset($_GET['lim']) ? preg_replace('/\D+/','',$_GET['lim']) : $listlim;
 
-$tal = ($_GET['tal']) ? $_GET['tal'] : 0;								# Set to 0 if empty
-$bal = ($_GET['bal']) ? $_GET['bal'] : 0;
-$maf = ($_GET['maf']) ? $_GET['maf'] : 0;
+if( is_numeric($_GET['tal']) ) $colup['trafalert'] = $_GET['tal'];
+if( is_numeric($_GET['bal']) ) $colup['brcalert'] = $_GET['bal'];
+if( is_numeric($_GET['maf']) ) $colup['macflood'] = $_GET['maf'];
 
 if( isset($_GET['col']) ){
 	$col = $_GET['col'];
@@ -83,57 +83,57 @@ $link = DbConnect($dbhost,$dbuser,$dbpass,$dbname);							# Above print-header!
 <h1>Interface <?= $lstlbl ?></h1>
 
 <?php  if( !isset($_GET['print']) and !isset($_GET['xls']) ) { ?>
-
 <form method="get" name="list" action="<?= $self ?>.php">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<td>
-
-<?PHP Filters(); ?>
-
+<td class="ctr s">
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
 </td>
-<th>
-	
-<select multiple name="col[]" size="6" title="<?= $collbl ?>">
+<td>
+<?php Filters(); ?>
+</td>
+<td class="ctr">
+	<h3><?= $fltlbl ?></h3>
+	<a href="?in[]=comment&op[]=~&st[]=Loop!"><img src="img/16/brld.png" title="<?= $cnclbl ?> Loops"></a>
+</td>
+<td class="ctr">
+	<select multiple name="col[]" size="6" title="<?= $collbl ?>">
 <?php
 foreach ($cols as $k => $v){
-       echo "<option value=\"$k\" ".((in_array($k,$col))?" selected":"").">$v\n";
+       echo "		<option value=\"$k\" ".((in_array($k,$col))?" selected":"").">$v\n";
 }
 ?>
-</select>
-
-</th>
-</th>
-<td>
-
-<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
-<input type="checkbox" name="map" <?= $map ?>><br>
-<img src="img/16/form.png" title="<?= $limlbl ?>"> 
-<select size="1" name="lim">
-<?php selectbox("limit",$lim) ?>
-</select>
-<p>
-<img src="img/16/bino.png" title="<?= $vallbl ?> <?= $mlvl['200'] ?>">
-<input type="text" name="tal" size="2" title="<?= $trflbl ?> %">
-<input type="text" name="bal" size="3" title="<?= $inblbl ?> Broadcast/s">
-<input type="text" name="maf" size="3" title="# MACs">
-
+	</select>
 </td>
-<th width="80">
-
-<input type="submit" value="<?= $sholbl ?>">
+<td>
+	<img src="img/16/paint.png" title="<?= (($verb1)?"$sholbl $laslbl Map":"Map $laslbl $sholbl") ?>"> 
+	<input type="checkbox" name="map" <?= $map ?>>
+	<br>
+	<img src="img/16/form.png" title="<?= $limlbl ?>"> 
+	<select size="1" name="lim">
+<?php selectbox("limit",$lim) ?>
+	</select>
+	<p>
+	<img src="img/16/bino.png" title="<?= $vallbl ?> <?= $mlvl['200'] ?>">
+	<input type="number" min="0" max="100" step="5" name="tal" class="s" title="<?= $trflbl ?> <?= $mlvl[200] ?> <?= $trslbl ?> %">
+	<input type="number" min="0" max="500" step="5"  name="bal" class="s" title="<?= $inblbl ?> Broadcast  <?= $mlvl[200] ?> <?= $trslbl ?> 1/s">
+	<input type="number" name="maf" class="s" title="MAC <?= $mlvl[200] ?> <?= $trslbl ?>">
+</td>
+<td class="ctr s">
+	<input type="submit" class="button" value="<?= $sholbl ?>">
+	<p>
+	<input type="submit" class="button" name="trk" value="Track">
+	<p>
+	<input type="submit" class="button" name="upm" value="<?= $updlbl ?>">
+</td>
+</tr></table>
+</form>
 <p>
-<input type="submit" name="trk" value="Track">
-<p>
-<input type="submit" name="upm" value="<?= $updlbl ?>">
-</th>
-</tr></table></form><p>
 <?php
 }
 if( count($in) ){
 	if ($map and !isset($_GET['xls']) and file_exists("map/map_$_SESSION[user].php")) {
-		echo "<center><h2>$netlbl Map</h2>\n";
-		echo "<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\"></center><p>\n";
+		echo "<div class=\"ctr\">\n	<h2>$netlbl Map</h2>\n";
+		echo "	<img src=\"map/map_$_SESSION[user].php\" style=\"border:1px solid black\">\n</div>\n<p>\n";
 	}
 	Condition($in,$op,$st,$co);
 	TblHead("$modgroup[$self]2",1);
@@ -146,107 +146,93 @@ if( count($in) ){
 		while( ($if = DbFetchRow($res)) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$ud = urlencode($if[0]);
-			$ui = urlencode($if[1]);
-			list($fc,$lc) = Agecol($if[33],$if[34],$row % 2);
-			list($cc,$cc) = Agecol($if[26],$if[26],$row % 2);
+			$ud		= urlencode($if[0]);
+			$ui		= urlencode($if[1]);
+			list($fc,$lc)	= Agecol($if[33],$if[34],$row % 2);
+			list($cc,$cc)	= Agecol($if[26],$if[26],$row % 2);
+			list($ifb,$ifs)	= Ifdbstat($if[8]);
+			list($ifi,$ift)	= Iftype($if[4]);
 
 			if($isadmin and $_GET['trk']){
-				$trkst = AddRecord('nodetrack',"device='$if[0]' AND ifname='$if[1]'","device,ifname,value,source,usrname,time","'$if[0]','$if[1]','-','-','$_SESSION[user]','".time()."'");
+				$trkst = AddRecord('nodetrack',"device='".DbEscapeString($if[0])."' AND ifname='$if[1]'","device,ifname,value,source,usrname,time","'".DbEscapeString($if[0])."','$if[1]','-','-','$_SESSION[user]','".time()."'");
 			}
-			if($isadmin and $_GET['upm']){
-				$query	= GenQuery('interfaces','u',"CONCAT(device,ifname)",'=',"$if[0]$if[1]",array('trafalert','brcalert','macflood'),array(),array($tal,$bal,$maf) );
-				$monst = DbQuery($query,$link)?"<img src=\"img/16/bchk.png\" title=\" $monlbl $updlbl OK\" vspace=\"4\">":"<img src=\"img/16/bcnl.png\" title=\"".DbError($link)."\" vspace=\"4\">";
+			if($isadmin and $_GET['upm'] and count($colup) ){
+				$query	= GenQuery('interfaces','u',"device = '".DbEscapeString($if[0])."' and ifname = '$if[1]'",'','',array_keys($colup),array(),array_values($colup) );
+				$monst = DbQuery($query,$link)?"<img src=\"img/16/bchk.png\" title=\" $monlbl $updlbl OK\" vspace=\"4\">":"<img src=\"img/16/bcnl.png\" title=\"".DbError($link)."\" vspace=\"4\">";				
 			}
 
 			TblRow($bg);
-			if(in_array("imBL",$col)){
-				list($ifbg,$ifst)	= Ifdbstat($if[8]);
-				list($ifimg,$iftyp)	= Iftype($if[4]);
-				TblCell("","","width=\"50\" class=\"".(($ifbg)?$ifbg:$bi)."\"","<img src=\"img/$ifimg\" title=\"$iftyp - $ifst\">","th-img");
-			}
-
-			if( in_array("ifname",$col) ){
-				TblCell("$if[1] $trkst $monst","?in[]=ifname&op[]==&st[]=$ui","align=\"left\"","","th");
-			}
-			if( in_array("ifidx",$col) ){TblCell($if[2],"?in[]=ifidx&op[]==&st[]=$if[2]","align=\"right\"");}
-
-			if( in_array("device",$col) ){
-				TblCell($if[0],"?in[]=device&op[]==&st[]=$ud&ord=ifname","nowrap","<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
-			}
-			if( in_array("type",$col) ){TblCell($if[32],"?in[]=type&op[]==&st[]=$if[32]");}
-			if( in_array("location",$col) ){TblCell( $if[35],"?in[]=location&op[]==&st[]=".urlencode($if[35]) );}
-			if( in_array("contact",$col) ){TblCell( $if[36],"?in[]=contact&op[]==&st[]=".urlencode($if[36]) );}
-			if( in_array("firstdis",$col) ){
-				TblCell( date($datfmt,$if[33]),"?in[]=firstdis&op[]==&st[]=$if[33]","bgcolor=\"#$fc\"" );
-			}
-			if( in_array("lastdis",$col) ){
-				TblCell( date($datfmt,$if[34]),"?in[]=lastdis&op[]==&st[]=$if[34]","bgcolor=\"#$lc\"" );
-			}
-			if( in_array("linktype",$col) ){TblCell($if[3],"?in[]=linktype&op[]==&st[]=$if[3]");}
-			if( in_array("iftype",$col) ){TblCell($if[4],"?in[]=iftype&op[]==&st[]=$if[4]");}
-			if( in_array("ifmac",$col) ){TblCell($if[5],"","class=\"mrn code\"");}
-			if( in_array("ifdesc",$col) ){TblCell($if[6]);}
-			if( in_array("alias",$col) ){TblCell($if[7]);}
-			if( in_array("ifstat",$col) ){TblCell($if[8],"","align=\"right\"");}
-			if( in_array("lastchg",$col) ){TblCell(date($datfmt,$if[26]),"?in[]=lastchg&op[]==&st[]=$if[26]","bgcolor=\"#$cc\"");}
-			if( in_array("speed",$col) ){TblCell( DecFix($if[9]),"","align=\"right\"" );}
-			if( in_array("duplex",$col) ){TblCell($if[10]);}
-			if( in_array("pvid",$col) ){TblCell($if[11],"","align=\"right\"");}
-
-			if( in_array("inoct",$col) ){TblCell( DecFix($if[12])."B","","align=\"right\"" );}
-			if( in_array("outoct",$col) ){TblCell( DecFix($if[14])."B","","align=\"right\"" );}
-			if( in_array("inerr",$col) ){TblCell( DecFix($if[13]),"","align=\"right\"" );}
-			if( in_array("outerr",$col) ){TblCell( DecFix($if[15]),"","align=\"right\"" );}
-			if( in_array("indis",$col) ){TblCell( DecFix($if[20]),"","align=\"right\"" );}
-			if( in_array("outdis",$col) ){TblCell( DecFix($if[21]),"","align=\"right\"" );}
-			if( in_array("inbrc",$col) ){TblCell( DecFix($if[24]),"","align=\"right\"" );}
-
-			if( in_array("dinoct",$col) ){TblCell( DecFix($if[16])."B","","align=\"right\"" );}
-			if( in_array("doutoct",$col) ){TblCell( DecFix($if[18])."B","","align=\"right\"" );}
-			if( in_array("dinerr",$col) ){TblCell( DecFix($if[17]),"","align=\"right\"" );}
-			if( in_array("douterr",$col) ){TblCell( DecFix($if[19]),"","align=\"right\"" );}
-			if( in_array("dindis",$col) ){TblCell( DecFix($if[22]),"","align=\"right\"" );}
-			if( in_array("doutdis",$col) ){TblCell( DecFix($if[23]),"","align=\"right\"" );}
-			if( in_array("dinbrc",$col) ){TblCell( DecFix($if[25]),"","align=\"right\"" );}
-
-			if( in_array("poe",$col) ){TblCell($if[27]."mW","?in[]=poe&op[]==&st[]=$if[27]","align=\"right\"");}
-			if( in_array("comment",$col) ){TblCell($if[28]);}
-			if( in_array("trafalert",$col) ){TblCell($if[29].'%');}
-			if( in_array("bcastalert",$col) ){TblCell($if[30].'/s');}
-			if( in_array("macflood",$col) ){TblCell($if[31]);}
+			if(in_array("imBL",$col))	TblCell("<img src=\"img/$ifi\" title=\"$ift - $ifs\">",'',(($ifb)?$ifb:$bi).' ctr s');
+			if( in_array("ifname",$col) )	TblCell("$if[1] $trkst $monst","?in[]=ifname&op[]==&st[]=$ui","$bi b");
+			if( in_array("ifidx",$col) )	TblCell($if[2],"?in[]=ifidx&op[]==&st[]=$if[2]",'rgt');
+			if( in_array("device",$col) )	TblCell($if[0],"?in[]=device&op[]==&st[]=$ud&ord=ifname",'nw',"<a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/16/sys.png\"></a>");
+			if( in_array("type",$col) )	TblCell($if[32],"?in[]=type&op[]==&st[]=$if[32]");
+			if( in_array("location",$col) )	TblCell( $if[35],"?in[]=location&op[]==&st[]=".urlencode($if[35]) );
+			if( in_array("contact",$col) )	TblCell( $if[36],"?in[]=contact&op[]==&st[]=".urlencode($if[36]) );
+			if( in_array("firstdis",$col) )	TblCell( date($_SESSION['timf'],$if[33]),"?in[]=firstdis&op[]==&st[]=$if[33]",'','',"background-color:#$fc" );
+			if( in_array("lastdis",$col) )	TblCell( date($_SESSION['timf'],$if[34]),"?in[]=lastdis&op[]==&st[]=$if[34]",'','',"background-color:#$lc" );
+			if( in_array("linktype",$col) )	TblCell($if[3],"?in[]=linktype&op[]==&st[]=$if[3]");
+			if( in_array("iftype",$col) )	TblCell($if[4],"?in[]=iftype&op[]==&st[]=$if[4]");
+			if( in_array("ifmac",$col) )	TblCell($if[5],'','mrn code');
+			if( in_array("ifdesc",$col) )	TblCell($if[6]);
+			if( in_array("alias",$col) )	TblCell($if[7],"?in[]=alias&op[]==&st[]=$if[7]");
+			if( in_array("ifstat",$col) )	TblCell($if[8],'','ctr');
+			if( in_array("lastchg",$col) )	TblCell(date($_SESSION['timf'],$if[26]),"?in[]=lastchg&op[]==&st[]=$if[26]",'','',"background-color:#$cc");
+			if( in_array("speed",$col) )	TblCell( DecFix($if[9]),'','rgt' );
+			if( in_array("duplex",$col) )	TblCell($if[10],'','ctr');
+			if( in_array("pvid",$col) )	TblCell($if[11],'','rgt');
+			if( in_array("inoct",$col) )	TblCell( DecFix($if[12]),'','rgt' );
+			if( in_array("outoct",$col) )	TblCell( DecFix($if[14]),'','rgt' );
+			if( in_array("inerr",$col) )	TblCell( DecFix($if[13]),'','rgt' );
+			if( in_array("outerr",$col) )	TblCell( DecFix($if[15]),'','rgt' );
+			if( in_array("indis",$col) )	TblCell( DecFix($if[20]),'','rgt' );
+			if( in_array("outdis",$col) )	TblCell( DecFix($if[21]),'','rgt' );
+			if( in_array("inbrc",$col) )	TblCell( DecFix($if[24]),'','rgt' );
+			if( in_array("dinoct",$col) )	TblCell( DecFix($if[16]),'','rgt' );
+			if( in_array("doutoct",$col) )	TblCell( DecFix($if[18]),'','rgt' );
+			if( in_array("dinerr",$col) )	TblCell( DecFix($if[17]),'','rgt' );
+			if( in_array("douterr",$col) )	TblCell( DecFix($if[19]),'','rgt' );
+			if( in_array("dindis",$col) )	TblCell( DecFix($if[22]),'','rgt' );
+			if( in_array("doutdis",$col) )	TblCell( DecFix($if[23]),'','rgt' );
+			if( in_array("dinbrc",$col) )	TblCell( DecFix($if[25]),'','rgt' );
+			if( in_array("poe",$col) )	TblCell($if[27]."mW","?in[]=poe&op[]==&st[]=$if[27]",'rgt');
+			if( in_array("comment",$col) )	TblCell($if[28]);
+			if( in_array("trafalert",$col) )TblCell($if[29].'%');
+			if( in_array("bcastalert",$col) )TblCell($if[30].'/s');
+			if( in_array("macflood",$col) )	TblCell($if[31]);
 			if( in_array("poNS",$col) and !isset($_GET['xls']) ){
 				$pop = NodPop(array('device','ifname'),array('=','='),array($if[0],$if[1]),array('AND'));
-				if ($pop){
-					echo "<td nowrap>".Bar($pop,24,'mi')." <a href=Nodes-List.php?in[]=device&op[]==&st[]=$ud&in[]=ifname&op[]==&st[]=$if[1]&co[]=AND\">$pop</td>";
+				if($pop){
+					TblCell(' '.$pop,"Nodes-List.php?in[]=device&op[]==&st[]=$ud&in[]=ifname&op[]==&st[]=$ui&co[]=AND",'nw','+'.Bar($pop,24,'mi'));
 				}else{
 					TblCell();
 				}
 				DbFreeResult($np);
 			}
 			if( in_array("gfNS",$col) and !isset($_GET['xls']) ){
-				echo "<td nowrap align=\"center\">\n";
+				echo "		<td class=\"ctr nw\">\n";
 				IfGraphs($ud,$ui,$if[9], $_SESSION['gsiz']);
-				echo "</td>\n";
+				echo "		</td>\n";
 			}
 			if( in_array("rdrNS",$col) and !isset($_GET['xls']) ){
-				echo "<td nowrap align=\"center\">\n";
+				echo "		<td class=\"ctr nw\">\n";
 				IfRadar("rt$row",$_SESSION['gsiz'],'248',$if[12],$if[14],$if[13],$if[15],$if[20],$if[21],$if[24]);
 				IfRadar("rl$row",$_SESSION['gsiz'],'284',$if[16],$if[18],$if[17],$if[19],$if[22],$if[23],$if[25]);
-				echo "</td>\n";
+				echo "		</td>\n";
 			}
-			echo "</tr>\n";
+			echo "	</tr>\n";
 		}
 		DbFreeResult($res);
 	}else{
 		print DbError($link);
 	}
-	?>
+?>
 </table>
-<table class="content">
-<tr class="<?= $modgroup[$self] ?>2"><td><?= $row ?> Interfaces<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?></td></tr>
-</table>
-	<?php
+<table class="content"><tr class="<?= $modgroup[$self] ?>2"><td>
+<?= $row ?> Interfaces<?= ($ord)?", $srtlbl: $ord":"" ?><?= ($lim)?", $limlbl: $lim":"" ?>
+
+</td></tr></table>
+<?php
 }
 include_once ("inc/footer.php");
 ?>

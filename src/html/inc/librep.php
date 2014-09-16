@@ -80,7 +80,7 @@ function DevConfigs($ina,$opa,$sta,$lim,$ord){
 			list($u1c,$u2c) = Agecol($r[4],$r[4],$row % 2);
 			echo "<tr class=\"$bg\"><th class=\"$bi\"><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\"><img src=\"img/dev/$r[7].png\" title=\"$conlbl: $r[5], $loclbl: $l[0] $l[1] $l[2]\"></a></th>\n";
 			echo "<td><b>".substr($r[0],0,$_SESSION['lsiz'])."</b></td>\n";
-			echo "<td>".Devcli(long2ip($r[1]),$r[2])."</td><td bgcolor=\"#$u1c\" nowrap>".date($_SESSION['date'],$r[4])."</td></tr>\n";
+			echo "<td>".Devcli(long2ip($r[1]),$r[2])."</td><td bgcolor=\"#$u1c\" class=\"nw\">".date($_SESSION['timf'],$r[4])."</td></tr>\n";
 		}
 		DbFreeResult($res);
 	}else{
@@ -144,7 +144,7 @@ function DevHistory($ina,$opa,$sta,$lim,$ord){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 		$row++;
 		$fd   = urlencode(date("m/d/Y H:i:s",$d));
-		echo "<tr class=\"$bg\"><td class=\"$bi\"><b>".date($_SESSION['date'],$d)."</b></td><td>\n";
+		echo "<tr class=\"$bg\"><td class=\"$bi\"><b>".date($_SESSION['timf'],$d)."</b></td><td>\n";
 		if( array_key_exists('fs',$devup[$d]) ){echo Bar($devup[$d]['fs'],"lvl50",'mi')." <a href=\"Devices-List.php?in[]=firstdis&op[]==&st[]=$fd\" title=\"Device $lstlbl\">".$devup[$d]['fs']."</a>";}
 		echo "</td><td>\n";
 		if( array_key_exists('ls',$devup[$d]) ){echo Bar($devup[$d]['ls'],"lvl250",'mi')." <a href=\"Devices-List.php?in[]=lastdis&op[]==&st[]=$fd\" title=\"Device $lstlbl\">".$devup[$d]['ls']."</a>";}
@@ -280,7 +280,6 @@ function DevPoE($ina,$opa,$sta,$lim,$ord){
 		while( $r = DbFetchRow($res) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			if(!$r[0]){$r[0] = "^$";}
 			echo "<tr class=\"$bg\"><th class=\"$bi\"><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\"><img src=\"img/dev/$r[2].png\" title=\"$r[1]\"></a></th>\n";
 			echo "<td><b>".substr($r[0],0,$_SESSION['lsiz'])."</b></td>\n";
 			echo "<td>".Bar($r[3]/10,48).' '.round($r[3]/10,1)."%</td></tr>\n";
@@ -310,7 +309,6 @@ function DevPoE($ina,$opa,$sta,$lim,$ord){
 		while( $r = DbFetchRow($res) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			if(!$r[0]){$r[0] = "^$";}
 			echo "<tr class=\"$bg\"><th class=\"$bi\"><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\"><img src=\"img/dev/$r[2].png\" title=\"$r[1]\"></a></th>\n";
 			echo "<td><b>".substr($r[0],0,$_SESSION['lsiz'])."</b></td>\n";
 			echo "<td>".Bar($r[3])." $r[3]W</td></tr>\n";
@@ -361,11 +359,17 @@ function DevSW($ina,$opa,$sta,$lim,$ord){
 		while( $r = DbFetchRow($res) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			if(!$r[0]){$r[0] = "^$";}
 			$chd[] = array('value' => $r[1],'color' => GetCol('err',$row,1) );
 			echo "<tr class=\"$bg\">\n";
 			echo "<td>$r[0]</td>\n";
-			echo "<td>".Bar($r[1],GetCol('err',$row,1),'ls')." <a href=\"Devices-List.php?in[]=devos&op[]==&st[]=".urlencode($r[0])."\" title=\"Device $lstlbl\">$r[1]</a></td></tr>\n";
+			if($r[0]){
+				$uo = urlencode($r[0]);
+				$op = "=";
+			}else{
+				$uo = "^$";
+				$op = "~";
+			}
+			echo "<td>".Bar($r[1],GetCol('err',$row,1),'ls')." <a href=\"Devices-List.php?in[]=devos&op[]=$op&st[]=$uo\" title=\"Device $lstlbl\">$r[1]</a></td></tr>\n";
 		}
 		DbFreeResult($res);
 	}
@@ -409,12 +413,17 @@ var myNewChart = new Chart(ctx).Doughnut(data);
 		while( $r = DbFetchRow($res) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$o = "=";
-			if(!$r[0]){$r[0]="^$";$o="~";}
 			$chd[] = array('value' => $r[1],'color' => GetCol('512',$row,1) );
 			echo "<tr class=\"$bg\">\n";
 			echo "<td>$r[0]</td>\n";
-			echo "<td>".Bar($r[1],GetCol('512',$row,1),'ls')." <a href=Devices-List.php?in[]=bootimage&op[]=$o&st[]=".urlencode($r[0]).">$r[1]</a></td></tr>\n";
+			if($r[0]){
+				$uo = urlencode($r[0]);
+				$op = "=";
+			}else{
+				$uo = "^$";
+				$op = "~";
+			}
+			echo "<td>".Bar($r[1],GetCol('512',$row,1),'ls')." <a href=Devices-List.php?in[]=bootimage&op[]=$op&st[]=$uo>$r[1]</a></td></tr>\n";
 		}
 		DbFreeResult($res);
 	}
@@ -711,11 +720,11 @@ var myNewChart = new Chart(ctx).Pie(data);
 	if($opt){
 		$rcol   = 2;
 		$ftlbl  = "$venlbl (Stacked)";
-		$query	= GenQuery('devices','g','SUBSTR(icon,3,1);sum(stack) AS sum',$ocol,$lim,array($ina),array($opa),array($sta));
+		$query	= GenQuery('devices','g','SUBSTR(icon,3,1);sum(stack) AS sum',$ocol,$lim,array('icon',$ina),array('NOT LIKE',$opa),array('cl%',$sta),array('AND'));
 	}else{
 		$rcol   = 1;
 		$ftlbl  = $venlbl;
-		$query	= GenQuery('devices','g','SUBSTR(icon,3,1)',$ocol,$lim,array($ina),array($opa),array($sta),array(),$join);
+		$query	= GenQuery('devices','g','SUBSTR(icon,3,1)',$ocol,$lim,array('icon',$ina),array('NOT LIKE',$opa),array('cl%',$sta),array('AND'));
 	}
 	$res	= DbQuery($query,$link);
 	if($res){
@@ -724,8 +733,6 @@ var myNewChart = new Chart(ctx).Pie(data);
 		while( $r = DbFetchRow($res) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$o = "=";
-			if(!$r[0]){$r[0]="^$";$o="~";}
 			list($vn,$ic) = DevVendor('',$r[0]);
 			$chd[] = array('value' => $r[$rcol],'color' => GetCol('345',$row,1) );
 			echo "<tr class=\"$bg\"><th style=\"background-color:#fff\" width=\"10%\">\n";
@@ -849,11 +856,16 @@ var myNewChart = new Chart(ctx).Pie(data);
 		while( $r = DbFetchRow($res) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$o = "=";
-			if(!$r[0]){$r[0]="^$";$o="~";}
 			$chd[] = array('value' => $r[$rcol],'color' => GetCol('152',$row,1) );
 			echo "<tr class=\"$bg\"><td>".Syssrv($r[0])." ($r[0])</td>\n";
-			echo "<td>".Bar($r[$rcol],GetCol('152',$row,1),'ls')." <a href=\"Devices-List.php?in[]=services&op[]=$o&st[]=".urlencode($r[0])."\">$r[$rcol]</a></td></tr>\n";
+			if($r[0]){
+				$uo = urlencode($r[0]);
+				$op = "=";
+			}else{
+				$uo = "^$";
+				$op = "~";
+			}
+			echo "<td>".Bar($r[$rcol],GetCol('152',$row,1),'ls')." <a href=\"Devices-List.php?in[]=services&op[]=$op&st[]=$uo\">$r[$rcol]</a></td></tr>\n";
 		}
 		DbFreeResult($res);
 	}
@@ -909,11 +921,17 @@ function DevGroup($ina,$opa,$sta,$lim,$ord){
 		while( $r = DbFetchRow($res) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
-			$op = "=";
-			if(!$r[0]){$r[0] = "^$"; $op = "~";}
 			$chd[] = array('value' => $r[1],'color' => GetCol('brc',$row,1) );
 			echo "<tr class=\"$bg\">\n";
-			echo "<td><b>$r[0]</b></td><td>".Bar($r[1],GetCol('brc',$row,1),'ls')." <a href=\"Devices-List.php?in[]=devgroup&op[]=$op&st[]=".urlencode($r[0])."\" title=\"Device $lstlbl\">$r[1]</a></td></tr>\n";
+			echo "<td><b>$r[0]</b></td>\n";
+			if($r[0]){
+				$uo = urlencode($r[0]);
+				$op = "=";
+			}else{
+				$uo = "^$";
+				$op = "~";
+			}
+			echo "<td>".Bar($r[1],GetCol('brc',$row,1),'ls')." <a href=\"Devices-List.php?in[]=devgroup&op[]=$op&st[]=$uo\" title=\"Device $lstlbl\">$r[1]</a></td></tr>\n";
 		}
 		DbFreeResult($res);
 	}
@@ -1100,7 +1118,7 @@ function IncHist($ina,$opa,$sta,$lim,$ord,$opt){
 				$ni = 0;
 				foreach($curi[$t] as $id){
 					$ni++;
-					$tit  = $indev[$id] . ": " .$igrp[$ingrp[$id]] . ", $durlbl: ".date($_SESSION['date'],$insta[$id])." - ".date($_SESSION['date'],$inend[$id]);
+					$tit  = $indev[$id] . ": " .$igrp[$ingrp[$id]] . ", $durlbl: ".date($_SESSION['timf'],$insta[$id])." - ".date($_SESSION['timf'],$inend[$id]);
 					echo "<a href=Monitoring-Incidents.php?id=$id>";
 					echo "<img src=\"img/16/".IncImg($ingrp[$id]).".png\" title=\"$tit\">";
 					if ($ni == 4){echo "<br>";$ni = 0;}
@@ -1460,7 +1478,7 @@ function IntActiv($ina,$opa,$sta,$lim,$ord){
 			$ico = ($r[1])?"dev/$r[1]":"32/bbox";
 			echo "<tr class=\"$bg\"><th class=\"$bi\"><a href=\"Devices-Status.php?dev=".urlencode($r[0])."&shp=on\"><img src=\"img/$ico.png\" title=\"$conlbl $r[2], Devices-Status\"></a></th>\n";
 			echo "</th><td><b>".substr($r[0],0,$_SESSION['lsiz'])."</b></td>\n";
-			echo "<th>$r[2]</th><td>".Bar($r[5]/10,48).' '.round($r[5]/10,1)."% ($r[4])</td></tr>\n";
+			echo "<th>$r[3]</th><td>".Bar($r[5]/10,48).' '.round($r[5]/10,1)."% ($r[4])</td></tr>\n";
 		}
 	}
 ?>
@@ -1570,7 +1588,7 @@ function IntDis($ina,$opa,$sta,$lim,$ord){
 function IntChart($mode,$dir,$ina,$opa,$sta,$lim,$ord,$opt){
 
 	global $link,$modgroup,$self,$rrdstep;
-	global $laslbl,$totlbl,$loclbl,$locsep,$conlbl,$srtlbl,$trflbl,$errlbl,$inblbl,$oublbl,$idxlbl,$spdlbl,$acslbl,$nonlbl;
+	global $laslbl,$totlbl,$loclbl,$locsep,$conlbl,$srtlbl,$trflbl,$errlbl,$inblbl,$oublbl,$idxlbl,$spdlbl,$dcalbl,$nonlbl;
 
 	$unt = "";
 	$grf = intval($_SESSION['gsiz'] / 2);
@@ -1614,13 +1632,13 @@ function IntChart($mode,$dir,$ina,$opa,$sta,$lim,$ord,$opt){
 		$qry = GenQuery('interfaces','s',"device,contact,location,icon,ifname,speed,iftype,ifidx,comment,alias,$d$dir$col as aval,$d$dir$col/${d}${dir}oct as rval",$ocol,$lim,array('iftype',"$d$dir$col",$ina),array('!=','>',$opa),array('71',0,$sta),array('AND','AND'),'LEFT JOIN devices USING (device)');
 	}elseif($mode == "dsc"){
 		$col = "dis";
-		$tit = "Discards";
+		$tit = $dcalbl;
 		$ico = ($dir == "in")?"bbu2":"bbd2";
 		$qry = GenQuery('interfaces','s',"device,contact,location,icon,ifname,speed,iftype,ifidx,comment,alias,$d$dir$col as aval,$d$dir$col/${d}${dir}oct as rval",$ocol,$lim,array('iftype',"$d$dir$col",$ina),array('!=','>',$opa),array('71',0,$sta),array('AND','AND'),'LEFT JOIN devices USING (device)');
 	}elseif($mode == "brc"){
-		$tit = "$acslbl Broadcasts";
+		$tit = "Broadcasts";
 		$ico = "wlan";
-		$qry = GenQuery('interfaces','s',"device,contact,location,icon,ifname,speed,iftype,ifidx,comment,alias,${d}inbrc as aval,${d}inbrc/${d}inoct as rval",$ocol,$lim,array('comment',"${d}inoct",$ina),array('!~','>',$opa),array('DP:|MAC:',0,$sta),array('AND','AND'),'LEFT JOIN devices USING (device)');
+		$qry = GenQuery('interfaces','s',"device,contact,location,icon,ifname,speed,iftype,ifidx,comment,alias,${d}inbrc as aval,${d}inbrc/${d}inoct as rval",$ocol,$lim,array("${d}inoct",$ina),array('>',$opa),array(0,$sta),array('AND'),'LEFT JOIN devices USING (device)');
 	}
 
 	echo "<h2>$abs $tit $dti</h2>\n";
@@ -1658,9 +1676,10 @@ function IntChart($mode,$dir,$ina,$opa,$sta,$lim,$ord,$opt){
 			TblRow($bg);
 			echo "<th class=\"$bi\"><a href=\"Devices-Status.php?dev=$ud\"><img src=\"img/dev/$r[3].png\" title=\"$conlbl: $r[1], $loclbl: $l[0] $l[1] $l[2]\"></a></th>\n";
 			echo "<td><b>".substr($r[0],0,$_SESSION['lsiz'])."</b></td>\n";
-			echo "<td><img src=\"img/$ifimg\" title=\"$iftyp $idxlbl $r[7]\"><a href=\"Nodes-List.php?in[]=device&op[]==&st[]=$ud&co[]=AND&in[]=ifname&op[]==&st[]=$ui\">$r[4]</a> ".DecFix($r[5])." $r[8] $r[9]</td>\n";
+			echo "<td><a href=\"Devices-Interfaces.php?in[]=device&op[]==&st[]=$ud&co[]=AND&in[]=ifname&op[]==&st[]=$ui&col[]=imBL&col[]=ifname&col[]=alias&col[]=comment&col[]=poNS&col[]=gfNS&col[]=rdrNS\"><img src=\"img/$ifimg\" title=\"$iftyp $idxlbl $r[7]\"></a>";
+			echo "<a href=\"Nodes-List.php?in[]=device&op[]==&st[]=$ud&co[]=AND&in[]=ifname&op[]==&st[]=$ui\">$r[4]</a> ".DecFix($r[5])." $r[8] $r[9]</td>\n";
 			echo "<th><a href=\"Devices-Graph.php?dv=$ud&if%5B%5D=$ui&it%5B%5D=".substr($mode,0,1)."\">$gr</a></th>\n";
-			echo "<td nowrap>";
+			echo "<td class=\"nw\">";
 			if($mode == "trf" and !$opt){
 				echo Bar($r[11]/10,45).' '.round($r[11]/10,1).'%';
 			}elseif($mode == "brc"){
@@ -1690,11 +1709,11 @@ function IntBrc($ina,$opa,$sta,$lim,$ord,$opt){
 
 ?>
 <table class="full fixed"><tr><td class="helper">
-<?
+<?php
 	IntChart("brc","in",$ina,$opa,$sta,$lim,$ord,0);
 ?>
 </td><td class="helper">
-<?
+<?php
 	IntChart("brc","in",$ina,$opa,$sta,$lim,$ord,1);
 ?>
 </td></tr></table>
@@ -1710,11 +1729,11 @@ function IntDsc($ina,$opa,$sta,$lim,$ord,$opt){
 
 ?>
 <table class="full fixed"><tr><td class="helper">
-<?
+<?php
 	IntChart("dsc","in",$ina,$opa,$sta,$lim,$ord,$opt);
 ?>
 </td><td class="helper">
-<?
+<?php
 	IntChart("dsc","out",$ina,$opa,$sta,$lim,$ord,$opt);
 ?>
 </td></tr></table>
@@ -1730,11 +1749,11 @@ function IntErr($ina,$opa,$sta,$lim,$ord,$opt){
 
 ?>
 <table class="full fixed"><tr><td class="helper">
-<?
+<?php
 	IntChart("err","in",$ina,$opa,$sta,$lim,$ord,$opt);
 ?>
 </td><td class="helper">
-<?
+<?php
 	IntChart("err","out",$ina,$opa,$sta,$lim,$ord,$opt);
 ?>
 </td></tr></table>
@@ -1748,11 +1767,11 @@ function IntTrf($ina,$opa,$sta,$lim,$ord,$opt){
 
 ?>
 <table class="full fixed"><tr><td class="helper">
-<?
+<?php
 	IntChart("trf","in",$ina,$opa,$sta,$lim,$ord,$opt);
 ?>
 </td><td class="helper">
-<?
+<?php
 	IntChart("trf","out",$ina,$opa,$sta,$lim,$ord,$opt);
 ?>
 </td></tr></table>
@@ -1762,9 +1781,9 @@ function IntTrf($ina,$opa,$sta,$lim,$ord,$opt){
 
 //===================================================================
 // Link Status Errors
-function LnkErr($ina,$opa,$sta,$lim,$ord,$opt){
+function LnkErr($ina,$opa,$sta,$lim,$ord){
 
-	global $link,$modgroup,$self,$cnclbl,$stalbl,$optlbl,$srtlbl,$errlbl,$neblbl,$spdlbl,$typlbl,$totlbl,$nonlbl;
+	global $link,$modgroup,$self,$stalbl,$srtlbl,$errlbl,$neblbl,$spdlbl,$typlbl,$sndlbl,$nonlbl;
 
 	if($ord){
 		$ocol = 'neighbor';
@@ -1774,104 +1793,145 @@ function LnkErr($ina,$opa,$sta,$lim,$ord,$opt){
 		$srt = "$srtlbl: Device";
 	}
 
-?>
-<h2><?= $cnclbl ?> <?=$errlbl?></h2>
-<table class="content"><tr class="<?=$modgroup[$self]?>2">
-<th width="50"><img src="img/16/bstp.png" title="<?=$spdlbl?>, Vlan, Duplex <?=$stalbl?>"><br><?=$errlbl?></th>
-<th><img src="img/16/dev.png"><br>Device</th>
-<th colspan="2"><img src="img/16/port.png"><br>Interface</th>
-<th width="60"><img src="img/16/abc.png"><br><?=$typlbl?></th>
-<th><img src="img/16/dev.png"><br><?=$neblbl?></th>
-<th colspan="2"><img src="img/16/port.png"><br>Interface</th>
-<?
-	$libw	= array();
-	$query	= GenQuery('links','s','links.*',$ocol,'',array($ina),array($opa),array($sta),array(),'LEFT JOIN devices USING (device)');
-	$res	= DbQuery($query,$link);
-	$nli    = DbNumRows($res);
-	if($res){
-		$row = 0;
-		while( ($l = DbFetchRow($res)) ){
-			$libw[$l[1]][$l[2]][$l[3]][$l[4]] = $l[5];			# Bandwidth is the only value, which is constructed from local IF in SNMP::CDP/LLDP
-			$lity[$l[1]][$l[2]][$l[3]][$l[4]] = $l[6];
-			$lidu[$l[1]][$l[2]][$l[3]][$l[4]] = $l[8];			# Duplex and Vlan are read via CDP from remote side
-			$livl[$l[1]][$l[2]][$l[3]][$l[4]] = $l[9];
-		}
-		DbFreeResult($res);
-	}else{
-		echo DbError($link);
-		die;
-	}
-	$row = 0;
-	foreach(array_keys($libw) as $dv){
-		foreach(array_keys($libw[$dv]) as $if){
-			foreach(array_keys($libw[$dv][$if]) as $nb){
-				foreach(array_keys($libw[$dv][$if][$nb]) as $ni){
-					$ud = rawurlencode($dv);
-					$un = rawurlencode($nb);
-					if($row >= $lim){break;}
-					if(!$opt or $libw[$dv][$if][$nb][$ni] and $libw[$nb][$ni][$dv][$if]){
-						if($libw[$dv][$if][$nb][$ni] != $libw[$nb][$ni][$dv][$if]){
-							if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
-							$row++;
-							echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-							echo "<img src=\"img/spd.png\" title=\"$bwdlbl\"></th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$ud\">$dv</a></td><td>$if</td>\n";
-							echo "<th class=\"$bi\">".DecFix($libw[$dv][$if][$nb][$ni])."</th>\n";
-							echo "<th>".$lity[$dv][$if][$nb][$ni]."</th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$un\">$nb</a></td><td>$ni</td>\n";
-							echo "<th class=\"$bi\">".DecFix($libw[$nb][$ni][$dv][$if])."</th></tr>\n";
-						}
-					}
-					if (!$opt or strlen($lidu[$dv][$if][$nb][$ni]) == 2 and strlen($lidu[$nb][$ni][$dv][$if]) == 2){ 
-						if($lidu[$dv][$if][$nb][$ni] != $lidu[$nb][$ni][$dv][$if]){
-							if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
-							$row++;
-							echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-							echo "<img src=\"img/dpx.png\" title=\"duplex\"></th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$ud\">$dv</a></td><td>$if</td>\n";
-							echo "<th class=\"$bi\">".$lidu[$dv][$if][$nb][$ni]."</th>\n";
-							echo "<th>".$lity[$dv][$if][$nb][$ni]."</th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$un\">$nb</a></td><td>$ni</td>\n";
-							echo "<th class=\"$bi\">".$lidu[$nb][$ni][$dv][$if]."</th></tr>\n";
-						}
-					}
-					if(!$opt or $livl[$dv][$if][$nb][$ni] and $livl[$nb][$ni][$dv][$if]){
-						if($livl[$dv][$if][$nb][$ni] != $livl[$nb][$ni][$dv][$if]){
-							if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
-							$row++;
-							echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-							echo "<img src=\"img/16/vlan.png\" title=\"vlan\"></th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$ud\">$dv</a></td><td>$if</td>\n";
-							echo "<th class=\"$bi\">Vlan".$livl[$dv][$if][$nb][$ni]."</th>\n";
-							echo "<th>".$lity[$dv][$if][$nb][$ni]."</th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$un\">$nb</a></td><td>$ni</td>\n";
-							echo "<th class=\"$bi\">Vlan".$livl[$nb][$ni][$dv][$if]."</th></tr>\n";
-						}
-					}
-					if(!$opt or $lity[$dv][$if][$nb][$ni] and $lity[$nb][$ni][$dv][$if]){
-						if($lity[$dv][$if][$nb][$ni] != $lity[$nb][$ni][$dv][$if]){
-							if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
-							$row++;
-							echo "<tr class=\"$bg\"><th class=\"$bi\">\n";
-							echo "<img src=\"img/16/abc.png\" title=\"$typlbl\"></th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$ud\">$dv</a></td><td>$if</td>\n";
-							echo "<th class=\"$bi\">".$lity[$dv][$if][$nb][$ni]."</th>\n";
-							echo "<th> - </th>\n";
-							echo "<td><a href=\"Devices-Status.php?dev=$un\">$nb</a></td><td>$ni</td>\n";
-							echo "<th class=\"$bi\">".$lity[$nb][$ni][$dv][$if]."</th></tr>\n";
-						}
-					}
-				}
-			}
-		}
-	}
-?>
-</table>
-<table class="content" >
-<tr class="<?=$modgroup[$self]?>2"><td><?=$row?> <?=$errlbl?>, <?=$nli?> <?= $cnclbl ?> <?=$totlbl?>,<?= $srtlbl ?>: <?= $srt ?> <?= ($opt)?"(<b>$optlbl</b>)":"" ?></td></tr>
-</table>
+	echo "<h2>Link $spdlbl $errlbl</h2>\n";
 
-<?
+	$query = GenQuery('links as l1 ','s','l1.device,l1.ifname,l1.neighbor,l1.nbrifname,l1.bandwidth,l2.bandwidth as l2bw',$ocol,$lim,array('l1.bandwidth',$ina),array('COL !=',$opa),array('l2.bandwidth',$sta),array('AND'),'JOIN links as l2 on (l1.device = l2.neighbor and l1.ifname = l2.nbrifname) LEFT JOIN devices on (l1.device = devices.device)');
+	$res  = @DbQuery($query,$link);
+	if( DbNumRows($res) ){
+?>
+<table class="content">
+<tr class="<?= $modgroup[$self] ?>2">
+<th><img src="img/16/dev.png"><br>Device</th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/spd.png"><br><?= $spdlbl ?></th>
+<th><img src="img/16/dev.png"><br><?= $neblbl ?></th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/spd.png"><br><?= $spdlbl ?></th>
+</tr>
+<?php
+		$row = 0;
+		while( $r = @DbFetchRow($res) ){
+			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+			$row++;
+			echo "<tr class=\"$bg\"><td><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\">".substr($r[0],0,$_SESSION['lsiz'])."</a></td>\n";
+			echo "<td>$r[1]</td><th class=\"$bi\">".DecFix($r[4])."</th><td><a href=\"Devices-Status.php?dev=".urlencode($r[2])."\">".substr($r[2],0,$_SESSION['lsiz'])."</a></td><td>$r[3]</td><th class=\"$bi\">".DecFix($r[5])."</th></tr>\n";
+		}
+		echo "</table><table class=\"content\" ><tr class=\"$modgroup[$self]2\"><td>$row $spdlbl $errlbl, $srt</td></tr></table><br><p>";
+	}else{
+		echo "<h5>$nonlbl</h5>";
+	}
+
+	if($ord){
+		$ocol = 'neighbor';
+		$srt = "$srtlbl: $neblbl";
+	}else{
+		$ocol = 'device';
+		$srt = "$srtlbl: Device";
+	}
+
+	echo "<h2>Link Duplex $errlbl</h2>\n";
+
+	$query = GenQuery('links as l1 ','s','l1.device,l1.ifname,l1.neighbor,l1.nbrifname,l1.nbrduplex,l2.nbrduplex as l2dup',$ocol,$lim,array('l1.nbrduplex',$ina),array('COL !=',$opa),array('l2.nbrduplex',$sta),array('AND'),'JOIN links as l2 on (l1.device = l2.neighbor and l1.ifname = l2.nbrifname) LEFT JOIN devices on (l1.device = devices.device)');
+	$res = @DbQuery($query,$link);
+	if( DbNumRows($res) ){
+?>
+<table class="content">
+<tr class="<?= $modgroup[$self] ?>2">
+<th><img src="img/16/dev.png"><br>Device</th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/dpx.png" title="<?= $neblbl ?> <?= $sndlbl ?> Discovery Protocol"><br>Duplex</th>
+<th><img src="img/16/dev.png"><br><?= $neblbl ?></th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/dpx.png"  title="Device <?= $sndlbl ?> Discovery Protocol"><br>Duplex</th>
+</tr>
+<?php
+		$row = 0;
+		while( $r = @DbFetchRow($res) ){
+			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+			$row++;
+			echo "<tr class=\"$bg\"><td><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\">".substr($r[0],0,$_SESSION['lsiz'])."</a></td>\n";
+			echo "<td>$r[1]</td><th class=\"$bi\">$r[4]</th><td><a href=\"Devices-Status.php?dev=".urlencode($r[2])."\">".substr($r[2],0,$_SESSION['lsiz'])."</a></td><td>$r[3]</td><th class=\"$bi\">$r[5]</th></tr>\n";
+		}
+		echo "</table><table class=\"content\" ><tr class=\"$modgroup[$self]2\"><td>$row Duplex $errlbl, $srt</td></tr></table><br><p>";
+	}else{
+		echo "<h5>$nonlbl</h5>";
+	}
+
+	if($ord){
+		$ocol = 'neighbor';
+		$srt = "$srtlbl: $neblbl";
+	}else{
+		$ocol = 'device';
+		$srt = "$srtlbl: Device";
+	}
+
+	echo "<h2>Link Vlan $errlbl</h2>\n";
+
+	$query	= GenQuery('links as l1 ','s','l1.device,l1.ifname,l1.neighbor,l1.nbrifname,l1.nbrvlanid,l2.nbrvlanid as l2dup',$ocol,$lim,array('l1.nbrvlanid',$ina),array('COL !=',$opa),array('l2.nbrvlanid',$sta),array('AND'),'JOIN links as l2 on (l1.device = l2.neighbor and l1.ifname = l2.nbrifname) LEFT JOIN devices on (l1.device = devices.device)');
+	$res	= @DbQuery($query,$link);
+	if( DbNumRows($res) ){
+?>
+<table class="content">
+<tr class="<?= $modgroup[$self] ?>2">
+<th><img src="img/16/dev.png"><br>Device</th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/16/vlan.png" title="<?= $neblbl ?> <?= $sndlbl ?> Discovery Protocol"><br>Vlan</th>
+<th><img src="img/16/dev.png"><br><?= $neblbl ?></th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/16/vlan.png"  title="Device <?= $sndlbl ?> Discovery Protocol"><br>Vlan</th>
+</tr>
+<?php
+		$row = 0;
+		while( $r = @DbFetchRow($res) ){
+			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+			$row++;
+			echo "<tr class=\"$bg\"><td><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\">".substr($r[0],0,$_SESSION['lsiz'])."</a></td>\n";
+			echo "<td>$r[1]</td><th class=\"$bi\">$r[4]</th><td><a href=\"Devices-Status.php?dev=".urlencode($r[2])."\">".substr($r[2],0,$_SESSION['lsiz'])."</a></td><td>$r[3]</td><th class=\"$bi\">$r[5]</th></tr>\n";
+		}
+		echo "</table><table class=\"content\" ><tr class=\"$modgroup[$self]2\"><td>$row Vlan $errlbl, $srt</td></tr></table><br><p>";
+	}else{
+		echo "<h5>$nonlbl</h5>";
+	}
+
+	if($ord){
+		$ocol = 'neighbor';
+		$srt = "$srtlbl: $neblbl";
+	}else{
+		$ocol = 'device';
+		$srt = "$srtlbl: Device";
+	}
+
+	echo "<h2>Link $typlbl $errlbl</h2>\n";
+
+	$query	= GenQuery('links as l1 ','s','l1.device,l1.ifname,l1.neighbor,l1.nbrifname,l1.linktype,l2.linktype as l2dup',$ocol,$lim,array('l1.linktype',$ina),array('COL !=',$opa),array('l2.linktype',$sta),array('AND'),'JOIN links as l2 on (l1.device = l2.neighbor and l1.ifname = l2.nbrifname) LEFT JOIN devices on (l1.device = devices.device)');
+	$res	= @DbQuery($query,$link);
+	if( DbNumRows($res) ){
+?>
+<table class="content">
+<tr class="<?= $modgroup[$self] ?>2">
+<th><img src="img/16/dev.png"><br>Device</th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/16/abc.png"><br><?= $typlbl ?></th>
+<th><img src="img/16/dev.png"><br><?= $neblbl ?></th>
+<th><img src="img/16/port.png"><br>IF</th>
+<th width="50"><img src="img/16/abc.png"><br><?= $typblbl ?></th>
+</tr>
+<?php
+		$row = 0;
+		while( $r = @DbFetchRow($res) ){
+			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
+			$row++;
+			echo "<tr class=\"$bg\"><td><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\">".substr($r[0],0,$_SESSION['lsiz'])."</a></td>\n";
+			echo "<td>$r[1]</td><th class=\"$bi\">$r[4]</th><td><a href=\"Devices-Status.php?dev=".urlencode($r[2])."\">".substr($r[2],0,$_SESSION['lsiz'])."</a></td><td>$r[3]</td><th class=\"$bi\">$r[5]</th></tr>\n";
+		}
+		echo "</table><table class=\"content\" ><tr class=\"$modgroup[$self]2\"><td>$row $typlbl $errlbl, $srt</td></tr></table><br><p>";
+	}else{
+		echo "<h5>$nonlbl</h5>";
+	}
+?>
+</table>
+<p>
+<?php
 }
 
 //===================================================================
@@ -1906,7 +1966,6 @@ function ModDist($ina,$opa,$sta,$lim,$ord){
 		DbFreeResult($res);
 	}else{
 		print DbError($link);
-		die;
 	}
 	if($ord){
 		ksort($nummo);
@@ -1924,7 +1983,7 @@ function ModDist($ina,$opa,$sta,$lim,$ord){
 			echo "<a href=Devices-Status.php?dev=".urlencode($dv).">".substr($dv,0,$_SESSION['lsiz'])."</a>: <b>$ndv</b> ";
 		}
 		echo "</td>\n";
-		echo "<td nowrap>".Bar($n,0,'mi')." $n</td></tr>\n";
+		echo "<td class=\"nw\">".Bar($n,0,'mi')." $n</td></tr>\n";
 		if($row == $lim){break;}
 	}
 ?>
@@ -1958,7 +2017,6 @@ function ModDist($ina,$opa,$sta,$lim,$ord){
 		DbFreeResult($res);
 	}else{
 		print DbError($link);
-		die;
 	}
 	if($ord){
 		ksort($nummo);
@@ -1976,7 +2034,7 @@ function ModDist($ina,$opa,$sta,$lim,$ord){
 			echo "<a href=Devices-Status.php?dev=".urlencode($dv).">".substr($dv,0,$_SESSION['lsiz'])."</a>: <b>$ndv</b> ";
 		}
 		echo "</td>\n";
-		echo "<td nowrap>".Bar($n,0,'mi')." $n</td></tr>\n";
+		echo "<td class=\"nw\">".Bar($n,0,'mi')." $n</td></tr>\n";
 		if($row == $lim){break;}
 	}
 ?>
@@ -2007,8 +2065,18 @@ function ModInventory($ina,$opa,$sta,$lim,$ord){
 <th><img src="img/16/card.png"><br>HW</th>
 <th><img src="img/16/cog.png"><br>FW</th>
 <th><img src="img/16/cbox.png"><br>SW</th>
+<th><img src="img/16/pkg.png"><br><?= $invlbl ?></th>
 </tr>
 <?php
+	$query	= GenQuery('inventory','s','*');
+	$res	= DbQuery($query,$link);
+	if($res){
+		while( $r = DbFetchRow($res) ){
+			$inv[$r[1]]['st'] = $r[0];
+		}
+		DbFreeResult($res);
+	}
+
 	if($ord){
 		$ocol = "type";
 		$srt = "$srtlbl: $typlbl";
@@ -2025,7 +2093,16 @@ function ModInventory($ina,$opa,$sta,$lim,$ord){
 			$dev++;
 			TblRow('imgb');
 			echo "<th align=\"left\"><a href=\"Devices-Status.php?dev=".urlencode($r[0])."\"><b>".substr($r[0],0,$_SESSION['lsiz'])."</b></a></th>\n";
-			echo "<td ><a href=\"Reports-Modules.php?rep[]=inv&in[]=type&op[]==&st[]=".urlencode($r[1])."\">$r[1]</a></td><td class=\"mrn code\">$r[2]</td><td>-</td><td>-</td><td >$r[3]</td></tr>\n";
+			echo "<td ><a href=\"Reports-Modules.php?rep[]=inv&in[]=type&op[]==&st[]=".urlencode($r[1])."\">$r[1]</a></td><td class=\"mrn code\">$r[2]</td><td>-</td><td>-</td><td >$r[3]</td>\n";
+			if( array_key_exists($r[2], $inv) ){
+				echo "<td><a href=\"Devices-Inventory.php?lst=em&val=$stock[11]\" class=\"genpad ".SupportBg($stock[11])."\"><img src=\"img/16/bbrt.png\" title=\"$igrp[31] $endlbl\"> ".date($_SESSION['datf'],$stock[11])."</a>\n";
+				echo "<a href=\"Devices-Inventory.php?lst=lw&val=$stock[12]\" class=\"genpad ".SupportBg($stock[12])."\"><img src=\"img/16/bbr2.png\" title=\"$wtylbl $endlbl\"> ".date($_SESSION['datf'],$stock[12])."</a>\n";
+				echo "<a href=\"Devices-Inventory.php?chg=$us\" title=\"$chglbl $invlbl\">".Staimg($stock[0])."</a>";
+				echo "<a href=\"Devices-Inventory.php?chg=".urlencode($r[2])."&lst=$lst&val=$uv\">".Staimg($inv[$r[2]]['st'])."</a>";
+			}else{
+				echo "<td><a href=\"Devices-Inventory.php?add=".urlencode($r[2])."&lst=$lst&val=$uv\">".Staimg(1)."</a>";
+			}
+			echo "</td></tr>\n";
 			$mquery	= GenQuery('modules','s','*','modidx','',array('device'),array('='),array($r[0]));
 			$mres	= DbQuery($mquery,$link);
 			if($mres){
@@ -2034,18 +2111,17 @@ function ModInventory($ina,$opa,$sta,$lim,$ord){
 					$modu++;
 					list($mcl,$img) = ModClass($m[9]);
 					TblRow($bg);
-					echo "<td align=\"right\">$m[1]</td><td><img src=\"img/16/$img.png\" title=\"$mcl\"><b>$m[2]</b> $m[3]</td><td class=\"mrn code\">$m[4]</td><td>$m[5]</td><td>$m[6]</td><td>$m[7]</td></tr>\n";
+					echo "<td align=\"right\">$m[1]</td><td><img src=\"img/16/$img.png\" title=\"$mcl\"><b>$m[2]</b> $m[3]</td><td class=\"mrn code\">$m[4]</td><td>$m[5]</td><td>$m[6]</td><td>$m[7]</td>\n";
+					echo "<td>".$inv[$m[4]]['st']."</td></tr>\n";
 				}
 				DbFreeResult($mres);
 			}else{
 				echo DbError($link);
-				die;
 			}
 		}
 		DbFreeResult($res);
 	}else{
 		echo DbError($link);
-		die;
 	}
 ?>
 </table>
@@ -2096,7 +2172,6 @@ function ModPrint($ina,$opa,$sta,$lim,$ord){
 		DbFreeResult($res);
 	}else{
 		echo DbError($link);
-		die;
 	}
 ?>
 </table>
@@ -2111,7 +2186,7 @@ function ModPrint($ina,$opa,$sta,$lim,$ord){
 // Virtualmachine Inventory
 function ModVM($ina,$opa,$sta,$lim,$ord){
 
-	global $link,$modgroup,$self,$srtlbl,$poplbl,$dislbl,$conlbl;
+	global $link,$modgroup,$self,$srtlbl,$memlbl,$poplbl,$dislbl,$conlbl;
 ?>
 <h2>VM <?= $dislbl ?></h2>
 
@@ -2119,8 +2194,8 @@ function ModVM($ina,$opa,$sta,$lim,$ord){
 <tr class="<?= $modgroup[$self] ?>2">
 <th width="40%" colspan="3"><img src="img/16/cog.png"><br>Hypervisor</th>
 <th><img src="img/16/node.png"><br>VM <?= $poplbl ?></th>
-<th valign="bottom"><img src="img/16/cpu.png"><br>CPUs</th>
-<th valign="bottom" title="<?= $memlbl ?>"><img src="img/16/mem.png"><br>Mem</th>
+<th><img src="img/16/cpu.png"><br>CPUs</th>
+<th><img src="img/16/mem.png"><br><?= $memlbl ?></th>
 </tr>
 <?php
 	$nprt = 0;
@@ -2150,7 +2225,6 @@ function ModVM($ina,$opa,$sta,$lim,$ord){
 		DbFreeResult($res);
 	}else{
 		echo DbError($link);
-		die;
 	}
 ?>
 </table>
@@ -2348,7 +2422,6 @@ function MonEvent($ina,$opa,$sta,$lim,$ord,$opt){
 		DbFreeResult($res);
 	}else{
 		print DbError($link);
-		die;
 	}
 ?>
 </table>
@@ -2382,7 +2455,7 @@ function MonLatency($ina,$opa,$sta,$lim,$ord){
 		$ocol = "latavg desc";
 		$srt = "$srtlbl: $avglbl $latlbl";
 	}
-	$query	= GenQuery('monitoring','s','name,test,latency,latmax,latavg,location,contact,class,icon',$ocol,$lim,array('latency',$ina),array('>',$opa),array('0',$sta),array('AND'),'LEFT JOIN devices USING (device)');
+	$query	= GenQuery('monitoring','s','name,test,latency,latmax,latavg,location,contact,class,icon',$ocol,$lim,array('test',$ina),array('!=',$opa),array('none',$sta),array('AND'),'LEFT JOIN devices USING (device)');
 	$res = DbQuery($query,$link);
 	if($res){
 		$row = 0;
@@ -2455,6 +2528,8 @@ function NetDist($ina,$opa,$sta,$lim,$ord){
 	
 	global $link,$modgroup,$self,$verb1,$netlbl,$dislbl,$adrlbl,$poplbl,$agelbl,$tim,$totlbl,$srtlbl;
 
+	$nets = array();
+
 	if($ina == "devip"){$ina = "ifip";}
 	if($ord){
 		$ocol = "device";
@@ -2472,7 +2547,7 @@ function NetDist($ina,$opa,$sta,$lim,$ord){
 			$dnet = sprintf("%u",$n[2] & $dmsk);
 			$vrf  = ($n[4])?"<a href=\"Topology-Networks.php?in[]=vrfname&op[]==&st[]=".urlencode($n[4])."\">$n[4]</a> ":"";
 
-			if( isset($nets[$dnet]) ){
+			if( array_key_exists($dnet,$nets) ){
 				if($nets[$dnet] != $n[4]){
 					$devs[$dnet][$n[0]]	= "$n[1] $vrf<span class=\"red\">" .long2ip($dmsk) . "</span>";
 				}else{
@@ -2486,22 +2561,16 @@ function NetDist($ina,$opa,$sta,$lim,$ord){
 				$nets[$dnet] = $n[4];
 				$pop[$dnet] = 0;
 				$age[$dnet] = 0;
-				if($n[4] == -1){
+				if($n[4] == 32){
 					$devs[$dnet][$n[0]] = "$n[1]  $vrf<span class=\"prp\">hostroute</span>";
 				}else{
 					$devs[$dnet][$n[0]] = "$n[1]  $vrf<span class=\"blu\">mask base</span>";
-					$nquery	= GenQuery('nodes','s','count(*),round(avg(lastseen + 1 - firstseen)/86400)','','',array("nodip & $dmsk"),array('='),array($dnet) ); # add 1 sec to avoid ridiculous numbers on swift nodes
-					$nodres	= DbQuery($nquery,$link);
-					$no	= DbFetchRow($nodres);
-					$pop[$dnet] = ($no[0])?$no[0]:0;
-					$age[$dnet] = ($no[1])?$no[1]:0;
-					DbFreeResult($nodres);
 				}
 			}
 		}
 		DbFreeResult($res);
 
-		if($nets){
+		if( count($nets) ){
 ?>
 <h2><?= $netlbl ?> <?= $dislbl ?></h2>
 
@@ -2513,14 +2582,14 @@ function NetDist($ina,$opa,$sta,$lim,$ord){
 </tr>
 <?php
 			$row = 0;
-			foreach(array_keys($nets) as $dn ){
+			foreach(array_keys($nets) as $dnet ){
 				if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 				$row++;
 				$dvs = "";
-				$net = long2ip($dn);
+				$net = long2ip($dnet);
 				list($ntimg,$ntit) = Nettype($net);
-				foreach( array_keys($devs[$dn]) as $dv ){
-					$dvs .= "<a href=\"Devices-Status.php?dev=".urlencode($dv)."\">".substr($dv,0,$_SESSION['lsiz'])."</a> ".$devs[$dn][$dv]."<br>\n";
+				foreach( array_keys($devs[$dnet]) as $dv ){
+					$dvs .= "<a href=\"Devices-Status.php?dev=".urlencode($dv)."\">".substr($dv,0,$_SESSION['lsiz'])."</a> ".$devs[$dnet][$dv]."<br>\n";
 				}
 				TblRow($bg);
 				echo "<th class=\"$bi\" width=\"20\"><img src=\"img/$ntimg\" title=\"$ntit\"></th>\n";
@@ -2535,9 +2604,16 @@ function NetDist($ina,$opa,$sta,$lim,$ord){
 				}
 				echo "<a href=\"?in[]=devip&op[]==&st[]=$net%2F$nets[$dnet]&rep%5B%5D=net\">$net/$nets[$dnet]</a>\n";
 				echo "<td>$dvs</td><td>";
-				if($pop[$dn]){echo Bar($pop[$dn],110)." <a href=\"Nodes-List.php?in[]=nodip&op[]==&st[]=$net/$nets[$dnet]&ord=nodip\">$pop[$dn]</a>\n";}
+				$dmsk = 0xffffffff << (32 - $nets[$dnet]);
+				$nquery	= GenQuery('nodes','s','count(*),round(avg(lastseen - firstseen)/86400)','','',array("nodip & $dmsk"),array('='),array($dnet) );
+				$nodres	= DbQuery($nquery,$link);
+				$no	= DbFetchRow($nodres);
+				$pop[$dnet] = ($no[0])?$no[0]:0;
+				$age[$dnet] = ($no[1])?$no[1]:0;
+				DbFreeResult($nodres);
+				if($pop[$dnet]){echo Bar($pop[$dnet],110)." <a href=\"Nodes-List.php?in[]=nodip&op[]==&st[]=$net/$nets[$dnet]&ord=nodip\">$pop[$dnet]</a>\n";}
 				echo "</td><td>\n";
-				if($age[$dn]){echo Bar($age[$dn],'lvl100')." $age[$dn]\n";}
+				if($age[$dnet]){echo Bar($age[$dnet],'lvl100')." $age[$dnet]\n";}
 				echo "</td></tr>\n";
 				if($row == $lim){break;}
 			}
@@ -2570,7 +2646,7 @@ function NetPop($ina,$opa,$sta,$lim,$ord){
 	}
 	$query	= GenQuery('networks','s','networks.*,lastdis',$ocol,'',array('ifip',$ina),array('>',$opa),array('0',$sta),array('AND'),'LEFT JOIN devices USING (device)' );
 	$res	= DbQuery($query,$link);
-	if ($res) {
+	if($res){
 		$row = 0;
 		$netok = array();
 		while( ($n = DbFetchRow($res)) ){
@@ -2618,10 +2694,10 @@ function NetPop($ina,$opa,$sta,$lim,$ord){
 				echo "<a href=\"Nodes-List.php?in[]=nodip&op[]==&st[]=$net%2F$nets[$net]\"><img src=\"img/16/nods.png\" title=\"Node IPs\"> ".count(array_keys($nod[$net]))."</a";
 				echo "</td>";
 				echo "<td><table><tr>";
-				$col = 0;
-				$dn = ip2long($net);
-				$max = $dn + pow(2,(32-$nets[$net]));
-				for($a = $dn; $a < $max; $a++){
+				$col  = 0;
+				$dnet = ip2long($net);
+				$max  = $dnet + pow(2,(32-$nets[$net]));
+				for($a = $dnet; $a < $max; $a++){
 					if($col == 64){$col = 0;echo "</tr>\n<tr>";}
 					$ip = long2ip($a);
 					if( array_key_exists($ip, $dev[$net]) and array_key_exists($ip, $nod[$net]) ){
@@ -2630,8 +2706,8 @@ function NetPop($ina,$opa,$sta,$lim,$ord){
 						echo "<td title=\"$ip Node:".$nod[$net][$ip]."\" class=\"good\"><a href=\"Nodes-List.php?in[]=nodip&op[]==&st[]=$ip\">&nbsp;</a></td>";
 					}elseif( array_key_exists($ip, $dev[$net]) ){
 						echo "<td title=\"$ip Dev:".$dev[$net][$ip]."\" class=\"noti\"><a href=\"Topology-Networks.php?in[]=ifip&op[]==&st[]=$ip\">&nbsp;</a></td>";
-					}elseif($a == $dn or $a == $max -1){
-						$netxt = ($a == $dn)?$netlbl:"Broadcast";
+					}elseif($a == $dnet or $a == $max -1){
+						$netxt = ($a == $dnet)?$netlbl:"Broadcast";
 						echo "<td title=\"$netxt:$ip\" class=\"$bg part\">&nbsp;</td>";
 					}else{
 						echo "<td title=\"$ip\" class=\"$bi\">&nbsp;</td>";
@@ -2714,7 +2790,7 @@ function NodHistory($ina,$opa,$sta,$lim,$ord){
 		$row++;
 		$fd   = urlencode(date("m/d/Y H:i:s",$d));
 		TblRow($bg);
-		echo "<td class=\"$bi\"><b>".date($_SESSION['date'],$d)."</b></td><td>\n";
+		echo "<td class=\"$bi\"><b>".date($_SESSION['timf'],$d)."</b></td><td>\n";
 		if( array_key_exists('fs',$nodup[$d]) ){echo Bar($nodup[$d]['fs'],"lvl50",'mi')." <a href=\"Nodes-List.php?in[]=firstseen&op[]==&st[]=$fd\" title=\"Node $lstlbl\">".$nodup[$d]['fs']."</a>";}
 		echo "</td><td>\n";
 		if( array_key_exists('ls',$nodup[$d]) ){echo Bar($nodup[$d]['ls'],"lvl250",'mi')." <a href=\"Nodes-List.php?in[]=lastseen&op[]==&st[]=$fd\" title=\"Node $lstlbl\">".$nodup[$d]['ls']."</a>";}
@@ -2971,6 +3047,9 @@ function NodOS($ina,$opa,$sta,$lim,$ord){
 		while( ($r = DbFetchRow($res)) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
+			$chd[] = array('value' => $r[1],'color' => GetCol('231',$row,3) );
+			echo "<tr class=\"$bg\"><th class=\"$bi\">$row</th>\n";
+			echo "<td>$r[0]</td>\n";
 			if($r[0]){
 				$uo = urlencode($r[0]);
 				$op = "=";
@@ -2978,9 +3057,7 @@ function NodOS($ina,$opa,$sta,$lim,$ord){
 				$uo = "^$";
 				$op = "~";
 			}
-			$chd[] = array('value' => $r[1],'color' => GetCol('231',$row,3) );
-			echo "<tr class=\"$bg\"><th class=\"$bi\">$row</th>\n";
-			echo "<td>$r[0]</td><td nowrap>".Bar($r[1],GetCol('231',$row,3),'ls')." <a href=Nodes-List.php?in[]=nodos&op[]=$op&st[]=$uo>$r[1]</a></td></tr>\n";
+			echo "<td class=\"nw\">".Bar($r[1],GetCol('231',$row,3),'ls')." <a href=\"Nodes-List.php?in[]=nodos&op[]=$op&st[]=$uo\">$r[1]</a></td></tr>\n";
 		}
 	}
 ?>
@@ -3021,6 +3098,9 @@ var myNewChart = new Chart(ctx).Doughnut(data);
 		while( ($r = DbFetchRow($res)) ){
 			if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
 			$row++;
+			$chd[] = array('value' => $r[1],'color' => GetCol('123',$row,3) );
+			echo "<tr class=\"$bg\"><th class=\"$bi\">$row</th>\n";
+			echo "<td>$r[0]</td>\n";
 			if($r[0]){
 				$uo = urlencode($r[0]);
 				$op = "=";
@@ -3028,9 +3108,7 @@ var myNewChart = new Chart(ctx).Doughnut(data);
 				$uo = "^$";
 				$op = "~";
 			}
-			$chd[] = array('value' => $r[1],'color' => GetCol('123',$row,3) );
-			echo "<tr class=\"$bg\"><th class=\"$bi\">$row</th>\n";
-			echo "<td>$r[0]</td><td nowrap>".Bar($r[1],GetCol('123',$row,3),'ls')." <a href=Nodes-List.php?in[]=nodos&op[]=$op&st[]=$uo>$r[1]</a></td></tr>\n";
+			echo "<td class=\"nw\">".Bar($r[1],GetCol('123',$row,3),'ls')." <a href=\"Nodes-List.php?in[]=nodos&op[]=$op&st[]=$uo\">$r[1]</a></td></tr>\n";
 		}
 	}
 ?>
@@ -3058,13 +3136,16 @@ function NodNomad($ina,$opa,$sta,$lim,$ord){
 	global $link,$modgroup,$self,$nomlbl,$srtlbl,$chglbl,$namlbl,$vallbl,$lstlbl;
 ?>
 <h2><?= $nomlbl ?> <?= $lstlbl ?></h2>
-<table class="content"><tr class="<?= $modgroup[$self] ?>2">
-<th width="20"></th>
-<th colspan="2"><img src="img/16/node.png"><br>Node</th>
-<th><img src="img/16/dev.png"><br>IF</th>
-<th><img src="img/16/glob.png"><br>IP <?= $chglbl ?></th>
-<th><img src="img/16/port.png"><br>IF <?= $chglbl ?></th>
-<th><img src="img/16/walk.png" title="<?= $nomlbl ?> <?= $vallbl ?> = IP <?= $chglbl ?> * IF <?= $chglbl ?>"><br><?= $nomlbl ?> <?= $vallbl ?></th></tr>
+
+<table class="content">
+	<tr class="<?= $modgroup[$self] ?>2">
+		<th class="s"></th>
+		<th colspan="2"><img src="img/16/node.png"><br>Node</th>
+		<th><img src="img/16/dev.png"><br>IF</th>
+		<th><img src="img/16/glob.png"><br>IP <?= $chglbl ?></th>
+		<th><img src="img/16/port.png"><br>IF <?= $chglbl ?></th>
+		<th><img src="img/16/walk.png" title="<?= $nomlbl ?> <?= $vallbl ?> = IP <?= $chglbl ?> * IF <?= $chglbl ?>"><br><?= $nomlbl ?> <?= $vallbl ?></th>
+	</tr>
 <?php
 	if($ord){
 		$ocol = "name";
@@ -3117,7 +3198,6 @@ function NodSum($ina,$opa,$sta,$lim,$ord){
 		$r = DbFetchRow($res);
 	}else{
 		print DbError($link);
-		die;
 	}
 ?>
 <table class="full fixed"><tr><td class="helper">
@@ -3126,8 +3206,8 @@ function NodSum($ina,$opa,$sta,$lim,$ord){
 <table class="content"><tr class="<?= $modgroup[$self] ?>2">
 <th width="33%" colspan="2"><img src="img/16/find.png" title="Nodes <?= $stslbl ?>">
 <br><?= $deslbl ?></th><th><img src="img/16/nods.png"><br>Nodes</th>
-<tr class="txtb"><th class="imgb"><img src="img/16/add.png" title="<?= $fislbl ?> > <?= date($_SESSION['date'],$lasdis) ?>"></th><td><b><?= $stco['10'] ?></b></td><td><?=Bar($r[6],0,'mi') ?> <a href="Nodes-List.php?in[]=firstseen&op[]=>&st[]=<?= $lasdis ?>&ord=nodip"><?= $r[6] ?></a></td></tr>
-<tr class="txta"><th class="imga"><img src="img/16/exit.png" title="<?= $laslbl ?> > <?= date($_SESSION['date'],$lasdis) ?>"></th><td><b><?= $stco['100'] ?></b></td><td><?=Bar($r[7],0,'mi') ?> <a href="Nodes-List.php?in[]=lastseen&op[]=>&st[]=<?= $lasdis ?>&ord=nodip"><?= $r[7] ?></a></td></tr>
+<tr class="txtb"><th class="imgb"><img src="img/16/add.png" title="<?= $fislbl ?> > <?= date($_SESSION['timf'],$lasdis) ?>"></th><td><b><?= $stco['10'] ?></b></td><td><?=Bar($r[6],0,'mi') ?> <a href="Nodes-List.php?in[]=firstseen&op[]=>&st[]=<?= $lasdis ?>&ord=nodip"><?= $r[6] ?></a></td></tr>
+<tr class="txta"><th class="imga"><img src="img/16/exit.png" title="<?= $laslbl ?> > <?= date($_SESSION['timf'],$lasdis) ?>"></th><td><b><?= $stco['100'] ?></b></td><td><?=Bar($r[7],0,'mi') ?> <a href="Nodes-List.php?in[]=lastseen&op[]=>&st[]=<?= $lasdis ?>&ord=nodip"><?= $r[7] ?></a></td></tr>
 <tr class="txtb"><th class="imgb"><img src="img/16/wlan.png" title="IF <?= $metlbl ?> < 256"></th><td><b>Wlan</th></b><td><?=Bar($r[5],0,'mi') ?> <a href="Nodes-List.php?in[]=ifmetric&op[]=<&st[]=256&ord=ifmetric+desc"> <?= $r[5] ?></a></td></tr>
 <tr class="txta"><th class="imga"><img src="img/16/calc.png" title="IP <?= $chglbl ?> > 0"></th><td><b>IP <?= $chglbl ?></b></td><td><?=Bar($r[8],0,'mi') ?> <a href="Nodes-List.php?in[]=ipchanges&op[]=>&st[]=0&ord=ipchanges+desc"><?= $r[8] ?></a></td></tr>
 <tr class="txtb"><th class="imgb"><img src="img/16/walk.png" title="IF <?= $chglbl ?> > 0"></th><td><b>IF <?= $chglbl ?></b></td><td><?=Bar($r[9],0,'mi') ?> <a href="Nodes-List.php?in[]=ifchanges&op[]=>&st[]=0&ord=ifchanges+desc"><?= $r[9] ?></a></td></tr>

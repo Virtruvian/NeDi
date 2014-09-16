@@ -5,11 +5,7 @@
 =head1 PROGRAM nedi.pl
 
 Main program which can initialize the DB and perform discovery and
-other useful tasks.
-
-=head1 SYNOPSIS
-
-nedi.pl -lotsofoptions, see HELP!
+other useful tasks, see HELP (nedi.pl -h)!
 
 =head2 LICENSE
 
@@ -34,7 +30,7 @@ Visit http://www.nedi.ch for more information.
 
 =cut
 
-our $VERSION = "1.0.9-010";
+our $VERSION = "1.1.155";
 
 use strict;
 use warnings;
@@ -51,12 +47,11 @@ use Net::Ping;
 
 use vars qw($p $warn $nediconf $now $lasdis);
 use vars qw(%nod %dev %int %mod %link %vlan %opt %net %usr);
-@misc::donenam = ();											# Avoid 'used only once' warning (won't break evals like LWP in libweb this way)TODO still needed with no(warn once)?
 $misc::mq = 0;
 $misc::ncmd = "$0 ".join(" ",@ARGV);
 
 
-getopts('a:A:bB:c:dDfFiIkKl:Nnoprs:S:t:Tu:U:vWy',\%opt) || &HELP_MESSAGE;
+getopts('a:A:bB:c:C:dDfFiIkKl:NnM:opP:rs:S:t:u:U:vV:wWyY:',\%opt) || &HELP_MESSAGE;
 if(!defined $opt{'S'}){$opt{'S'} = ''}									# Avoid warnings if unused
 
 select(STDOUT); $| = 1;											# Disable buffering
@@ -66,12 +61,12 @@ $p   =~ s/(.*)\/(.*)/$1/;
 if($0 eq $p){$p = "."};
 $now = time;
 require "$p/inc/libmisc.pm";										# Use the miscellaneous nedi library
+&misc::ReadConf();											# Needs to be evaluated first (e.g. for usessh)
+$misc::guiauth = '';											# Intended for PHP GUI, breaks SendCmd() if configured with -pass 
 require "$p/inc/libsnmp.pm";										# Use the SNMP function library
 require "$p/inc/libmon.pm";										# Use the Monitoring lib for notifications
 require "$p/inc/libcli.pm";										# Use the CLI function library
 require "$p/inc/libdb.pm";										# Use the DB function library
-
-&misc::ReadConf();
 
 $lasdis = $now - $misc::rrdstep * 1.1;									# Last discovery time with some slack
 
@@ -95,46 +90,55 @@ post discovery functions.
 
 =cut
 if ( $opt{'D'} ){
+#	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
+#	&misc::ReadOUIs();
+	my $nseed = &misc::InitSeeds();
+	print "Got $nseed seeds\n";
+#	&db::ReadDev();
+#	&db::ReadAddr();
+#	&misc::RetrVar();
+
+#	&db::Inventory();
+#	&misc::BuildArp(1);
+#	print &db::Select('system', '','value','name="first"');
+
+#	$misc::retire = $now - 1 * 86400;								# Test Retiring, e.g. with 1 day
+#	&db::ReadNod();
+#	&misc::BuildNod();
+#	&db::Disconnect();
+#	&misc::FloodFind() if $misc::notify =~ /n/i
+#	&db::WriteNod();
+	#&misc::TopRRD();
+
 # Debug VoIP Phones
 #	require "$p/inc/libweb.pm";
 #	$main::dev{'test'}{ip} = 'q/7912.html';
 #	&web::CiscoPhone('test');
 #die;
-	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
-	&misc::ReadOUIs();
-	&db::ReadDev();
-	&db::ReadAddr();
-	&misc::RetrVar();
-# Functions to be debugged go here
-#	&db::UnStock();
-#	&misc::BuildArp();
-#	print &db::Select('system', '','value','name="first"');
 
-#	$misc::retire = $now - 1 * 86400;								# Test Retiring, e.g. with 1 day
-	&db::ReadNod();
-	&misc::BuildNod();
-	&db::Disconnect();
-#	&misc::FloodFind() if $misc::notify =~ /n/i
-#	&db::WriteNod();
-	#&misc::TopRRD();
+# Debug Device name to location conversion
+#	my $loc = 'M8000-KSL-4-S-S-45';
+#	$loc =~ s/$misc::nam2loc[0]/$misc::nam2loc[1]/ee;
+	#$loc =~ s/^(\w+)-(\w+)-(\w+)-.*/CH;$1;$2;$3;Rack;10/;
+#	print "2LOC: s/$misc::nam2loc[0]/$misc::nam2loc[1]/ = $loc\n";
 }elsif( $opt{'i'} or $opt{'I'} ){
 	my $adminuser;
 	my $adminpass;
 	my $nedihost = 'localhost';
+	print "\nInitialize NeDi DB".(($opt{'I'})?', delete configs and RRDs':'')."!!!\n";
+	print "------------------------------------------------------------------------\n";
 	if ($#ARGV eq 1){										# 2 arguments for -i?
 		$adminuser = $ARGV[0];
 		$adminpass = $ARGV[1];
 	}else{												# interactive credentials then...
-		print "\nInitialize NeDi DB".(($opt{'I'})?', delete configs and RRDs':'')."!!!\n";
-		print "------------------------------------------------------------------------\n";
 		print "$misc::backend admin user: ";
 		$adminuser = <STDIN>;
 		print "$misc::backend admin pass: ";
 		$adminpass = <STDIN>;
-		if($misc::dbhost ne $nedihost){
-			print "NeDi host (where the discovery runs on: ";
-			$nedihost = <STDIN>;
-		}
+	}
+	if($misc::dbhost ne $nedihost){
+		print "NeDi host (where the discovery runs on: ";
+		$nedihost = <STDIN>;
 	}
 	$adminuser = (defined $adminuser)?$adminuser:"";						# Avoid errors on empty Webform
 	$adminpass = (defined $adminpass)?$adminpass:"";
@@ -221,40 +225,41 @@ if ( $opt{'D'} ){
 
 	&db::Connect($misc::dbname,$misc::dbhost,$misc::dbuser,$misc::dbpass);
 	&misc::ReadOUIs();
-	&db::ReadDev($opt{'A'});									# Needs to come before InitSeeds for -A
 	&db::ReadAddr();
 	&db::ReadLink("linktype = 'STAT'");								# Static links will override DP
 	my $ntgt  = &mon::InitMon();
 	my $nseed = &misc::InitSeeds();
+	&db::ReadDev();
 	my $nthrd = &db::Select('system','','value',"name='threads'");
 	my $first = &db::Select('system','','value',"name='first'");
 
 	if ($opt{t}){
-		print "MAIN:Ignoring $nthrd thread".(($nthrd > 1)?"s":"")." for testing\n" if $opt{'v'};
+		print "MAIN:Ignoring $nthrd thread".(($nthrd != 1)?'s':'')." for testing\n" if $opt{'v'};
 	}elsif ($nthrd > 0){
-		print "MAIN:$nthrd thread".(($nthrd > 1)?"s":"").", 1st from ".localtime($first) if $opt{'v'};
+		print "MAIN:$nthrd thread".(($nthrd != 1)?'s':'').", 1st from ".localtime($first) if $opt{'v'};
 		if ( ($now - $first) > 3 * $misc::rrdstep ){						# Check for stale threads (based on community ideas)
 			print " is older than ".3*$misc::rrdstep."s, resetting!\n" if $opt{'v'};
 			&db::Update('system',"value='$now'","name='first'");
 			&db::Update('system',"value=1","name='threads'");				# Make sure we're back to 1!
-			&db::Insert('events','level,time,source,info,class',"200,$now,'NeDi','$nthrd thread(s), 1st from ".localtime($first)." is older than $misc::rrdstep seconds!','bugn'");
+			&db::Insert('events','level,time,source,info,class',"200,$now,'NeDi','$nthrd thread(s), 1st from ".localtime($first)." is older than $misc::rrdstep seconds!','bugn'",1);
 		}else{
 			print " seems ok adding this one\n" if $opt{'v'};
 			my $casval = ($misc::backend eq 'Pg')?'cast(value as int)':'value';
-			&db::Update('system',"value = $casval+1","name='threads'");	# Register new thread
+			&db::Update('system',"value = $casval+1","name='threads'");			# Register new thread
 		}
 	}else{
 		if ($nthrd < 0){
 			my $err = "$nthrd thread(s) error, 1st from ".localtime($first)." make sure interval is longer than discovery takes!";
 			print "MAIN:$err" if $opt{'v'};
-			&db::Insert('events','level,time,source,info,class',"200,$now,'NeDi','$err','bugn'");
+			&db::Insert('events','level,time,source,info,class',"200,$now,'NeDi','$err','bugn'",1);
 		}else{
 			print "MAIN:No threads, set 1st at ".localtime($now)."\n" if $opt{'v'};
 		}
 		&db::Update('system',"value=1","name='threads'");					# Register first thread
 		&db::Update('system',"value=$now","name='first'");
 	}
-	print "\nDiscovery ($VERSION) $misc::ncmd  at ". localtime($now)."\n";
+	print "\nDiscovery ($VERSION) $misc::ncmd\n";
+	print "Started with $nseed seed".(($nthrd != 1)?'s':'')." at ". localtime($now)."\n";
 	print "-------------------------------------------------------------------------------\n";
 	print "Device				Status				Todo/Done-Time\n";
 	print "===============================================================================\n";
@@ -264,7 +269,7 @@ if ( $opt{'D'} ){
 
 		if($opt{'d'} ){
 			print "-------------------------------------------------------------------------------\n";
-			system('top -bC -g perl');
+			system('ps aux|egrep "^USER|perl"');
 			if( $dsok ){
 				print "\%dev\t\t".&misc::DecFix( total_size(\%dev) )."\n";
 				print "\%int\t\t".&misc::DecFix( total_size(\%int) )."\n";
@@ -317,23 +322,23 @@ if ( $opt{'D'} ){
 				while( my $nlock = &db::Select('system','','value',"name='nodlock'") ){	# Wait until nodes are unlocked by a parallel thread;
 					if( $nlock and kill 0,$nlock ){					# Registered thread and still running? (based on Steffen's idea)
 						&misc::Prt("MAIN:Nodes already locked by PID $nlock, waiting for unlock\n","N");
-						&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) waiting for nodes unlock (locked by PID $nlock)").",'bugx'") if $misc::notify =~ /x/;
+						&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) waiting for nodes unlock (locked by PID $nlock)").",'bugx'",1) if $misc::notify =~ /x/;
 						sleep $misc::pause;
 					}else{
 						&misc::Prt("MAIN:PID $nlock not running, unlocking nodes!\n");
 						&db::Update('system',"value=0","name='nodlock'");
-						&db::Insert('events','level,time,source,info,class',"200,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) forces unlock nodes (locked by PID $nlock, which is not running anymore)").",'bugn'");
+						&db::Insert('events','level,time,source,info,class',"200,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) forces unlock nodes (locked by PID $nlock, which is not running anymore)").",'bugn'",1);
 					}
 				}
 				&db::Update('system',"value='$$'","name='nodlock'");			# Set node lock in system table...
 				&misc::Prt("MAIN:Nodes table locked at ".localtime(time)." by PID $$\n","Building nodes\n");
-				&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) locks nodes").",'bugx'") if $misc::notify =~ /x/;
+				&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) locks nodes").",'bugx'",1) if $misc::notify =~ /x/;
 				&db::ReadNod();
 				$nnod = &misc::BuildNod();
 				&db::WriteNod();
 				&db::Update('system','value=0',"name='nodlock'");			# ...unlock them again
 				&misc::Prt("\nMAIN:Nodes table unlocked at ".localtime(time)." by PID $$\n"," done\n");
-				&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) unlocks nodes").",'bugx'") if $misc::notify =~ /x/;
+				&db::Insert('events','level,time,source,info,class',"10,".time.",'NeDi',".$db::dbh->quote("PID $$ ($misc::ncmd) unlocks nodes").",'bugx'",1) if $misc::notify =~ /x/;
 				&misc::Prt("MAIN:$misc::ipchg IP and $misc::ifchg IF changes detected\n") if ($misc::ipchg or $misc::ifchg);
 			}
 			my $nthrd = &db::Select('system','','value',"name='threads'");
@@ -368,34 +373,40 @@ B<Returns> -
 =cut
 sub HELP_MESSAGE(){
 	print "\n";
-	print "usage: nedi.pl [-i|-D|-t|-w|-y|-s|] <more option(s)>\n";
-	print "Discovery Options  --------------------------------------------------------\n";
+	print "usage: nedi.pl [Discovery Sources] [Discovery Control] [Discovery Actions] | Other Actions\n\n";
+	print "Discovery Sources (how the Todo-list gets filled up) ----------------------\n";
 	print "-a ip	Add single device or ip range (e.g. 10.10.10)\n";
 	print "-A cond	Add devices from DB cond=all or e.g.\"loc LIKE 'here%'\"\n";
-	print "-t ip	Test IP only, but don't write anything\n";
-	print "-c cmty	Prefer this community over those in nedi.conf\n";
-	print "-p	Discover LLDP,CDP,FDP or NDP neighbours\n";
+	print "-p 	Discover LLDP,CDP,FDP or NDP neighbours\n";
 	print "-o	OUI discovery (based on ARP chache entries)\n";
 	print "-r	Route table discovery (on L3 devices)\n";
 	print "-u file	Use specified seedlist\n";
-	print "-U file	Use specified configuration\n";
-	print "-l x	Limit discovery to x devices\n";
-	print "Actions -------------------------------------------------------------------\n";
-	print "-b|Bx	Backup running config|also write files, delete old versions if > x\n";
-	print "-S opt	Skip s=sys v=vlans m=modules g=devrrd a=arp f=fwd p=dprot o=toprrd\n";
-	print "	W=web j=addr i=IFinfo t=trf e=err d=dscard b=bcast w=poe A=adm O=op \n";
+	print "-U file	Use specified configuration (use - to read from stdin)\n\n";
+	print "Discovery Control (how data is handled) -----------------------------------\n";
+	print "-c cmty	Prefer this community over those in nedi.conf and DB\n";
+	print "-d|D	Debug info, store variables, write CLI logs|Advanced debug mode\n";
 	print "-f 	Use discovered IPs as devicenames (useful, if they're not unique)\n";
 	print "-F 	Use FQDNs for devices. Allows \".\" in dev names (can mess up links!)\n";
+	print "-l x	Limit discovery to x devices\n";
 	print "-n 	Don't resolve node names via DNS\n";
 	print "-N 	Don't exclude devices from nodes\n";
-	print "-W 	Retry SNMP writeaccess\n\n";
-	print "Other Options -------------------------------------------------------------\n";
-	print "-i u pw	Initialize database (-I deletes all RRDs & Configs in addition)\n";
+	print "-P x	Ping device (with timout x) prior SNMP access (faster with sweeps)\n";
+	print "-v	Verbose output\n";
+	print "-V ver	Prefer this SNMP version over those in nedi.conf and DB\n\n";
+	print "Discovery Actions (applies to each device found) --------------------------\n";
+	print "-b|Bx	Backup running config|also write files, delete old versions if > x\n";
+	print "-C file	Send commands in file.php and write output to file-ip.log\n";
 	print "-k	Store ssh key in ~/.ssh/known_hosts\n";
 	print "-K	Delete stored key from ~/.ssh/known_hosts\n";
+	print "-Y opt	Add to inventory n=new s=snmp|a=all m=modules any=update only\n";
+	print "-S opt	Skip s=sys v=vlans m=modules g=devrrd a=arp f=fwd p=dprot o=toprrd\n";
+	print "	W=web j=adr i=IFinf t=trf e=err d=dscrd b=bcast w=poe A=adm O=op\n";
+	print "	l=APloc Examples: -Saf=nodes -SOAedibatflow=IFinfo -Sog=RRDs\n";
+	print "-t opt	Test only (no DB write) a=snmp access|i=all info \n";
+	print "-W 	Retry SNMP writeaccess\n\n";
+	print "Other Actions =============================================================\n";
+	print "-i u pw	Initialize database (-I deletes all RRDs & Configs in addition)\n";
 	print "-s Xopt	Scan nodes, X=Tcp,Udp,Os,Fast opt=update or ip=(ip) e.g. TUFupdate\n";
-	print "-d|D	Store internal variables and write to CLI logs|skip to debug mode\n";
-	print "-v	Verbose output\n";
 	print "-y	Show supported devices based on .def files (in sysobj)\n\n";
 	print "Output Legend -------------------------------------------------------------\n";
 	print "Statistics (lower case letters):\n";
@@ -412,12 +423,12 @@ sub HELP_MESSAGE(){
 	print "Jx	IF Addresses (a=IP m=Mask 6=ipv6 c=cisco-ip6 p=prefix v=vrf)\n";
 	print "Ax	ARP (n=net2media p=net2phys 6=ipv6 c=cisco-ip6 i=no IF index)\n";
 	print "Bx	Backup f=fetched n=new u=update w=write e=empty d=delete\n";
-	print "Cx	CLI main c=connect p=pw e=enable i=impossible m=cmd\n";
-	print "Dx	Discover p=poe a=IP l=LLDP c=CDP f=FDP r=rte o=IP127/0 L=loop x=IFix\n";
-	print "	d=dupnbr n=no nbrname\n";
+	print "Cx	CLI c=connect d=disabled p=pw e=enable i=impossible m=cmd\n";
+	print "Dx	Discover p=poe a=IP l=LLDP c=CDP e=EDP f=FDP r=rte\n";
+	print "	o=IP127/0 L=loop x=IFix d=dupnbr n=no nbrname\n";
 	print "Fx(#)	Forwarding table (i=IF p=Port #=vlan x=idx w=wlan)\n";
-	print "Ix	Interface d=desc n=name t=type S/s=HC/speed m=mac a=admin p=oper,\n";
-	print "	c=dscard b=bcast I/O=HCtrf i/o=trf e=err l=alias x=duplex v=vlan w=poe\n";
+	print "Ix	Interface d=desc n=name t=type S/s=HC/speed m=mac a=admin p=oper\n";
+	print "	c=dscrd b=bcst I/O=HCtrf i/o=trf e=err l=alias x=duplx v=vlan w=poe\n";
 	print "Kx	SSH keyscan e=error, s=scanned, r=removed\n";
 	print "Mx	Modules t=slot d=desc c=class h=hw f=fw s=sw #=SN m=model\n";
 	print "Px	CLI prep p=prev err u=no user n=user not in conf\n";
@@ -425,6 +436,6 @@ sub HELP_MESSAGE(){
 	print "Sx	System w=write n=name c=con l=Loc v=SRV #=SN b=BI g=grp o=mode\n";
 	print "	v=vlan y=type f=cfg w=PoE RRD:u=CPU m=Mem t=Tmp s=cus\n";
 	print "---------------------------------------------------------------------------\n";
-	print "NeDi $VERSION (C) 2001-2013 Remo Rickli & contributors\n\n";
+	print "NeDi $VERSION (C) 2001-2014 Remo Rickli & contributors\n\n";
 	exit;
 }

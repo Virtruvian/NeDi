@@ -44,7 +44,7 @@ function DbFreeResult($r){
 	if($debug){
 		echo "<div class=\"textpad code good\" style=\"width:600px\">";
 		debug_print_backtrace();
-		echo "</div>\n";
+		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";
 	}
         return @mysql_free_result($r);									# TOOD, fix and remove @? Ignore warnings if resource doesn't exist
 }
@@ -155,7 +155,7 @@ function AdOpVal($c,$o,$v){
 // $tbl	= table to apply query to
 // $do 	s= select (is default), i=insert (using $in for columns and $st for values), o=optimize, d=delete, p=drop db
 //	b=show DBs ($col used as operator with $tbl), h=show tables, c=show columns, t=truncate, u=update (using $in,$op,$st to set values 
-//	and "WHERE $col $ord $lim" to match), g=group
+//	and "WHERE $col" to match, $ord $lim as normal), g=group
 // $col	= column(s) to display or to group by (separate with ; to exlude from grouping)
 // $ord	= order by (where ifname also takes numerical interface sorting (e.g. 0/1) into account)
 // $lim	= limiting results
@@ -189,7 +189,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 				if($c){$s[]="$c $o '$st[$x]'";}
 				$x++;
 			}
-			$qry = "UPDATE $tbl SET ". implode(',',$s) ." WHERE $col $ord '$lim'";
+			$qry = "UPDATE $tbl SET ". implode(',',$s) ." WHERE $col $ord $lim";
 		}
 	}elseif($do ==  'b'){
 		$qry = "SHOW DATABASES $col '$tbl'";
@@ -206,7 +206,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 	}elseif($do == 'r'){
 		$qry = "REPAIR TABLE $tbl";
 	}elseif($do == 'v'){
-		$qry = "SELECT VERSION()";
+		$qry = "SELECT concat('MySQL ', version())";
 	}elseif($do == 'x'){
 		$qry = "SHOW processlist";
 	}else{
@@ -227,7 +227,7 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 
 		$w = Condition($in,$op,$st,$co,2);
 
-		if(isset($_SESSION['view']) and $_SESSION['view'] and (strstr($jn,'JOIN devices') or $tbl == 'devices')){
+		if(isset($_SESSION) and $_SESSION['view'] and (strstr($jn,'JOIN devices') or $tbl == 'devices')){
 			$viewq = explode(' ', $_SESSION['view']);
 			$w = (($w)?"$w AND ":"WHERE ").AdOpVal( $viewq[0],$viewq[1],$viewq[2] );
 		}
@@ -252,7 +252,8 @@ function GenQuery($tbl,$do='s',$col='*',$ord='',$lim='',$rawin=array(),$rawop=ar
 	if($debug){
 		echo "<div class=\"textpad code warn\" style=\"width:600px\">";
 		debug_print_backtrace();
-		echo "<p><a href=\"System-Export.php?act=c&query=".urlencode($qry)."\">$qry</a></div>\n";
+		echo "<p><a href=\"System-Export.php?act=c&query=".urlencode($qry)."\">$qry</a>\n";
+		echo DecFix(memory_get_usage(),1).'B @'.round(microtime(1) - $debug,2)."s</div>\n";
 	}
 
 	return $qry;

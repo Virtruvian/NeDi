@@ -39,30 +39,33 @@ $link	= DbConnect($dbhost,$dbuser,$dbpass,$dbname);
 <h1>Device Doctor</h1>
 
 <?php  if( !isset($_GET['print']) ) { ?>
-
 <form method="POST" action="<?= $self ?>.php" enctype="multipart/form-data">
 <table class="content"><tr class="<?= $modgroup[$self] ?>1">
-<th width="50"><a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a></th>
-<th>Cfg #<br>
-<input type="checkbox" name="sln" <?= ($sln)?"checked":"" ?> ></td>
-
-<th>Bcast <?= $mlvl[150] ?><br>
-<input type="text" name="bcw" value="<?= $bcw ?>" size="2"> %</th>
-
-<th>
-Tech file<br>
-<input name="tef" type="file" size="30" accept="text/*">
+<td class="ctr s">
+	<a href="<?= $self ?>.php"><img src="img/32/<?= $selfi ?>.png"></a>
 </td>
-
-<th><?= $cfglbl ?><br>
-<select size="1" name="dev" onchange="this.form.submit();">
-<option value=""><?= $sellbl ?> ->
+<td class="ctr b">
+	Cfg #<br>
+	<input type="checkbox" name="sln" <?= ($sln)?"checked":"" ?> >
+</td>
+<td>
+	Bcast <?= $mlvl[150] ?><br>
+	<input type="text" name="bcw" value="<?= $bcw ?>" size="2"> %
+</td>
+<td>
+	Tech file<br>
+	<input name="tef" type="file" size="30" accept="text/*">
+</td>
+<td>
+	<?= $cfglbl ?><br>
+	<select size="1" name="dev" onchange="this.form.submit();">
+		<option value=""><?= $sellbl ?> ->
 <?php
 $query	= GenQuery('configs','s','device','device','',array(),array(),array(),array(),'LEFT JOIN devices USING (device)');
 $res	= DbQuery($query,$link);
 if($res){
 	while( ($c = DbFetchRow($res)) ){
-		echo "<option value=\"$c[0]\"";
+		echo "		<option value=\"$c[0]\"";
 		if($c[0] == $dev){
 			echo "selected";
 		}
@@ -74,11 +77,11 @@ if($res){
 }
 
 ?>
-</select>
-</th>
-
-<th width="80"><input type="submit" value="<?= $sholbl ?>"></th>
-</table>
+	</select>
+</td>
+<td class="ctr s">
+	<input type="submit" class="button" value="<?= $sholbl ?>">
+</td></tr></table>
 </form>
 
 <?php
@@ -87,7 +90,7 @@ if($dev){
 	$query	= GenQuery('configs','s','config,devos','','',array('device'),array('='),array($dev),array(),'LEFT JOIN devices USING (device)');
 	$res	= DbQuery($query,$link);
 	if (DbNumRows($res) != 1) {
-		echo "<h4>$dev: $nonlbl</h4>";
+		echo "<h4>$dev: $nonlbl</h4>\n";
 		DbFreeResult($res);
 		die;
 	}
@@ -95,9 +98,7 @@ if($dev){
 	DbFreeResult($res);
 	if($debug){	echo "<div class=\"textpad code warn\">$cfg[0]</div>\n";}
 ?>
-<h2>
-<a href="Devices-Config.php?shc=<?= urlencode($dev) ?>"><img src="img/16/conf.png" title="<?= $cfglbl ?>"></a>
-<?= $dev ?> <?= $cfglbl ?> <?= $sumlbl ?></h2>
+<h2><a href="Devices-Config.php?shc=<?= urlencode($dev) ?>"><img src="img/16/conf.png" title="<?= $cfglbl ?>"></a><?= $dev ?> <?= $cfglbl ?> <?= $sumlbl ?></h2>
 <?php
 	foreach ( explode("\n",$cfg[0]) as $l ){
 		if( preg_match("/^interface /",$l) or $cfg[1] == "ProCurve" and preg_match("/^vlan /",$l) ){
@@ -129,8 +130,8 @@ if($dev){
 		}elseif( preg_match("/^(no )?spanning-tree|^ stp/",$l) ){
 			$stp[] = $l;
 		}
-	}
-	echo "<h3>Interfaces</h3>";
+	}#TODO pretty html print...
+	echo "<h3>Interfaces</h3>\n";
 	echo "<table class=\"content\"><tr class=\"$modgroup[$self]2\"><td>$namlbl</td><td>IP $adrlbl</td><td>Alias</td><td>$typlbl</td><td>IP Helper</td><td>VRF</td></tr>";
 	foreach($if as $i){
 		if ($row % 2){$bg = "txta"; $bi = "imga";}else{$bg = "txtb"; $bi = "imgb";}
@@ -303,7 +304,6 @@ if($dev){
 		}
 	}
 }
-echo "</div><br>";
 
 include_once ("inc/footer.php");
 ?>
